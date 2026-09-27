@@ -117,25 +117,38 @@ export function Pio({
   const width = Math.round(size * ASPECT);
   const move = animated ? MOTION[state] : undefined;
 
+  // Le filtre (l'ombre portée passée en `className`) reste sur le cadre FIXE ;
+  // le mouvement du sprite vit sur un nœud INTÉRIEUR. Les deux ne sont jamais
+  // sur le même nœud : sinon WebKit (WKWebView iOS) fige le tampon du filtre
+  // dans l'espace local, le promène avec la transform, et à la fermeture d'un
+  // calque au-dessus (l'overlay de niveau) ce tampon garde ses pixels — un
+  // rectangle coloré derrière Pio, exactement sa boîte. Avec la transform à
+  // l'intérieur, le contenu du cadre change à chaque frame, donc le filtre se
+  // recalcule et ne peut plus rien retenir. `isolation` lui donne en plus son
+  // propre groupe de composition, pour qu'aucun calque voisin n'y déteigne.
   return (
-    <motion.div
+    <div
       role="img"
       aria-label={LABELS[state]}
       className={`pio inline-block shrink-0 select-none ${className}`}
-      style={{ width, height: size }}
-      animate={move?.animate}
-      transition={move?.transition}
+      style={{ width, height: size, isolation: "isolate" }}
     >
-      <Image
-        src={FILES[state]}
-        alt=""
-        width={572}
-        height={800}
-        priority={priority}
-        draggable={false}
-        unoptimized
-        className="h-full w-full object-contain"
-      />
-    </motion.div>
+      <motion.div
+        className="h-full w-full"
+        animate={move?.animate}
+        transition={move?.transition}
+      >
+        <Image
+          src={FILES[state]}
+          alt=""
+          width={572}
+          height={800}
+          priority={priority}
+          draggable={false}
+          unoptimized
+          className="h-full w-full object-contain"
+        />
+      </motion.div>
+    </div>
   );
 }

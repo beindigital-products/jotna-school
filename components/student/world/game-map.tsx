@@ -177,7 +177,7 @@ function TrailSvg({
           strokeWidth={14}
           strokeLinecap="round"
           strokeDasharray="1 24"
-          className="animate-[trail-dash_1.6s_linear_infinite]"
+          className="animate-[trail-dash_2.4s_linear_infinite]"
         />
       )}
     </svg>

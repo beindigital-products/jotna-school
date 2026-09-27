@@ -129,7 +129,7 @@ export default function StudentLayout({
           className={`mx-auto w-full max-w-5xl flex-1 ${
             focusMode
               ? "px-4 pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]"
-              : "px-0 pb-28 sm:px-4 sm:pb-8"
+              : "px-0 pb-32 sm:px-4 sm:pb-8"
           }`}
         >
           <AccessGate>{children}</AccessGate>

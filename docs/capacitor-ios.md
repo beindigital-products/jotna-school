@@ -96,6 +96,24 @@ et pose la sienne, givrée, qui n'apparaît qu'au défilement, comme un en-tête
 iOS qui se replie. Au repos, rien ne sépare la barre d'état du héros ; en
 défilant, le contenu passe sous un verre crème.
 
+## Le filtre d'ombre de Pio, jamais sur le nœud qui bouge
+
+Un rectangle coloré est apparu un jour derrière Pio, au camp, pile à la
+taille de son sprite. La cause : WKWebView. Quand une même boîte porte à la
+fois un `filter` (l'ombre portée `drop-shadow`) et une transform animée, le
+moteur calcule le filtre une fois dans l'espace local, met le résultat en
+cache, puis promène ce cache avec la transform. À la fermeture d'un calque
+posé au-dessus (l'overlay de montée de niveau, violet), le cache garde ses
+pixels et n'est jamais recalculé : d'où le rectangle violet, exactement la
+boîte du filtre.
+
+`components/student/pio.tsx` sépare donc les deux pour de bon : le `filter`
+reste sur le cadre fixe, la transform vit sur un nœud intérieur. Le contenu du
+cadre change alors à chaque image, le filtre se recalcule et ne peut plus rien
+retenir ; `isolation: isolate` lui donne en plus son propre groupe de
+composition. Règle générale sous WKWebView : ne jamais poser un `filter` et une
+animation de transform sur le même élément.
+
 ## Ce que l'export statique impose
 
 `output: "export"` interdit les routes dynamiques `[id]`. Next exige de

@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { setSoundEnabledLocal } from "@/lib/sounds";
 import { Pio } from "@/components/student/pio";
+import { BadgeShield } from "@/components/student/badge-icon";
 import { pioSays } from "@/lib/pioCopy";
 
 /**
@@ -204,8 +205,14 @@ export default function StudentProfilePage() {
                 key={eb._id}
                 className="flex flex-col items-center rounded-3xl border-2 border-yellow-200 bg-gradient-to-b from-yellow-50 to-orange-50 p-4 text-center"
               >
-                <span className="text-3xl">{eb.badge.icon}</span>
-                <p className="mt-2 font-display text-sm font-extrabold text-amber-950">{eb.badge.name}</p>
+                <BadgeShield
+                  iconName={eb.badge.icon}
+                  badgeName={eb.badge.name}
+                  tier={eb.badge.rarity}
+                  locked={false}
+                  size={72}
+                />
+                <p className="mt-2 line-clamp-2 font-display text-sm font-extrabold text-amber-950">{eb.badge.name}</p>
                 <p className="mt-0.5 text-xs text-amber-900/60">
                   {new Date(eb.earnedAt).toLocaleDateString("fr-FR")}
                 </p>
