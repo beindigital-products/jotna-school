@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Check, X, GripVertical } from "lucide-react";
+import { AlertTriangle, GripVertical } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
 import {
   DndContext,
@@ -103,7 +103,6 @@ export default function OrderExercise({
   onSubmit,
   onSkip,
   disabled,
-  isCorrect,
 }: OrderExerciseProps) {
   const source = Array.isArray(payload?.items)
     ? payload.items.filter((s): s is string => typeof s === "string")
@@ -159,19 +158,6 @@ export default function OrderExercise({
   return (
     <div className="space-y-6">
       <ExercisePrompt prompt={prompt} />
-
-      {isCorrect === true && (
-        <div className="flex items-center gap-2 rounded-2xl bg-green-100 border-2 border-green-300 px-4 py-3 text-green-800 font-semibold">
-          <Check className="h-5 w-5" />
-          Super, c&apos;est dans le bon ordre !
-        </div>
-      )}
-      {isCorrect === false && (
-        <div className="flex items-center gap-2 rounded-2xl bg-red-100 border-2 border-red-300 px-4 py-3 text-red-800 font-semibold animate-[shake_0.5s_ease-in-out]">
-          <X className="h-5 w-5" />
-          Essaie encore !
-        </div>
-      )}
 
       <DndContext
         sensors={sensors}

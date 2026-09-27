@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useAction, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -21,13 +21,15 @@ import Link from "next/link";
 
 import { JotnaLoader } from "@/components/jotna-loader";
 import { playCorrect, setSoundEnabledLocal } from "@/lib/sounds";
-import { PalierStarsBar } from "@/components/star-rating";
+import { PalierResultScreen } from "@/components/student/game/palier-result";
+import { effectivePalierCount } from "@/convex/palierRules";
 import { CapRegenAlternatives } from "@/components/cap-regen-alternatives";
 import { kidMessages } from "@/lib/kidCopy";
 import { isAccessDenied } from "@/lib/accessCopy";
 import { ExplainStepByStep } from "@/components/student/explain-step-by-step";
 import { Pio } from "@/components/student/pio";
 import { StudentAlertDialog } from "@/components/student/student-alert-dialog";
+import { AnswerFeedback } from "@/components/student/game/answer-feedback";
 import QcmExercise from "@/components/exercises/QcmExercise";
 import ShortAnswerExercise from "@/components/exercises/ShortAnswerExercise";
 import MatchExercise from "@/components/exercises/MatchExercise";
@@ -51,6 +53,7 @@ type PalierResult = {
   average: number;
   starsTotal: number;
   threshold: number;
+  exerciseCount?: number;
   failedCount: number;
   canRegen: boolean;
   cumulativeRegens: number;
@@ -70,13 +73,9 @@ type AttemptProgress = {
   hintsUsedThisExo: number;
 };
 
-export default function TopicSessionPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id: topicId } = use(params);
+function TopicSessionPageInner() {
   const searchParams = useSearchParams();
+  const topicId = searchParams.get("id") ?? "";
   const palierIndex = parseInt(searchParams.get("palier") ?? "1", 10);
 
   return <PalierSession key={`${topicId}-${palierIndex}`} topicId={topicId} palierIndex={palierIndex} />;
@@ -246,6 +245,15 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   }, []);
 
   const nextExoRef = useRef<() => void>(() => {});
+  // Le minuteur de l'alerte de réponse : gardé pour qu'une réponse suivante
+  // ne se fasse pas effacer par le minuteur de la précédente.
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+    },
+    [],
+  );
 
   const handleRequestHint = useCallback(async () => {
     if (!exercises || !palierAttemptId) return;
@@ -258,6 +266,10 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
         palierAttemptId,
         hintIndex: hintsUsedThisExo,
       });
+      // Même copie que dans `handleSubmitAnswer` : l'état local part de la
+      // progression serveur, sinon un indice ramenait à la question 1.
+      setLocalCurrentIndex(currentIndex);
+      setLocalFailedAttemptsThisExo(failedAttemptsThisExo);
       setLocalStateAttemptId(palierAttemptId);
       setHintShown({ text: res.hint, index: res.hintIndex });
       setLocalHintsUsedThisExo(hintsUsedThisExo + 1);
@@ -268,7 +280,14 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
         console.error(err);
       }
     }
-  }, [exercises, palierAttemptId, currentIndex, hintsUsedThisExo, requestHint]);
+  }, [
+    exercises,
+    palierAttemptId,
+    currentIndex,
+    hintsUsedThisExo,
+    failedAttemptsThisExo,
+    requestHint,
+  ]);
 
   const handleNextExo = useCallback(async () => {
     if (!exercises) return;
@@ -317,15 +336,23 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
           correct: res.isCorrect,
           attemptsRemaining: res.attemptsRemaining,
         });
+        // REPRISE D'UNE SÉANCE : jusqu'ici, l'écran suivait la progression
+        // serveur (question 3, deux indices...). Passer en état local sans
+        // le recopier ramenait l'enfant à la question 1 dès sa première
+        // réponse. On copie d'abord, on bascule ensuite.
+        setLocalCurrentIndex(currentIndex);
+        setLocalHintsUsedThisExo(hintsUsedThisExo);
+        if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
         if (res.isCorrect) {
           setLocalStateAttemptId(palierAttemptId);
           void playCorrect();
-          setTimeout(() => nextExoRef.current(), 1200);
+          // Le temps de voir Pio fêter et les étoiles partir.
+          feedbackTimer.current = setTimeout(() => nextExoRef.current(), 1800);
         } else {
           setLocalStateAttemptId(palierAttemptId);
           setLocalFailedAttemptsThisExo(failedAttemptsThisExo + 1);
           if (res.attemptsRemaining > 0) {
-            setTimeout(() => setFeedback(null), 2500);
+            feedbackTimer.current = setTimeout(() => setFeedback(null), 2600);
           }
         }
       } catch (err) {
@@ -340,6 +367,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
       exercises,
       palierAttemptId,
       currentIndex,
+      hintsUsedThisExo,
       failedAttemptsThisExo,
       verifyAttempt,
     ],
@@ -375,7 +403,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
 
   // Loading states — wait for auth resolution AND queries
   if (authLoading || (isAuthenticated && profile === undefined) || topic === undefined) {
-    return <JotnaLoader />;
+    return <JotnaLoader className="min-h-[70dvh]" />;
   }
   if (!isAuthenticated || profile === null) {
     return (
@@ -410,7 +438,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
           message={bootstrapError}
           onGoPrevious={() =>
             router.replace(
-              `/student/topics/${topicId}/session?palier=${palierIndex - 1}`,
+              `/student/topics/session?id=${topicId}&palier=${palierIndex - 1}`,
             )
           }
         />
@@ -435,7 +463,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
     exercises === undefined ||
     attemptProgress === undefined
   ) {
-    return <JotnaLoader />;
+    return <JotnaLoader className="min-h-[70dvh]" />;
   }
   if (exercises === null || exercises.length === 0) {
     return (
@@ -452,80 +480,52 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
     );
   }
 
-  // Final palier screen
+  // L'ÉCRAN DE FIN DE PALIER : la scène de jeu, avec le sentier de la
+  // thématique (`components/student/game/palier-result.tsx`). Le seuil
+  // arrive en dixièmes (7 sur 10) ; l'écran parle en étoiles, sur le nombre
+  // d'exercices vraiment joués (trois par exercice).
   if (palierResult) {
-    const validated = palierResult.status === "validated";
+    const palierCount = effectivePalierCount(topic);
+    const trailHref = topic.subjectId
+      ? `/student/subjects?id=${topic.subjectId}`
+      : "/student/map";
     return (
-      <div className="mx-auto max-w-2xl space-y-6 py-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className={`rounded-3xl p-8 text-center text-white shadow-xl ${
-            validated
-              ? "bg-gradient-to-r from-green-400 to-emerald-500"
-              : "bg-gradient-to-r from-orange-400 via-pink-500 to-purple-500"
-          }`}
-        >
-          <h1 className="text-3xl font-extrabold mb-3">
-            {validated
-              ? kidMessages.palierValidatedShort
-              : "Palier non validé"}
-          </h1>
-          <p className="text-lg opacity-90 mb-4">
-            {validated
-              ? kidMessages.palierValidated(palierResult.starsTotal)
-              : kidMessages.palierFailed(palierResult.starsTotal)}
-          </p>
-          <div className="mx-auto max-w-sm">
-            <PalierStarsBar
-              starsTotal={palierResult.starsTotal}
-              threshold={palierResult.threshold * 3}
+      <>
+        <PalierResultScreen
+          result={{
+            status: palierResult.status,
+            starsTotal: palierResult.starsTotal,
+            exerciseCount: palierResult.exerciseCount ?? exercises.length,
+            thresholdTenths: palierResult.threshold,
+            canRegen: palierResult.canRegen,
+          }}
+          topicName={topic.name ?? "Thématique"}
+          palierIndex={palierIndex}
+          palierCount={palierCount}
+          nextPalierHref={
+            palierIndex < palierCount
+              ? `/student/topics/session?id=${topicId}&palier=${palierIndex + 1}`
+              : null
+          }
+          trailHref={trailHref}
+          regenerating={regenerating}
+          onRegen={handleRegen}
+          capAlternatives={
+            <CapRegenAlternatives
+              onSeeCorrected={() =>
+                router.push(`/student/topics/session?id=${topicId}&palier=${palierIndex}&review=1`)
+              }
+              previousPalierHref={
+                palierIndex > 1
+                  ? `/student/topics/session?id=${topicId}&palier=${palierIndex - 1}`
+                  : null
+              }
+              onAskParent={() => {
+                setSceneAlert({ type: "parent-notified" });
+              }}
             />
-          </div>
-        </motion.div>
-
-        {!validated && palierResult.canRegen && !regenerating && (
-          <div className="text-center space-y-3">
-            <p className="text-base text-gray-700">{kidMessages.regenIntro}</p>
-            <button
-              onClick={handleRegen}
-              className="rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-8 py-3 text-lg font-bold text-white shadow-lg hover:scale-[1.02] transition-all"
-            >
-              {kidMessages.regenCta}
-            </button>
-          </div>
-        )}
-
-        {regenerating && (
-          <JotnaLoader message={kidMessages.regenLoading} />
-        )}
-
-        {!validated && !palierResult.canRegen && (
-          <CapRegenAlternatives
-            onSeeCorrected={() =>
-              router.push(`/student/topics/${topicId}/session?palier=${palierIndex}&review=1`)
-            }
-            previousPalierHref={
-              palierIndex > 1
-                ? `/student/topics/${topicId}/session?palier=${palierIndex - 1}`
-                : null
-            }
-            onAskParent={() => {
-              setSceneAlert({ type: "parent-notified" });
-            }}
-          />
-        )}
-
-        {validated && (
-          <div className="text-center">
-            <Link
-              href={`/student/topics/${topicId}/session?palier=${palierIndex + 1}`}
-              className="inline-block rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-8 py-3 text-lg font-bold text-white shadow-lg hover:scale-[1.02] transition-all"
-            >
-              Palier suivant 🚀
-            </Link>
-          </div>
-        )}
+          }
+        />
         <SceneAlertDialog
           alert={sceneAlert}
           onClose={() => setSceneAlert(null)}
@@ -535,14 +535,10 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
           }}
           onQuit={() => {
             setSceneAlert(null);
-            if (topic?.subjectId) {
-              router.push(`/student/subjects/${topic.subjectId}`);
-            } else {
-              router.push("/student/home");
-            }
+            router.push(trailHref);
           }}
         />
-      </div>
+      </>
     );
   }
 
@@ -552,7 +548,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   const disabled = feedback !== null;
 
   return (
-    <div className="relative mx-auto max-w-2xl py-4">
+    <div className="relative mx-auto max-w-2xl pb-4">
       {/* Network drop banner (Decision 90) */}
       {!isOnline && (
         <div className="mb-3 flex items-center gap-2 rounded-xl bg-yellow-100 px-4 py-2 text-sm text-yellow-800">
@@ -561,23 +557,26 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
         </div>
       )}
 
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          <span className="font-semibold text-gray-700">
-            {topic.name ?? "Palier"} — niveau {palierIndex}
-          </span>
-          <span className="mx-2">·</span>
-          <span>
-            Question {currentIndex + 1}/{totalExos}
-          </span>
-          {exo?.isVariation && (
-            <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-              Variation
-            </span>
-          )}
-        </div>
+      {/* LA BARRE DE SÉANCE. Collée sous la barre d'état (le fond crème
+          derrière l'encoche est posé par `(student)/layout` en mode focus),
+          elle reste visible quand un exercice long défile. Débordement
+          `-mx-4` : le `main` du mode focus a 1rem de marge, la barre va
+          d'un bord à l'autre. */}
+      <div className="sticky top-[env(safe-area-inset-top)] z-20 -mx-4 mb-4 border-b border-amber-200/60 bg-[#fff7e0]/90 px-4 pb-2.5 pt-2 backdrop-blur-md">
         <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-xl font-extrabold leading-tight text-amber-950">
+              {topic.name ?? "Palier"}
+            </p>
+            <p className="mt-0.5 font-display text-sm font-bold text-amber-900/80">
+              Palier {palierIndex} · Question {currentIndex + 1}/{totalExos}
+              {exo?.isVariation && (
+                <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                  Variation
+                </span>
+              )}
+            </p>
+          </div>
           {/* D22 — quick-mute. Only renders if the kid has decided about
               sounds (soundPref !== null + .soundEnabled defined). Hides for
               brand-new students who haven't seen the opt-in dialog yet. */}
@@ -591,41 +590,47 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
                   : "Activer le son"
               }
               aria-pressed={soundPref.soundEnabled}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/70 text-gray-600 shadow-sm transition-all hover:bg-white"
+              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-amber-200 bg-white text-amber-900 shadow-sm transition-all hover:bg-amber-50"
             >
               {soundPref.soundEnabled ? (
-                <Volume2 className="h-5 w-5" aria-hidden />
+                <Volume2 className="h-6 w-6" aria-hidden />
               ) : (
-                <VolumeX className="h-5 w-5" aria-hidden />
+                <VolumeX className="h-6 w-6" aria-hidden />
               )}
             </button>
           )}
           <button
             type="button"
             onClick={handleQuit}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-white"
+            aria-label={kidMessages.cta.quit}
+            className="inline-flex h-12 min-w-12 shrink-0 items-center justify-center gap-1.5 rounded-full border-2 border-amber-200 bg-white px-3 font-display text-sm font-extrabold text-amber-900 shadow-sm hover:bg-amber-50"
           >
-            <X className="h-4 w-4" />
-            {kidMessages.cta.quit}
+            <X className="h-6 w-6" strokeWidth={3} aria-hidden />
+            <span className="hidden sm:inline">{kidMessages.cta.quit}</span>
           </button>
         </div>
-      </div>
 
-      {/* Progress bar */}
-      <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-gray-200">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{
-            width: `${((currentIndex + (feedback?.correct ? 1 : 0)) / totalExos) * 100}%`,
-          }}
-          className="h-full bg-gradient-to-r from-orange-400 to-pink-500"
-        />
+        {/* Progress bar */}
+        <div className="mt-2.5 h-3 w-full overflow-hidden rounded-full bg-amber-900/15">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{
+              width: `${((currentIndex + (feedback?.correct ? 1 : 0)) / totalExos) * 100}%`,
+            }}
+            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-pink-500"
+          />
+        </div>
       </div>
 
       {/* Exercise */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={`${exo._id}-${feedback?.correct ?? "pending"}`}
+          // LA CLÉ EST L'EXERCICE, PAS LA RÉPONSE. Avec la réponse dans la
+          // clé, chaque « Bravo » ou « Pas tout à fait » remontait toute la
+          // carte : l'exercice clignotait, le choix de l'enfant s'effaçait,
+          // et rien ne pouvait s'animer. La carte ne change qu'au prochain
+          // exercice ; la réaction se joue dedans.
+          key={exo._id}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
@@ -672,55 +677,29 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
             </div>
           )}
 
-          {/* Feedback — brief flash, no buttons. Auto-dismisses (correct →
-              auto-advance after 1.2s, wrong with retries → auto-clear 1.2s,
-              wrong with 0 retries → stays until "Je veux comprendre" or next). */}
+          {/* La réaction du jeu, en alerte au milieu de l'écran (portée dans
+              le body). Bonne réponse : on passe seul à la suite. Mauvaise avec
+              des essais : s'efface seule ou d'un toucher. Plus d'essai :
+              reste, avec les deux boutons de suite. */}
           <AnimatePresence>
-            {feedback && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className="mt-4 space-y-3"
-              >
-                <div
-                  className={`rounded-xl px-4 py-3 text-center font-semibold ${
-                    feedback.correct
-                      ? "bg-green-100 text-green-800"
-                      : "bg-orange-100 text-orange-800"
-                  }`}
-                >
-                  {feedback.correct
-                    ? "Bravo !"
-                    : feedback.attemptsRemaining > 0
-                      ? `Pas tout à fait…`
-                      : "Tu peux passer à la suite."}
-                </div>
-                {!feedback.correct && feedback.attemptsRemaining === 0 && (
-                  <>
-                    <button
-                      onClick={() => setExplainOpen(true)}
-                      disabled={submitting}
-                      className="flex w-full min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-orange-300 bg-amber-50 px-6 py-3 text-base font-bold text-orange-700 shadow-sm hover:bg-amber-100 transition-all"
-                    >
-                      <Lightbulb className="h-5 w-5" aria-hidden />
-                      Je veux comprendre
-                    </button>
-                    <button
-                      onClick={handleNextExo}
-                      disabled={submitting}
-                      className="w-full rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-6 py-3 text-lg font-bold text-white shadow-lg hover:scale-[1.01] transition-all"
-                    >
-                      {currentIndex < totalExos - 1
-                        ? kidMessages.cta.next
-                        : submitting
-                          ? "..."
-                          : "Voir mon résultat"}
-                    </button>
-                  </>
-                )}
-              </motion.div>
+            {/* PENDANT L'EXPLICATION, L'ALERTE S'EFFACE : posée au-dessus de
+                tout (portail, z-50), elle couvrait le panneau « Je veux
+                comprendre » (z-40) et l'enfant ne voyait rien. Elle revient
+                quand le panneau se ferme, avec ses boutons de suite. */}
+            {feedback && !explainOpen && (
+              <AnswerFeedback
+                key={`${exo._id}-${failedAttemptsThisExo}-${feedback.correct ? "ok" : "ko"}`}
+                outcome={feedback}
+                seed={currentIndex * 10 + failedAttemptsThisExo}
+                isLast={currentIndex >= totalExos - 1}
+                busy={submitting}
+                onNext={handleNextExo}
+                onExplain={() => setExplainOpen(true)}
+                onDismiss={() => {
+                  if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+                  setFeedback(null);
+                }}
+              />
             )}
           </AnimatePresence>
         </motion.div>
@@ -748,7 +727,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
         onQuit={() => {
           setSceneAlert(null);
           if (topic?.subjectId) {
-            router.push(`/student/subjects/${topic.subjectId}`);
+            router.push(`/student/subjects?id=${topic.subjectId}`);
           } else {
             router.push("/student/home");
           }
@@ -803,7 +782,7 @@ function SceneAlertDialog({
         label="Message envoyé"
         title="Pio prévient ton parent"
         description="Ton parent va recevoir une notification pour t'aider à continuer."
-        primaryLabel="Retour à l'accueil"
+        primaryLabel="Retour au camp"
         onPrimary={onGoHome}
       />
     );
@@ -1035,4 +1014,12 @@ function ExerciseRenderer({
     default:
       return <p>Type d&apos;exercice non supporté</p>;
   }
+}
+
+export default function TopicSessionPage() {
+  return (
+    <Suspense fallback={null}>
+      <TopicSessionPageInner />
+    </Suspense>
+  );
 }

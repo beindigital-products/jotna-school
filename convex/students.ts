@@ -3,6 +3,13 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { isHiddenClass } from "./curriculum";
+import {
+  effectivePalierCount,
+  isTopicComplete,
+  nextPalierIndex,
+  resolvePalierStatuses,
+} from "./palierRules";
+import type { QueryCtx } from "./_generated/server";
 import { getConditionText, normalizeRarity } from "./badges";
 import {
   callerIsAdmin,
@@ -62,6 +69,9 @@ export type StudentPreferences = {
   // shown the celebration overlay for. Diff against computeLevel(...) →
   // unseenLevelUp in getMyStats. Always monotonically increasing.
   lastSeenLevel?: number;
+  // Missions du jour (quests.ts) — étoiles de mission gagnées, à vie, bornées
+  // par `questRules.QUEST_BONUS_CAP`. `getMyStats.totalStars` les ajoute.
+  questBonusStars?: number;
 };
 export function readStudentPreferences(
   profile: Doc<"profiles">,
@@ -115,6 +125,143 @@ export function resolveTopicStatuses(
   }
 
   return statuses;
+}
+
+// ---------------------------------------------------------------------------
+// CE QUE L'ÉLÈVE VOIT, ET OÙ IL EN EST — partagé par la carte, le sentier,
+// le camp.
+//
+// LE NIVEAU DE L'ÉLÈVE FILTRE LE CATALOGUE (décision D10 de la spec, enfin
+// réalisée). Un élève de CM1 ne voit que les thématiques de CM1 ; sans niveau
+// sur le profil (ancienne donnée), il voit tout l'élémentaire, comme avant.
+// Une thématique sans niveau n'est jamais montrée à un élève qui en a un :
+// la séance la refuserait de toute façon.
+//
+// LA PROGRESSION SE LIT PAR PALIER. Le nombre de paliers d'une thématique est
+// dynamique (`palierRules`), et une thématique est franchie quand tous ses
+// paliers le sont — `studentTopicProgress.completedAt` en est la trace posée
+// par `palierAttempts.submitPalier`, et le calcul depuis les tentatives la
+// double pour les données d'avant.
+// ---------------------------------------------------------------------------
+const EMPTY_SET: ReadonlySet<number> = new Set();
+
+async function topicsForStudent(
+  ctx: QueryCtx,
+  subjectId: Id<"subjects">,
+  profile: Doc<"profiles">,
+): Promise<Doc<"topics">[]> {
+  const all = await ctx.db
+    .query("topics")
+    .withIndex("by_subjectId", (q) => q.eq("subjectId", subjectId))
+    .take(1000);
+  const studentClass =
+    profile.class && !isHiddenClass(profile.class) ? profile.class : null;
+  return all
+    .filter((t) => !isHiddenClass(t.class))
+    .filter((t) => studentClass === null || t.class === studentClass)
+    .sort((a, b) => a.order - b.order);
+}
+
+async function loadTopicProgress(
+  ctx: QueryCtx,
+  studentId: Id<"profiles">,
+): Promise<Map<string, Doc<"studentTopicProgress">>> {
+  const rows = await ctx.db
+    .query("studentTopicProgress")
+    .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
+    .take(500);
+  return new Map(rows.map((p) => [p.topicId as string, p] as const));
+}
+
+type PalierProgress = {
+  /** Les index de paliers validés au moins une fois. */
+  validated: Set<number>;
+  /** Les index avec une tentative ouverte. */
+  inProgress: Set<number>;
+  /** La meilleure moyenne par palier validé, pour les étoiles. */
+  bestScore: Map<number, number>;
+};
+
+type PalierProgressByTopic = {
+  byTopic: Map<string, PalierProgress>;
+  /** Le palier en cours le plus récent, pour « reprendre l'aventure ». */
+  latestInProgress: { topicId: Id<"topics">; palierIndex: number } | null;
+};
+
+/**
+ * Les tentatives de palier de l'élève, regroupées par thématique. Une lecture
+ * bornée : au plus 500 tentatives, et une résolution par palier distinct.
+ */
+async function loadPalierProgress(
+  ctx: QueryCtx,
+  studentId: Id<"profiles">,
+): Promise<PalierProgressByTopic> {
+  const attempts = await ctx.db
+    .query("palierAttempts")
+    .withIndex("by_user", (q) => q.eq("userId", studentId))
+    .order("desc")
+    .take(500);
+
+  const palierIds = Array.from(
+    new Set(attempts.map((a) => a.palierId as string)),
+  ) as Id<"paliers">[];
+  const palierById = new Map<string, Doc<"paliers">>();
+  await Promise.all(
+    palierIds.map(async (pid) => {
+      const palier = await ctx.db.get(pid);
+      if (palier) palierById.set(pid as string, palier);
+    }),
+  );
+
+  const byTopic = new Map<string, PalierProgress>();
+  let latestInProgress: PalierProgressByTopic["latestInProgress"] = null;
+  for (const attempt of attempts) {
+    const palier = palierById.get(attempt.palierId as string);
+    if (!palier) continue;
+    const key = palier.topicId as string;
+    const entry = byTopic.get(key) ?? {
+      validated: new Set<number>(),
+      inProgress: new Set<number>(),
+      bestScore: new Map<number, number>(),
+    };
+    if (attempt.status === "validated") {
+      entry.validated.add(palier.palierIndex);
+      const score = attempt.averageScore ?? 0;
+      if (score > (entry.bestScore.get(palier.palierIndex) ?? -1)) {
+        entry.bestScore.set(palier.palierIndex, score);
+      }
+    } else if (attempt.status === "in_progress") {
+      entry.inProgress.add(palier.palierIndex);
+      if (latestInProgress === null) {
+        latestInProgress = { topicId: palier.topicId, palierIndex: palier.palierIndex };
+      }
+    }
+    byTopic.set(key, entry);
+  }
+  return { byTopic, latestInProgress };
+}
+
+function countValidatedWithin(validated: ReadonlySet<number>, palierCount: number): number {
+  let n = 0;
+  for (let i = 1; i <= palierCount; i++) if (validated.has(i)) n += 1;
+  return n;
+}
+
+function topicInputFor(
+  topic: Doc<"topics">,
+  progress: Doc<"studentTopicProgress"> | undefined,
+  paliers: PalierProgress | undefined,
+): TopicInput {
+  const palierCount = effectivePalierCount(topic);
+  const validated = paliers?.validated ?? EMPTY_SET;
+  return {
+    id: topic._id as string,
+    order: topic.order,
+    isCompleted: progress?.completedAt != null || isTopicComplete(validated, palierCount),
+    validatedPaliers: countValidatedWithin(validated, palierCount),
+    hasInProgress: (paliers?.inProgress.size ?? 0) > 0,
+    completedExercises: progress?.completedExercises ?? 0,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -453,8 +600,8 @@ export const getMyStats = query({
       // D3b — level
       level: computeLevel(totalCorrectExercises),
       exosToNextLevel: exosToNextLevel(totalCorrectExercises),
-      // D3c — total stars
-      totalStars,
+      // D3c — total stars, plus les étoiles de mission (quests.ts).
+      totalStars: totalStars + (prefs.questBonusStars ?? 0),
       // D7 — streak
       streaksEnabled,
       currentStreak: streak.current,
@@ -684,109 +831,66 @@ export const getStudentSubjectMap = query({
     const subject = await ctx.db.get(args.subjectId);
     if (!subject) return null;
 
-    // Collège et lycée sont en base mais masqués — voir `convex/curriculum.ts`.
-    const topics = (
-      await ctx.db
-        .query("topics")
-        .withIndex("by_subjectId", (q) => q.eq("subjectId", args.subjectId))
-        .take(1000)
-    ).filter((topic) => !isHiddenClass(topic.class));
-    topics.sort((a, b) => a.order - b.order);
+    const topics = await topicsForStudent(ctx, args.subjectId, profile);
+    const progressByTopicId = await loadTopicProgress(ctx, studentId);
+    const { byTopic } = await loadPalierProgress(ctx, studentId);
 
-    const allProgress = await ctx.db
-      .query("studentTopicProgress")
-      .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
-      .take(500);
-    const progressByTopicId = new Map<
-      string,
-      Doc<"studentTopicProgress">
-    >();
-    for (const p of allProgress) {
-      progressByTopicId.set(p.topicId as string, p);
-    }
-
-    const allAttempts = await ctx.db
-      .query("palierAttempts")
-      .withIndex("by_user", (q) => q.eq("userId", studentId))
-      .take(500);
-
-    // Resolve unique palierIds → palier doc once. Bounded by user's distinct paliers.
-    const uniquePalierIds = Array.from(
-      new Set(allAttempts.map((a) => a.palierId as string)),
-    ) as Id<"paliers">[];
-    const palierById = new Map<string, Doc<"paliers">>();
-    await Promise.all(
-      uniquePalierIds.map(async (pid) => {
-        const palier = await ctx.db.get(pid);
-        if (palier) palierById.set(pid as string, palier);
-      }),
+    const topicInputs: TopicInput[] = topics.map((topic) =>
+      topicInputFor(
+        topic,
+        progressByTopicId.get(topic._id as string),
+        byTopic.get(topic._id as string),
+      ),
     );
-
-    type TopicStats = {
-      validatedPaliers: number;
-      hasInProgress: boolean;
-      starsApprox: number;
-      maxValidatedPalierIndex: number;
-    };
-    const topicStats = new Map<string, TopicStats>();
-    for (const t of topics) {
-      topicStats.set(t._id as string, {
-        validatedPaliers: 0,
-        hasInProgress: false,
-        starsApprox: 0,
-        maxValidatedPalierIndex: 0,
-      });
-    }
-    for (const attempt of allAttempts) {
-      const palierDoc = palierById.get(attempt.palierId as string);
-      if (!palierDoc) continue;
-      const s = topicStats.get(palierDoc.topicId as string);
-      if (!s) continue;
-      if (attempt.status === "validated") {
-        s.validatedPaliers += 1;
-        s.starsApprox += approxStarsForValidatedPalier(attempt.averageScore ?? 0);
-        if (palierDoc.palierIndex > s.maxValidatedPalierIndex) {
-          s.maxValidatedPalierIndex = palierDoc.palierIndex;
-        }
-      } else if (attempt.status === "in_progress") {
-        s.hasInProgress = true;
-      }
-    }
-
-    const topicInputs: TopicInput[] = topics.map((topic) => {
-      const stats = topicStats.get(topic._id as string)!;
-      const progress = progressByTopicId.get(topic._id as string);
-      return {
-        id: topic._id as string,
-        order: topic.order,
-        isCompleted: progress?.completedAt != null,
-        validatedPaliers: stats.validatedPaliers,
-        hasInProgress: stats.hasInProgress,
-        completedExercises: progress?.completedExercises ?? 0,
-      };
-    });
     const statuses = resolveTopicStatuses(topicInputs);
 
     const orderedTopics = topics.map((topic, i) => {
-      const stats = topicStats.get(topic._id as string)!;
+      const paliersDone = byTopic.get(topic._id as string);
+      const validated = paliersDone?.validated ?? EMPTY_SET;
+      const inProgress = paliersDone?.inProgress ?? EMPTY_SET;
       const progress = progressByTopicId.get(topic._id as string);
+      const palierCount = effectivePalierCount(topic);
+      const status = statuses[i];
+
+      // Chaque palier est une étape du sentier, avec son état et ses étoiles.
+      const paliers = resolvePalierStatuses({
+        topicLocked: status === "locked",
+        palierCount,
+        validated,
+        inProgress,
+      }).map((palierStatus, idx) => {
+        const index = idx + 1;
+        const stars =
+          palierStatus === "completed"
+            ? approxStarsForValidatedPalier(paliersDone?.bestScore.get(index) ?? 0)
+            : 0;
+        return { index, status: palierStatus, stars };
+      });
+
       return {
         _id: topic._id,
         name: topic.name,
         description: topic.description,
         order: topic.order,
         class: topic.class ?? null,
-        status: statuses[i],
-        validatedPaliers: stats.validatedPaliers,
-        nextPalierIndex: Math.min(10, stats.maxValidatedPalierIndex + 1),
-        starsApprox: stats.starsApprox,
+        status,
+        palierCount,
+        validatedPaliers: countValidatedWithin(validated, palierCount),
+        nextPalierIndex: nextPalierIndex(validated, palierCount),
+        starsApprox: paliers.reduce((acc, p) => acc + p.stars, 0),
         completedExercises: progress?.completedExercises ?? 0,
         correctExercises: progress?.correctExercises ?? 0,
+        paliers,
       };
     });
 
     const totalStarsApprox = orderedTopics.reduce(
       (acc, t) => acc + t.starsApprox,
+      0,
+    );
+    const totalPaliers = orderedTopics.reduce((acc, t) => acc + t.palierCount, 0);
+    const completedPaliers = orderedTopics.reduce(
+      (acc, t) => acc + t.paliers.filter((p) => p.status === "completed").length,
       0,
     );
 
@@ -799,6 +903,175 @@ export const getStudentSubjectMap = query({
       },
       topics: orderedTopics,
       totalStarsApprox,
+      totalPaliers,
+      completedPaliers,
     };
+  },
+});
+
+// ---------------------------------------------------------------------------
+// LE MONDE DE PIO — deux lectures pour le camp et la carte.
+//
+// `getMyWorldMap` : les matières vues comme des mondes, avec la part du
+// chemin déjà faite dans chacun. `getMyNextStep` : où reprendre, pour que le
+// bouton « Continuer l'aventure » du camp mène toujours quelque part.
+//
+// TOUTES DEUX SONT DÉRIVÉES DE LA SESSION, sans argument : l'élève ne lit que
+// lui-même, comme `getMyStats`. Même garde de rôle, même paywall, même
+// convention — une requête ne lève jamais, elle rend `null` ou vide.
+// ---------------------------------------------------------------------------
+
+/**
+ * Les mondes de l'élève : chaque matière avec ses étapes visibles et la part
+ * franchie. Une matière sans étape jouable pour son niveau n'apparaît pas —
+ * même règle que `subjects.list`, calculée ici sans lui emprunter son
+ * helper, parce que celui-ci sert aussi des adultes qui voient tout.
+ */
+export const getMyWorldMap = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId as string))
+      .unique();
+    if (!profile || profile.role !== "student") return null;
+    const access = await checkAccess(ctx, profile);
+    if (!access.ok) return null;
+
+    const subjects = (await ctx.db.query("subjects").take(50)).sort(
+      (a, b) => a.order - b.order,
+    );
+    const progressByTopic = await loadTopicProgress(ctx, profile._id);
+    const { byTopic } = await loadPalierProgress(ctx, profile._id);
+
+    const zones = [];
+    for (const subject of subjects) {
+      const topics = await topicsForStudent(ctx, subject._id, profile);
+      if (topics.length === 0) continue;
+
+      let completedTopics = 0;
+      let startedTopics = 0;
+      let totalPaliers = 0;
+      let completedPaliers = 0;
+      for (const t of topics) {
+        const palierCount = effectivePalierCount(t);
+        const validated = byTopic.get(t._id as string)?.validated ?? EMPTY_SET;
+        const p = progressByTopic.get(t._id as string);
+        const done = p?.completedAt != null || isTopicComplete(validated, palierCount);
+        totalPaliers += palierCount;
+        completedPaliers += done ? palierCount : countValidatedWithin(validated, palierCount);
+        if (done) completedTopics += 1;
+        else if (validated.size > 0 || (p?.completedExercises ?? 0) > 0) startedTopics += 1;
+      }
+
+      zones.push({
+        _id: subject._id,
+        name: subject.name,
+        color: subject.color,
+        icon: subject.icon,
+        order: subject.order,
+        totalTopics: topics.length,
+        completedTopics,
+        startedTopics,
+        totalPaliers,
+        completedPaliers,
+      });
+    }
+    return zones;
+  },
+});
+
+/**
+ * Où reprendre l'aventure.
+ *
+ *   1. Un palier laissé EN COURS, le plus récent : on y retourne. C'est la
+ *      promesse du bouton — « là où tu t'es arrêté », pas « au début de la
+ *      première matière ».
+ *   2. Sinon, la première étape ouverte ou en cours, en parcourant les
+ *      mondes dans l'ordre — les mêmes statuts que le sentier
+ *      (`resolveTopicStatuses`), pour ne jamais envoyer l'enfant sur une
+ *      étape que le sentier montre fermée.
+ *   3. Sinon, tout est franchi : on l'envoie admirer la carte.
+ */
+export const getMyNextStep = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId as string))
+      .unique();
+    if (!profile || profile.role !== "student") return null;
+    const access = await checkAccess(ctx, profile);
+    if (!access.ok) return null;
+    const studentId = profile._id;
+
+    const { byTopic, latestInProgress } = await loadPalierProgress(ctx, studentId);
+    const studentClass =
+      profile.class && !isHiddenClass(profile.class) ? profile.class : null;
+
+    // 1. Le palier en cours le plus récent, s'il est encore dans le catalogue
+    //    de l'élève.
+    if (latestInProgress) {
+      const topic = await ctx.db.get(latestInProgress.topicId);
+      if (
+        topic &&
+        !isHiddenClass(topic.class) &&
+        (studentClass === null || topic.class === studentClass) &&
+        latestInProgress.palierIndex <= effectivePalierCount(topic)
+      ) {
+        const subject = await ctx.db.get(topic.subjectId);
+        if (subject) {
+          return {
+            kind: "continue" as const,
+            topicId: topic._id,
+            topicName: topic.name,
+            palierIndex: latestInProgress.palierIndex,
+            subjectId: subject._id,
+            subjectName: subject.name,
+            subjectColor: subject.color,
+          };
+        }
+      }
+    }
+
+    // 2. La première étape ouverte, mondes dans l'ordre.
+    const progressByTopic = await loadTopicProgress(ctx, studentId);
+    const subjects = (await ctx.db.query("subjects").take(50)).sort(
+      (a, b) => a.order - b.order,
+    );
+    let anySubject = false;
+    for (const subject of subjects) {
+      const topics = await topicsForStudent(ctx, subject._id, profile);
+      if (topics.length === 0) continue;
+      anySubject = true;
+
+      const inputs: TopicInput[] = topics.map((t) =>
+        topicInputFor(t, progressByTopic.get(t._id as string), byTopic.get(t._id as string)),
+      );
+      const statuses = resolveTopicStatuses(inputs);
+      const idx = statuses.findIndex(
+        (st) => st === "in_progress" || st === "available",
+      );
+      if (idx === -1) continue;
+
+      const topic = topics[idx];
+      const validated = byTopic.get(topic._id as string)?.validated ?? EMPTY_SET;
+      return {
+        kind: "start" as const,
+        topicId: topic._id,
+        topicName: topic.name,
+        palierIndex: nextPalierIndex(validated, effectivePalierCount(topic)),
+        subjectId: subject._id,
+        subjectName: subject.name,
+        subjectColor: subject.color,
+      };
+    }
+
+    // 3. Rien d'ouvert : tout est franchi, ou il n'y a rien à jouer.
+    return { kind: anySubject ? ("explore" as const) : ("empty" as const) };
   },
 });
