@@ -1,7 +1,12 @@
 import { query, mutation } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { catalogAccess, callerIsAdmin } from "./access";
-import { isHiddenClass } from "./curriculum";
+import { isHiddenClass, visibleClassValidator } from "./curriculum";
+import {
+  MAX_PALIERS_PER_TOPIC,
+  MIN_PALIERS_PER_TOPIC,
+  isValidPalierCount,
+} from "./palierRules";
 
 // ---------------------------------------------------------------------------
 // Queries — IDENTITÉ ET DROIT D'ACCÈS, en une seule décision.
@@ -119,15 +124,30 @@ export const getById = query({
 // lirait un message enveloppé et vidé à la place de la phrase écrite ici.
 // ---------------------------------------------------------------------------
 
+/** Le nombre d'étapes posé à la main : un entier de 1 à 10, ou `null` pour revenir au défaut du niveau. */
+const palierCountArg = v.optional(v.union(v.number(), v.null()));
+
+function assertPalierCount(value: number | null | undefined) {
+  if (value === undefined || value === null) return;
+  if (!isValidPalierCount(value)) {
+    throw new ConvexError(
+      `Le nombre de paliers va de ${MIN_PALIERS_PER_TOPIC} à ${MAX_PALIERS_PER_TOPIC}.`,
+    );
+  }
+}
+
 export const create = mutation({
   args: {
     subjectId: v.id("subjects"),
     name: v.string(),
     description: v.string(),
     order: v.number(),
+    class: v.optional(visibleClassValidator),
+    palierCount: palierCountArg,
   },
   handler: async (ctx, args) => {
     if (!(await callerIsAdmin(ctx))) throw new ConvexError("Rôle non autorisé");
+    assertPalierCount(args.palierCount);
 
     // Verify subject exists
     const subject = await ctx.db.get(args.subjectId);
@@ -139,6 +159,8 @@ export const create = mutation({
       name: args.name,
       description: args.description,
       order: args.order,
+      class: args.class,
+      palierCount: args.palierCount ?? undefined,
     });
   },
 });
@@ -149,11 +171,14 @@ export const update = mutation({
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     order: v.optional(v.number()),
+    class: v.optional(visibleClassValidator),
+    palierCount: palierCountArg,
   },
   handler: async (ctx, args) => {
     if (!(await callerIsAdmin(ctx))) throw new ConvexError("Rôle non autorisé");
+    assertPalierCount(args.palierCount);
 
-    const { id, ...fields } = args;
+    const { id, palierCount, ...fields } = args;
     const existing = await ctx.db.get(id);
     if (!existing) {
       throw new ConvexError("Thématique introuvable");
@@ -164,6 +189,9 @@ export const update = mutation({
         updates[key] = value;
       }
     }
+    // `null` efface la valeur : la thématique reprend le défaut de son niveau.
+    if (palierCount === null) updates.palierCount = undefined;
+    else if (palierCount !== undefined) updates.palierCount = palierCount;
     await ctx.db.patch(id, updates);
   },
 });

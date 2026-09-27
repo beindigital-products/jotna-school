@@ -22,7 +22,7 @@ const COLUMNS: FooterColumn[] = [
     title: "Compte",
     links: [
       { label: "Se connecter", href: "/login" },
-      { label: "Créer un compte", href: "/register" },
+      { label: "Activer un code école", href: "/register" },
       { label: "Espace parent", href: "/parent/dashboard" },
       { label: "Espace professeur", href: "/teacher/dashboard" },
     ],

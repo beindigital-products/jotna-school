@@ -11,7 +11,8 @@
  *   D28  — All localStorage access wrapped in try/catch (iOS Private Mode).
  *   D29  — Singleton, no React Context. Functions are imported directly.
  *   D30  — Sound names are typed: "correct" | "badge". Level-up dropped to
- *          Phase B (D24) where it ships alongside its visible Lottie overlay.
+ *          Phase B (D24) where it ships alongside its visible overlay (Pio
+ *          qui saute de joie, clip vidéo).
  *   D34  — Volume locked at 0.45. Do NOT add a slider without revisiting
  *          WCAG 1.4.2 + the design spec.
  */

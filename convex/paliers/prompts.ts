@@ -14,6 +14,7 @@
  */
 
 import type { AiPurpose } from "../aiGateway/registry";
+import { difficultyStage, type DifficultyStage } from "../palierRules";
 
 export type ClassLevel = "CI" | "CP" | "CE1" | "CE2" | "CM1" | "CM2";
 
@@ -21,7 +22,14 @@ export interface PalierBasePromptInput {
   subject: string; // e.g. "Mathématiques"
   topic: string; // e.g. "Fractions"
   class: ClassLevel;
-  palierIndex: number; // 1..10
+  palierIndex: number; // 1..palierCount
+  /**
+   * Le nombre de paliers de la thématique (`palierRules.effectivePalierCount`).
+   * La difficulté d'un palier se lit par rapport à lui : le troisième palier
+   * sur quatre est un approfondissement, le troisième sur dix une découverte.
+   * Absent, dix — l'ancienne grille.
+   */
+  palierCount?: number;
 }
 
 export interface PersonalizedPromptInput extends PalierBasePromptInput {
@@ -55,17 +63,20 @@ const HINTS_RULE = `
 - 3 indices progressifs : le 1er = relire l'énoncé / observer ;
   le 2e = méthode pédagogique ; le 3e = quasi-réponse mais sans la donner.`;
 
-const DIFFICULTY_NOTE = (palierIndex: number) =>
-  `\nNiveau global du palier ${palierIndex}/10 : ${
-    palierIndex <= 3
-      ? "découverte (notions de base, peu d'étapes)."
-      : palierIndex <= 6
-        ? "consolidation (combinaison de plusieurs notions vues)."
-        : palierIndex <= 9
-          ? "approfondissement (problèmes en plusieurs étapes)."
-          : "challenge / maîtrise (exercices complets, ouverture)."
+const STAGE_LABEL: Record<DifficultyStage, string> = {
+  decouverte: "découverte (notions de base, peu d'étapes).",
+  consolidation: "consolidation (combinaison de plusieurs notions vues).",
+  approfondissement: "approfondissement (problèmes en plusieurs étapes).",
+  maitrise: "challenge / maîtrise (exercices complets, ouverture).",
+};
+
+const DIFFICULTY_NOTE = (palierIndex: number, palierCount: number) =>
+  `\nNiveau global du palier ${palierIndex}/${palierCount} : ${
+    STAGE_LABEL[difficultyStage(palierIndex, palierCount)]
   }
 Difficulté progressive INTRA-palier : exos 1-3 = facile, 4-7 = moyen, 8-10 = challenge.`;
+
+const countOf = (input: { palierCount?: number }) => input.palierCount ?? 10;
 
 const ageForClass = (cls: ClassLevel): string => {
   switch (cls) {
@@ -84,11 +95,37 @@ const ageForClass = (cls: ClassLevel): string => {
   }
 };
 
+const MATH_MIX_RULES = `
+[Mélange des écritures et des signes — Maths — QUOTAS OBLIGATOIRES sur les 10 exercices]
+- Au moins 3 exercices écrits en SYMBOLES ("3 × 4 = ?", "12 + 7", "25 − 8", "20 ÷ 4").
+- Au moins 3 exercices écrits en MOTS ou en petit PROBLÈME concret ("3 fois 4",
+  "le produit de 3 et 4", "la somme de 12 et 7", "4 groupes de 3", mangues, FCFA, élèves).
+- Au moins 2 exercices À TROU ("? × 4 = 12", "3 × ? = 12", "15 + ? = 20").
+- Au moins 2 exercices qui font intervenir une AUTRE opération déjà connue à ce
+  niveau, seule ou combinée ("3 × 4 + 2", "20 − 3 × 4", une addition dans un
+  palier de multiplication, une soustraction dans un palier d'addition) : le
+  mélange des signes oblige l'enfant à LIRE le signe au lieu de deviner.
+- Dans chaque QCM, un distracteur est le résultat d'une AUTRE opération sur les
+  mêmes nombres (pour "3 × 4", propose aussi 7 ; pour "12 + 7", propose aussi 5).
+- Jamais deux exercices de suite avec la même formulation ; alterne symboles,
+  mots, problème, trou.
+- Utilise les vrais symboles : × pour multiplier (jamais x ni *), − pour
+  soustraire, ÷ ou : pour diviser, = pour l'égalité.
+- Une réponse courte attendue en nombre s'écrit en chiffres, sans unité ni
+  texte, dans "acceptedAnswers" (ex. ["12"]) ; ajoute les variantes utiles
+  (["2,5", "2.5"]).
+- Avant de répondre, VÉRIFIE que les quotas ci-dessus sont tenus ; sinon,
+  remplace des exercices jusqu'à ce qu'ils le soient.`;
+
 const MATH_OUTPUT_RULES = `
 [Output structuré pour les Maths]
 Pour chaque exercice numérique, INCLUS un champ "mathExpression" qui contient
 l'expression arithmétique parseable (exemples : "53 - 27", "(3/4) + (1/2)", "2 × 7").
-Cette expression sert à vérifier ta réponse automatiquement.
+Cette expression sert à vérifier ta réponse automatiquement : sa valeur DOIT être
+la réponse attendue. Jamais de "?" ni de "=" dedans : pour un trou
+("? × 6 = 24"), écris l'expression qui donne le trou ("24 ÷ 6").
+Calcule le résultat toi-même avant d'écrire correctAnswer, et pour un QCM vérifie
+que options[correctIndex] est exactement ce résultat.
 Si l'exercice n'est pas réductible à une expression simple (problème verbal complexe),
 écris "mathExpression": null — un humain validera.`;
 
@@ -114,7 +151,16 @@ Schémas de payload :
   match      -> { "pairs": [ { "left": string, "right": string } ] }
   order      -> { "correctSequence": string[] }
   drag-drop  -> { "zones": string[], "items": [ { "text": string, "correctZone": string } ] }
-  short-answer -> { "acceptedAnswers": string[], "tolerance"?: string }`;
+  short-answer -> { "acceptedAnswers": string[], "tolerance"?: string }
+
+Règles du drag-drop (l'enfant doit comprendre où poser chaque étiquette) :
+  - Chaque zone porte sa VRAIE étiquette, lisible par l'enfant : le résultat
+    ("12"), la catégorie ("Fruits"), le mot ("Le"). JAMAIS "Zone A", "Zone 1",
+    "A", "B" : l'enfant ne peut pas savoir ce que c'est.
+  - Une étiquette n'est jamais identique à sa zone ("a" à poser sur "a") : pour
+    choisir un mot dans une phrase, utilise un qcm dont les options sont les mots.
+  - Pour remettre des mots, des syllabes ou des étapes dans l'ordre, utilise order.
+  - Chaque "correctZone" est exactement l'une des "zones".`;
 
 export function buildPalierBaseSystemPrompt(input: PalierBasePromptInput): string {
   const age = ageForClass(input.class);
@@ -130,16 +176,16 @@ ${SENEGAL_ANCHOR}
 - Pas de question à pièges méchants ; bienveillance toujours.
 - Au moins 3 types d'exos différents dans le palier (Decision 63).
 ${HINTS_RULE}
-${isMaths ? MATH_OUTPUT_RULES : ""}`;
+${isMaths ? MATH_MIX_RULES + MATH_OUTPUT_RULES : ""}`;
 }
 
 export function buildPalierBasePrompt(input: PalierBasePromptInput): string {
   return `[Tâche]
 Génère 10 exercices pour la matière "${input.subject}", thème "${input.topic}",
-palier ${input.palierIndex}/10, classe ${input.class}.
+palier ${input.palierIndex}/${countOf(input)}, classe ${input.class}.
 
 Types autorisés : ${TYPES_LIST}.
-${DIFFICULTY_NOTE(input.palierIndex)}
+${DIFFICULTY_NOTE(input.palierIndex, countOf(input))}
 
 ${JSON_SHAPE}`;
 }
@@ -159,12 +205,12 @@ export function buildPersonalizedPrompt(input: PersonalizedPromptInput): string 
       : "";
   return `[Tâche — "J'en veux encore" personnalisé]
 Cet enfant veut faire 10 exercices supplémentaires sur le thème "${input.topic}"
-(matière "${input.subject}", classe ${input.class}, palier ${input.palierIndex}/10).
+(matière "${input.subject}", classe ${input.class}, palier ${input.palierIndex}/${countOf(input)}).
 Cible spécifiquement ce qui pose problème à cet enfant — il a déjà fait le palier de base.
 ${weaknessesBlock}${mistakesBlock}
 
 Types autorisés : ${TYPES_LIST}.
-${DIFFICULTY_NOTE(input.palierIndex)}
+${DIFFICULTY_NOTE(input.palierIndex, countOf(input))}
 
 ${JSON_SHAPE}`;
 }
@@ -182,7 +228,7 @@ ${SENEGAL_ANCHOR}
 - Reste au même niveau de difficulté.
 - Évite spécifiquement le piège qui a fait rater l'enfant — voir ses erreurs.
 ${HINTS_RULE}
-${isMathSubject(input.subject) ? MATH_OUTPUT_RULES : ""}`;
+${isMathSubject(input.subject) ? MATH_MIX_RULES + MATH_OUTPUT_RULES : ""}`;
 }
 
 export function buildVariationPrompt(input: VariationPromptInput): string {

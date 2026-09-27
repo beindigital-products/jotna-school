@@ -235,10 +235,10 @@ function PrimaryCTA() {
         className="absolute inset-0 rounded-full bg-amber-300/50 blur-xl"
       />
       <Link
-        href="/register"
+        href="/login"
         className="group relative inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3.5 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(30,30,30,0.6)] transition-transform hover:-translate-y-0.5 active:scale-[0.98] sm:w-auto"
       >
-        Commencer gratuitement
+        Se connecter
         <ArrowRight
           className="size-4 transition-transform group-hover:translate-x-0.5"
           aria-hidden

@@ -6,7 +6,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 via-white to-lime-50">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 via-white to-lime-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="w-full max-w-md px-4">
         <div className="mb-8 text-center">
           <Brand size="lg" priority className="mx-auto origin-center" />

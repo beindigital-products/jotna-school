@@ -24,7 +24,7 @@ test.describe("MVP-1 — smoke", () => {
     page,
   }) => {
     // ID arbitraire — la page doit se gérer gracieusement
-    const response = await page.goto("/student/topics/dummy-id/session?palier=1");
+    const response = await page.goto("/student/topics/session?id=dummy-id&palier=1");
     expect(response?.status()).toBeLessThan(500);
   });
 

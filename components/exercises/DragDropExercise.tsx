@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Check, X } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
 import {
   DndContext,
@@ -106,7 +106,6 @@ export default function DragDropExercise({
   onSubmit,
   onSkip,
   disabled,
-  isCorrect,
 }: DragDropExerciseProps) {
   const zones = Array.isArray(payload?.zones) ? payload.zones.filter((z): z is string => typeof z === "string") : [];
   const items = Array.isArray(payload?.items)
@@ -124,6 +123,11 @@ export default function DragDropExercise({
     },
   );
 
+  // Les hooks avant le retour anticipé : leur ordre ne doit pas dépendre
+  // du payload.
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor));
+
   if (zones.length < 2 || items.length < 2) {
     return (
       <div className="space-y-4">
@@ -137,10 +141,6 @@ export default function DragDropExercise({
       </div>
     );
   }
-
-  const [activeId, setActiveId] = useState<string | null>(null);
-
-  const sensors = useSensors(useSensor(PointerSensor));
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -173,19 +173,6 @@ export default function DragDropExercise({
     <div className="space-y-6">
       <ExercisePrompt prompt={prompt} />
 
-      {isCorrect === true && (
-        <div className="flex items-center gap-2 rounded-2xl bg-green-100 border-2 border-green-300 px-4 py-3 text-green-800 font-semibold">
-          <Check className="h-5 w-5" />
-          Parfait, tout est bien place !
-        </div>
-      )}
-      {isCorrect === false && (
-        <div className="flex items-center gap-2 rounded-2xl bg-red-100 border-2 border-red-300 px-4 py-3 text-red-800 font-semibold animate-[shake_0.5s_ease-in-out]">
-          <X className="h-5 w-5" />
-          Essaie encore !
-        </div>
-      )}
-
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -216,8 +203,8 @@ export default function DragDropExercise({
         {/* Unplaced items */}
         {unplacedItems.length > 0 && (
           <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-4">
-            <p className="mb-3 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">
-              Glisse les elements dans les bonnes zones
+            <p className="mb-3 text-center font-display text-sm font-extrabold uppercase tracking-wide text-gray-500">
+              Glisse chaque étiquette dans la bonne case
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {unplacedItems.map((item) => (
