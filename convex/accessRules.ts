@@ -164,3 +164,29 @@ export function decideAccess(input: AccessInput): AccessState {
       return { ok: false, reason: "cancelled" };
   }
 }
+
+/**
+ * Une thématique s'ouvre-t-elle à cet appelant ? Fonction PURE, comme
+ * `decideAccess`.
+ *
+ * `decideAccess` juge le droit d'entrer ; cette règle juge QUOI ouvrir une
+ * fois entré. Un élève ne travaille que les thématiques de SA classe : la
+ * liste (`students.getStudentSubjectMap`) ne lui montre qu'elles, mais une
+ * liste ne ferme rien — l'identifiant d'une thématique suffit à ouvrir
+ * l'écran de session et à demander des exercices. Les trois portes d'entrée
+ * (`topics.getById`, `paliers.getBucket`, `paliers.startPalierAttempt`)
+ * passent donc par ici.
+ *
+ * Le personnel n'est pas concerné : un professeur ou un admin consulte le
+ * curriculum entier. Un élève sans classe est déjà refusé en amont
+ * (`no_class`) ; s'il arrivait jusqu'ici, la règle échoue en FERMÉ. Même
+ * chose pour une thématique sans classe (`topics.class` reste optionnel au
+ * schéma pour d'anciennes lignes) : on ne sait pas pour qui elle est faite.
+ */
+export function topicOpenTo(
+  caller: { role: string; studentClass: string | null },
+  topicClass: string | undefined,
+): boolean {
+  if (caller.role !== "student") return true;
+  return caller.studentClass !== null && caller.studentClass === topicClass;
+}

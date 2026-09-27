@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   decideAccess,
   PAST_DUE_GRACE_MS,
+  topicOpenTo,
   type AccessInput,
 } from "../accessRules";
 
@@ -195,5 +196,37 @@ describe("decideAccess — délai de grâce past_due", () => {
         }),
       ),
     ).toEqual({ ok: false, reason: "expired" });
+  });
+});
+
+describe("topicOpenTo — la classe de l'élève", () => {
+  it("ouvre à un élève les thématiques de sa classe", () => {
+    expect(topicOpenTo({ role: "student", studentClass: "CM1" }, "CM1")).toBe(
+      true,
+    );
+  });
+
+  it("ferme à un élève les thématiques d'une autre classe", () => {
+    expect(topicOpenTo({ role: "student", studentClass: "CM1" }, "CE2")).toBe(
+      false,
+    );
+  });
+
+  it("échoue en fermé pour un élève sans classe", () => {
+    expect(topicOpenTo({ role: "student", studentClass: null }, "CM1")).toBe(
+      false,
+    );
+  });
+
+  it("échoue en fermé pour une thématique sans classe", () => {
+    expect(
+      topicOpenTo({ role: "student", studentClass: "CM1" }, undefined),
+    ).toBe(false);
+  });
+
+  it("laisse le personnel consulter toutes les classes", () => {
+    for (const role of ["professeur", "admin"]) {
+      expect(topicOpenTo({ role, studentClass: null }, "CE2")).toBe(true);
+    }
   });
 });

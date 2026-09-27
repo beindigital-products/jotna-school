@@ -28,6 +28,7 @@ import { checkMathExercise } from "../aiGateway/factCheck";
 import { computeExerciseScore } from "./scoring";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { checkAccess, requireAccess } from "../access";
+import { topicOpenTo } from "../accessRules";
 
 /**
  * Péremption du contenu d'un palier, PARTAGÉ par tous les élèves d'un niveau,
@@ -621,6 +622,31 @@ export const getBucket = action({
       throw new ConvexError({ code: "ACCESS_DENIED", reason: access.reason });
     }
 
+    // LA CLASSE VIENT DU CLIENT, ET N'ÉTAIT JAMAIS VÉRIFIÉE. `class` et
+    // `topicId` sont deux arguments libres : un élève pouvait demander les
+    // exercices de n'importe quel niveau, et même faire générer un palier
+    // « CM2 » sur une thématique de CE1 — une génération IA facturée à son
+    // école, pour un seau qui n'aurait jamais dû exister. Les deux doivent
+    // désormais valoir la classe de l'élève (`accessRules.topicOpenTo`).
+    // Lue avant le cache : un seau déjà généré ne s'ouvre pas davantage.
+    const subject = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
+      subjectId: args.subjectId,
+      topicId: args.topicId,
+    });
+    if (!subject || !subject.topic) {
+      throw new Error("Subject or topic not found");
+    }
+    const caller = {
+      role: callerProfile.role,
+      studentClass: callerProfile.class ?? null,
+    };
+    if (
+      subject.topic.class !== args.class ||
+      !topicOpenTo(caller, subject.topic.class)
+    ) {
+      throw new ConvexError({ code: "ACCESS_DENIED", reason: "wrong_class" });
+    }
+
     if (args.palierIndex > 1) {
       // `callerProfile` est déjà résolu ci-dessus : ce bloc refaisait
       // `getAuthUserId` + `getProfileByUserId` pour la MÊME session, soit une
@@ -684,15 +710,6 @@ export const getBucket = action({
       palierIndex: args.palierIndex,
       status: "generating",
     });
-
-    // Resolve subject + topic for prompt context.
-    const subject = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
-      subjectId: args.subjectId,
-      topicId: args.topicId,
-    });
-    if (!subject || !subject.topic) {
-      throw new Error("Subject or topic not found");
-    }
 
     const systemPrompt = buildPalierBaseSystemPrompt({
       subject: subject.subjectName,
@@ -799,7 +816,7 @@ export const getSubjectAndTopic = internalQuery({
     if (!subject || !topic) return null;
     return {
       subjectName: subject.name,
-      topic: { _id: topic._id, name: topic.name },
+      topic: { _id: topic._id, name: topic.name, class: topic.class },
     };
   },
 });
@@ -1059,6 +1076,20 @@ export const startPalierAttempt = mutation({
 
     const palier = await ctx.db.get(args.palierId);
     if (!palier) throw new Error("Palier introuvable");
+
+    // Classe de l'élève (`accessRules.topicOpenTo`), jugée sur la THÉMATIQUE
+    // et non sur `palier.class` seul : un seau créé avant que `getBucket`
+    // vérifie la classe peut porter un niveau qui n'est pas celui de sa
+    // thématique.
+    const topic = await ctx.db.get(palier.topicId);
+    const caller = { role: profile.role, studentClass: profile.class ?? null };
+    if (
+      !topic ||
+      !topicOpenTo(caller, topic.class) ||
+      !topicOpenTo(caller, palier.class)
+    ) {
+      throw new ConvexError({ code: "ACCESS_DENIED", reason: "wrong_class" });
+    }
 
     if (palier.palierIndex > 1) {
       for (let i = 1; i < palier.palierIndex; i++) {

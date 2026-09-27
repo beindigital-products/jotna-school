@@ -12,6 +12,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 // masquait une divergence éventuelle au lieu de la faire échouer.
 import {
   decideAccess,
+  topicOpenTo,
   type AccessInput,
   type AccessState,
 } from "./accessRules";
@@ -329,24 +330,37 @@ export async function catalogReadable(ctx: QueryCtx): Promise<boolean> {
  * - `readable` — le droit d'accès, exactement `catalogReadable` ci-dessus ;
  * - `hiddenClasses` — le droit de voir le collège et le lycée, que
  *   `convex/curriculum.ts` masque à tout le monde sauf à un `admin`, parce que
- *   c'est lui qui les prépare.
+ *   c'est lui qui les prépare ;
+ * - `opensTopic` — la classe d'une thématique est-elle ouverte à l'appelant
+ *   (`accessRules.topicOpenTo`) ? Un élève n'ouvre que celles de sa classe.
  *
  * LES POSER SÉPARÉMENT RELIRAIT `profiles`. C'est précisément le doublon que
  * `catalogReadable` avait supprimé — et il coûtait double aussi en surface
  * d'invalidation, `profiles.preferences` étant réécrit à chaque série, badge ou
  * réglage de son.
  */
-export async function catalogAccess(
-  ctx: QueryCtx,
-): Promise<{ readable: boolean; hiddenClasses: boolean }> {
+export async function catalogAccess(ctx: QueryCtx): Promise<{
+  readable: boolean;
+  hiddenClasses: boolean;
+  opensTopic: (topicClass: string | undefined) => boolean;
+}> {
   const profile = await currentProfile(ctx);
-  if (!profile) return { readable: false, hiddenClasses: false };
+  if (!profile) {
+    return { readable: false, hiddenClasses: false, opensTopic: () => false };
+  }
+  const caller = { role: profile.role, studentClass: profile.class ?? null };
+  const opensTopic = (topicClass: string | undefined) => topicOpenTo(caller, topicClass);
   if (profile.role !== "student") {
-    return { readable: true, hiddenClasses: profile.role === "admin" };
+    return {
+      readable: true,
+      hiddenClasses: profile.role === "admin",
+      opensTopic,
+    };
   }
   return {
     readable: (await checkAccess(ctx, profile)).ok,
     hiddenClasses: false,
+    opensTopic,
   };
 }
 

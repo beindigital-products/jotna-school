@@ -396,6 +396,17 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
       <CenteredCard>
         <BookOpen className="h-16 w-16 text-gray-300" />
         <h2 className="text-xl font-bold">Thématique introuvable</h2>
+        {/* Aussi l'écran d'une thématique d'une autre classe
+            (`accessRules.topicOpenTo`) : l'enfant doit pouvoir repartir. */}
+        <p className="text-gray-500">
+          Elle n&apos;existe pas ou n&apos;est pas au programme de ta classe.
+        </p>
+        <Link
+          href="/student/home"
+          className="rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-6 py-3 text-base font-bold text-white shadow-lg"
+        >
+          Retour à mes matières
+        </Link>
       </CenteredCard>
     );
   }
