@@ -139,14 +139,6 @@
   from { background-position: -200% 0; }
   to { background-position: 200% 0; }
 }
-/* La poussière derrière les pattes de Pio quand il marche sur la carte. */
-@keyframes dust-puff {
-  0% { transform: translate(0, 0) scale(0.4); opacity: 0.85; }
-  100% { transform: translate(-22px, -16px) scale(1.5); opacity: 0; }
-}
-.pio-dust {
-  animation: dust-puff 0.66s ease-out infinite;
-}
 /* Une réponse fausse secoue ce qu'on a choisi. Les exercices l'appelaient
    déjà (`animate-[shake_...]`) sans qu'elle existe : rien ne bougeait. */
 @keyframes shake {

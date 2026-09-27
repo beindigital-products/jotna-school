@@ -171,7 +171,11 @@ Poppins. Le jeton est maintenant déclaré dans `app/globals.css`.
 
 Pio était un « petit oiseau rond » dessiné en SVG, un bouche-trou de MVP. Le
 composant `components/student/pio.tsx` rend désormais l'avatar officiel, avec
-la même interface pour ses appelants et quatre poses de plus.
+la même interface pour ses appelants et quatre poses de plus. Depuis
+septembre 2026, chaque pose est un clip vidéo en boucle, sans arrière-plan,
+généré sur OpenArt ; plus aucune animation du personnage n'est codée. La marche
+sur la carte est elle aussi un clip (`walk`) : le code ne fait que déplacer le
+sprite le long du sentier. Voir `docs/pio-animations.md`.
 
 ## Étendre le jeu
 
@@ -192,8 +196,9 @@ Ajouter un test.
 rang, marges, amplitude du zigzag). La vitesse de marche et ses bornes sont
 au même endroit.
 
-**Ajouter une pose de Pio** : déposer l'image dans `public/images/pio/`, puis
-l'ajouter à `FILES`, `LABELS` et, si elle bouge, `MOTION` dans `pio.tsx`.
+**Ajouter une pose de Pio** : déposer l'image dans `public/images/pio/`,
+générer et encoder son clip (`docs/pio-animations.md`), puis l'ajouter à
+`PioState`, `POSES`, `POSTERS` et `LABELS` dans `pio.tsx`.
 
 **Changer une réplique** : `lib/pioCopy.ts`. Pio tutoie, ne gronde jamais,
 parle court.

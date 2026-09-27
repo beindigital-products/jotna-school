@@ -84,7 +84,7 @@ export function GameMap({
 
   const walker = usePioWalker({ trail, initialIndex: safeInitial, camera, onArrive });
   const { walking, standing, target } = walker.state;
-  const pose: PioState = walking ? "idle" : (standing !== null && poseAt?.(standing)) || "hello";
+  const pose: PioState = walking ? "walk" : (standing !== null && poseAt?.(standing)) || "hello";
 
   const progressD =
     currentIndex !== null && currentIndex > 0

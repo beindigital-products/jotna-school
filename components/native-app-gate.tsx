@@ -1,11 +1,8 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Capacitor } from "@capacitor/core";
-
-/** Rien à écouter : la plateforme ne change pas en cours de vie de la page. */
-const noSubscribe = () => () => {};
+import { useIsNativeApp } from "@/hooks/use-native-app";
 
 /**
  * L'APPLICATION MOBILE N'A PAS DE VITRINE — elle ouvre sur la connexion.
@@ -29,22 +26,18 @@ const noSubscribe = () => () => {};
  * de Next, qui change l'URL et l'arbre rendu sans redemander de document. Elle
  * est donc le seul chemin qui fonctionne ici.
  *
- * `useSyncExternalStore` PLUTÔT QU'UN ÉTAT POSÉ DANS UN EFFET. La plateforme
- * n'est connue que du client ; la lire pendant le rendu désynchroniserait
- * l'hydratation, et la poser par `setState` dans un effet déclenche un second
- * rendu en cascade (`react-hooks/set-state-in-effect`). Ce hook existe pour ce
- * cas exact : l'instantané SERVEUR vaut `false`, donc le HTML pré-rendu reste
- * la vitrine et le web est strictement inchangé ; l'instantané CLIENT dit la
- * vérité, et React reprend le rendu après hydratation.
+ * `useIsNativeApp` (`useSyncExternalStore`) PLUTÔT QU'UN ÉTAT POSÉ DANS UN
+ * EFFET. La plateforme n'est connue que du client ; la lire pendant le rendu
+ * désynchroniserait l'hydratation, et la poser par `setState` dans un effet
+ * déclenche un second rendu en cascade (`react-hooks/set-state-in-effect`).
+ * L'instantané SERVEUR vaut `false`, donc le HTML pré-rendu reste la vitrine
+ * et le web est strictement inchangé ; l'instantané CLIENT dit la vérité, et
+ * React reprend le rendu après hydratation.
  */
 export function NativeAppGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
-  const isNative = useSyncExternalStore(
-    noSubscribe,
-    () => Capacitor.isNativePlatform(),
-    () => false,
-  );
+  const isNative = useIsNativeApp();
 
   // VERS `/post-auth`, PAS `/login` : un enfant qui rouvre l'application avec
   // une session encore valide doit retrouver son camp, pas retaper son code.

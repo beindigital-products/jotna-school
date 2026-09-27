@@ -24,11 +24,11 @@ import { walkDuration, type Trail } from "./trail-geometry";
  * image. Retoucher une autre étape en route ne fait pas sauter Pio : la
  * nouvelle marche repart de l'abscisse où il en était.
  *
- * LE CORPS NE SE DÉFORME JAMAIS (décision verrouillée de juillet) : la
- * marche est un rebond et un dandinement du sprite entier, un retournement
- * quand il change de sens, une ombre qui respire et des nuages de poussière
- * derrière les pattes. Ça suffit pour qu'un enfant y voie un personnage qui
- * marche.
+ * LA MARCHE EST DANS LE CLIP. Pendant le trajet, le sprite joue la pose
+ * `walk` (Pio marche sur place, vidéo OpenArt) et c'est la carte qui le
+ * déplace ; à l'arrêt, il joue la pose de l'étape. Le code ne fait plus
+ * rebondir, dandiner ni empoussiérer le personnage : il ne fait que le
+ * translater le long du sentier et le retourner quand il change de sens.
  *
  * `prefers-reduced-motion` : pas de marche, Pio est déjà arrivé.
  */
@@ -152,7 +152,8 @@ export function usePioWalker({
 
 /**
  * Le sprite sur la carte, en coordonnées-monde. L'ancre est aux pattes ;
- * `size` est la hauteur de Pio en pixels-monde.
+ * `size` est la hauteur de Pio en pixels-monde. `pose` vaut `walk` pendant
+ * le trajet (voir `GameMap`).
  */
 export function PioWalkerSprite({
   walker,
@@ -163,7 +164,6 @@ export function PioWalkerSprite({
   size?: number;
   pose: PioState;
 }) {
-  const { walking } = walker.state;
   const width = Math.round(size * (572 / 800));
 
   return (
@@ -173,47 +173,19 @@ export function PioWalkerSprite({
       style={{ x: walker.pioX, y: walker.pioY }}
     >
       <div className="relative -translate-x-1/2 -translate-y-full" style={{ width, height: size }}>
-        {/* L'ombre au sol, qui s'écrase à chaque pas */}
-        <motion.div
+        {/* L'ombre au sol, immobile : elle ancre Pio sur le sentier. */}
+        <div
           className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-[100%] bg-black/30 blur-[2px]"
-          style={{ width: width * 0.9, height: 14, y: 8 }}
-          animate={walking ? { scaleX: [1, 0.72, 1, 0.72, 1], opacity: [0.9, 0.6, 0.9, 0.6, 0.9] } : { scaleX: 1, opacity: 0.9 }}
-          transition={walking ? { duration: 0.68, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
+          style={{ width: width * 0.9, height: 14, transform: "translate(-50%, 8px)" }}
         />
 
-        {/* Le retournement : tout ce qui est dedans regarde dans le sens de la marche */}
+        {/* Le retournement : Pio regarde dans le sens de la marche */}
         <motion.div className="absolute inset-0" style={{ scaleX: walker.facing }}>
-          {/* Le dandinement : rebond aux pas, léger roulis — jamais un membre */}
-          <motion.div
-            className="absolute inset-0 origin-bottom"
-            animate={
-              walking
-                ? { y: [0, -9, 0, -9, 0], rotate: [-4, 0, 4, 0, -4] }
-                : { y: 0, rotate: 0 }
-            }
-            transition={
-              walking
-                ? { duration: 0.68, repeat: Infinity, ease: "easeInOut" }
-                : { duration: 0.25 }
-            }
-          >
-            <Pio
-              state={pose}
-              size={size}
-              animated={!walking}
-              className="drop-shadow-[0_10px_12px_rgba(60,30,0,0.4)]"
-            />
-          </motion.div>
-
-          {/* La poussière derrière les pattes (à gauche en repère local : le
-              retournement la remet toujours derrière) */}
-          {walking && (
-            <span aria-hidden className="absolute bottom-1 left-0">
-              <span className="pio-dust absolute h-3 w-3 rounded-full bg-[#f6e3a1]" style={{ animationDelay: "0s" }} />
-              <span className="pio-dust absolute h-2.5 w-2.5 rounded-full bg-[#f2d27c]" style={{ animationDelay: "0.22s" }} />
-              <span className="pio-dust absolute h-2 w-2 rounded-full bg-white/90" style={{ animationDelay: "0.44s" }} />
-            </span>
-          )}
+          <Pio
+            state={pose}
+            size={size}
+            className="drop-shadow-[0_10px_12px_rgba(60,30,0,0.4)]"
+          />
         </motion.div>
       </div>
     </motion.div>

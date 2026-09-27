@@ -1,26 +1,18 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import type { ComponentType } from "react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { Pio } from "@/components/student/pio";
 import { playLevelUp, preloadAll } from "@/lib/sounds";
 
-type LottieProps = {
-  animationData: unknown;
-  loop?: boolean;
-  autoplay?: boolean;
-  style?: React.CSSProperties;
-};
-
 /**
  * D2b/D24 — Full-screen level-up celebration overlay.
  *
- *   D2b — One Lottie allowed in Phase B: this animation. Loaded dynamically
- *         (next/dynamic, ssr:false) so the lottie-react bundle (~50 kb gzip)
- *         + JSON (~25 kb) is fetched only when the overlay actually mounts.
+ *   D2b — La célébration, c'est Pio qui saute de joie : le clip `cheer`
+ *         (vidéo OpenArt, voir `components/student/pio.tsx`). Le Lottie
+ *         « Payment Successful » qui tenait la place a été retiré en
+ *         septembre 2026 avec la dépendance lottie-react.
  *   D24 — The level-up sound plays alongside the visible overlay so the audio
  *         always has a synchronized visual counterpart (WCAG 1.3.3).
  *   D12 — `prefers-reduced-motion` is honored implicitly via the parent
@@ -34,14 +26,6 @@ type LottieProps = {
  *   - kid can also tap "Continuer" or backdrop to dismiss early
  */
 
-// Dynamic import keeps lottie-react out of the initial bundle. ssr:false
-// because Lottie touches the DOM and there's no point pre-rendering a JSON
-// animation for a transient celebration overlay.
-const Lottie = dynamic(
-  () => import("lottie-react").then((m) => m.default),
-  { ssr: false },
-) as ComponentType<LottieProps>;
-
 const AUTO_DISMISS_MS = 4000;
 const SOUND_DELAY_MS = 200;
 
@@ -54,26 +38,6 @@ export function LevelUpOverlay({
   open: boolean;
   onDismiss: () => void;
 }) {
-  const [animationData, setAnimationData] = useState<unknown | null>(null);
-
-  // Lazy-fetch the Lottie JSON only when the overlay actually opens.
-  useEffect(() => {
-    if (!open) return;
-    if (animationData !== null) return;
-    let cancelled = false;
-    fetch("/lotties/level-up.json")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled) setAnimationData(data);
-      })
-      .catch(() => {
-        // Network/offline — degrade gracefully to the framer-only celebration.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, animationData]);
-
   // Play sound + auto-dismiss timer when opened.
   useEffect(() => {
     if (!open) return;
@@ -108,21 +72,11 @@ export function LevelUpOverlay({
             className="relative flex w-full max-w-md flex-col items-center gap-4 rounded-3xl bg-gradient-to-br from-amber-50 via-orange-50 to-pink-50 p-6 text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Lottie animation container — fixed size to avoid layout thrash. */}
+            {/* Pio saute de joie — cadre fixe pour ne pas faire bouger la mise en page. */}
             <div className="relative h-40 w-40">
-              {animationData !== null ? (
-                <Lottie
-                  animationData={animationData}
-                  loop={false}
-                  autoplay
-                  style={{ width: "100%", height: "100%" }}
-                />
-              ) : (
-                /* Framer-only fallback Pio when Lottie hasn't loaded yet. */
-                <div className="flex h-full items-center justify-center">
-                  <Pio state="cheer" size={120} />
-                </div>
-              )}
+              <div className="flex h-full items-center justify-center">
+                <Pio state="cheer" size={140} priority />
+              </div>
               {/* Accent sparkles always visible regardless of Lottie state */}
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}

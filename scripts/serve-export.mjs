@@ -16,6 +16,8 @@ const types = {
   ".jpg": "image/jpeg",
   ".svg": "image/svg+xml",
   ".mp3": "audio/mpeg",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
   ".woff2": "font/woff2",
   ".txt": "text/plain",
 };
