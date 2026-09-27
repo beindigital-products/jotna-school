@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { animate, motion, useMotionValue, useScroll, useTransform } from "framer-motion";
 import {
@@ -627,26 +627,43 @@ function useVictoryExtras(enabled: boolean) {
     if (myStats?.soundEnabled === true) void preloadAll();
   }, [myStats?.soundEnabled]);
 
+  // LES INSTANTANÉS ET LEURS MINUTEURS SONT DEUX EFFETS. Dans un seul, le
+  // `setState` de l'instantané relançait l'effet, dont le nettoyage annulait
+  // le minuteur qu'il venait d'armer : la fenêtre de niveau ne s'ouvrait
+  // jamais, et le son du trophée ne partait pas. L'ancien écran de victoire
+  // avait le même défaut.
   useEffect(() => {
     if (!myStats || badges !== null || myStats.unseenBadges.length === 0) return;
     const unseen = myStats.unseenBadges as UnseenBadge[];
     // eslint-disable-next-line react-hooks/set-state-in-effect -- instantané pris une fois à l'arrivée (D25)
     setBadges(unseen);
-    const timer = setTimeout(() => void playBadge(), 800);
     void markBadgesSeen({ badgeIds: unseen.map((b) => b.badgeId) });
-    return () => clearTimeout(timer);
   }, [myStats, badges, markBadgesSeen]);
+
+  useEffect(() => {
+    if (!badges || badges.length === 0) return;
+    const timer = setTimeout(() => void playBadge(), 800);
+    return () => clearTimeout(timer);
+  }, [badges]);
 
   useEffect(() => {
     if (!myStats || levelUp !== null || !myStats.unseenLevelUp) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- instantané pris une fois à l'arrivée (D2b)
     setLevelUp(myStats.unseenLevelUp.level);
-    const timer = setTimeout(
-      () => setLevelUpOpen(true),
-      myStats.unseenBadges.length > 0 ? 2200 : 1400,
-    );
-    return () => clearTimeout(timer);
   }, [myStats, levelUp]);
+
+  // Le trophée d'abord, le niveau ensuite : les deux joies ne se superposent pas.
+  const hasBadgeCard = badges !== null && badges.length > 0;
+  useEffect(() => {
+    if (levelUp === null) return;
+    const timer = setTimeout(() => setLevelUpOpen(true), hasBadgeCard ? 2200 : 1400);
+    return () => clearTimeout(timer);
+  }, [levelUp, hasBadgeCard]);
+
+  const dismissLevelUp = useCallback(() => {
+    setLevelUpOpen(false);
+    if (levelUp !== null) void markLevelSeen({ level: levelUp });
+  }, [levelUp, markLevelSeen]);
 
   useEffect(() => {
     if (!myStats || myStats.soundOptInDecided) return;
@@ -672,14 +689,7 @@ function useVictoryExtras(enabled: boolean) {
           onOpenChange={setOptInOpen}
         />
         {levelUp !== null && (
-          <LevelUpOverlay
-            level={levelUp}
-            open={levelUpOpen}
-            onDismiss={() => {
-              setLevelUpOpen(false);
-              void markLevelSeen({ level: levelUp });
-            }}
-          />
+          <LevelUpOverlay level={levelUp} open={levelUpOpen} onDismiss={dismissLevelUp} />
         )}
       </>
     ) : null,

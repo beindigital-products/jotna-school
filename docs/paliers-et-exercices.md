@@ -179,14 +179,17 @@ comptaient une cinquantaine.
 
 `convex/paliers/dragDropRepair.ts` répare ce qu'il sait réparer, sans rien
 inventer : un ordre à reconstituer (mots d'une phrase, syllabes, étapes)
-devient un exercice `order` ; des calculs sous des zones génériques donnent
-aux zones leur résultat ; un mot à choisir dans une phrase devient un QCM
-dont les options sont les zones ; une zone cible qui ne diffère que par la
-casse est remise d'aplomb. Le reste est irréparable : à la génération,
-l'exercice est écarté du lot ; en base, il est signalé et son palier repasse
-en `stale`, régénéré à la prochaine ouverture ou par `pregen:run`. La
-consigne de génération dit désormais au modèle ce qu'est une zone. Les tests
-sont dans `convex/__tests__/dragDropRepair.test.ts`.
+devient un exercice `order` ; des calculs sous des zones génériques
+(« Zone A », « Résultat 2 ») donnent aux zones leur résultat ; des calculs et
+leurs résultats à trier dans deux boîtes « Opérations » et « Résultats »
+deviennent un appariement (`match`, chaque calcul face à sa valeur) ; un mot
+à choisir dans une phrase devient un QCM dont les options sont les zones ;
+une zone cible qui ne diffère que par la casse est remise d'aplomb. Le reste
+est irréparable : à la génération, l'exercice est écarté du lot ; en base, il
+est signalé et son palier repasse en `stale`, régénéré à la prochaine
+ouverture ou par `pregen:run`. La consigne de génération dit désormais au
+modèle ce qu'est une zone. Les tests sont dans
+`convex/__tests__/dragDropRepair.test.ts`.
 
 Pour repasser sur l'existant, sans appel au modèle :
 
@@ -194,9 +197,10 @@ Pour repasser sur l'existant, sans appel au modèle :
 npx convex run paliers/pregen:repairDragDrop '{"confirmDeployment":"impartial-ermine-150","dryRun":true}'
 ```
 
-Le 27 septembre 2026, sur la base de développement : 17 exercices passés en
-`order`, 10 en QCM, 2 relabellisés, 21 irréparables et 20 paliers renvoyés
-en génération.
+Le 27 septembre 2026, sur la base de développement, en deux passes : 17
+exercices passés en `order`, 10 en QCM, 7 en appariement, 9 relabellisés, 8
+irréparables (tous de collège ou de lycée, niveaux masqués) et 21 paliers
+renvoyés en génération.
 
 Un palier n'a pas toujours dix exercices : le modèle en rend parfois neuf de
 valides, et l'écart n'est pas comblé. L'écran de fin compte alors ses

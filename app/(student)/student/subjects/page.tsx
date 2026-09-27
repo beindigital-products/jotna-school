@@ -92,7 +92,7 @@ function SubjectTrailPageInner() {
     );
   }
 
-  const { subject, topics, totalStarsApprox, totalPaliers, completedPaliers } = map;
+  const { subject, topics, totalStars, totalPaliers, completedPaliers } = map;
 
   // Le sentier à plat : un nœud par palier, thématique après thématique.
   const nodes: PalierNode[] = topics.flatMap((topic, topicIdx) =>
@@ -179,7 +179,7 @@ function SubjectTrailPageInner() {
             color={subject.color}
             done={completedPaliers}
             count={totalPaliers}
-            stars={totalStarsApprox}
+            stars={totalStars}
           />
           <div className="rounded-3xl border-2 border-dashed border-amber-300 bg-white/60 p-10 text-center">
             <p className="font-display text-lg font-bold text-amber-900">
@@ -218,7 +218,7 @@ function SubjectTrailPageInner() {
                   color={subject.color}
                   done={completedPaliers}
                   count={totalPaliers}
-                  stars={totalStarsApprox}
+                  stars={totalStars}
                   compact
                 />
               </div>

@@ -10,7 +10,6 @@
 
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import {
@@ -25,7 +24,8 @@ import { numericallyEqual } from "./paliers/mathRepair";
 import { shuffleDeterministic } from "./paliers";
 import { internal } from "./_generated/api";
 import { checkAccess, requireAccess } from "./access";
-import { effectivePalierCount, isTopicComplete } from "./palierRules";
+import { loadFinalExercisesForAttempt, summaryPatch, syncTopicProgress } from "./progression";
+import { summarizePalier } from "./progressionRules";
 
 // ===========================================================================
 // Verification helpers — server-side only, never expose correctAnswer.
@@ -105,35 +105,6 @@ function canonicalAnswer(value: string): string {
 // MUTATIONS
 // ===========================================================================
 
-async function loadFinalExercisesForAttempt(
-  ctx: QueryCtx | MutationCtx,
-  palierAttempt: Doc<"palierAttempts">,
-): Promise<Doc<"exercises">[]> {
-  const exosByAttempt = await ctx.db
-    .query("exercises")
-    .withIndex("by_palierAttemptId", (q) =>
-      q.eq("palierAttemptId", palierAttempt._id),
-    )
-    .take(50);
-  const variationOriginalIds = new Set(
-    exosByAttempt
-      .map((e) => e.originalExerciseId)
-      .filter(Boolean) as Id<"exercises">[],
-  );
-  const exosByPalier = await ctx.db
-    .query("exercises")
-    .withIndex("by_palierId", (q) => q.eq("palierId", palierAttempt.palierId))
-    .take(50);
-
-  const finalExos: Doc<"exercises">[] = [];
-  for (const ex of exosByPalier) {
-    if (!variationOriginalIds.has(ex._id)) finalExos.push(ex);
-  }
-  for (const ex of exosByAttempt) finalExos.push(ex);
-  finalExos.sort((a, b) => a.order - b.order);
-  return finalExos;
-}
-
 export const verifyAttempt = mutation({
   args: {
     exerciseId: v.id("exercises"),
@@ -182,7 +153,9 @@ export const verifyAttempt = mutation({
       isCorrect,
       attemptNumber,
       hintsUsedCount: 0, // hint usage is tracked on the requestHint mutation directly
-      timeSpentMs: args.timeSpentMs ?? 0,
+      // Le temps passé sur l'exercice, tel que l'écran l'a mesuré ; borné,
+      // un téléphone posé sur la table n'est pas une heure de réflexion.
+      timeSpentMs: Math.max(0, Math.min(args.timeSpentMs ?? 0, 10 * 60_000)),
       submittedAt: Date.now(),
       palierAttemptId: args.palierAttemptId,
     });
@@ -267,26 +240,7 @@ export const submitPalier = mutation({
     if (!palierAttempt) throw new Error("Tentative introuvable");
     if (palierAttempt.userId !== profile._id) throw new Error("Accès refusé");
 
-    // Build the live exo list — same logic as getExercisesForPalier.
-    const exosByAttempt = await ctx.db
-      .query("exercises")
-      .withIndex("by_palierAttemptId", (q) =>
-        q.eq("palierAttemptId", args.palierAttemptId),
-      )
-      .take(50);
-    const variationOriginalIds = new Set(
-      exosByAttempt.map((e) => e.originalExerciseId).filter(Boolean) as Id<"exercises">[],
-    );
-    const exosByPalier = await ctx.db
-      .query("exercises")
-      .withIndex("by_palierId", (q) => q.eq("palierId", palierAttempt.palierId))
-      .take(50);
-    const finalExos: Doc<"exercises">[] = [];
-    for (const ex of exosByPalier) {
-      if (!variationOriginalIds.has(ex._id)) finalExos.push(ex);
-    }
-    for (const ex of exosByAttempt) finalExos.push(ex);
-    finalExos.sort((a, b) => a.order - b.order);
+    const finalExos = await loadFinalExercisesForAttempt(ctx, palierAttempt);
 
     if (finalExos.length === 0) {
       throw new Error("Palier vide");
@@ -295,6 +249,7 @@ export const submitPalier = mutation({
     // Compute per-exo scores from attempts attached to this palierAttempt.
     const exerciseIds: string[] = [];
     const scores: number[] = [];
+    const rowsPerExercise: Doc<"attempts">[][] = [];
     for (const ex of finalExos) {
       const attempts = await ctx.db
         .query("attempts")
@@ -304,6 +259,7 @@ export const submitPalier = mutation({
             .eq("exerciseId", ex._id),
         )
         .take(100);
+      rowsPerExercise.push(attempts);
       const realAttempts = attempts.filter((a) => a.attemptNumber > 0);
       const totalHints = attempts.reduce((acc, a) => acc + a.hintsUsedCount, 0);
       const { score } = scoreExerciseFromAttempts(
@@ -327,20 +283,33 @@ export const submitPalier = mutation({
     const failedIds = (result.failedExerciseIds ?? []) as Id<"exercises">[];
     const isValidated = result.status === "validated";
 
+    // LE RÉSUMÉ DE LA TENTATIVE (`progressionRules.summarizePalier`) : ce
+    // que la jauge de niveau, les étoiles du camp et les trophées liront.
+    const summary = summarizePalier(rowsPerExercise);
     await ctx.db.patch(args.palierAttemptId, {
       status: isValidated ? "validated" : "failed",
       averageScore: result.average,
       failedExerciseIds: failedIds,
       completedAt: Date.now(),
+      ...summaryPatch(summary),
     });
 
-    // LA THÉMATIQUE EST FRANCHIE QUAND SON DERNIER PALIER L'EST. Son nombre de
-    // paliers est dynamique (`palierRules.effectivePalierCount`), et c'est ici,
-    // seul endroit où un palier se valide, que `studentTopicProgress.completedAt`
-    // se pose. La carte, le camp et les bulletins le lisent.
-    if (isValidated) {
-      await markTopicCompleteIfDone(ctx, profile._id, palierAttempt.palierId);
+    // LA PROGRESSION DE LA THÉMATIQUE se recalcule depuis toutes les
+    // tentatives finies de l'élève dessus (exercices faits et résolus,
+    // indices, maîtrise), et la thématique est franchie quand son dernier
+    // palier l'est. C'est ici, seul endroit où un palier se termine, que
+    // `studentTopicProgress` s'écrit ; la carte, le camp, les bulletins et la
+    // jauge de niveau le lisent.
+    const palierDoc = await ctx.db.get(palierAttempt.palierId);
+    if (palierDoc) {
+      await syncTopicProgress(ctx, profile._id, palierDoc.topicId);
     }
+
+    // LES TROPHÉES sont réexaminés après coup (`badges.checkAndAward`) :
+    // l'écran de fin, abonné aux statistiques, les voit arriver.
+    await ctx.scheduler.runAfter(0, internal.badges.checkAndAward, {
+      studentId: profile._id,
+    });
 
     // D7 — record daily activity for streak (no-op if streaks disabled).
     await ctx.runMutation(internal.streak.recordKidActivity, {
@@ -386,70 +355,6 @@ export const submitPalier = mutation({
     };
   },
 });
-
-/**
- * Pose `completedAt` sur la progression de la thématique si tous ses paliers
- * sont validés par cet élève. Idempotent : une thématique déjà franchie ne
- * change pas de date.
- */
-async function markTopicCompleteIfDone(
-  ctx: MutationCtx,
-  studentId: Id<"profiles">,
-  palierId: Id<"paliers">,
-) {
-  const palier = await ctx.db.get(palierId);
-  if (!palier) return;
-  const topic = await ctx.db.get(palier.topicId);
-  if (!topic) return;
-  const palierCount = effectivePalierCount(topic);
-
-  // Les paliers de cette thématique pour ce niveau, puis les tentatives
-  // validées de l'élève dessus — la tentative qu'on vient de valider est vue,
-  // une transaction lit ses propres écritures.
-  const paliers = await ctx.db
-    .query("paliers")
-    .withIndex("by_topic_class", (q) =>
-      q.eq("topicId", topic._id).eq("class", palier.class),
-    )
-    .take(50);
-  const indexByPalierId = new Map(
-    paliers.map((p) => [p._id as string, p.palierIndex] as const),
-  );
-  const attempts = await ctx.db
-    .query("palierAttempts")
-    .withIndex("by_user", (q) => q.eq("userId", studentId))
-    .take(500);
-  const validated = new Set<number>();
-  for (const attempt of attempts) {
-    if (attempt.status !== "validated") continue;
-    const index = indexByPalierId.get(attempt.palierId as string);
-    if (index !== undefined) validated.add(index);
-  }
-  if (!isTopicComplete(validated, palierCount)) return;
-
-  const existing = await ctx.db
-    .query("studentTopicProgress")
-    .withIndex("by_studentId_topicId", (q) =>
-      q.eq("studentId", studentId).eq("topicId", topic._id),
-    )
-    .unique();
-  const now = Date.now();
-  if (existing) {
-    if (existing.completedAt == null) {
-      await ctx.db.patch(existing._id, { completedAt: now });
-    }
-    return;
-  }
-  await ctx.db.insert("studentTopicProgress", {
-    studentId,
-    topicId: topic._id,
-    completedExercises: 0,
-    correctExercises: 0,
-    totalHintsUsed: 0,
-    masteryLevel: 0,
-    completedAt: now,
-  });
-}
 
 // ===========================================================================
 // QUERIES

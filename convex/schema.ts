@@ -363,6 +363,16 @@ export default defineSchema({
     averageScore: v.optional(v.number()), // 0..10
     failedExerciseIds: v.optional(v.array(v.id("exercises"))),
     regenCount: v.number(), // 0..3, capped at submitPalier-level
+    // LE RÉSUMÉ DE LA TENTATIVE, posé à `submitPalier` (`progressionRules`).
+    // C'est de lui que vivent la jauge de niveau, les étoiles du camp et
+    // les trophées ; `progression:rebuild` le pose sur les tentatives d'avant.
+    exerciseCount: v.optional(v.number()),
+    correctCount: v.optional(v.number()),
+    firstTryCount: v.optional(v.number()),
+    noHintCount: v.optional(v.number()),
+    hintsUsed: v.optional(v.number()),
+    starsTotal: v.optional(v.number()),
+    timeSpentMs: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_user_palier", ["userId", "palierId"])

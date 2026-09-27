@@ -8,7 +8,7 @@ const dd = (zones: string[], pairs: [string, string][]) => ({
 
 describe("isGenericZoneLabel", () => {
   it("reconnaît un nom de boîte", () => {
-    for (const z of ["Zone A", "Zone 1", "zone1", "ZONE B", "Case 2", "Boîte 3", "zone"]) {
+    for (const z of ["Zone A", "Zone 1", "zone1", "ZONE B", "Case 2", "Boîte 3", "zone", "Résultat 1", "Réponse B", "Option 2"]) {
       expect(isGenericZoneLabel(z), z).toBe(true);
     }
   });
@@ -40,6 +40,40 @@ describe("repairDragDrop — le palier 5 de Multiplication", () => {
       payload: dd(["A", "B"], [["3 + 3", "A"], ["2 × 4", "B"]]),
     });
     expect(outcome).toMatchObject({ kind: "relabeled", payload: { zones: ["6", "8"] } });
+  });
+
+  it("« Résultat 1/2/3 » avec des calculs : les zones prennent les résultats", () => {
+    expect(
+      repairDragDrop({
+        prompt: "Associe chaque opération à son résultat.",
+        answerKey: "Résultat 1: 25, Résultat 2: 12, Résultat 3: 15",
+        payload: dd(["Résultat 1", "Résultat 2", "Résultat 3"], [["3 × 4", "Résultat 2"], ["10 + 15", "Résultat 1"], ["20 - 5", "Résultat 3"]]),
+      }),
+    ).toMatchObject({ kind: "relabeled", payload: dd(["25", "12", "15"], [["3 × 4", "12"], ["10 + 15", "25"], ["20 - 5", "15"]]) });
+  });
+
+  it("des calculs et leurs résultats à trier dans « Opérations / Résultats » : un appariement", () => {
+    expect(
+      repairDragDrop({
+        prompt: "Associe les multiplications à leurs résultats.",
+        answerKey: "",
+        payload: dd(["Résultats", "Multiplications"], [["5 × 2", "Résultats"], ["10", "Multiplications"], ["6 × 3", "Résultats"], ["18", "Multiplications"]]),
+      }),
+    ).toEqual({
+      kind: "match",
+      payload: { pairs: [{ left: "5 × 2", right: "10" }, { left: "6 × 3", right: "18" }] },
+      answerKey: "5 × 2 = 10, 6 × 3 = 18",
+    });
+  });
+
+  it("trois calculs de même valeur : l'appariement serait ambigu, irréparable", () => {
+    expect(
+      repairDragDrop({
+        prompt: "Associe chaque opération à son résultat.",
+        answerKey: "",
+        payload: dd(["Résultats", "Opérations"], [["3 × 8", "Résultats"], ["24", "Opérations"], ["12 + 12", "Résultats"], ["6 × 4", "Opérations"]]),
+      }),
+    ).toEqual({ kind: "unrepairable", reason: "generic_zones" });
   });
 
   it("deux zones qui donneraient le même résultat : irréparable", () => {

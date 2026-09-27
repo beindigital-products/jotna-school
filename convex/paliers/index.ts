@@ -1443,7 +1443,7 @@ function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | nu
     const repaired = repairDragDrop({ prompt, payload, answerKey });
     if (repaired.kind === "unrepairable") return null;
     if (repaired.kind !== "ok") payload = repaired.payload;
-    if (repaired.kind === "order" || repaired.kind === "qcm") type = repaired.kind;
+    if (repaired.kind === "order" || repaired.kind === "qcm" || repaired.kind === "match") type = repaired.kind;
     if (repaired.kind !== "ok" && repaired.kind !== "cleaned") answerKey = repaired.answerKey;
   }
 
