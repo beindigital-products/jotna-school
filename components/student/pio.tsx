@@ -1,33 +1,110 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useId } from "react";
+import Image from "next/image";
+import { motion, type Transition } from "framer-motion";
 
 /**
- * Pio — la mascotte de Jotna pour l'expérience élève.
+ * Pio — LA mascotte de Jotna : le lionceau explorateur à la loupe.
  *
- * Décisions :
- *   - D1  : Pio apparaît UNIQUEMENT sur les transitions (home, complete,
- *           level-up, fail-soft). Jamais pendant un exercice (focusMode).
- *   - D2a : Statique en MVP (SVG inline + transitions framer-motion légères).
- *           Pas de Lottie en Phase A.
- *   - D12 : Le wrapper framer-motion respecte `prefers-reduced-motion` via
- *           `<MotionConfig reducedMotion="user">` au niveau (student)/layout.
+ * C'EST L'AVATAR OFFICIEL v4, celui de `public/brand/pio/reference-v4.png`
+ * sur la branche de juillet, détouré en huit poses distinctes dans
+ * `public/images/pio/*.png`. Le « petit oiseau rond » dessiné en SVG qui
+ * vivait ici n'a jamais été la mascotte : c'était un bouche-trou de MVP, et
+ * il donnait à tout l'espace élève un air de démonstrateur.
  *
- * Personnage : un petit oiseau-mascotte rond aux couleurs chaudes
- * (orange/amber, en cohérence avec la palette Jotna). 4 états expressifs.
+ * DÉCISIONS VERROUILLÉES PAR LE PROPRIÉTAIRE (juillet 2026), reprises telles
+ * quelles :
+ *   - c'est CET avatar qui incarne Pio partout, modales et dialogs compris ;
+ *   - AUCUNE animation du corps. Ce qui bouge, c'est le sprite entier — une
+ *     respiration, un rebond de joie — jamais un membre déformé. Le composant
+ *     ne rend que la pose courante ; l'expression est dans l'image.
+ *
+ * LA HAUTEUR EST LA MESURE. Les images font 572 × 800 : `size` donne la
+ * hauteur, la largeur suit le ratio. Les anciens appelants passaient un carré
+ * — Pio est simplement un peu plus étroit qu'avant, rien ne déborde.
+ *
+ * `animated` reste honoré comme avant : les dialogs le passent à `false` pour
+ * ne pas rivaliser avec leur propre entrée. `prefers-reduced-motion` est
+ * respecté par le `<MotionConfig reducedMotion="user">` de `(student)/layout`.
  */
-export type PioState = "idle" | "hello" | "cheer" | "sad";
+export type PioState =
+  | "idle"
+  | "hello"
+  | "cheer"
+  | "sad"
+  | "amazed"
+  | "encourage"
+  | "think"
+  | "sleep";
+
+const FILES: Record<PioState, string> = {
+  idle: "/images/pio/idle.png",
+  hello: "/images/pio/hello.png",
+  cheer: "/images/pio/cheer.png",
+  // « sad » applicatif = pose douce, Pio serre ses livres — jamais moqueur.
+  sad: "/images/pio/sad.png",
+  amazed: "/images/pio/amazed.png",
+  encourage: "/images/pio/encourage.png",
+  think: "/images/pio/think.png",
+  sleep: "/images/pio/sleep.png",
+};
+
+const LABELS: Record<PioState, string> = {
+  idle: "Pio te regarde",
+  hello: "Pio te dit bonjour",
+  cheer: "Pio célèbre avec toi",
+  sad: "Pio te réconforte",
+  amazed: "Pio est émerveillé",
+  encourage: "Pio t'encourage",
+  think: "Pio réfléchit",
+  sleep: "Pio se repose",
+};
+
+/** Mouvements du sprite ENTIER — jamais du corps. Les poses calmes ne bougent pas. */
+const MOTION: Partial<
+  Record<PioState, { animate: Record<string, number[]>; transition: Transition }>
+> = {
+  idle: {
+    animate: { y: [0, -3, 0] },
+    transition: { duration: 3.2, repeat: Infinity, ease: "easeInOut" },
+  },
+  hello: {
+    animate: { y: [0, -3, 0], rotate: [-1.5, 1.5, -1.5] },
+    transition: { duration: 1.8, repeat: Infinity, ease: "easeInOut" },
+  },
+  cheer: {
+    animate: { y: [0, -10, 0], scale: [1, 1.04, 1] },
+    transition: { duration: 0.7, repeat: Infinity, ease: "easeInOut" },
+  },
+  encourage: {
+    animate: { y: [0, -4, 0] },
+    transition: { duration: 1.4, repeat: Infinity, ease: "easeInOut" },
+  },
+  amazed: {
+    animate: { scale: [1, 1.03, 1] },
+    transition: { duration: 1.2, repeat: Infinity, ease: "easeInOut" },
+  },
+};
+
+/** 572 × 800 : la largeur découle de la hauteur. */
+const ASPECT = 572 / 800;
+
+/** Les deux poses de l'accueil, à précharger avant que l'enfant n'arrive. */
+export const PIO_HUB_POSES: readonly PioState[] = ["idle", "hello"];
+
+export function pioImageSrc(state: PioState): string {
+  return FILES[state];
+}
 
 type PioProps = {
   state?: PioState;
+  /** Hauteur en pixels. La largeur suit le ratio de l'image. */
   size?: number;
   className?: string;
-  /**
-   * Si true, ajoute une légère animation de respiration (idle bobbing).
-   * Désactivable pour les usages en hero où une animation parente joue déjà.
-   */
+  /** Respiration ou rebond du sprite entier. `false` dans les dialogs. */
   animated?: boolean;
+  /** Priorité de chargement : l'accueil, où Pio est l'élément le plus visible. */
+  priority?: boolean;
 };
 
 export function Pio({
@@ -35,247 +112,30 @@ export function Pio({
   size = 96,
   className = "",
   animated = true,
+  priority = false,
 }: PioProps) {
-  // useId garantit que les <linearGradient> ne collident pas avec d'autres SVGs.
-  const idBase = useId().replace(/:/g, "");
-  const gradId = `pio-grad-${idBase}`;
-  const highlightId = `pio-highlight-${idBase}`;
-
-  const labels: Record<PioState, string> = {
-    idle: "Pio te regarde",
-    hello: "Pio te dit bonjour",
-    cheer: "Pio est content",
-    sad: "Pio est pensif",
-  };
+  const width = Math.round(size * ASPECT);
+  const move = animated ? MOTION[state] : undefined;
 
   return (
     <motion.div
       role="img"
-      aria-label={labels[state]}
-      className={`pio-container inline-block ${className}`}
-      style={{ width: size, height: size }}
-      animate={
-        animated
-          ? state === "cheer"
-            ? { rotate: [-3, 3, -3], y: [0, -4, 0] }
-            : state === "hello"
-              ? { y: [0, -3, 0] }
-              : { y: [0, -2, 0] }
-          : undefined
-      }
-      transition={
-        animated
-          ? {
-              duration: state === "cheer" ? 0.6 : 2.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }
-          : undefined
-      }
+      aria-label={LABELS[state]}
+      className={`pio inline-block shrink-0 select-none ${className}`}
+      style={{ width, height: size }}
+      animate={move?.animate}
+      transition={move?.transition}
     >
-      <svg
-        viewBox="0 0 100 100"
-        width={size}
-        height={size}
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#fbbf24" />
-            <stop offset="100%" stopColor="#f97316" />
-          </linearGradient>
-          <radialGradient id={highlightId} cx="0.3" cy="0.25" r="0.4">
-            <stop offset="0%" stopColor="#fff" stopOpacity="0.7" />
-            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-
-        {/* Body — round, gradient orange→amber */}
-        <ellipse cx="50" cy="58" rx="36" ry="34" fill={`url(#${gradId})`} />
-        {/* Soft highlight to give volume */}
-        <ellipse cx="50" cy="58" rx="36" ry="34" fill={`url(#${highlightId})`} />
-
-        {/* Belly patch (creamy oval) */}
-        <ellipse cx="50" cy="68" rx="20" ry="16" fill="#fef3c7" opacity="0.7" />
-
-        {/* Wings — small ovals on sides */}
-        {state === "cheer" ? (
-          <>
-            {/* Wings raised in celebration */}
-            <ellipse
-              cx="14"
-              cy="40"
-              rx="9"
-              ry="5"
-              fill="#ea580c"
-              transform="rotate(-30 14 40)"
-            />
-            <ellipse
-              cx="86"
-              cy="40"
-              rx="9"
-              ry="5"
-              fill="#ea580c"
-              transform="rotate(30 86 40)"
-            />
-          </>
-        ) : state === "hello" ? (
-          <>
-            {/* Right wing waving */}
-            <ellipse cx="14" cy="58" rx="9" ry="5" fill="#ea580c" />
-            <motion.ellipse
-              cx="86"
-              cy="46"
-              rx="9"
-              ry="5"
-              fill="#ea580c"
-              transform="rotate(20 86 46)"
-              animate={animated ? { rotate: [10, 30, 10] } : undefined}
-              transition={
-                animated
-                  ? { duration: 1, repeat: Infinity, ease: "easeInOut" }
-                  : undefined
-              }
-              style={{ originX: "86px", originY: "46px" }}
-            />
-          </>
-        ) : (
-          <>
-            <ellipse cx="14" cy="58" rx="9" ry="5" fill="#ea580c" />
-            <ellipse cx="86" cy="58" rx="9" ry="5" fill="#ea580c" />
-          </>
-        )}
-
-        {/* Beak — small triangle */}
-        <polygon
-          points="46,52 54,52 50,58"
-          fill="#dc2626"
-          opacity="0.9"
-        />
-
-        {/* Eyes */}
-        {state === "cheer" ? (
-          // Eyes closed in joy — upward arcs ^^
-          <>
-            <path
-              d="M 36 38 Q 40 33 44 38"
-              stroke="#1f2937"
-              strokeWidth="2.5"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d="M 56 38 Q 60 33 64 38"
-              stroke="#1f2937"
-              strokeWidth="2.5"
-              fill="none"
-              strokeLinecap="round"
-            />
-          </>
-        ) : state === "sad" ? (
-          // Half-closed gentle eyes
-          <>
-            <ellipse cx="40" cy="40" rx="3.5" ry="2" fill="#1f2937" />
-            <ellipse cx="60" cy="40" rx="3.5" ry="2" fill="#1f2937" />
-          </>
-        ) : (
-          // Open round eyes (idle / hello) with shine
-          <>
-            <ellipse cx="40" cy="38" rx="4" ry="5" fill="#1f2937" />
-            <ellipse cx="60" cy="38" rx="4" ry="5" fill="#1f2937" />
-            <circle cx="41.5" cy="36" r="1.3" fill="#fff" />
-            <circle cx="61.5" cy="36" r="1.3" fill="#fff" />
-          </>
-        )}
-
-        {/* Mouth (under beak) — varies with state */}
-        {state === "cheer" ? (
-          <path
-            d="M 42 64 Q 50 70 58 64"
-            stroke="#7f1d1d"
-            strokeWidth="2"
-            fill="#fda4af"
-            strokeLinecap="round"
-          />
-        ) : state === "sad" ? (
-          <path
-            d="M 44 65 Q 50 62 56 65"
-            stroke="#7f1d1d"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-          />
-        ) : state === "hello" ? (
-          <path
-            d="M 44 63 Q 50 67 56 63"
-            stroke="#7f1d1d"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-          />
-        ) : (
-          <path
-            d="M 45 63 Q 50 65 55 63"
-            stroke="#7f1d1d"
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-          />
-        )}
-
-        {/* Cheek blush */}
-        {(state === "cheer" || state === "hello") && (
-          <>
-            <ellipse cx="32" cy="50" rx="4" ry="2.5" fill="#fb7185" opacity="0.4" />
-            <ellipse cx="68" cy="50" rx="4" ry="2.5" fill="#fb7185" opacity="0.4" />
-          </>
-        )}
-
-        {/* Sparkles around body for cheer state */}
-        {state === "cheer" && (
-          <>
-            <Sparkle cx={20} cy={20} delay={0} animated={animated} />
-            <Sparkle cx={80} cy={22} delay={0.3} animated={animated} />
-            <Sparkle cx={86} cy={70} delay={0.6} animated={animated} />
-            <Sparkle cx={14} cy={70} delay={0.9} animated={animated} />
-          </>
-        )}
-
-        {/* Tiny tuft on top */}
-        <path
-          d="M 47 23 Q 50 18 53 23"
-          stroke="#ea580c"
-          strokeWidth="3"
-          fill="none"
-          strokeLinecap="round"
-        />
-      </svg>
+      <Image
+        src={FILES[state]}
+        alt=""
+        width={572}
+        height={800}
+        priority={priority}
+        draggable={false}
+        unoptimized
+        className="h-full w-full object-contain"
+      />
     </motion.div>
-  );
-}
-
-function Sparkle({
-  cx,
-  cy,
-  delay,
-  animated,
-}: {
-  cx: number;
-  cy: number;
-  delay: number;
-  animated: boolean;
-}) {
-  return (
-    <motion.path
-      d={`M ${cx} ${cy - 3} L ${cx + 1} ${cy - 1} L ${cx + 3} ${cy} L ${cx + 1} ${cy + 1} L ${cx} ${cy + 3} L ${cx - 1} ${cy + 1} L ${cx - 3} ${cy} L ${cx - 1} ${cy - 1} Z`}
-      fill="#fde68a"
-      animate={animated ? { scale: [0.6, 1.2, 0.6], opacity: [0.4, 1, 0.4] } : undefined}
-      transition={
-        animated
-          ? { duration: 1.2, repeat: Infinity, delay, ease: "easeInOut" }
-          : undefined
-      }
-      style={{ originX: `${cx}px`, originY: `${cy}px` }}
-    />
   );
 }
