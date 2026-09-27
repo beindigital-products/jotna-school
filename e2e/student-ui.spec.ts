@@ -19,8 +19,10 @@ test.describe("Espace Élève", () => {
 
   test("la navigation supérieure contient les liens principaux", async ({ page }) => {
     await page.goto("/student/home");
-    await expect(page.getByRole("link", { name: /Accueil/i }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: /Coffre/i }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: /Profil/i }).first()).toBeVisible();
+    // Les quatre lieux du Monde de Pio : Camp, Carte, Trophées, Carnet.
+    await expect(page.getByRole("link", { name: /Camp/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Carte/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Trophées/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Carnet/i }).first()).toBeVisible();
   });
 });

@@ -9,10 +9,14 @@ import { HowItWorks } from "@/components/landing/how-it-works";
 import { Navbar } from "@/components/landing/navbar";
 import { ScrollToTop } from "@/components/landing/scroll-to-top";
 import { FadeIn, ScaleIn } from "@/components/ui/motion-wrapper";
+import { NativeAppGate } from "@/components/native-app-gate";
 
 export default function StorefrontPage() {
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-white text-gray-900 overflow-x-hidden">
+    // Sur iOS et Android, ce composant renvoie vers /login : l'application
+    // n'affiche pas la vitrine marchande. Sur le web il est transparent.
+    <NativeAppGate>
+      <div className="flex min-h-screen flex-1 flex-col bg-white text-gray-900 overflow-x-hidden">
       <Navbar />
       <main className="flex-1">
         <Hero />
@@ -35,8 +39,9 @@ export default function StorefrontPage() {
           <CallToAction />
         </ScaleIn>
       </main>
-      <Footer />
-      <ScrollToTop />
-    </div>
+        <Footer />
+        <ScrollToTop />
+      </div>
+    </NativeAppGate>
   );
 }
