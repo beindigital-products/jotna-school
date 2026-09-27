@@ -1,18 +1,8 @@
-import { query, mutation, internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
-import type { Doc, Id } from "./_generated/dataModel";
-import { readStudentPreferences, topicsForStudent, type StudentPreferences } from "./students";
-import {
-  buildSnapshot,
-  conditionText,
-  evaluateBadge,
-  isSupportedCondition,
-  type StudentSnapshot,
-} from "./badgeRules";
-import { isFinished } from "./progressionRules";
-import { assertTargetedDeployment } from "./testSeedsSchool";
+import { readStudentPreferences, type StudentPreferences } from "./students";
 import {
   catalogReadable,
   blockedStudent,
@@ -53,26 +43,19 @@ export function normalizeRarity(raw: string | undefined | null): RarityTier {
 // Queries
 // ---------------------------------------------------------------------------
 
-/**
- * Le critère d'un trophée, en français, depuis sa condition et ses
- * paramètres (`badgeRules.conditionText`). Sans paramètres : les défauts de
- * la règle.
- */
-export function getConditionText(condition: string, conditionParams?: unknown): string {
-  return conditionText({ condition, conditionParams });
-}
-
-/** La fiche d'un trophée telle que les écrans la lisent : rareté normalisée, critère, jugeable ou non. */
-export async function describeBadge(ctx: QueryCtx | MutationCtx, badge: Doc<"badges">) {
-  const subject = badge.subjectId ? await ctx.db.get(badge.subjectId) : null;
-  return {
-    ...badge,
-    rarity: normalizeRarity(badge.rarity),
-    criteriaText: conditionText(badge, subject?.name),
-    // Une condition que le moteur ne sait pas juger (`teacher_kudos`) : la
-    // vitrine de l'élève ne la montre pas, l'administration la signale.
-    supported: isSupportedCondition(badge.condition),
-  };
+// D10b — Map condition keys to readable French unlock criteria. Anything
+// outside this list falls back to the generic encouragement copy.
+export function getConditionText(condition: string): string {
+  switch (condition) {
+    case "complete_topic":
+      return "Termine une thématique";
+    case "perfect_score":
+      return "Termine une thématique sans erreur";
+    case "streak_3":
+      return "Termine 3 thématiques de suite";
+    default:
+      return "Continue à apprendre !";
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -108,8 +91,12 @@ export const list = query({
     // Identité ET paywall en une lecture — voir `catalogReadable`.
     if (!(await catalogReadable(ctx))) return [];
 
-    const rows = await ctx.db.query("badges").take(200);
-    return await Promise.all(rows.map((b) => describeBadge(ctx, b)));
+    const rows = await ctx.db.query("badges").take(100);
+    return rows.map((b) => ({
+      ...b,
+      rarity: normalizeRarity(b.rarity),
+      criteriaText: getConditionText(b.condition),
+    }));
   },
 });
 
@@ -166,7 +153,14 @@ export const listMyEarned = query({
     for (const eb of earned) {
       const badge = await ctx.db.get(eb.badgeId);
       if (badge) {
-        results.push({ ...eb, badge: await describeBadge(ctx, badge) });
+        results.push({
+          ...eb,
+          badge: {
+            ...badge,
+            rarity: normalizeRarity(badge.rarity),
+            criteriaText: getConditionText(badge.condition),
+          },
+        });
       }
     }
     return results;
@@ -212,24 +206,16 @@ export const create = mutation({
     description: v.string(),
     icon: v.string(),
     condition: v.string(),
-    conditionParams: v.optional(v.any()),
-    rarity: v.optional(v.string()),
     subjectId: v.optional(v.id("subjects")),
   },
   handler: async (ctx, args) => {
     if (!(await callerIsAdmin(ctx))) throw new ConvexError("Rôle non autorisé");
-    if (!isSupportedCondition(args.condition)) {
-      throw new ConvexError("Condition inconnue : le moteur ne saurait pas l'attribuer");
-    }
 
     return await ctx.db.insert("badges", {
       name: args.name,
       description: args.description,
       icon: args.icon,
       condition: args.condition,
-      conditionType: args.condition,
-      conditionParams: args.conditionParams ?? {},
-      rarity: normalizeRarity(args.rarity),
       subjectId: args.subjectId,
     });
   },
@@ -242,8 +228,6 @@ export const update = mutation({
     description: v.optional(v.string()),
     icon: v.optional(v.string()),
     condition: v.optional(v.string()),
-    conditionParams: v.optional(v.any()),
-    rarity: v.optional(v.string()),
     subjectId: v.optional(v.id("subjects")),
   },
   handler: async (ctx, args) => {
@@ -254,16 +238,12 @@ export const update = mutation({
     if (!existing) {
       throw new ConvexError("Badge introuvable");
     }
-    if (fields.condition !== undefined && !isSupportedCondition(fields.condition)) {
-      throw new ConvexError("Condition inconnue : le moteur ne saurait pas l'attribuer");
-    }
     const updates: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) {
-        updates[key] = key === "rarity" ? normalizeRarity(value as string) : value;
+        updates[key] = value;
       }
     }
-    if (fields.condition !== undefined) updates.conditionType = fields.condition;
     await ctx.db.patch(id, updates);
   },
 });
@@ -372,226 +352,122 @@ export const normalizeRarities = internalMutation({
 });
 
 // ---------------------------------------------------------------------------
-// L'ATTRIBUTION DES TROPHÉES.
-//
-// À chaque fin de palier (`palierAttempts.submitPalier`, par le planificateur)
-// et après un rattrapage (`progression:rebuild`), on prend un instantané de
-// l'élève et on juge chaque trophée du catalogue avec `badgeRules`. La même
-// lecture sert à la vitrine (`getMyBadgeProgress`) : l'enfant voit où il en
-// est sur ce qu'il n'a pas encore.
+// Internal mutation: check and award badges after exercise/topic completion
 // ---------------------------------------------------------------------------
-
-/**
- * L'instantané d'un élève : ses lignes d'essai, ses tentatives de palier,
- * sa progression par thématique et par matière (thématiques visibles pour son
- * niveau), ses missions, sa série. Borné : 4 000 lignes d'essai, 500
- * tentatives, 400 journées de missions.
- */
-export async function buildStudentSnapshot(
-  ctx: QueryCtx | MutationCtx,
-  profile: Doc<"profiles">,
-): Promise<StudentSnapshot> {
-  const studentId = profile._id;
-  const attempts = await ctx.db
-    .query("attempts")
-    .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
-    .take(4000);
-  const palierAttempts = await ctx.db
-    .query("palierAttempts")
-    .withIndex("by_user", (q) => q.eq("userId", studentId))
-    .take(500);
-
-  const validatedPaliers = new Set<string>();
-  const finishedPaliers = new Set<string>();
-  for (const a of palierAttempts) {
-    if (a.status === "validated") validatedPaliers.add(a.palierId as string);
-    if (isFinished(a)) finishedPaliers.add(a.palierId as string);
-  }
-  const startedTopics = new Set<string>();
-  for (const palierId of finishedPaliers) {
-    const palier = await ctx.db.get(palierId as Id<"paliers">);
-    if (palier) startedTopics.add(palier.topicId as string);
-  }
-
-  const progressRows = await ctx.db
-    .query("studentTopicProgress")
-    .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
-    .take(500);
-  const progressByTopic = new Map(progressRows.map((p) => [p.topicId as string, p] as const));
-
-  const subjects = (await ctx.db.query("subjects").take(50)).sort((a, b) => a.order - b.order);
-  const topicRows: Parameters<typeof buildSnapshot>[0]["topics"][number][] = [];
-  const subjectRows: Parameters<typeof buildSnapshot>[0]["subjects"][number][] = [];
-  for (const subject of subjects) {
-    const topics = await topicsForStudent(ctx, subject._id, profile);
-    subjectRows.push({ subjectId: subject._id as string, name: subject.name, topicCount: topics.length });
-    for (const topic of topics) {
-      const p = progressByTopic.get(topic._id as string);
-      const completed = p?.completedAt != null;
-      topicRows.push({
-        topicId: topic._id as string,
-        subjectId: subject._id as string,
-        completed,
-        perfect: completed && !!p && p.completedExercises > 0 && p.correctExercises === p.completedExercises,
-        started: startedTopics.has(topic._id as string) || (p?.completedExercises ?? 0) > 0,
-        masteryLevel: p?.masteryLevel ?? 0,
-      });
-    }
-  }
-
-  const missions = await ctx.db
-    .query("dailyMissions")
-    .withIndex("by_student_day", (q) => q.eq("studentId", studentId))
-    .take(400);
-  let questsCompletedTotal = 0;
-  let perfectQuestDays = 0;
-  for (const day of missions) {
-    const done = day.quests.filter((q) => q.completedAt !== undefined).length;
-    questsCompletedTotal += done;
-    if (day.quests.length > 0 && done === day.quests.length) perfectQuestDays += 1;
-  }
-
-  const prefs = readStudentPreferences(profile);
-  return buildSnapshot({
-    attempts: attempts.map((a) => ({
-      palierAttemptId: a.palierAttemptId as string | undefined,
-      exerciseId: a.exerciseId as string,
-      attemptNumber: a.attemptNumber,
-      isCorrect: a.isCorrect,
-      hintsUsedCount: a.hintsUsedCount,
-      timeSpentMs: a.timeSpentMs,
-      submittedAt: a.submittedAt,
-    })),
-    paliersValidated: validatedPaliers.size,
-    topics: topicRows,
-    subjects: subjectRows,
-    streakCurrent: prefs.streak?.current ?? 0,
-    streakLongest: prefs.streak?.longest ?? 0,
-    questsCompletedTotal,
-    perfectQuestDays,
-    // Le Sénégal vit à l'heure UTC : les trophées du matin et du soir aussi.
-    utcOffsetHours: 0,
-  });
-}
 
 export const checkAndAward = internalMutation({
   args: {
     studentId: v.id("profiles"),
   },
   handler: async (ctx, args) => {
-    const profile = await ctx.db.get(args.studentId);
-    if (!profile || profile.role !== "student") return [];
+    const { studentId } = args;
 
-    const allBadges = await ctx.db.query("badges").take(200);
+    // Get all badge definitions
+    const allBadges = await ctx.db.query("badges").take(100);
+
+    // Get all already-earned badges for this student
     const alreadyEarned = await ctx.db
       .query("earnedBadges")
-      .withIndex("by_studentId", (q) => q.eq("studentId", args.studentId))
+      .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
+      .take(100);
+    const earnedBadgeIds = new Set(alreadyEarned.map((eb) => eb.badgeId));
+
+    // Get student's topic progress
+    const allProgress = await ctx.db
+      .query("studentTopicProgress")
+      .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
       .take(200);
-    const earnedBadgeIds = new Set(alreadyEarned.map((eb) => eb.badgeId as string));
-    const snapshot = await buildStudentSnapshot(ctx, profile);
 
-    const newlyAwarded: Array<{ badgeId: string; name: string; description: string; icon: string }> = [];
+    const newlyAwarded: Array<{
+      badgeId: string;
+      name: string;
+      description: string;
+      icon: string;
+    }> = [];
+
     for (const badge of allBadges) {
-      if (earnedBadgeIds.has(badge._id as string)) continue;
-      const evaluation = evaluateBadge(badge, snapshot);
-      if (!evaluation?.deserved) continue;
-      await ctx.db.insert("earnedBadges", {
-        badgeId: badge._id,
-        studentId: args.studentId,
-        earnedAt: Date.now(),
-        progressValue: evaluation.value,
-      });
-      newlyAwarded.push({
-        badgeId: badge._id as string,
-        name: badge.name,
-        description: badge.description,
-        icon: badge.icon,
-      });
-    }
-    return newlyAwarded;
-  },
-});
+      // Skip already earned
+      if (earnedBadgeIds.has(badge._id)) continue;
 
-/**
- * Où en est l'élève de la session sur chaque trophée : la valeur atteinte et
- * la cible, pour la barre de progression de la vitrine. Les conditions que
- * le moteur ne sait pas juger n'y figurent pas.
- */
-export const getMyBadgeProgress = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (userId === null) return [];
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .unique();
-    if (!profile || profile.role !== "student") return [];
-    if (await blockedStudent(ctx)) return [];
+      let deserved = false;
 
-    const allBadges = await ctx.db.query("badges").take(200);
-    const snapshot = await buildStudentSnapshot(ctx, profile);
-    const out: Array<{ badgeId: Id<"badges">; value: number; target: number; deserved: boolean }> = [];
-    for (const badge of allBadges) {
-      const evaluation = evaluateBadge(badge, snapshot);
-      if (!evaluation) continue;
-      out.push({ badgeId: badge._id, value: evaluation.value, target: evaluation.target, deserved: evaluation.deserved });
-    }
-    return out;
-  },
-});
+      switch (badge.condition) {
+        case "complete_topic": {
+          // Student has at least one completed topic
+          const completed = allProgress.filter((p) => p.completedAt != null);
+          if (badge.subjectId) {
+            // Check completion in a specific subject
+            const topicsInSubject = await ctx.db
+              .query("topics")
+              .withIndex("by_subjectId", (q) =>
+                q.eq("subjectId", badge.subjectId!),
+              )
+              .take(200);
+            const topicIds = new Set(topicsInSubject.map((t) => t._id));
+            deserved = completed.some((p) => topicIds.has(p.topicId));
+          } else {
+            deserved = completed.length > 0;
+          }
+          break;
+        }
 
-/**
- * METTRE LES SEUILS DU CATALOGUE D'APLOMB. Le premier catalogue a été posé
- * avec des paramètres vides sur des trophées qui devraient se distinguer par
- * leur seuil (« Sans-faute » et « Série parfaite » partagent une condition).
- * Par clé de catalogue, on complète les paramètres manquants ; ce qui est
- * déjà posé n'est pas touché.
- *
- *     npx convex run badges:normalizeCatalog '{"confirmDeployment":"<nom>","dryRun":true}'
- */
-const CATALOG_PARAMS: Record<string, Record<string, unknown>> = {
-  mastery_perfect_series: { count: 3 },
-  streak_daily: { count: 3 },
-  streak_unstoppable: { count: 14 },
-  volume_calculator: { count: 50 },
-  volume_warrior: { count: 200 },
-  behavior_no_hint: { count: 20 },
-  behavior_first_try: { count: 25 },
-  behavior_persistent: { minAttempts: 3, count: 5 },
-  speed_speedster: { maxTimeMs: 20_000, count: 20 },
-  speed_lightning: { count: 10, maxTimeMs: 15_000 },
-  exploration_adventurer: { count: 2 },
-  exploration_polymath: { count: 2 },
-  secret_weekend_warrior: { count: 10 },
-  secret_marathoner: { windowMs: 3_600_000, count: 30 },
-  gaming_early_bird: { hour: 8, min: 1 },
-};
+        case "perfect_score": {
+          // Student completed a topic with correctExercises === completedExercises
+          const perfectTopics = allProgress.filter(
+            (p) =>
+              p.completedAt != null &&
+              p.completedExercises > 0 &&
+              p.correctExercises === p.completedExercises,
+          );
+          if (badge.subjectId) {
+            const topicsInSubject = await ctx.db
+              .query("topics")
+              .withIndex("by_subjectId", (q) =>
+                q.eq("subjectId", badge.subjectId!),
+              )
+              .take(200);
+            const topicIds = new Set(topicsInSubject.map((t) => t._id));
+            deserved = perfectTopics.some((p) => topicIds.has(p.topicId));
+          } else {
+            deserved = perfectTopics.length > 0;
+          }
+          break;
+        }
 
-export const normalizeCatalog = internalMutation({
-  args: { confirmDeployment: v.string(), dryRun: v.optional(v.boolean()) },
-  handler: async (ctx, args) => {
-    assertTargetedDeployment(args.confirmDeployment);
-    const badges = await ctx.db.query("badges").take(200);
-    const patched: string[] = [];
-    const unsupported: string[] = [];
-    for (const badge of badges) {
-      if (!isSupportedCondition(badge.condition)) unsupported.push(badge.name);
-      const wanted =
-        (badge.catalogKey && CATALOG_PARAMS[badge.catalogKey]) ||
-        (badge.condition === "subject_avg_mastery" ? { minMastery: 80, minTopics: 3 } : null);
-      if (!wanted) continue;
-      const current =
-        badge.conditionParams && typeof badge.conditionParams === "object"
-          ? (badge.conditionParams as Record<string, unknown>)
-          : {};
-      const next = { ...wanted, ...current };
-      if (JSON.stringify(next) === JSON.stringify(current)) continue;
-      patched.push(`${badge.name}: ${JSON.stringify(next)}`);
-      if (args.dryRun !== true) {
-        await ctx.db.patch(badge._id, { conditionParams: next, conditionType: badge.condition });
+        case "streak_3": {
+          // Student has 3 consecutive topics completed (by completedAt timestamp)
+          const completedSorted = allProgress
+            .filter((p) => p.completedAt != null)
+            .sort((a, b) => (a.completedAt ?? 0) - (b.completedAt ?? 0));
+
+          if (completedSorted.length >= 3) {
+            // Check if any 3 consecutive entries exist
+            // "Consecutive" means 3 in a row with no gaps in the sorted list
+            deserved = true;
+          }
+          break;
+        }
+
+        default:
+          // Unknown condition, skip
+          break;
+      }
+
+      if (deserved) {
+        await ctx.db.insert("earnedBadges", {
+          badgeId: badge._id,
+          studentId,
+          earnedAt: Date.now(),
+        });
+        newlyAwarded.push({
+          badgeId: badge._id as string,
+          name: badge.name,
+          description: badge.description,
+          icon: badge.icon,
+        });
       }
     }
-    return { dryRun: args.dryRun === true, patched, unsupported };
+
+    return newlyAwarded;
   },
 });

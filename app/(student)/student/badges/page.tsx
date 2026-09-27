@@ -46,11 +46,7 @@ type BadgeRow = {
   condition: string;
   rarity: RarityTier;
   criteriaText: string;
-  /** Le moteur sait juger cette condition ; sinon la vitrine ne la montre pas. */
-  supported?: boolean;
 };
-
-type ProgressRow = { badgeId: string; value: number; target: number };
 
 type EarnedRow = {
   badgeId: string;
@@ -73,8 +69,6 @@ export default function StudentBadgesPage() {
   // L'élève est dérivé de la session côté serveur : plus d'argument, donc
   // plus de "skip" en attente du profil.
   const earned = useQuery(api.badges.listMyEarned);
-  // Où en est l'enfant sur ce qu'il n'a pas encore : la barre sous chaque trophée fermé.
-  const progress = useQuery(api.badges.getMyBadgeProgress);
 
   const [tab, setTab] = useState<Tab>("all");
   const [detailBadge, setDetailBadge] = useState<{
@@ -93,12 +87,6 @@ export default function StudentBadgesPage() {
     return map;
   }, [earned]);
 
-  const progressById = useMemo(() => {
-    const map = new Map<string, ProgressRow>();
-    for (const p of (progress ?? []) as ProgressRow[]) map.set(p.badgeId, p);
-    return map;
-  }, [progress]);
-
   if (allBadges === undefined || profile === undefined || earned === undefined) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3">
@@ -108,7 +96,7 @@ export default function StudentBadgesPage() {
     );
   }
 
-  const badges = ((allBadges as BadgeRow[]) ?? []).filter((b) => b.supported !== false);
+  const badges = (allBadges as BadgeRow[]) ?? [];
   const earnedCount = earnedBadgeIds.size;
   const totalCount = badges.length;
   const lockedCount = totalCount - earnedCount;
@@ -189,8 +177,6 @@ export default function StudentBadgesPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
                 {items.map((badge) => {
                   const isEarned = earnedBadgeIds.has(badge._id);
-                  const p = progressById.get(badge._id);
-                  const pct = p && p.target > 0 ? Math.min(100, Math.round((p.value / p.target) * 100)) : 0;
                   return (
                     <motion.button
                       type="button"
@@ -232,15 +218,6 @@ export default function StudentBadgesPage() {
                         </p>
                         {isEarned ? (
                           <p className="text-[11px] leading-tight text-amber-900/70">{badge.description}</p>
-                        ) : p ? (
-                          <div className="w-full" aria-label={`${p.value} sur ${p.target}`}>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-amber-100">
-                              <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${pct}%` }} />
-                            </div>
-                            <p className="mt-1 font-display text-[10px] font-extrabold text-amber-800">
-                              {Math.min(p.value, p.target)} / {p.target}
-                            </p>
-                          </div>
                         ) : (
                           <span className="inline-flex items-center justify-center gap-1 self-center rounded-full bg-amber-100 px-2 py-0.5 font-display text-[10px] font-extrabold text-amber-800">
                             <Lock className="h-2.5 w-2.5" aria-hidden />
@@ -298,19 +275,10 @@ export default function StudentBadgesPage() {
                     : detailBadge.badge.criteriaText}
                 </DialogDescription>
               </DialogHeader>
-              {detailBadge.earnedAt !== null ? (
+              {detailBadge.earnedAt !== null && (
                 <p className="text-center text-xs font-semibold text-amber-700">
                   Gagné le {new Date(detailBadge.earnedAt).toLocaleDateString("fr-FR")}
                 </p>
-              ) : (
-                (() => {
-                  const p = progressById.get(detailBadge.badge._id);
-                  return p ? (
-                    <p className="text-center font-display text-sm font-extrabold text-amber-800">
-                      Tu en es à {Math.min(p.value, p.target)} sur {p.target}
-                    </p>
-                  ) : null;
-                })()
               )}
             </>
           )}

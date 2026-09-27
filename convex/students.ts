@@ -10,16 +10,7 @@ import {
   resolvePalierStatuses,
 } from "./palierRules";
 import type { QueryCtx } from "./_generated/server";
-import { normalizeRarity } from "./badges";
-import { conditionText } from "./badgeRules";
-import {
-  EXOS_PER_LEVEL,
-  computeLevel,
-  exosToNextLevel,
-  isFinished,
-  starsFallback,
-  totalStarsOf,
-} from "./progressionRules";
+import { getConditionText, normalizeRarity } from "./badges";
 import {
   callerIsAdmin,
   callerMayReadStudent,
@@ -48,10 +39,15 @@ export function approxStarsForValidatedPalier(averageScore: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Le niveau (Decision D3b) vit dans `progressionRules.ts` ; réexporté ici
-// pour les lecteurs historiques.
+// Level helpers (Decision D3b)
 // ---------------------------------------------------------------------------
-export { EXOS_PER_LEVEL, computeLevel, exosToNextLevel };
+export const EXOS_PER_LEVEL = 50;
+export function computeLevel(totalCorrectExercises: number): number {
+  return Math.floor(totalCorrectExercises / EXOS_PER_LEVEL) + 1;
+}
+export function exosToNextLevel(totalCorrectExercises: number): number {
+  return EXOS_PER_LEVEL - (totalCorrectExercises % EXOS_PER_LEVEL);
+}
 
 // ---------------------------------------------------------------------------
 // Student preferences shape (stored under profiles.preferences, v.any()).
@@ -149,21 +145,24 @@ export function resolveTopicStatuses(
 // ---------------------------------------------------------------------------
 const EMPTY_SET: ReadonlySet<number> = new Set();
 
-export async function topicsForStudent(
+async function topicsForStudent(
   ctx: QueryCtx,
   subjectId: Id<"subjects">,
   profile: Doc<"profiles">,
 ): Promise<Doc<"topics">[]> {
-  const all = await ctx.db
+  // Sans classe visible, le paywall a déjà refusé (`no_class`,
+  // `accessRules.decideAccess`) : on ne sert pas un programme au hasard, et
+  // ce repli ne rend rien plutôt que tout l'élémentaire. Avec une classe,
+  // l'index `by_subjectId_class` ne lit que les thématiques de ce niveau.
+  const studentClass = profile.class;
+  if (!studentClass || isHiddenClass(studentClass)) return [];
+  const topics = await ctx.db
     .query("topics")
-    .withIndex("by_subjectId", (q) => q.eq("subjectId", subjectId))
+    .withIndex("by_subjectId_class", (q) =>
+      q.eq("subjectId", subjectId).eq("class", studentClass),
+    )
     .take(1000);
-  const studentClass =
-    profile.class && !isHiddenClass(profile.class) ? profile.class : null;
-  return all
-    .filter((t) => !isHiddenClass(t.class))
-    .filter((t) => studentClass === null || t.class === studentClass)
-    .sort((a, b) => a.order - b.order);
+  return topics.sort((a, b) => a.order - b.order);
 }
 
 async function loadTopicProgress(
@@ -184,8 +183,6 @@ type PalierProgress = {
   inProgress: Set<number>;
   /** La meilleure moyenne par palier validé, pour les étoiles. */
   bestScore: Map<number, number>;
-  /** Les étoiles gagnées par palier (trois par exercice), meilleure tentative finie. */
-  bestStars: Map<number, number>;
 };
 
 type PalierProgressByTopic = {
@@ -229,19 +226,7 @@ async function loadPalierProgress(
       validated: new Set<number>(),
       inProgress: new Set<number>(),
       bestScore: new Map<number, number>(),
-      bestStars: new Map<number, number>(),
     };
-    if (isFinished(attempt)) {
-      const stars = starsFallback({
-        palierId: attempt.palierId as string,
-        status: attempt.status,
-        averageScore: attempt.averageScore,
-        starsTotal: attempt.starsTotal,
-      });
-      if (stars > (entry.bestStars.get(palier.palierIndex) ?? -1)) {
-        entry.bestStars.set(palier.palierIndex, stars);
-      }
-    }
     if (attempt.status === "validated") {
       entry.validated.add(palier.palierIndex);
       const score = attempt.averageScore ?? 0;
@@ -477,6 +462,48 @@ export const getStudentDetail = query({
  *                can hide the surface entirely.
  * Decision D6  — `soundEnabled` from profiles.preferences (default false).
  */
+/**
+ * L'inscription active d'un élève, mise en forme pour l'affichage.
+ *
+ * `null` quand l'enfant n'est inscrit dans aucune école — compte autonome,
+ * ou siège libéré. Le paywall a déjà tranché l'accès avant l'appel ; ici on
+ * ne décide rien, on décrit.
+ */
+async function loadSchooling(
+  ctx: QueryCtx,
+  studentId: Id<"profiles">,
+): Promise<{
+  schoolName: string;
+  class: Doc<"schoolClasses">["class"];
+  classLabel: string;
+  teacherName: string | null;
+} | null> {
+  const membership = await ctx.db
+    .query("schoolMemberships")
+    .withIndex("by_student_status", (q) =>
+      q.eq("studentId", studentId).eq("status", "active"),
+    )
+    .first();
+  if (!membership) return null;
+
+  const [school, schoolClass] = await Promise.all([
+    ctx.db.get(membership.schoolId),
+    ctx.db.get(membership.schoolClassId),
+  ]);
+  if (!school || !schoolClass) return null;
+
+  const teacher = schoolClass.teacherId
+    ? await ctx.db.get(schoolClass.teacherId)
+    : null;
+
+  return {
+    schoolName: school.name,
+    class: schoolClass.class,
+    classLabel: schoolClass.label,
+    teacherName: teacher?.name ?? null,
+  };
+}
+
 export const getMyStats = query({
   args: {},
   handler: async (ctx) => {
@@ -524,7 +551,7 @@ export const getMyStats = query({
           badge: {
             ...badge,
             rarity: normalizeRarity(badge.rarity),
-            criteriaText: conditionText(badge),
+            criteriaText: getConditionText(badge.condition),
           },
         });
       }
@@ -536,25 +563,15 @@ export const getMyStats = query({
       .take(1000);
     const totalTimeMs = attempts.reduce((s, a) => s + a.timeSpentMs, 0);
 
-    // LES ÉTOILES : trois par exercice au plus, la meilleure tentative de
-    // chaque palier, jamais la somme des rejeux (`progressionRules`). C'est
-    // l'unité de l'écran de fin de palier et des missions ; les nœuds du
-    // sentier gardent leur note de un à trois.
+    // D3c — total stars approximated from validated palierAttempts.
     const palierAttempts = await ctx.db
       .query("palierAttempts")
       .withIndex("by_user", (q) => q.eq("userId", studentId))
       .take(500);
-    const totalStars = totalStarsOf(
-      palierAttempts.map((a) => ({
-        palierId: a.palierId as string,
-        status: a.status,
-        averageScore: a.averageScore,
-        starsTotal: a.starsTotal,
-      })),
-    );
-    const paliersValidated = new Set(
-      palierAttempts.filter((a) => a.status === "validated").map((a) => a.palierId as string),
-    ).size;
+    const totalStars = palierAttempts.reduce((acc, a) => {
+      if (a.status !== "validated") return acc;
+      return acc + approxStarsForValidatedPalier(a.averageScore ?? 0);
+    }, 0);
 
     const subjectCounts: Record<string, { name: string; count: number }> = {};
     for (const p of progress) {
@@ -614,8 +631,18 @@ export const getMyStats = query({
         ? { level: currentLevel }
         : null;
 
+    // L'ÉCOLE, TELLE QUE L'ENFANT LA VOIT — nom de l'école, classe réelle
+    // (« CM1 A ») et professeur, lus depuis l'inscription active. C'est cette
+    // inscription qui fixe `profile.class`, donc le niveau affiché à côté du
+    // prénom et le nom de l'école viennent de la même source. Trois lectures
+    // au plus, sur des identifiants directs.
+    const schooling = await loadSchooling(ctx, studentId);
+
     return {
       student: profile,
+      // Le niveau scolaire, fourni par l'école (voir `profiles.class`).
+      class: profile.class ?? null,
+      schooling,
       completedTopics,
       totalExercises,
       totalCorrectExercises,
@@ -628,9 +655,8 @@ export const getMyStats = query({
       // D3b — level
       level: computeLevel(totalCorrectExercises),
       exosToNextLevel: exosToNextLevel(totalCorrectExercises),
-      // Les étoiles gagnées, plus les étoiles de mission (quests.ts).
+      // D3c — total stars, plus les étoiles de mission (quests.ts).
       totalStars: totalStars + (prefs.questBonusStars ?? 0),
-      paliersValidated,
       // D7 — streak
       streaksEnabled,
       currentStreak: streak.current,
@@ -893,7 +919,7 @@ export const getStudentSubjectMap = query({
           palierStatus === "completed"
             ? approxStarsForValidatedPalier(paliersDone?.bestScore.get(index) ?? 0)
             : 0;
-        return { index, status: palierStatus, stars, starsEarned: paliersDone?.bestStars.get(index) ?? 0 };
+        return { index, status: palierStatus, stars };
       });
 
       return {
@@ -907,16 +933,16 @@ export const getStudentSubjectMap = query({
         validatedPaliers: countValidatedWithin(validated, palierCount),
         nextPalierIndex: nextPalierIndex(validated, palierCount),
         starsApprox: paliers.reduce((acc, p) => acc + p.stars, 0),
-        starsEarned: paliers.reduce((acc, p) => acc + p.starsEarned, 0),
         completedExercises: progress?.completedExercises ?? 0,
         correctExercises: progress?.correctExercises ?? 0,
         paliers,
       };
     });
 
-    // Les étoiles gagnées sur la matière, dans l'unité du camp (trois par
-    // exercice) ; `starsApprox` reste la note de un à trois par nœud.
-    const totalStars = orderedTopics.reduce((acc, t) => acc + t.starsEarned, 0);
+    const totalStarsApprox = orderedTopics.reduce(
+      (acc, t) => acc + t.starsApprox,
+      0,
+    );
     const totalPaliers = orderedTopics.reduce((acc, t) => acc + t.palierCount, 0);
     const completedPaliers = orderedTopics.reduce(
       (acc, t) => acc + t.paliers.filter((p) => p.status === "completed").length,
@@ -931,7 +957,7 @@ export const getStudentSubjectMap = query({
         color: subject.color,
       },
       topics: orderedTopics,
-      totalStars,
+      totalStarsApprox,
       totalPaliers,
       completedPaliers,
     };
@@ -1049,7 +1075,8 @@ export const getMyNextStep = query({
       if (
         topic &&
         !isHiddenClass(topic.class) &&
-        (studentClass === null || topic.class === studentClass) &&
+        studentClass !== null &&
+        topic.class === studentClass &&
         latestInProgress.palierIndex <= effectivePalierCount(topic)
       ) {
         const subject = await ctx.db.get(topic.subjectId);

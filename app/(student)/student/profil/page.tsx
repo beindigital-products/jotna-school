@@ -1,12 +1,27 @@
 "use client";
 
-import { BookCheck, Award, Clock, Star, Heart, Flame, Volume2, VolumeX, Sparkles } from "lucide-react";
+import { useState } from "react";
+import {
+  BookCheck,
+  Award,
+  Clock,
+  Star,
+  Heart,
+  Flame,
+  Volume2,
+  VolumeX,
+  Sparkles,
+  School,
+  LogOut,
+} from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { setSoundEnabledLocal } from "@/lib/sounds";
 import { Pio } from "@/components/student/pio";
-import { BadgeShield } from "@/components/student/badge-icon";
+import { GameButton } from "@/components/student/game/game-button";
 import { pioSays } from "@/lib/pioCopy";
+import { useLogout } from "@/hooks/use-logout";
+import { classLongName, schoolClassDisplay } from "@/lib/classLabels";
 
 /**
  * LE CARNET D'EXPLORATEUR — le profil de l'élève, vu comme un carnet de bord.
@@ -18,6 +33,11 @@ import { pioSays } from "@/lib/pioCopy";
  * Tout ce qui existait reste : l'anneau de niveau (D3b), le réglage des sons
  * (D6/D22), la matière préférée, les derniers trophées. Cold start sans zéros
  * (D8) : un tampon à zéro ne s'imprime pas, il reste en pointillé.
+ *
+ * La page « Mon école » dit à l'enfant d'où viennent ses exercices : la classe
+ * que l'école a renseignée, qui décide de son programme (D10). La
+ * déconnexion ferme le carnet, en deux temps pour qu'un doigt qui glisse ne
+ * renvoie pas un enfant de huit ans sur l'écran de connexion.
  */
 const EXOS_PER_LEVEL_UI = 50; // Mirrors students.EXOS_PER_LEVEL.
 
@@ -73,7 +93,11 @@ export default function StudentProfilePage() {
   const remaining = stats.exosToNextLevel ?? EXOS_PER_LEVEL_UI;
   const xpInLevel = EXOS_PER_LEVEL_UI - remaining;
   const xpProgress = Math.max(0, Math.min(100, (xpInLevel / EXOS_PER_LEVEL_UI) * 100));
-  const studentClass = (stats.student as { class?: string | null }).class ?? null;
+  const schooling = stats.schooling;
+  // « CM1 A » quand l'inscription la donne, sinon le seul niveau du profil.
+  const classDisplay = schooling
+    ? schoolClassDisplay(schooling.class, schooling.classLabel)
+    : stats.class;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-0">
@@ -118,8 +142,8 @@ export default function StudentProfilePage() {
           </span>
 
           <h1 className="mt-3 font-display text-2xl font-extrabold text-amber-950">{stats.student.name}</h1>
-          {studentClass && (
-            <p className="font-display text-sm font-bold text-amber-800/80">Classe de {studentClass}</p>
+          {classDisplay && (
+            <p className="font-display text-sm font-bold text-amber-800/80">Classe de {classDisplay}</p>
           )}
 
           {remaining > 0 && (
@@ -129,6 +153,41 @@ export default function StudentProfilePage() {
           )}
         </div>
       </div>
+
+      {/* ── Mon école (D10) ─────────────────────────────────────────────── */}
+      {schooling && (
+        <section
+          aria-labelledby="carnet-ecole"
+          className="relative overflow-hidden rounded-3xl border-2 border-sky-200 bg-gradient-to-b from-sky-50 to-white p-5"
+        >
+          <h2
+            id="carnet-ecole"
+            className="mb-4 flex items-center gap-2 font-display text-lg font-extrabold text-amber-950"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-400 text-white shadow">
+              <School className="h-5 w-5" aria-hidden />
+            </span>
+            Mon école
+          </h2>
+          <dl className="grid grid-cols-2 gap-3">
+            <SchoolFact
+              label="Ma classe"
+              value={schoolClassDisplay(schooling.class, schooling.classLabel)}
+              hint={classLongName(schooling.class)}
+            />
+            {schooling.teacherName ? (
+              <SchoolFact label="Mon prof" value={schooling.teacherName} />
+            ) : (
+              <SchoolFact label="Niveau" value={schooling.class} />
+            )}
+            <SchoolFact label="Mon école" value={schooling.schoolName} wide />
+          </dl>
+          <p className="mt-4 font-display text-xs font-bold text-sky-900/70">
+            Tes aventures sont faites pour le {schooling.class}. Si tu changes
+            de classe, ton école s&apos;en occupe.
+          </p>
+        </section>
+      )}
 
       {/* ── Les tampons ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -205,14 +264,8 @@ export default function StudentProfilePage() {
                 key={eb._id}
                 className="flex flex-col items-center rounded-3xl border-2 border-yellow-200 bg-gradient-to-b from-yellow-50 to-orange-50 p-4 text-center"
               >
-                <BadgeShield
-                  iconName={eb.badge.icon}
-                  badgeName={eb.badge.name}
-                  tier={eb.badge.rarity}
-                  locked={false}
-                  size={72}
-                />
-                <p className="mt-2 line-clamp-2 font-display text-sm font-extrabold text-amber-950">{eb.badge.name}</p>
+                <span className="text-3xl">{eb.badge.icon}</span>
+                <p className="mt-2 font-display text-sm font-extrabold text-amber-950">{eb.badge.name}</p>
                 <p className="mt-0.5 text-xs text-amber-900/60">
                   {new Date(eb.earnedAt).toLocaleDateString("fr-FR")}
                 </p>
@@ -220,6 +273,113 @@ export default function StudentProfilePage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* ── Fermer le carnet ────────────────────────────────────────────── */}
+      <LogoutCard />
+    </div>
+  );
+}
+
+/** Une ligne de la page « Mon école ». */
+function SchoolFact({
+  label,
+  value,
+  hint,
+  wide = false,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  wide?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border-2 border-sky-100 bg-white px-4 py-3 ${wide ? "col-span-2" : ""}`}
+    >
+      <dt className="font-display text-[11px] font-extrabold uppercase tracking-wide text-sky-700/80">
+        {label}
+      </dt>
+      <dd className="mt-0.5 font-display text-lg font-extrabold leading-tight text-amber-950">
+        {value}
+      </dd>
+      {hint && (
+        <dd className="mt-0.5 text-xs font-semibold text-amber-900/60">{hint}</dd>
+      )}
+    </div>
+  );
+}
+
+/**
+ * La déconnexion, en deux temps. Un premier appui demande confirmation, Pio
+ * s'attriste un peu ; « Je reste » est le bouton le plus visible, parce que
+ * c'est l'appui accidentel qu'on veut rattraper.
+ */
+function LogoutCard() {
+  const logout = useLogout();
+  const [confirming, setConfirming] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  const handleLogout = async () => {
+    setLeaving(true);
+    try {
+      await logout();
+    } catch {
+      // La session n'a pas pu être fermée : on rend la main plutôt que de
+      // laisser l'enfant devant un bouton figé.
+      setLeaving(false);
+    }
+  };
+
+  if (!confirming) {
+    return (
+      <div className="flex justify-center pb-4">
+        <GameButton
+          tone="white"
+          onClick={() => setConfirming(true)}
+          icon={<LogOut className="h-5 w-5" aria-hidden />}
+          className="border-2 border-amber-200"
+        >
+          Se déconnecter
+        </GameButton>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="alertdialog"
+      aria-labelledby="carnet-quitter"
+      className="flex flex-col items-center rounded-3xl border-2 border-amber-200 bg-[#fff8e6] p-5 text-center"
+    >
+      <Pio state="sad" size={96} />
+      <p
+        id="carnet-quitter"
+        className="mt-2 font-display text-lg font-extrabold text-amber-950"
+      >
+        Tu pars déjà&nbsp;?
+      </p>
+      <p className="mt-1 text-sm font-semibold text-amber-900/70">
+        Ton carnet t&apos;attendra ici, avec toutes tes étoiles.
+      </p>
+      <div className="mt-5 flex w-full flex-col gap-4 sm:flex-row">
+        <GameButton
+          tone="green"
+          onClick={() => setConfirming(false)}
+          disabled={leaving}
+          className="w-full sm:flex-1"
+        >
+          Je reste
+        </GameButton>
+        <GameButton
+          tone="white"
+          onClick={handleLogout}
+          disabled={leaving}
+          icon={<LogOut className="h-5 w-5" aria-hidden />}
+          className="w-full border-2 border-amber-200 sm:flex-1"
+        >
+          {leaving ? "À bientôt…" : "Oui, je me déconnecte"}
+        </GameButton>
       </div>
     </div>
   );

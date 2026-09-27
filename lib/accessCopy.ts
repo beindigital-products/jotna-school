@@ -25,6 +25,11 @@ export function accessMessageForAdult(reason: AccessReason): {
         title: "Aucune école rattachée",
         body: "Cet élève n'est rattaché à aucune école. Contactez l'établissement pour qu'il l'inscrive.",
       };
+    case "no_class":
+      return {
+        title: "Classe non renseignée",
+        body: "Cet élève est inscrit mais sa classe n'est pas renseignée. Les exercices dépendent de la classe : demandez à l'établissement de la compléter.",
+      };
     case "seat_released":
       return {
         title: "Élève retiré de l'école",

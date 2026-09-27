@@ -282,3 +282,63 @@ export const wipeStorage = internalMutation({
     };
   },
 });
+
+/**
+ * Le nom de la table héritée que le déploiement de développement porte encore.
+ *
+ * ELLE N'EST DANS AUCUN SCHÉMA, D'OÙ LE TYPE `string`. La branche
+ * `doums85/student-pages`, jamais fusionnée, y a écrit en juillet 2026 une
+ * quinzaine de documents de la forme `{ studentId, dayKey, createdAt, quests:
+ * [{ key, type, label, target, progress, reward }] }` — sans `bonusStars`, avec
+ * un `reward` en trop. Convex refuse de pousser un validateur que les documents
+ * présents ne respectent pas : c'est pour cette raison que les missions du jour
+ * du Monde de Pio ont été posées dans une table `dailyMissions` plutôt que dans
+ * `dailyQuests`. Une fois cette table vidée, plus rien n'interdit le nom — mais
+ * `dailyMissions` est installé et documenté, on ne le renomme pas.
+ *
+ * `TableNames` ne la connaît pas, et c'est voulu : l'ajouter au schéma pour
+ * pouvoir l'effacer reviendrait à déclarer ce qu'on veut faire disparaître. Le
+ * moteur, lui, lit et efface une table absente du schéma sans broncher ; la
+ * conversion de type dans `purgeLegacyDailyQuests` est cantonnée à cet usage.
+ */
+const LEGACY_DAILY_QUESTS_TABLE: string = "dailyQuests";
+
+/**
+ * Vide la table héritée `dailyQuests`, par lots, jusqu'à ce que `done` soit vrai.
+ *
+ * MÊME GARDE QUE LES AUTRES : `assertTargetedDeployment` refuse d'agir si
+ * l'appelant ne nomme pas le déploiement visé.
+ *
+ *     npx convex run resetDeployment:purgeLegacyDailyQuests \
+ *       '{"confirmDeployment":"<nom-du-déploiement>"}'
+ *
+ * ELLE NE VIDE QUE CETTE TABLE, ET NE LA SUPPRIME PAS. La coquille vide reste
+ * visible dans la liste des tables du tableau de bord ; elle ne gêne aucun
+ * push de schéma. Pour la faire disparaître tout à fait : tableau de bord
+ * Convex → Data → `dailyQuests` → supprimer la table.
+ */
+export const purgeLegacyDailyQuests = internalMutation({
+  args: { confirmDeployment: v.string() },
+  handler: async (ctx, args) => {
+    const deployment = assertTargetedDeployment(args.confirmDeployment);
+
+    // Table absente du schéma : le typage strict la refuse, le moteur l'accepte.
+    const rows = await ctx.db
+      .query(LEGACY_DAILY_QUESTS_TABLE as TableNames)
+      .take(BATCH_PER_TABLE);
+    for (const row of rows) {
+      await ctx.db.delete(row._id);
+    }
+
+    const done = rows.length < BATCH_PER_TABLE;
+    return {
+      deployment,
+      table: LEGACY_DAILY_QUESTS_TABLE,
+      deleted: rows.length,
+      done,
+      next: done
+        ? "Terminé : la table dailyQuests est vide."
+        : "Relancez la même commande : il reste des documents.",
+    };
+  },
+});

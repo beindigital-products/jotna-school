@@ -96,24 +96,6 @@ et pose la sienne, givrée, qui n'apparaît qu'au défilement, comme un en-tête
 iOS qui se replie. Au repos, rien ne sépare la barre d'état du héros ; en
 défilant, le contenu passe sous un verre crème.
 
-## Le filtre d'ombre de Pio, jamais sur le nœud qui bouge
-
-Un rectangle coloré est apparu un jour derrière Pio, au camp, pile à la
-taille de son sprite. La cause : WKWebView. Quand une même boîte porte à la
-fois un `filter` (l'ombre portée `drop-shadow`) et une transform animée, le
-moteur calcule le filtre une fois dans l'espace local, met le résultat en
-cache, puis promène ce cache avec la transform. À la fermeture d'un calque
-posé au-dessus (l'overlay de montée de niveau, violet), le cache garde ses
-pixels et n'est jamais recalculé : d'où le rectangle violet, exactement la
-boîte du filtre.
-
-`components/student/pio.tsx` sépare donc les deux pour de bon : le `filter`
-reste sur le cadre fixe, la transform vit sur un nœud intérieur. Le contenu du
-cadre change alors à chaque image, le filtre se recalcule et ne peut plus rien
-retenir ; `isolation: isolate` lui donne en plus son propre groupe de
-composition. Règle générale sous WKWebView : ne jamais poser un `filter` et une
-animation de transform sur le même élément.
-
 ## Ce que l'export statique impose
 
 `output: "export"` interdit les routes dynamiques `[id]`. Next exige de
@@ -201,3 +183,28 @@ de tout cela n'est fait.
 `ios/App/App/public` et `ios/App/App/capacitor.config.json` sont recréés par
 `cap sync`. Ils sont ignorés par Git. Ne les modifiez pas à la main : le
 prochain `pnpm ios:sync` écrasera vos changements.
+
+## Android
+
+Le même export statique tourne dans l'application Android. Le projet Gradle
+vit dans `android/`, généré par `cap add android` (Capacitor 8.5.2, SDK
+Android 36, Java 21).
+
+```bash
+pnpm android:run
+```
+
+Cette commande construit l'export, le copie dans
+`android/app/src/main/assets/public` et lance l'application sur l'émulateur
+ou le téléphone branché. `pnpm android:open` ouvre le projet dans Android
+Studio.
+
+Sur un Mac sans Android Studio, les outils s'installent par Homebrew :
+`openjdk@21` et `android-commandlinetools`, avec `JAVA_HOME` et
+`ANDROID_HOME` déclarés dans le shell, puis `sdkmanager` pour
+`platform-tools`, `platforms;android-36`, `build-tools;36.0.0`, `emulator`
+et une image système `android-36;google_apis;arm64-v8a`.
+
+Le routeur de Capacitor Android a le même comportement que celui d'iOS pour
+les chemins sans extension : les règles de navigation ci-dessus valent pour
+les deux plateformes.

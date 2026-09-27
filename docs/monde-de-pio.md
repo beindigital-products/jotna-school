@@ -53,13 +53,8 @@ difficulté et le bouton d'action. Une étape fermée secoue la tête et expliqu
 comment l'ouvrir. Un doigt qui dérape ne lance jamais une séance. L'élève ne
 voit que les thématiques de son niveau.
 
-**La Salle des trophées** (`/student/badges`). Les trophées rangés par étagères,
-du plus rare au plus commun, avec une jauge de collection. Chaque trophée est
-une médaille : le métal du cadre dit le rang (bronze, acier saphir, améthyste,
-or), et le médaillon prend une teinte tirée du nom, pour que des dizaines de
-trophées se distinguent d'un coup d'œil. Les hauts rangs gagnent un halo, des
-gemmes, des rayons et des éclats. Tout est peint en SVG plat, sans image et
-sans filtre (`components/student/badge-icon.tsx`).
+**La Salle des trophées** (`/student/badges`). Les badges rangés par étagères,
+du plus rare au plus commun, avec une jauge de collection.
 
 **Le Carnet** (`/student/profil`). Une page crème avec des tampons : niveau,
 étoiles, exercices, trophées, série. Un tampon à zéro reste en pointillé.
@@ -95,12 +90,6 @@ corps ne se déforme jamais : la marche est un rebond du sprite entier, un
 retournement quand il change de sens, une ombre qui respire et de la
 poussière derrière les pattes. La caméra le suit. Sous
 `prefers-reduced-motion`, Pio est déjà arrivé.
-
-Le chemin déjà parcouru porte un pointillé vert qui avance lentement en
-boucle (`@keyframes trail-dash`). Son décalage vaut exactement une période du
-motif (`stroke-dasharray="1 24"`, soit 25) : à la reprise, un tiret retombe
-sur la place du suivant, sans le saut brutal d'avant. Régulier et calme, il
-dit « c'est fait » sans clignoter.
 
 Sur un appareil « full », le sol est la savane peinte, répétée en miroir vers
 le bas pour ne pas montrer de couture ; sur « lite », un dégradé et quelques
@@ -182,12 +171,11 @@ Poppins. Le jeton est maintenant déclaré dans `app/globals.css`.
 
 Pio était un « petit oiseau rond » dessiné en SVG, un bouche-trou de MVP. Le
 composant `components/student/pio.tsx` rend désormais l'avatar officiel, avec
-la même interface pour ses appelants et quatre poses de plus.
-
-Le carnet écrivait ses « derniers trophées » en toutes lettres : le nom de
-l'icône (`Footprints`, `Calculator`) s'affichait tel quel, énorme, à la place
-de la médaille, faute d'avoir résolu la chaîne en composant. Il rend désormais
-le même `BadgeShield` que la salle des trophées.
+la même interface pour ses appelants et quatre poses de plus. Depuis
+septembre 2026, chaque pose est un clip vidéo en boucle, sans arrière-plan,
+généré sur OpenArt ; plus aucune animation du personnage n'est codée. La marche
+sur la carte est elle aussi un clip (`walk`) : le code ne fait que déplacer le
+sprite le long du sentier. Voir `docs/pio-animations.md`.
 
 ## Étendre le jeu
 
@@ -208,8 +196,9 @@ Ajouter un test.
 rang, marges, amplitude du zigzag). La vitesse de marche et ses bornes sont
 au même endroit.
 
-**Ajouter une pose de Pio** : déposer l'image dans `public/images/pio/`, puis
-l'ajouter à `FILES`, `LABELS` et, si elle bouge, `MOTION` dans `pio.tsx`.
+**Ajouter une pose de Pio** : déposer l'image dans `public/images/pio/`,
+générer et encoder son clip (`docs/pio-animations.md`), puis l'ajouter à
+`PioState`, `POSES`, `POSTERS` et `LABELS` dans `pio.tsx`.
 
 **Changer une réplique** : `lib/pioCopy.ts`. Pio tutoie, ne gronde jamais,
 parle court.
