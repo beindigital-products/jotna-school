@@ -32,7 +32,8 @@ Chaque clip existe en deux formats dans `public/videos/pio/` :
 
 - `<pose>.mov`, HEVC avec canal alpha : iOS (WKWebView de l'app Capacitor)
   et Safari ;
-- `<pose>.webm`, VP9 avec canal alpha : Android, Chrome, Firefox.
+- `<pose>.webm`, VP9 avec canal alpha : Android (vue web Chromium de
+  l'app Capacitor), Chrome, Firefox.
 
 Le navigateur prend la première source qu'il sait lire. Le PNG de la pose
 sert d'affiche pendant le chargement, et d'image fixe quand l'enfant a

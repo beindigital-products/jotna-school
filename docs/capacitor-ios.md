@@ -183,3 +183,28 @@ de tout cela n'est fait.
 `ios/App/App/public` et `ios/App/App/capacitor.config.json` sont recréés par
 `cap sync`. Ils sont ignorés par Git. Ne les modifiez pas à la main : le
 prochain `pnpm ios:sync` écrasera vos changements.
+
+## Android
+
+Le même export statique tourne dans l'application Android. Le projet Gradle
+vit dans `android/`, généré par `cap add android` (Capacitor 8.5.2, SDK
+Android 36, Java 21).
+
+```bash
+pnpm android:run
+```
+
+Cette commande construit l'export, le copie dans
+`android/app/src/main/assets/public` et lance l'application sur l'émulateur
+ou le téléphone branché. `pnpm android:open` ouvre le projet dans Android
+Studio.
+
+Sur un Mac sans Android Studio, les outils s'installent par Homebrew :
+`openjdk@21` et `android-commandlinetools`, avec `JAVA_HOME` et
+`ANDROID_HOME` déclarés dans le shell, puis `sdkmanager` pour
+`platform-tools`, `platforms;android-36`, `build-tools;36.0.0`, `emulator`
+et une image système `android-36;google_apis;arm64-v8a`.
+
+Le routeur de Capacitor Android a le même comportement que celui d'iOS pour
+les chemins sans extension : les règles de navigation ci-dessus valent pour
+les deux plateformes.
