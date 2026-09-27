@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Check, X, Link2 } from "lucide-react";
+import { AlertTriangle, Link2 } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
 
 /**
@@ -43,7 +43,6 @@ export default function MatchExercise({
   onSubmit,
   onSkip,
   disabled,
-  isCorrect,
 }: MatchExerciseProps) {
   const left = Array.isArray(payload?.left) ? payload.left : [];
   const right = Array.isArray(payload?.right) ? payload.right : [];
@@ -127,19 +126,6 @@ export default function MatchExercise({
   return (
     <div className="space-y-6">
       <ExercisePrompt prompt={prompt} />
-
-      {isCorrect === true && (
-        <div className="flex items-center gap-2 rounded-2xl bg-green-100 border-2 border-green-300 px-4 py-3 text-green-800 font-semibold">
-          <Check className="h-5 w-5" />
-          Bravo, tout est bien relié !
-        </div>
-      )}
-      {isCorrect === false && (
-        <div className="flex items-center gap-2 rounded-2xl bg-red-100 border-2 border-red-300 px-4 py-3 text-red-800 font-semibold animate-[shake_0.5s_ease-in-out]">
-          <X className="h-5 w-5" />
-          Essaie encore !
-        </div>
-      )}
 
       <div className="grid grid-cols-2 gap-6">
         {/* Left column — original order */}

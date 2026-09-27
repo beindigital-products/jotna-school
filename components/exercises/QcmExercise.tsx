@@ -78,7 +78,7 @@ export default function QcmExercise({
               className={`
                 flex w-full items-center gap-4 rounded-2xl border-3 px-5 py-4 text-left text-lg font-semibold transition-all duration-200
                 ${showCorrectFeedback
-                  ? "border-green-400 bg-green-100 text-green-800 scale-[1.02] shadow-lg shadow-green-200"
+                  ? "border-green-400 bg-green-100 text-green-800 scale-[1.02] shadow-lg shadow-green-200 animate-[pop-in_0.45s_ease-out]"
                   : showIncorrectFeedback
                     ? "border-red-400 bg-red-100 text-red-800 animate-[shake_0.5s_ease-in-out]"
                     : isSelected

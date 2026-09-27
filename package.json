@@ -8,11 +8,21 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "ios:sync": "next build && cap sync ios",
+    "ios:open": "cap open ios",
+    "ios:brand": "bash scripts/ios-brand-assets.sh",
+    "android:sync": "next build && cap sync android",
+    "android:open": "cap open android",
+    "android:run": "next build && cap run android",
+    "preview:export": "node scripts/serve-export.mjs 4173 out"
   },
   "dependencies": {
     "@auth/core": "^0.37.0",
     "@base-ui/react": "^1.4.0",
+    "@capacitor/android": "8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@convex-dev/auth": "^0.0.91",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -24,7 +34,6 @@
     "convex": "^1.35.1",
     "framer-motion": "^12.38.0",
     "howler": "^2.2.4",
-    "lottie-react": "^2.4.1",
     "lucide-react": "^1.8.0",
     "next": "16.2.4",
     "openai": "^6.34.0",
@@ -38,6 +47,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",

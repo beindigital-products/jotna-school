@@ -342,14 +342,14 @@ export async function catalogReadable(ctx: QueryCtx): Promise<boolean> {
 export async function catalogAccess(ctx: QueryCtx): Promise<{
   readable: boolean;
   hiddenClasses: boolean;
-  opensTopic: (topicClass: string | undefined) => boolean;
+  opensTopic: (topicClass: string | null | undefined) => boolean;
 }> {
   const profile = await currentProfile(ctx);
   if (!profile) {
     return { readable: false, hiddenClasses: false, opensTopic: () => false };
   }
   const caller = { role: profile.role, studentClass: profile.class ?? null };
-  const opensTopic = (topicClass: string | undefined) => topicOpenTo(caller, topicClass);
+  const opensTopic = (topicClass: string | null | undefined) => topicOpenTo(caller, topicClass);
   if (profile.role !== "student") {
     return {
       readable: true,

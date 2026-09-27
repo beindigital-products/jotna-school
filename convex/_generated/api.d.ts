@@ -39,7 +39,11 @@ import type * as linkRequestsEmail from "../linkRequestsEmail.js";
 import type * as linkRules from "../linkRules.js";
 import type * as migrations from "../migrations.js";
 import type * as palierAttempts from "../palierAttempts.js";
+import type * as palierRules from "../palierRules.js";
+import type * as paliers_dragDropRepair from "../paliers/dragDropRepair.js";
 import type * as paliers_index from "../paliers/index.js";
+import type * as paliers_mathRepair from "../paliers/mathRepair.js";
+import type * as paliers_pregen from "../paliers/pregen.js";
 import type * as paliers_prompts from "../paliers/prompts.js";
 import type * as paliers_scoring from "../paliers/scoring.js";
 import type * as parentLink from "../parentLink.js";
@@ -49,6 +53,8 @@ import type * as pricing from "../pricing.js";
 import type * as profileRules from "../profileRules.js";
 import type * as profiles from "../profiles.js";
 import type * as progress from "../progress.js";
+import type * as questRules from "../questRules.js";
+import type * as quests from "../quests.js";
 import type * as regenNotificationEmail from "../regenNotificationEmail.js";
 import type * as reports from "../reports.js";
 import type * as reportsEmail from "../reportsEmail.js";
@@ -58,6 +64,7 @@ import type * as roleRules from "../roleRules.js";
 import type * as schools from "../schools.js";
 import type * as secureRandom from "../secureRandom.js";
 import type * as settings_index from "../settings/index.js";
+import type * as staffAccounts from "../staffAccounts.js";
 import type * as streak from "../streak.js";
 import type * as studentCredentials from "../studentCredentials.js";
 import type * as studentImport from "../studentImport.js";
@@ -66,6 +73,7 @@ import type * as students from "../students.js";
 import type * as subjects from "../subjects.js";
 import type * as subscriptionRules from "../subscriptionRules.js";
 import type * as testSeeds from "../testSeeds.js";
+import type * as testSeedsSchool from "../testSeedsSchool.js";
 import type * as topics from "../topics.js";
 
 import type {
@@ -106,7 +114,11 @@ declare const fullApi: ApiFromModules<{
   linkRules: typeof linkRules;
   migrations: typeof migrations;
   palierAttempts: typeof palierAttempts;
+  palierRules: typeof palierRules;
+  "paliers/dragDropRepair": typeof paliers_dragDropRepair;
   "paliers/index": typeof paliers_index;
+  "paliers/mathRepair": typeof paliers_mathRepair;
+  "paliers/pregen": typeof paliers_pregen;
   "paliers/prompts": typeof paliers_prompts;
   "paliers/scoring": typeof paliers_scoring;
   parentLink: typeof parentLink;
@@ -116,6 +128,8 @@ declare const fullApi: ApiFromModules<{
   profileRules: typeof profileRules;
   profiles: typeof profiles;
   progress: typeof progress;
+  questRules: typeof questRules;
+  quests: typeof quests;
   regenNotificationEmail: typeof regenNotificationEmail;
   reports: typeof reports;
   reportsEmail: typeof reportsEmail;
@@ -125,6 +139,7 @@ declare const fullApi: ApiFromModules<{
   schools: typeof schools;
   secureRandom: typeof secureRandom;
   "settings/index": typeof settings_index;
+  staffAccounts: typeof staffAccounts;
   streak: typeof streak;
   studentCredentials: typeof studentCredentials;
   studentImport: typeof studentImport;
@@ -133,6 +148,7 @@ declare const fullApi: ApiFromModules<{
   subjects: typeof subjects;
   subscriptionRules: typeof subscriptionRules;
   testSeeds: typeof testSeeds;
+  testSeedsSchool: typeof testSeedsSchool;
   topics: typeof topics;
 }>;
 

@@ -243,7 +243,7 @@ function SubjectCard({
 
       <div className="mt-4 flex items-center gap-2">
         <Link
-          href={`/admin/subjects/${subject._id}`}
+          href={`/admin/subjects/detail?id=${subject._id}`}
           className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <Pencil className="h-3.5 w-3.5" />

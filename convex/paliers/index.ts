@@ -14,17 +14,21 @@ import {
 } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
+import type { ActionCtx } from "../_generated/server";
 import {
   assertVisibleClass,
   visibleClassValidator,
+  type VisibleClassName,
 } from "../curriculum";
+import { effectivePalierCount } from "../palierRules";
 import {
   buildPalierBasePrompt,
   buildPalierBaseSystemPrompt,
   buildVariationPrompt,
   buildVariationSystemPrompt,
 } from "./prompts";
-import { checkMathExercise } from "../aiGateway/factCheck";
+import { repairMathExercise } from "./mathRepair";
+import { repairDragDrop } from "./dragDropRepair";
 import { computeExerciseScore } from "./scoring";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { checkAccess, requireAccess } from "../access";
@@ -278,10 +282,28 @@ function sanitizePayload(
       return {
         // No accepted answers exposed — verifyAttempt enforces.
         tolerance: p.tolerance ?? null,
+        // LE CLAVIER À OUVRIR, déduit des réponses attendues sans les
+        // révéler : un nombre entier ouvre le pavé numérique, un nombre à
+        // virgule le pavé décimal, le reste le clavier des lettres. Calculé
+        // à la lecture, donc vrai aussi pour les exercices déjà générés.
+        inputMode: inputModeFor(p.acceptedAnswers),
       };
     default:
       return {};
   }
+}
+
+export type AnswerInputMode = "numeric" | "decimal" | "text";
+
+/** Entier (« 18 », « -3 »), décimal (« 2,5 », « 3.75 ») ou texte : le clavier suit. */
+export function inputModeFor(acceptedAnswers: unknown): AnswerInputMode {
+  const answers = Array.isArray(acceptedAnswers)
+    ? acceptedAnswers.filter((a): a is string => typeof a === "string").map((a) => a.trim())
+    : [];
+  if (answers.length === 0) return "text";
+  if (answers.every((a) => /^-?\d+$/.test(a))) return "numeric";
+  if (answers.every((a) => /^-?\d+([.,]\d+)?$/.test(a))) return "decimal";
+  return "text";
 }
 
 /**
@@ -346,6 +368,7 @@ export const upsertBucket = internalMutation({
       v.object({
         totalChecked: v.number(),
         divergences: v.number(),
+        repaired: v.optional(v.number()),
       }),
     ),
     preGenerated: v.optional(v.boolean()),
@@ -396,6 +419,15 @@ export const upsertBucket = internalMutation({
   },
 });
 
+/** Un exercice de base du palier : ni variation d'une tentative, ni personnalisé pour un élève. */
+export function isBaseExercise(ex: Doc<"exercises">): boolean {
+  return (
+    ex.palierAttemptId === undefined &&
+    ex.isVariation !== true &&
+    ex.personalizedFor === undefined
+  );
+}
+
 export const insertGeneratedExercises = internalMutation({
   args: {
     palierId: v.id("paliers"),
@@ -415,6 +447,19 @@ export const insertGeneratedExercises = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
+    // UN PALIER RÉGÉNÉRÉ REMPLACE SES EXERCICES, IL NE LES EMPILE PAS. Un
+    // palier périmé garde sa ligne (`upsertBucket` la réutilise) ; sans ce
+    // ménage, ses anciens exercices restaient attachés et la séance en
+    // servait vingt. Les variations (attachées à une tentative) et les
+    // exercices personnalisés restent : ils appartiennent à un élève.
+    const previous = await ctx.db
+      .query("exercises")
+      .withIndex("by_palierId", (q) => q.eq("palierId", args.palierId))
+      .take(200);
+    for (const ex of previous) {
+      if (isBaseExercise(ex)) await ctx.db.delete(ex._id);
+    }
+
     const ids: Id<"exercises">[] = [];
     const now = Date.now();
     for (const ex of args.exercises) {
@@ -628,21 +673,20 @@ export const getBucket = action({
     // « CM2 » sur une thématique de CE1 — une génération IA facturée à son
     // école, pour un seau qui n'aurait jamais dû exister. Les deux doivent
     // désormais valoir la classe de l'élève (`accessRules.topicOpenTo`).
-    // Lue avant le cache : un seau déjà généré ne s'ouvre pas davantage.
-    const subject = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
+    // Lue avant tout le reste : un seau déjà généré ne s'ouvre pas davantage.
+    // La même lecture sert plus bas au nombre d'étapes.
+    const located = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
       subjectId: args.subjectId,
       topicId: args.topicId,
     });
-    if (!subject || !subject.topic) {
-      throw new Error("Subject or topic not found");
-    }
+    if (!located || !located.topic) throw new ConvexError("Thématique introuvable");
     const caller = {
       role: callerProfile.role,
       studentClass: callerProfile.class ?? null,
     };
     if (
-      subject.topic.class !== args.class ||
-      !topicOpenTo(caller, subject.topic.class)
+      located.topic.class !== args.class ||
+      !topicOpenTo(caller, located.topic.class)
     ) {
       throw new ConvexError({ code: "ACCESS_DENIED", reason: "wrong_class" });
     }
@@ -673,137 +717,197 @@ export const getBucket = action({
       }
     }
 
-    const existing = await ctx.runQuery(internal.paliers.index.findBucket, {
+    // La thématique doit exister et le palier être une de ses étapes : le
+    // nombre d'étapes est dynamique (`palierRules.effectivePalierCount`), et
+    // un index au-delà ne doit ni générer ni ouvrir quoi que ce soit.
+    const palierCount = effectivePalierCount(located.topic);
+    if (
+      !Number.isInteger(args.palierIndex) ||
+      args.palierIndex < 1 ||
+      args.palierIndex > palierCount
+    ) {
+      throw new ConvexError(
+        `Cette thématique compte ${palierCount} palier${palierCount > 1 ? "s" : ""}.`,
+      );
+    }
+
+    return await generateBucketCore(ctx, {
       subjectId: args.subjectId,
       class: args.class,
       topicId: args.topicId,
       palierIndex: args.palierIndex,
+      userId: callerProfile._id,
     });
-    const now = Date.now();
-    // `forceRegenerate` A DISPARU DES ARGUMENTS, il n'a pas été gardé.
-    //
-    // C'était un booléen PUBLIC qu'aucun écran n'envoyait : il n'existait que
-    // comme surface d'attaque. Posé à `true`, il rendait cette branche de cache
-    // INATTEIGNABLE, donc chaque appel relançait une génération `palier_base`
-    // complète — l'appel le plus cher du produit. Avec `palierIndex: 1`, le
-    // contrôle de progression est sauté par ailleurs, et rien ne limitait la
-    // cadence : un seul compte en règle pouvait épuiser le budget IA MENSUEL de
-    // toutes les écoles, le plafond budgétaire n'étant pas segmenté par école.
-    //
-    // Le régénérer à dessein reste possible et le restera : c'est `expiresAt`
-    // qui décide, et la régénération personnalisée a sa propre voie
-    // (`quotaScope: "system_regen"`, plus bas). Une fraîcheur ne se pilote pas
-    // depuis le client.
-    if (existing && existing.status === "cached" && existing.expiresAt > now) {
-      return {
-        palierId: existing._id,
-        cacheHit: true,
-        qaStatus: existing.qaStatus ?? "auto_ok",
-      };
-    }
+  },
+});
 
-    // Mark generating (or create row with status=generating).
+export type BucketArgs = {
+  subjectId: Id<"subjects">;
+  class: VisibleClassName;
+  topicId: Id<"topics">;
+  palierIndex: number;
+  /** L'élève à qui imputer la dépense ; absent pour une génération système (pré-génération). */
+  userId?: Id<"profiles">;
+  /** Posé par la pré-génération (`paliers/pregen.ts`), pour distinguer ce contenu à l'audit. */
+  preGenerated?: boolean;
+};
+
+/**
+ * LE CŒUR DE `getBucket`, sans son contrôle d'accès : rend le palier en cache
+ * s'il est frais, sinon le génère, le vérifie et le persiste.
+ *
+ * Fonction ordinaire et non action interne : `getBucket` (l'élève) et la
+ * pré-génération (`paliers/pregen.ts`, la ligne de commande) partagent le même
+ * code sans passer par `ctx.runAction`, qui ne se justifie que pour changer
+ * de moteur d'exécution. Les contrôles restent à l'entrée de chaque appelant :
+ * paywall et progression pour l'élève, nom du déploiement pour le script.
+ */
+export async function generateBucketCore(
+  ctx: ActionCtx,
+  args: BucketArgs,
+): Promise<{ palierId: Id<"paliers">; cacheHit: boolean; qaStatus: string }> {
+
+  const existing = await ctx.runQuery(internal.paliers.index.findBucket, {
+    subjectId: args.subjectId,
+    class: args.class,
+    topicId: args.topicId,
+    palierIndex: args.palierIndex,
+  });
+  const now = Date.now();
+  // `forceRegenerate` A DISPARU DES ARGUMENTS, il n'a pas été gardé.
+  //
+  // C'était un booléen PUBLIC qu'aucun écran n'envoyait : il n'existait que
+  // comme surface d'attaque. Posé à `true`, il rendait cette branche de cache
+  // INATTEIGNABLE, donc chaque appel relançait une génération `palier_base`
+  // complète — l'appel le plus cher du produit. Avec `palierIndex: 1`, le
+  // contrôle de progression est sauté par ailleurs, et rien ne limitait la
+  // cadence : un seul compte en règle pouvait épuiser le budget IA MENSUEL de
+  // toutes les écoles, le plafond budgétaire n'étant pas segmenté par école.
+  //
+  // Le régénérer à dessein reste possible et le restera : c'est `expiresAt`
+  // qui décide, et la régénération personnalisée a sa propre voie
+  // (`quotaScope: "system_regen"`, plus bas). Une fraîcheur ne se pilote pas
+  // depuis le client.
+  if (existing && existing.status === "cached" && existing.expiresAt > now) {
+    return {
+      palierId: existing._id,
+      cacheHit: true,
+      qaStatus: existing.qaStatus ?? "auto_ok",
+    };
+  }
+
+  // Mark generating (or create row with status=generating).
+  await ctx.runMutation(internal.paliers.index.upsertBucket, {
+    subjectId: args.subjectId,
+    class: args.class,
+    topicId: args.topicId,
+    palierIndex: args.palierIndex,
+    status: "generating",
+  });
+
+  // Resolve subject + topic for prompt context.
+  const subject = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
+    subjectId: args.subjectId,
+    topicId: args.topicId,
+  });
+  if (!subject || !subject.topic) {
+    throw new Error("Subject or topic not found");
+  }
+
+  const palierCount = effectivePalierCount(subject.topic);
+  const promptInput = {
+    subject: subject.subjectName,
+    topic: subject.topic.name,
+    class: args.class,
+    palierIndex: args.palierIndex,
+    palierCount,
+  };
+  const systemPrompt = buildPalierBaseSystemPrompt(promptInput);
+  const userPrompt = buildPalierBasePrompt(promptInput);
+
+  const gen = await ctx.runAction(internal.aiGateway.index.generate, {
+    purpose: "palier_base",
+    prompt: userPrompt,
+    systemPrompt,
+    expectJson: true,
+    // `userId` MANQUAIT, et c'est le plus gros dépensier du produit.
+    //
+    // `aiGateway.generate` saute son verrou d'accès quand `userId` est absent
+    // — « aucun élève à vérifier, on laisse passer » — et n'impute alors la
+    // dépense à personne, laissant `by_user_month` vide pour la génération de
+    // paliers. Le paywall est bien contrôlé en tête de cette action, mais un
+    // verrou qui ne couvre pas le plus gros dépensier ne vaut pas ce que sa
+    // documentation promet.
+    //
+    // PAS DE `quotaScope` POUR AUTANT, à dessein : `kid_initiated` plafonne à
+    // `dailyMoreLimitPerKid` (3 par jour), ce qui interdirait à un élève
+    // d'ouvrir un quatrième palier dans sa journée. La cadence de CE chemin
+    // est déjà bornée par le cache, pas par un quota.
+    userId: args.userId,
+    metadata: {
+      subjectId: args.subjectId,
+      topicId: args.topicId,
+      class: args.class,
+      palierIndex: args.palierIndex,
+    },
+  });
+
+  if (!gen.ok) {
+    // Reset status — leave row as stale so retry can occur.
     await ctx.runMutation(internal.paliers.index.upsertBucket, {
       subjectId: args.subjectId,
       class: args.class,
       topicId: args.topicId,
       palierIndex: args.palierIndex,
-      status: "generating",
+      status: "stale",
     });
+    throw new Error(gen.reason ?? "AI_GENERATION_FAILED");
+  }
 
-    const systemPrompt = buildPalierBaseSystemPrompt({
-      subject: subject.subjectName,
-      topic: subject.topic.name,
+  const parsed = parseExercises(gen.result);
+  const isMaths = subject.subjectName.toLowerCase().startsWith("math");
+  const factCheck: MathBatch = isMaths
+    ? verifyMathBatch(parsed)
+    : {
+        totalChecked: 0,
+        divergences: 0,
+        repaired: 0,
+        unrepairable: 0,
+        exos: parsed
+          .map((ex, i) => toPersistedShape(ex, i))
+          .filter((s): s is PersistedShape => s !== null),
+      };
+  const qaStatus = factCheck.unrepairable > 0 ? "pending_human" : "auto_ok";
+
+  // Persist palier row + exercises.
+  const palierId: Id<"paliers"> = await ctx.runMutation(
+    internal.paliers.index.upsertBucket,
+    {
+      subjectId: args.subjectId,
       class: args.class,
-      palierIndex: args.palierIndex,
-    });
-    const userPrompt = buildPalierBasePrompt({
-      subject: subject.subjectName,
-      topic: subject.topic.name,
-      class: args.class,
-      palierIndex: args.palierIndex,
-    });
-
-    const gen = await ctx.runAction(internal.aiGateway.index.generate, {
-      purpose: "palier_base",
-      prompt: userPrompt,
-      systemPrompt,
-      expectJson: true,
-      // `userId` MANQUAIT, et c'est le plus gros dépensier du produit.
-      //
-      // `aiGateway.generate` saute son verrou d'accès quand `userId` est absent
-      // — « aucun élève à vérifier, on laisse passer » — et n'impute alors la
-      // dépense à personne, laissant `by_user_month` vide pour la génération de
-      // paliers. Le paywall est bien contrôlé en tête de cette action, mais un
-      // verrou qui ne couvre pas le plus gros dépensier ne vaut pas ce que sa
-      // documentation promet.
-      //
-      // PAS DE `quotaScope` POUR AUTANT, à dessein : `kid_initiated` plafonne à
-      // `dailyMoreLimitPerKid` (3 par jour), ce qui interdirait à un élève
-      // d'ouvrir un quatrième palier dans sa journée. La cadence de CE chemin
-      // est déjà bornée par le cache, pas par un quota.
-      userId: callerProfile._id,
-      metadata: {
-        subjectId: args.subjectId,
-        topicId: args.topicId,
-        class: args.class,
-        palierIndex: args.palierIndex,
-      },
-    });
-
-    if (!gen.ok) {
-      // Reset status — leave row as stale so retry can occur.
-      await ctx.runMutation(internal.paliers.index.upsertBucket, {
-        subjectId: args.subjectId,
-        class: args.class,
-        topicId: args.topicId,
-        palierIndex: args.palierIndex,
-        status: "stale",
-      });
-      throw new Error(gen.reason ?? "AI_GENERATION_FAILED");
-    }
-
-    const parsed = parseExercises(gen.result);
-    const isMaths = subject.subjectName.toLowerCase().startsWith("math");
-    const factCheck = isMaths
-      ? verifyMathBatch(parsed)
-      : {
-          totalChecked: 0,
-          divergences: 0,
-          exos: parsed
-            .map((ex, i) => toPersistedShape(ex, i))
-            .filter((s): s is PersistedShape => s !== null),
-        };
-
-    // Persist palier row + exercises.
-    const palierId: Id<"paliers"> = await ctx.runMutation(
-      internal.paliers.index.upsertBucket,
-      {
-        subjectId: args.subjectId,
-        class: args.class,
-        topicId: args.topicId,
-        palierIndex: args.palierIndex,
-        status: "cached",
-        generationTraceId: gen.traceId,
-        qaStatus:
-          factCheck.divergences > 0 && isMaths ? "pending_human" : "auto_ok",
-        factCheckResults: {
-          totalChecked: factCheck.totalChecked,
-          divergences: factCheck.divergences,
-        },
-      },
-    );
-
-    await ctx.runMutation(internal.paliers.index.insertGeneratedExercises, {
-      palierId,
-      palierIndex: args.palierIndex,
       topicId: args.topicId,
-      exercises: factCheck.exos,
-    });
+      palierIndex: args.palierIndex,
+      status: "cached",
+      preGenerated: args.preGenerated,
+      generationTraceId: gen.traceId,
+      qaStatus,
+      factCheckResults: {
+        totalChecked: factCheck.totalChecked,
+        divergences: factCheck.divergences,
+        repaired: factCheck.repaired,
+      },
+    },
+  );
 
-    return { palierId, cacheHit: false, qaStatus: factCheck.divergences > 0 && isMaths ? "pending_human" : "auto_ok" };
-  },
-});
+  await ctx.runMutation(internal.paliers.index.insertGeneratedExercises, {
+    palierId,
+    palierIndex: args.palierIndex,
+    topicId: args.topicId,
+    exercises: factCheck.exos,
+  });
+
+  return { palierId, cacheHit: false, qaStatus };
+}
 
 export const getSubjectAndTopic = internalQuery({
   args: {
@@ -816,7 +920,12 @@ export const getSubjectAndTopic = internalQuery({
     if (!subject || !topic) return null;
     return {
       subjectName: subject.name,
-      topic: { _id: topic._id, name: topic.name, class: topic.class },
+      topic: {
+        _id: topic._id,
+        name: topic.name,
+        class: topic.class ?? null,
+        palierCount: topic.palierCount ?? null,
+      },
     };
   },
 });
@@ -963,11 +1072,13 @@ export const regenerateFailedExercises = action({
       return { ok: false, reason: "EMPTY_VARIATIONS" };
     }
     const isMaths = subject.name.toLowerCase().startsWith("math");
-    const factCheck = isMaths
+    const factCheck: MathBatch = isMaths
       ? verifyMathBatch(parsed)
       : {
           totalChecked: 0,
           divergences: 0,
+          repaired: 0,
+          unrepairable: 0,
           exos: parsed
             .map((ex, i) => toPersistedShape(ex, i))
             .filter((s): s is PersistedShape => s !== null),
@@ -1077,11 +1188,13 @@ export const startPalierAttempt = mutation({
     const palier = await ctx.db.get(args.palierId);
     if (!palier) throw new Error("Palier introuvable");
 
+    // Une seule lecture de la thématique pour deux contrôles.
+    const topic = await ctx.db.get(palier.topicId);
+
     // Classe de l'élève (`accessRules.topicOpenTo`), jugée sur la THÉMATIQUE
     // et non sur `palier.class` seul : un seau créé avant que `getBucket`
     // vérifie la classe peut porter un niveau qui n'est pas celui de sa
     // thématique.
-    const topic = await ctx.db.get(palier.topicId);
     const caller = { role: profile.role, studentClass: profile.class ?? null };
     if (
       !topic ||
@@ -1089,6 +1202,12 @@ export const startPalierAttempt = mutation({
       !topicOpenTo(caller, palier.class)
     ) {
       throw new ConvexError({ code: "ACCESS_DENIED", reason: "wrong_class" });
+    }
+
+    // Le nombre d'étapes d'une thématique peut baisser depuis l'administration :
+    // un palier généré au-delà reste en base, mais ne s'ouvre plus.
+    if (palier.palierIndex > effectivePalierCount(topic)) {
+      throw new ConvexError("Ce palier n'est plus une étape de cette thématique.");
     }
 
     if (palier.palierIndex > 1) {
@@ -1267,43 +1386,64 @@ function validatePayload(
   if (!raw || typeof raw !== "object") return { valid: false, payload: raw };
   const p = raw as Record<string, unknown>;
 
+  // LE PAYLOAD PERSISTÉ NE GARDE QUE LES CHAMPS CONNUS. Le modèle ajoute
+  // parfois des clés libres (un dictionnaire dont les clés sont des phrases),
+  // et Convex refuse un nom de champ hors ASCII : « Field name Aminata va au
+  // marché. has invalid character 'é' » faisait échouer tout le palier. On
+  // reconstruit donc l'objet champ par champ, au lieu de recopier le reste.
+  const optional = {
+    ...(typeof p.explanation === "string" ? { explanation: p.explanation } : {}),
+    ...(typeof p.concept === "string" ? { concept: p.concept } : {}),
+  };
+
   switch (type) {
     case "qcm": {
       const opts = Array.isArray(p.options) ? p.options.filter((o): o is string => typeof o === "string") : [];
       if (opts.length < 2) return { valid: false, payload: raw };
       if (typeof p.correctIndex !== "number" || p.correctIndex < 0 || p.correctIndex >= opts.length) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, options: opts } };
+      return { valid: true, payload: { ...optional, options: opts, correctIndex: p.correctIndex } };
     }
     case "match": {
       const pairs = Array.isArray(p.pairs)
-        ? p.pairs.filter(
-            (pair): pair is { left: string; right: string } =>
-              !!pair && typeof pair === "object" && typeof (pair as Record<string, unknown>).left === "string" && typeof (pair as Record<string, unknown>).right === "string",
-          )
+        ? p.pairs
+            .filter(
+              (pair): pair is { left: string; right: string } =>
+                !!pair && typeof pair === "object" && typeof (pair as Record<string, unknown>).left === "string" && typeof (pair as Record<string, unknown>).right === "string",
+            )
+            .map((pair) => ({ left: pair.left, right: pair.right }))
         : [];
       if (pairs.length < 2) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, pairs } };
+      return { valid: true, payload: { ...optional, pairs } };
     }
     case "order": {
       const seq = Array.isArray(p.correctSequence) ? p.correctSequence.filter((s): s is string => typeof s === "string") : [];
       if (seq.length < 2) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, correctSequence: seq } };
+      return { valid: true, payload: { ...optional, correctSequence: seq } };
     }
     case "drag-drop": {
       const zones = Array.isArray(p.zones) ? p.zones.filter((z): z is string => typeof z === "string") : [];
       const items = Array.isArray(p.items)
-        ? p.items.filter(
-            (it): it is { text: string; correctZone: string } =>
-              !!it && typeof it === "object" && typeof (it as Record<string, unknown>).text === "string" && typeof (it as Record<string, unknown>).correctZone === "string",
-          )
+        ? p.items
+            .filter(
+              (it): it is { text: string; correctZone: string } =>
+                !!it && typeof it === "object" && typeof (it as Record<string, unknown>).text === "string" && typeof (it as Record<string, unknown>).correctZone === "string",
+            )
+            .map((it) => ({ text: it.text, correctZone: it.correctZone }))
         : [];
       if (zones.length < 2 || items.length < 2) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, zones, items } };
+      return { valid: true, payload: { ...optional, zones, items } };
     }
     case "short-answer": {
       const accepted = Array.isArray(p.acceptedAnswers) ? p.acceptedAnswers.filter((a): a is string => typeof a === "string") : [];
       if (accepted.length === 0) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, acceptedAnswers: accepted } };
+      return {
+        valid: true,
+        payload: {
+          ...optional,
+          acceptedAnswers: accepted,
+          ...(typeof p.tolerance === "string" || typeof p.tolerance === "number" ? { tolerance: p.tolerance } : {}),
+        },
+      };
     }
     default:
       return { valid: false, payload: raw };
@@ -1323,15 +1463,28 @@ function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | nu
   const prompt = ex.statement ?? ex.prompt ?? "";
   if (!prompt) return null;
 
-  const { valid, payload } = validatePayload(safeType, ex.payload ?? {});
-  if (!valid) return null;
+  const validated = validatePayload(safeType, ex.payload ?? {});
+  if (!validated.valid) return null;
+  let type: PersistedShape["type"] = safeType;
+  let payload: unknown = validated.payload;
 
-  const answerKey = typeof ex.correctAnswer === "string" ? ex.correctAnswer : String(ex.correctAnswer ?? "");
+  let answerKey = typeof ex.correctAnswer === "string" ? ex.correctAnswer : String(ex.correctAnswer ?? "");
   if (!answerKey) return null;
+
+  // UN GLISSER-DÉPOSER QUE L'ENFANT NE COMPRENDRAIT PAS (zones « Zone A »,
+  // étiquette identique à sa zone, zone cible absente) est réparé quand on
+  // sait le faire, sinon écarté du lot : voir `dragDropRepair.ts`.
+  if (type === "drag-drop") {
+    const repaired = repairDragDrop({ prompt, payload, answerKey });
+    if (repaired.kind === "unrepairable") return null;
+    if (repaired.kind !== "ok") payload = repaired.payload;
+    if (repaired.kind === "order" || repaired.kind === "qcm") type = repaired.kind;
+    if (repaired.kind !== "ok" && repaired.kind !== "cleaned") answerKey = repaired.answerKey;
+  }
 
   const hintsArr = Array.isArray(ex.hints) ? (ex.hints as unknown[]).map(String) : [];
   return {
-    type: safeType,
+    type,
     prompt,
     payload,
     answerKey,
@@ -1342,29 +1495,56 @@ function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | nu
   };
 }
 
-function verifyMathBatch(parsed: RawGenExercise[]): {
+type MathBatch = {
   totalChecked: number;
+  /** Réponses du modèle qui ne valaient pas leur expression, corrigées ou non. */
   divergences: number;
+  /** Divergences corrigées avec la valeur calculée (`paliers/mathRepair.ts`). */
+  repaired: number;
+  /** Divergences qu'on ne sait pas corriger : l'exercice reste à relire. */
+  unrepairable: number;
   exos: PersistedShape[];
-} {
+};
+
+/**
+ * L'ARITHMÉTIQUE A RAISON SUR LE MODÈLE. On calcule chaque expression ; une
+ * réponse attendue qui diverge est remplacée par la valeur calculée (QCM :
+ * l'option qui la vaut ; réponse courte : la valeur et sa forme à virgule).
+ * Seules les divergences qu'on ne sait pas corriger (expression illisible,
+ * clé en fraction) laissent l'exercice à relire, et le palier en
+ * `pending_human`.
+ */
+function verifyMathBatch(parsed: RawGenExercise[]): MathBatch {
   let totalChecked = 0;
   let divergences = 0;
+  let repaired = 0;
+  let unrepairable = 0;
   const exos: PersistedShape[] = [];
   for (let i = 0; i < parsed.length; i++) {
     const raw = parsed[i];
     const shape = toPersistedShape(raw, i);
     if (!shape) continue;
-    if (raw.mathExpression) {
-      totalChecked++;
-      const result = checkMathExercise(raw.mathExpression, shape.answerKey);
-      if (!result.ok) {
-        divergences++;
-        shape.needsManualReview = true;
-      }
+    const outcome = repairMathExercise({
+      type: shape.type,
+      prompt: shape.prompt,
+      payload: shape.payload,
+      answerKey: shape.answerKey,
+      mathExpression: shape.mathExpression,
+    });
+    if (outcome.kind !== "skipped") totalChecked++;
+    if (outcome.kind === "repaired") {
+      divergences++;
+      repaired++;
+      shape.payload = outcome.payload;
+      shape.answerKey = outcome.answerKey;
+    } else if (outcome.kind === "unrepairable") {
+      divergences++;
+      unrepairable++;
+      shape.needsManualReview = true;
     }
     exos.push(shape);
   }
-  return { totalChecked, divergences, exos };
+  return { totalChecked, divergences, repaired, unrepairable, exos };
 }
 
 function extractConcept(exo: Doc<"exercises">): string | null {

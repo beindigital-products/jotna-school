@@ -1,34 +1,35 @@
 import { describe, it, expect } from "vitest";
-import { decideSignupRole } from "../roleRules";
+import { decideProvisionedRole } from "../roleRules";
 
-describe("decideSignupRole", () => {
-  it("accepte les deux rôles sans autorité", () => {
-    expect(decideSignupRole("parent")).toBe("parent");
-    expect(decideSignupRole("student")).toBe("student");
+describe("decideProvisionedRole", () => {
+  it("accepte les quatre rôles qu'un provisionnement pose", () => {
+    // Les deux premiers viennent de l'école et du code parent ; les deux
+    // suivants d'un administrateur plateforme, et d'aucun autre chemin.
+    expect(decideProvisionedRole("parent")).toBe("parent");
+    expect(decideProvisionedRole("student")).toBe("student");
+    expect(decideProvisionedRole("professeur")).toBe("professeur");
+    expect(decideProvisionedRole("directeur")).toBe("directeur");
   });
 
-  it("REFUSE les trois rôles qui confèrent une autorité", () => {
-    // `professeur` est le cas qui motive ce module : il était accepté, et
-    // `callerIsStaff` le reconnaît comme « membre du personnel » partout dans
-    // le dépôt. Les deux autres ne l'ont jamais été, mais la règle vaut pour
-    // les trois — et une règle qui ne vaut que pour un cas se périme.
-    for (const role of ["professeur", "directeur", "admin"]) {
-      expect(() => decideSignupRole(role)).toThrow("Rôle non autorisé");
-    }
+  it("REFUSE `admin`, que rien dans l'application ne pose", () => {
+    // Un administrateur qui en fabrique un autre transforme une
+    // compromission de compte en compromission de plateforme. Ce rôle se
+    // pose sur le déploiement, hors de l'application.
+    expect(() => decideProvisionedRole("admin")).toThrow("Rôle non autorisé");
   });
 
   it("refuse aussi ce qui ne ressemble à aucun rôle", () => {
     for (const value of ["", "PARENT", "Professeur", "teacher", "{}"]) {
-      expect(() => decideSignupRole(value)).toThrow("Rôle non autorisé");
+      expect(() => decideProvisionedRole(value)).toThrow("Rôle non autorisé");
     }
   });
 
   it("ne retombe sur `student` QUE pour un rôle absent", () => {
-    // La nuance qui porte tout : un formulaire sans rôle est une inscription
-    // incomplète, pas une demande refusée. Un rôle PRÉSENT mais interdit doit
-    // lever, sans quoi une demande de compte professeur deviendrait un compte
+    // La nuance qui porte tout : un appelant qui ne précise rien provisionne
+    // un élève, le cas de loin le plus courant. Un rôle PRÉSENT mais interdit
+    // doit lever, sans quoi une demande de compte admin deviendrait un compte
     // élève sans un mot.
-    expect(decideSignupRole(undefined)).toBe("student");
-    expect(() => decideSignupRole("professeur")).toThrow();
+    expect(decideProvisionedRole(undefined)).toBe("student");
+    expect(() => decideProvisionedRole("admin")).toThrow();
   });
 });

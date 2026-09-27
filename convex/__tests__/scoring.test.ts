@@ -8,6 +8,8 @@ import {
   PALIER_SIZE,
   PALIER_VALIDATION_THRESHOLD,
   MAX_ATTEMPTS_PER_EXERCISE,
+  countRealAttempts,
+  attemptsRemainingAfter,
 } from "../paliers/scoring";
 
 describe("scoring constants", () => {
@@ -240,4 +242,28 @@ describe("scoreToStars (Decision 81)", () => {
     expect(scoreToStarsSingle(s)).toBe(exp),
   );
   it("sums per-exo", () => expect(scoreToStars([10, 6, 4, 0])).toBe(6));
+});
+
+describe("countRealAttempts / attemptsRemainingAfter — un indice n'est pas un essai", () => {
+  const wrong = (n: number) => ({ attemptNumber: n });
+  const hint = () => ({ attemptNumber: 0 });
+
+  it("ignore les lignes d'indice", () => {
+    expect(countRealAttempts([])).toBe(0);
+    expect(countRealAttempts([hint()])).toBe(0);
+    expect(countRealAttempts([wrong(1), hint(), wrong(2), hint(), hint()])).toBe(2);
+  });
+
+  it("décompte 4, 3, 2, 1, 0 quel que soit le nombre d'indices entre deux essais", () => {
+    const rows: { attemptNumber: number }[] = [];
+    const seen: number[] = [];
+    for (let i = 1; i <= MAX_ATTEMPTS_PER_EXERCISE; i++) {
+      const attemptNumber = countRealAttempts(rows) + 1;
+      rows.push(wrong(attemptNumber), hint());
+      seen.push(attemptsRemainingAfter(attemptNumber));
+    }
+    expect(seen).toEqual([4, 3, 2, 1, 0]);
+  });
+
+  it("jamais négatif", () => expect(attemptsRemainingAfter(9)).toBe(0));
 });

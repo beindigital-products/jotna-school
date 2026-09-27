@@ -98,6 +98,12 @@ export default defineSchema({
     // base, le système scolaire sénégalais en compte davantage, et fermer la
     // liste ferait échouer la prochaine poussée sur la première non devinée.
     serie: v.optional(v.string()),
+
+    // LE NOMBRE D'ÉTAPES DE LA THÉMATIQUE, de 1 à 10 paliers de dix exercices.
+    // Absent, c'est le défaut du niveau qui vaut (`palierRules.ts` : 3 en
+    // CI/CP, 4 en CE, 5 en CM). Posé depuis l'administration pour une
+    // thématique plus large ou plus étroite que la moyenne de son niveau.
+    palierCount: v.optional(v.number()),
   })
     .index("by_subjectId", ["subjectId"])
     .index("by_subjectId_class", ["subjectId", "class"]),
@@ -321,6 +327,9 @@ export default defineSchema({
       v.object({
         totalChecked: v.number(),
         divergences: v.number(),
+        // Divergences corrigées par l'arithmétique (`paliers/mathRepair.ts`) :
+        // la clé servie est la valeur calculée, pas celle du modèle.
+        repaired: v.optional(v.number()),
       }),
     ),
     shuffleSeed: v.optional(v.string()), // Decision 75 — server-side deterministic shuffle seed prefix
@@ -987,4 +996,39 @@ export default defineSchema({
   })
     .index("by_code", ["code"])
     .index("by_student", ["studentId"]),
+
+  // ---------------------------------------------------------------------------
+  // dailyMissions — les missions du jour du Monde de Pio (conception §6, G7).
+  //
+  // UNE LIGNE PAR (élève, jour). Les trois missions sont EMBARQUÉES : trois
+  // objets, jamais plus (`questRules.QUESTS_PER_DAY`), donc pas une liste
+  // non bornée. La clé du jour est celle de la série (`streak.todayYmd`).
+  //
+  // `bonusStars` = ce que cette journée a déjà rapporté, pour que
+  // `quests.recordActivity` ne verse jamais deux fois la même étoile. Le
+  // total de vie, lui, est sur `profiles.preferences.questBonusStars`.
+  // ---------------------------------------------------------------------------
+  dailyMissions: defineTable({
+    studentId: v.id("profiles"),
+    dayKey: v.string(), // YYYY-MM-DD
+    quests: v.array(
+      v.object({
+        key: v.string(),
+        type: v.union(
+          v.literal("do_exercises"),
+          v.literal("earn_stars"),
+          v.literal("validate_palier"),
+          v.literal("play_subject"),
+        ),
+        label: v.string(),
+        target: v.number(),
+        progress: v.number(),
+        completedAt: v.optional(v.number()),
+        subjectId: v.optional(v.id("subjects")),
+        subjectName: v.optional(v.string()),
+      }),
+    ),
+    bonusStars: v.number(),
+    createdAt: v.number(),
+  }).index("by_student_day", ["studentId", "dayKey"]),
 });

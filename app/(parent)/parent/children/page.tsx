@@ -68,11 +68,11 @@ export default function ParentChildrenPage() {
             Lier un enfant existant
           </Link>
           <Link
-            href="/parent/children/add"
+            href="/parent/children/code"
             className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
           >
             <Plus className="h-4 w-4" />
-            Ajouter un enfant
+            Saisir un code ecole
           </Link>
         </div>
       </div>
@@ -130,10 +130,10 @@ export default function ParentChildrenPage() {
               Lier un enfant existant
             </Link>
             <Link
-              href="/parent/children/add"
+              href="/parent/children/code"
               className="inline-block rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
             >
-              Ajouter un enfant
+              Saisir un code ecole
             </Link>
           </div>
         </div>
@@ -217,7 +217,7 @@ function ChildCard({
       </div>
 
       <Link
-        href={`/parent/children/${childId}/progress`}
+        href={`/parent/children/progress?id=${childId}`}
         className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
       >
         Voir la progression

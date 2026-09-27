@@ -268,7 +268,7 @@ export default function TeacherExercisesPage() {
                                       : "Publié"}
                                   </span>
                                   <Link
-                                    href={`/teacher/exercises/${ex._id}/edit`}
+                                    href={`/teacher/exercises/edit?id=${ex._id}`}
                                     className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600"
                                     title="Modifier"
                                   >

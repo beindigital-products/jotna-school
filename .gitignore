@@ -46,3 +46,15 @@ next-env.d.ts
 # Espace de travail scratch subagent-driven-development
 .superpowers/
 .ci-local/
+
+# Capacitor / iOS — artefacts regeneres par `cap sync`, jamais edites a la main
+/ios/App/App/public/
+/ios/App/App/capacitor.config.json
+/ios/App/build/
+/ios/DerivedData/
+/ios/capacitor-cordova-ios-plugins/
+*.xcuserdatad/
+.swiftpm/
+
+# Configuration locale du navigateur intégré (chemins propres à la machine)
+.claude/launch.json

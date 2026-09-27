@@ -185,7 +185,7 @@ export function decideAccess(input: AccessInput): AccessState {
  */
 export function topicOpenTo(
   caller: { role: string; studentClass: string | null },
-  topicClass: string | undefined,
+  topicClass: string | null | undefined,
 ): boolean {
   if (caller.role !== "student") return true;
   return caller.studentClass !== null && caller.studentClass === topicClass;

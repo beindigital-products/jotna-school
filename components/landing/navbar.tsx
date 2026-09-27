@@ -110,10 +110,10 @@ export function Navbar() {
             Se connecter
           </Link>
           <Link
-            href="/register"
+            href="/login"
             className="group hidden items-center gap-2 rounded-full bg-gray-900 px-5 py-2.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] sm:inline-flex"
           >
-            Commencer
+            Se connecter
             <ArrowRight
               className="size-4 transition-transform group-hover:translate-x-0.5"
               aria-hidden
@@ -169,10 +169,10 @@ export function Navbar() {
                     Se connecter
                   </Link>
                   <Link
-                    href="/register"
+                    href="/login"
                     className="group flex h-12 items-center justify-center gap-2 rounded-xl bg-gray-900 text-base font-semibold text-white shadow-sm transition-transform active:scale-[0.98]"
                   >
-                    Commencer
+                    Se connecter
                     <ArrowRight
                       className="size-4 transition-transform group-hover:translate-x-0.5"
                       aria-hidden
