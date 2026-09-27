@@ -38,6 +38,12 @@ export function UserMenu({
   async function handleLogout() {
     await logout(signOut);
     clearConvexAuthTokens();
+    // LA SEULE NAVIGATION DE DOCUMENT QUI RESTE, ET ELLE EST VOULUE : un
+    // rechargement complet jette l'état en mémoire, ce qu'une navigation
+    // interne de Next conserverait. Dans l'application Capacitor elle atterrit
+    // sur la racine — `CapacitorRouter` sert `/index.html` pour tout chemin
+    // sans extension — d'où `NativeAppGate` renvoie aussitôt sur /login. Les
+    // deux plateformes finissent donc au même endroit, déconnectées.
     window.location.href = "/login";
   }
 

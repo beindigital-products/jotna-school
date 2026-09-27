@@ -1,7 +1,6 @@
-import { query, mutation, action, internalMutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { createAccount, getAuthUserId } from "@convex-dev/auth/server";
-import { internal } from "./_generated/api";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { decideLinkChild } from "./linkRules";
 import { decideProfileUpdate } from "./profileRules";
 import type { ProfileUpdateDecision } from "./profileRules";
@@ -154,9 +153,9 @@ export const getChildren = query({
  * Insérer un profil portant le `userId` d'un compte existant fait donc lever
  * cette lecture pour cette personne, qui ne peut plus charger son profil.
  *
- * La voie légitime pour un écran est `createChildAccount` ci-dessous : elle
- * authentifie le parent, crée le compte de l'enfant via `createAccount`, et
- * laisse `linkChildToParent` écrire le lien.
+ * Elle n'a plus de voie légitime de remplacement, et n'en a plus besoin :
+ * depuis le passage au modèle B2B, les comptes élèves naissent de l'import
+ * d'une école (`studentImportRun`), jamais d'un écran parent.
  *
  * Le corps est inchangé : seul le mot d'enregistrement a changé.
  */
@@ -280,99 +279,22 @@ export const updateProfile = mutation({
 });
 
 /**
- * Create a child account from the parent's session, without altering that session.
+ * `createChildAccount` ET `linkChildToParent` ONT ÉTÉ RETIRÉS.
  *
- * Uses Convex Auth's `createAccount` helper to create the child's auth
- * account server-side — this does NOT sign the parent out. The
- * `createOrUpdateUser` callback in convex/auth.ts auto-creates the child's
- * profile row (role=student). We then insert the studentGuardians link.
+ * Cette action laissait N'IMPORTE QUEL compte authentifié fabriquer un compte
+ * élève, à l'adresse et au mot de passe qu'il choisissait, puis se déclarer
+ * son tuteur. C'était la contrepartie assumée d'un produit où un parent
+ * inscrivait lui-même ses enfants.
+ *
+ * LE PRODUIT A CHANGÉ : les élèves appartiennent à l'école, qui les crée par
+ * `studentImportRun` et remet un code à la famille. Un parent n'entre plus
+ * qu'avec ce code (`parentLink.signUpWithCode`), et ne crée plus personne.
+ * Laisser cette action ouverte aurait rouvert, derrière un compte parent, la
+ * création de comptes que `Password.profile()` refuse désormais en façade.
+ *
+ * L'écran qui l'appelait — `/parent/children/add` — est parti avec elle.
+ * Ajouter un enfant se fait par `/parent/children/code`.
  */
-export const createChildAccount = action({
-  args: {
-    name: v.string(),
-    email: v.string(),
-    password: v.string(),
-  },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<{ childUserId: string }> => {
-    const parentUserId = await getAuthUserId(ctx);
-    if (!parentUserId) {
-      throw new Error("Non authentifié");
-    }
-
-    if (args.password.length < 6) {
-      // Un parent lit cette phrase sur l'écran d'ajout d'enfant.
-      throw new ConvexError(
-        "Le mot de passe doit contenir au moins 6 caractères.",
-      );
-    }
-
-    const { user } = await createAccount(ctx, {
-      provider: "password",
-      account: {
-        id: args.email,
-        secret: args.password,
-      },
-      profile: {
-        email: args.email,
-        name: args.name,
-        role: "student",
-      } as unknown as Parameters<typeof createAccount>[1]["profile"],
-    });
-
-    await ctx.runMutation(internal.profiles.linkChildToParent, {
-      childUserId: user._id,
-      parentUserId,
-    });
-
-    return { childUserId: user._id };
-  },
-});
-
-/**
- * Internal: link an existing child profile to a parent profile.
- * Called from the `createChildAccount` action after `createAccount` has
- * created both user rows and the child's profile row.
- */
-export const linkChildToParent = internalMutation({
-  args: {
-    childUserId: v.id("users"),
-    parentUserId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const childProfile = await ctx.db
-      .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", args.childUserId))
-      .unique();
-    if (!childProfile) {
-      throw new Error("Profil enfant introuvable");
-    }
-
-    const parentProfile = await ctx.db
-      .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", args.parentUserId))
-      .unique();
-    if (!parentProfile) {
-      throw new Error("Profil parent introuvable");
-    }
-
-    const existing = await ctx.db
-      .query("studentGuardians")
-      .withIndex("by_guardianId", (q) => q.eq("guardianId", parentProfile._id))
-      .take(200);
-    if (existing.some((l) => l.studentId === childProfile._id)) {
-      return;
-    }
-
-    await ctx.db.insert("studentGuardians", {
-      studentId: childProfile._id,
-      guardianId: parentProfile._id,
-      relation: "parent",
-    });
-  },
-});
 
 /**
  * Rattache un élève existant au tuteur AUTHENTIFIÉ — INTERNE, aucun appelant.
