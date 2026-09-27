@@ -11,6 +11,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { difficultyStage } from "@/convex/palierRules";
 import { Pio } from "@/components/student/pio";
 import { GameButton } from "@/components/student/game/game-button";
+import { LostTrail } from "@/components/student/game/lost-trail";
 import { GameMap, type MapNodeContext } from "@/components/student/world/game-map";
 import { TrailNode, type TrailNodeStatus } from "@/components/student/world/trail";
 import { SUBJECT_TRAIL, trailNodePoint } from "@/components/student/world/trail-geometry";
@@ -79,17 +80,7 @@ function SubjectTrailPageInner() {
   }
 
   if (map === null) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
-        <Pio state="sad" size={150} />
-        <h2 className="font-display text-2xl font-extrabold text-amber-950">
-          Ce monde est introuvable
-        </h2>
-        <GameButton href="/student/map" tone="white" icon={<ArrowLeft className="h-5 w-5" aria-hidden />}>
-          Retour à la carte
-        </GameButton>
-      </div>
-    );
+    return <LostTrail kind="world" />;
   }
 
   const { subject, topics, totalStarsApprox, totalPaliers, completedPaliers } = map;

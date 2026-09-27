@@ -17,6 +17,7 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
+import { LostTrail } from "@/components/student/game/lost-trail";
 import Link from "next/link";
 
 import { JotnaLoader } from "@/components/jotna-loader";
@@ -420,12 +421,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
     );
   }
   if (!topic) {
-    return (
-      <CenteredCard>
-        <BookOpen className="h-16 w-16 text-gray-300" />
-        <h2 className="text-xl font-bold">Thématique introuvable</h2>
-      </CenteredCard>
-    );
+    return <LostTrail kind="topic" />;
   }
 
   if (bootstrapError) {

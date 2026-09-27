@@ -84,6 +84,10 @@ export const getById = query({
     // absente, et non comme un refus — il n'y a rien à faire deviner.
     if (!access.hiddenClasses && isHiddenClass(topic.class)) return null;
 
+    // Même raisonnement pour la classe : un élève de CM1 qui colle
+    // l'identifiant d'une thématique de CE2 lit « introuvable », pas un refus.
+    if (!access.opensTopic(topic.class)) return null;
+
     return topic;
   },
 });

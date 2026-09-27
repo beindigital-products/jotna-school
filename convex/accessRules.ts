@@ -16,6 +16,7 @@ export type AccessReason =
   | "not_student"
   | "no_school"
   | "seat_released"
+  | "no_class"
   | "no_subscription"
   | "pending_payment"
   | "past_due"
@@ -42,6 +43,11 @@ export interface AccessInput {
   activeMembership: { schoolId: string } | null;
   /** Vrai si l'élève a une inscription passée en "released". */
   hasReleasedMembership: boolean;
+  /**
+   * Vrai si le profil porte une classe VISIBLE (`profiles.class`, hors
+   * collège et lycée masqués). Lu seulement quand l'inscription est active.
+   */
+  hasClass: boolean;
   /** Abonnement le plus récent de l'école, quel que soit son statut. */
   subscription: { status: SubscriptionStatus; endsAt: number } | null;
   /** `dueAt` de la tranche échue la plus ancienne. Lu seulement si past_due. */
@@ -60,6 +66,21 @@ export function decideAccess(input: AccessInput): AccessState {
     return input.hasReleasedMembership
       ? { ok: false, reason: "seat_released" }
       : { ok: false, reason: "no_school" };
+  }
+
+  // PAS DE CLASSE, PAS D'EXERCICES. Le parcours suit la classe de l'élève
+  // (`students.getStudentSubjectMap`, D10) : sans elle, on ne sait pas quels
+  // exercices lui donner, et lui servir tout l'élémentaire mettrait un CE1
+  // devant des fractions de CM2. C'est à l'école de la renseigner, comme
+  // l'inscription — d'où ce refus juste après `no_school`, avant tout motif
+  // d'abonnement.
+  //
+  // En pratique, `enrollStudent`, `transferStudent` et l'import écrivent la
+  // classe dans la même transaction que l'inscription : ce refus ne mord que
+  // sur un profil désaligné (donnée héritée, classe masquée). Il échoue en
+  // FERMÉ, comme toutes les autres branches de cette fonction.
+  if (!input.hasClass) {
+    return { ok: false, reason: "no_class" };
   }
 
   const sub = input.subscription;
@@ -142,4 +163,30 @@ export function decideAccess(input: AccessInput): AccessState {
     case "cancelled":
       return { ok: false, reason: "cancelled" };
   }
+}
+
+/**
+ * Une thématique s'ouvre-t-elle à cet appelant ? Fonction PURE, comme
+ * `decideAccess`.
+ *
+ * `decideAccess` juge le droit d'entrer ; cette règle juge QUOI ouvrir une
+ * fois entré. Un élève ne travaille que les thématiques de SA classe : la
+ * liste (`students.getStudentSubjectMap`) ne lui montre qu'elles, mais une
+ * liste ne ferme rien — l'identifiant d'une thématique suffit à ouvrir
+ * l'écran de session et à demander des exercices. Les trois portes d'entrée
+ * (`topics.getById`, `paliers.getBucket`, `paliers.startPalierAttempt`)
+ * passent donc par ici.
+ *
+ * Le personnel n'est pas concerné : un professeur ou un admin consulte le
+ * curriculum entier. Un élève sans classe est déjà refusé en amont
+ * (`no_class`) ; s'il arrivait jusqu'ici, la règle échoue en FERMÉ. Même
+ * chose pour une thématique sans classe (`topics.class` reste optionnel au
+ * schéma pour d'anciennes lignes) : on ne sait pas pour qui elle est faite.
+ */
+export function topicOpenTo(
+  caller: { role: string; studentClass: string | null },
+  topicClass: string | null | undefined,
+): boolean {
+  if (caller.role !== "student") return true;
+  return caller.studentClass !== null && caller.studentClass === topicClass;
 }

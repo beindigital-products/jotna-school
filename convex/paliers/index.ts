@@ -32,6 +32,7 @@ import { repairDragDrop } from "./dragDropRepair";
 import { computeExerciseScore } from "./scoring";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { checkAccess, requireAccess } from "../access";
+import { topicOpenTo } from "../accessRules";
 
 /**
  * Péremption du contenu d'un palier, PARTAGÉ par tous les élèves d'un niveau,
@@ -666,6 +667,30 @@ export const getBucket = action({
       throw new ConvexError({ code: "ACCESS_DENIED", reason: access.reason });
     }
 
+    // LA CLASSE VIENT DU CLIENT, ET N'ÉTAIT JAMAIS VÉRIFIÉE. `class` et
+    // `topicId` sont deux arguments libres : un élève pouvait demander les
+    // exercices de n'importe quel niveau, et même faire générer un palier
+    // « CM2 » sur une thématique de CE1 — une génération IA facturée à son
+    // école, pour un seau qui n'aurait jamais dû exister. Les deux doivent
+    // désormais valoir la classe de l'élève (`accessRules.topicOpenTo`).
+    // Lue avant tout le reste : un seau déjà généré ne s'ouvre pas davantage.
+    // La même lecture sert plus bas au nombre d'étapes.
+    const located = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
+      subjectId: args.subjectId,
+      topicId: args.topicId,
+    });
+    if (!located || !located.topic) throw new ConvexError("Thématique introuvable");
+    const caller = {
+      role: callerProfile.role,
+      studentClass: callerProfile.class ?? null,
+    };
+    if (
+      located.topic.class !== args.class ||
+      !topicOpenTo(caller, located.topic.class)
+    ) {
+      throw new ConvexError({ code: "ACCESS_DENIED", reason: "wrong_class" });
+    }
+
     if (args.palierIndex > 1) {
       // `callerProfile` est déjà résolu ci-dessus : ce bloc refaisait
       // `getAuthUserId` + `getProfileByUserId` pour la MÊME session, soit une
@@ -695,11 +720,6 @@ export const getBucket = action({
     // La thématique doit exister et le palier être une de ses étapes : le
     // nombre d'étapes est dynamique (`palierRules.effectivePalierCount`), et
     // un index au-delà ne doit ni générer ni ouvrir quoi que ce soit.
-    const located = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
-      subjectId: args.subjectId,
-      topicId: args.topicId,
-    });
-    if (!located || !located.topic) throw new ConvexError("Thématique introuvable");
     const palierCount = effectivePalierCount(located.topic);
     if (
       !Number.isInteger(args.palierIndex) ||
@@ -1168,10 +1188,25 @@ export const startPalierAttempt = mutation({
     const palier = await ctx.db.get(args.palierId);
     if (!palier) throw new Error("Palier introuvable");
 
+    // Une seule lecture de la thématique pour deux contrôles.
+    const topic = await ctx.db.get(palier.topicId);
+
+    // Classe de l'élève (`accessRules.topicOpenTo`), jugée sur la THÉMATIQUE
+    // et non sur `palier.class` seul : un seau créé avant que `getBucket`
+    // vérifie la classe peut porter un niveau qui n'est pas celui de sa
+    // thématique.
+    const caller = { role: profile.role, studentClass: profile.class ?? null };
+    if (
+      !topic ||
+      !topicOpenTo(caller, topic.class) ||
+      !topicOpenTo(caller, palier.class)
+    ) {
+      throw new ConvexError({ code: "ACCESS_DENIED", reason: "wrong_class" });
+    }
+
     // Le nombre d'étapes d'une thématique peut baisser depuis l'administration :
     // un palier généré au-delà reste en base, mais ne s'ouvre plus.
-    const topic = await ctx.db.get(palier.topicId);
-    if (topic && palier.palierIndex > effectivePalierCount(topic)) {
+    if (palier.palierIndex > effectivePalierCount(topic)) {
       throw new ConvexError("Ce palier n'est plus une étape de cette thématique.");
     }
 

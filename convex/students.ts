@@ -150,16 +150,19 @@ async function topicsForStudent(
   subjectId: Id<"subjects">,
   profile: Doc<"profiles">,
 ): Promise<Doc<"topics">[]> {
-  const all = await ctx.db
+  // Sans classe visible, le paywall a déjà refusé (`no_class`,
+  // `accessRules.decideAccess`) : on ne sert pas un programme au hasard, et
+  // ce repli ne rend rien plutôt que tout l'élémentaire. Avec une classe,
+  // l'index `by_subjectId_class` ne lit que les thématiques de ce niveau.
+  const studentClass = profile.class;
+  if (!studentClass || isHiddenClass(studentClass)) return [];
+  const topics = await ctx.db
     .query("topics")
-    .withIndex("by_subjectId", (q) => q.eq("subjectId", subjectId))
+    .withIndex("by_subjectId_class", (q) =>
+      q.eq("subjectId", subjectId).eq("class", studentClass),
+    )
     .take(1000);
-  const studentClass =
-    profile.class && !isHiddenClass(profile.class) ? profile.class : null;
-  return all
-    .filter((t) => !isHiddenClass(t.class))
-    .filter((t) => studentClass === null || t.class === studentClass)
-    .sort((a, b) => a.order - b.order);
+  return topics.sort((a, b) => a.order - b.order);
 }
 
 async function loadTopicProgress(
@@ -459,6 +462,48 @@ export const getStudentDetail = query({
  *                can hide the surface entirely.
  * Decision D6  — `soundEnabled` from profiles.preferences (default false).
  */
+/**
+ * L'inscription active d'un élève, mise en forme pour l'affichage.
+ *
+ * `null` quand l'enfant n'est inscrit dans aucune école — compte autonome,
+ * ou siège libéré. Le paywall a déjà tranché l'accès avant l'appel ; ici on
+ * ne décide rien, on décrit.
+ */
+async function loadSchooling(
+  ctx: QueryCtx,
+  studentId: Id<"profiles">,
+): Promise<{
+  schoolName: string;
+  class: Doc<"schoolClasses">["class"];
+  classLabel: string;
+  teacherName: string | null;
+} | null> {
+  const membership = await ctx.db
+    .query("schoolMemberships")
+    .withIndex("by_student_status", (q) =>
+      q.eq("studentId", studentId).eq("status", "active"),
+    )
+    .first();
+  if (!membership) return null;
+
+  const [school, schoolClass] = await Promise.all([
+    ctx.db.get(membership.schoolId),
+    ctx.db.get(membership.schoolClassId),
+  ]);
+  if (!school || !schoolClass) return null;
+
+  const teacher = schoolClass.teacherId
+    ? await ctx.db.get(schoolClass.teacherId)
+    : null;
+
+  return {
+    schoolName: school.name,
+    class: schoolClass.class,
+    classLabel: schoolClass.label,
+    teacherName: teacher?.name ?? null,
+  };
+}
+
 export const getMyStats = query({
   args: {},
   handler: async (ctx) => {
@@ -586,8 +631,18 @@ export const getMyStats = query({
         ? { level: currentLevel }
         : null;
 
+    // L'ÉCOLE, TELLE QUE L'ENFANT LA VOIT — nom de l'école, classe réelle
+    // (« CM1 A ») et professeur, lus depuis l'inscription active. C'est cette
+    // inscription qui fixe `profile.class`, donc le niveau affiché à côté du
+    // prénom et le nom de l'école viennent de la même source. Trois lectures
+    // au plus, sur des identifiants directs.
+    const schooling = await loadSchooling(ctx, studentId);
+
     return {
       student: profile,
+      // Le niveau scolaire, fourni par l'école (voir `profiles.class`).
+      class: profile.class ?? null,
+      schooling,
       completedTopics,
       totalExercises,
       totalCorrectExercises,
@@ -1020,7 +1075,8 @@ export const getMyNextStep = query({
       if (
         topic &&
         !isHiddenClass(topic.class) &&
-        (studentClass === null || topic.class === studentClass) &&
+        studentClass !== null &&
+        topic.class === studentClass &&
         latestInProgress.palierIndex <= effectivePalierCount(topic)
       ) {
         const subject = await ctx.db.get(topic.subjectId);
