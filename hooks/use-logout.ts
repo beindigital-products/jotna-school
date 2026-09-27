@@ -10,8 +10,14 @@ import { clearConvexAuthTokens, logout } from "@/lib/auth";
  *
  * Trois gestes qui vont ensemble et que chaque écran recopiait : invalider la
  * session côté Convex Auth, effacer les jetons mis en cache dans
- * `localStorage`, puis recharger sur `/login` (un rechargement complet, et non
- * une navigation client, pour que le client Convex reparte sans jeton).
+ * `localStorage`, puis recharger sur `/login`.
+ *
+ * LA SEULE NAVIGATION DE DOCUMENT QUI RESTE, ET ELLE EST VOULUE : un
+ * rechargement complet jette l'état en mémoire, ce qu'une navigation interne
+ * de Next conserverait. Dans l'application Capacitor elle atterrit sur la
+ * racine — `CapacitorRouter` sert `/index.html` pour tout chemin sans
+ * extension — d'où `NativeAppGate` renvoie aussitôt sur /login. Les deux
+ * plateformes finissent donc au même endroit, déconnectées.
  */
 export function useLogout(): () => Promise<void> {
   const { signOut } = useAuthActions();

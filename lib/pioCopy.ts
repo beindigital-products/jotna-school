@@ -134,4 +134,25 @@ export const pioSays = {
 
   /** Carnet. */
   notebookTitle: "Carnet d'explorateur",
+
+  /**
+   * Sentier perdu : un monde ou une thématique qui ne s'ouvre pas. Pio ne dit
+   * pas pourquoi (absente, ou d'une autre classe) : l'enfant n'a rien à y
+   * corriger, il lui faut une sortie.
+   */
+  lostTrail: {
+    world: {
+      bubble: "Hmm… ce monde n'est pas sur ma carte.",
+      title: "Monde introuvable",
+    },
+    topic: {
+      bubble: "Hmm… ce sentier n'est pas sur ma carte.",
+      title: "Sentier introuvable",
+    },
+    // Espaces insécables avant « : » et « ! » : sans elles, la ponctuation
+    // passe seule en début de ligne sur un téléphone étroit.
+    body: "Il n'existe pas, ou il n'est pas au programme de ta classe. Pas grave\u00a0: d'autres aventures t'attendent\u00a0!",
+    toMap: "Ouvrir ma carte",
+    toCamp: "Retour au camp",
+  },
 } as const;
