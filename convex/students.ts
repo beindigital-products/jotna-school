@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -312,6 +312,48 @@ export const getStudentDetail = query({
  *                can hide the surface entirely.
  * Decision D6  — `soundEnabled` from profiles.preferences (default false).
  */
+/**
+ * L'inscription active d'un élève, mise en forme pour l'affichage.
+ *
+ * `null` quand l'enfant n'est inscrit dans aucune école — compte autonome,
+ * ou siège libéré. Le paywall a déjà tranché l'accès avant l'appel ; ici on
+ * ne décide rien, on décrit.
+ */
+async function loadSchooling(
+  ctx: QueryCtx,
+  studentId: Id<"profiles">,
+): Promise<{
+  schoolName: string;
+  class: Doc<"schoolClasses">["class"];
+  classLabel: string;
+  teacherName: string | null;
+} | null> {
+  const membership = await ctx.db
+    .query("schoolMemberships")
+    .withIndex("by_student_status", (q) =>
+      q.eq("studentId", studentId).eq("status", "active"),
+    )
+    .first();
+  if (!membership) return null;
+
+  const [school, schoolClass] = await Promise.all([
+    ctx.db.get(membership.schoolId),
+    ctx.db.get(membership.schoolClassId),
+  ]);
+  if (!school || !schoolClass) return null;
+
+  const teacher = schoolClass.teacherId
+    ? await ctx.db.get(schoolClass.teacherId)
+    : null;
+
+  return {
+    schoolName: school.name,
+    class: schoolClass.class,
+    classLabel: schoolClass.label,
+    teacherName: teacher?.name ?? null,
+  };
+}
+
 export const getMyStats = query({
   args: {},
   handler: async (ctx) => {
@@ -439,8 +481,18 @@ export const getMyStats = query({
         ? { level: currentLevel }
         : null;
 
+    // L'ÉCOLE, TELLE QUE L'ENFANT LA VOIT — nom de l'école, classe réelle
+    // (« CM1 A ») et professeur, lus depuis l'inscription active. C'est cette
+    // inscription qui fixe `profile.class`, donc le niveau affiché à côté du
+    // prénom et le nom de l'école viennent de la même source. Trois lectures
+    // au plus, sur des identifiants directs.
+    const schooling = await loadSchooling(ctx, studentId);
+
     return {
       student: profile,
+      // Le niveau scolaire, fourni par l'école (voir `profiles.class`).
+      class: profile.class ?? null,
+      schooling,
       completedTopics,
       totalExercises,
       totalCorrectExercises,
@@ -684,13 +736,41 @@ export const getStudentSubjectMap = query({
     const subject = await ctx.db.get(args.subjectId);
     if (!subject) return null;
 
-    // Collège et lycée sont en base mais masqués — voir `convex/curriculum.ts`.
-    const topics = (
-      await ctx.db
-        .query("topics")
-        .withIndex("by_subjectId", (q) => q.eq("subjectId", args.subjectId))
-        .take(1000)
-    ).filter((topic) => !isHiddenClass(topic.class));
+    // D10 — LE PARCOURS SUIT LA CLASSE DE L'ÉLÈVE.
+    //
+    // `profiles.class` vient de l'école : `schools.enrollStudent`,
+    // `schools.transferStudent` et l'import en masse l'alignent sur la classe
+    // d'inscription. Quand il est renseigné, l'élève ne voit que les
+    // thématiques de SON niveau, lues par l'index `by_subjectId_class`. La
+    // chaîne de déblocage (D4) se résout alors à l'intérieur de ce niveau, et
+    // non plus à travers les six de l'élémentaire.
+    //
+    // Sans classe (compte autonome, inscription pas encore faite), on garde
+    // l'ancien comportement : tout l'élémentaire, collège et lycée masqués
+    // (`convex/curriculum.ts`). L'écran le dit à l'enfant plutôt que de lui
+    // cacher des thématiques sans explication.
+    //
+    // Une classe masquée sur un profil (donnée héritée) tombe dans le même cas
+    // que l'absence : aucune thématique visible ne lui correspond, et un
+    // catalogue vide ressemblerait à une panne.
+    const studentClass =
+      profile.class && !isHiddenClass(profile.class) ? profile.class : null;
+
+    const topics = studentClass
+      ? await ctx.db
+          .query("topics")
+          .withIndex("by_subjectId_class", (q) =>
+            q.eq("subjectId", args.subjectId).eq("class", studentClass),
+          )
+          .take(1000)
+      : (
+          await ctx.db
+            .query("topics")
+            .withIndex("by_subjectId", (q) =>
+              q.eq("subjectId", args.subjectId),
+            )
+            .take(1000)
+        ).filter((topic) => !isHiddenClass(topic.class));
     topics.sort((a, b) => a.order - b.order);
 
     const allProgress = await ctx.db
@@ -799,6 +879,9 @@ export const getStudentSubjectMap = query({
       },
       topics: orderedTopics,
       totalStarsApprox,
+      // D10 — le niveau qui a filtré le parcours, ou null quand tout
+      // l'élémentaire est montré faute de classe renseignée.
+      studentClass,
     };
   },
 });

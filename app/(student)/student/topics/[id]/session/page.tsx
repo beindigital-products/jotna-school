@@ -567,6 +567,14 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
           <span className="font-semibold text-gray-700">
             {topic.name ?? "Palier"} — niveau {palierIndex}
           </span>
+          {topic.class && (
+            <span
+              className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700"
+              aria-label={`Exercices de ${topic.class}`}
+            >
+              {topic.class}
+            </span>
+          )}
           <span className="mx-2">·</span>
           <span>
             Question {currentIndex + 1}/{totalExos}

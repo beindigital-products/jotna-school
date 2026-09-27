@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
-import { Loader2, BookOpen, Flame } from "lucide-react";
+import { Loader2, BookOpen, Flame, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { Pio } from "@/components/student/pio";
 
@@ -64,10 +64,19 @@ export default function StudentHomePage() {
 
       {/* Subjects grid — "mes mondes" */}
       <div>
-        <h2 className="font-display mb-4 flex items-center gap-2 text-2xl font-extrabold text-gray-900">
-          <BookOpen className="h-7 w-7 text-amber-600" aria-hidden />
-          Mes matières
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display flex items-center gap-2 text-2xl font-extrabold text-gray-900">
+            <BookOpen className="h-7 w-7 text-amber-600" aria-hidden />
+            Mes matières
+          </h2>
+          {/* D10 — le niveau fourni par l'école, qui règle les exercices. */}
+          {stats?.class && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-sm font-bold text-orange-700 shadow-sm ring-1 ring-orange-200">
+              <GraduationCap className="h-4 w-4" aria-hidden />
+              Programme {stats.class}
+            </span>
+          )}
+        </div>
 
         {subjects.length === 0 ? (
           <div className="rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center">

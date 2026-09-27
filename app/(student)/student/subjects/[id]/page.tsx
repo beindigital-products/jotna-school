@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Star,
   Sparkles,
+  GraduationCap,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -55,7 +56,7 @@ export default function SubjectTopicsPage({
     );
   }
 
-  const { subject, topics, totalStarsApprox } = map;
+  const { subject, topics, totalStarsApprox, studentClass } = map;
   const completedTopics = topics.filter((t) => t.status === "completed").length;
 
   return (
@@ -76,9 +77,22 @@ export default function SubjectTopicsPage({
         className="relative overflow-hidden rounded-3xl p-6 text-white shadow-xl sm:p-8"
         style={{ backgroundColor: subject.color }}
       >
-        <h1 className="font-display text-3xl font-extrabold sm:text-4xl">
-          {subject.name}
-        </h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="font-display text-3xl font-extrabold sm:text-4xl">
+            {subject.name}
+          </h1>
+          {/* D10 — le niveau qui a filtré ce parcours, fourni par l'école. */}
+          {studentClass && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-sm font-bold shadow-sm"
+              style={{ color: subject.color }}
+              aria-label={`Programme ${studentClass}`}
+            >
+              <GraduationCap className="h-4 w-4" aria-hidden />
+              {studentClass}
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-base opacity-95 sm:text-lg">
           {topics.length} thématique{topics.length !== 1 ? "s" : ""} ·{" "}
           {completedTopics}/{topics.length} validée
@@ -92,6 +106,15 @@ export default function SubjectTopicsPage({
           </div>
         )}
       </motion.div>
+
+      {/* Sans classe renseignée, tout l'élémentaire s'affiche : on le dit. */}
+      {!studentClass && topics.length > 0 && (
+        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Ta classe n&apos;est pas encore renseignée par ton école : voici
+          toutes les thématiques. Dès qu&apos;elle le sera, tu ne verras que
+          celles de ton niveau.
+        </p>
+      )}
 
       {/* Sentier — vertical path with connector */}
       {topics.length === 0 ? (
@@ -202,9 +225,10 @@ function Station({
         )}
       </div>
 
-      {/* Card body */}
+      {/* Card body. min-w-0 : sans lui, la carte refuse de rétrécir et pousse
+          le bouton hors écran à 375 px. Sur mobile, le bouton passe sous le texte. */}
       <div
-        className={`flex flex-1 items-center justify-between gap-3 rounded-2xl border-2 p-4 transition-all sm:p-5 ${
+        className={`flex min-w-0 flex-1 flex-col items-stretch gap-3 rounded-2xl border-2 p-4 transition-all sm:flex-row sm:items-center sm:justify-between sm:p-5 ${
           isLocked
             ? "border-gray-100 bg-white/60 opacity-70"
             : isCompleted
@@ -255,7 +279,7 @@ function Station({
         {!isLocked && (
           <Link
             href={`/student/topics/${topic._id}/session?palier=${topic.nextPalierIndex}`}
-            className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg active:scale-95 sm:text-base"
+            className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg active:scale-95 sm:text-base"
             aria-label={
               isCompleted
                 ? `Revoir ${topic.name}`

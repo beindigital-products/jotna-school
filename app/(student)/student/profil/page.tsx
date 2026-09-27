@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import {
   Loader2,
   BookCheck,
@@ -11,11 +13,17 @@ import {
   Flame,
   Volume2,
   VolumeX,
+  School,
+  GraduationCap,
+  LogOut,
+  ChevronRight,
 } from "lucide-react";
 
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { setSoundEnabledLocal } from "@/lib/sounds";
+import { classLongName, schoolClassDisplay } from "@/lib/classLabels";
+import { useLogout } from "@/hooks/use-logout";
 
 const EXOS_PER_LEVEL_UI = 50; // Mirrors students.EXOS_PER_LEVEL.
 
@@ -78,6 +86,9 @@ export default function StudentProfilePage() {
     Math.min(100, (xpInLevel / EXOS_PER_LEVEL_UI) * 100),
   );
 
+  const studentClass = stats.class;
+  const schooling = stats.schooling;
+
   return (
     <div className="mx-auto max-w-2xl">
       {/* Avatar + level ring */}
@@ -107,8 +118,19 @@ export default function StudentProfilePage() {
           {stats.student.name}
         </h1>
 
+        {/* La classe, juste sous le prénom : c'est elle qui règle les
+            exercices, elle mérite d'être vue avant les compteurs. */}
+        {studentClass && (
+          <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-sm font-bold text-orange-700 shadow-sm ring-1 ring-orange-200">
+            <GraduationCap className="h-4 w-4" aria-hidden />
+            {schooling
+              ? schoolClassDisplay(schooling.class, schooling.classLabel)
+              : studentClass}
+          </p>
+        )}
+
         {(stats.exosToNextLevel ?? 0) > 0 && (
-          <p className="mt-1 text-xs font-medium text-gray-500">
+          <p className="mt-2 text-xs font-medium text-gray-500">
             {stats.exosToNextLevel} bonne
             {(stats.exosToNextLevel ?? 0) > 1 ? "s" : ""} réponse
             {(stats.exosToNextLevel ?? 0) > 1 ? "s" : ""} avant le niveau{" "}
@@ -116,6 +138,55 @@ export default function StudentProfilePage() {
           </p>
         )}
       </div>
+
+      {/* Ma classe — l'école fournit le niveau, l'enfant le voit ici */}
+      <section
+        aria-labelledby="ma-classe"
+        className="mb-8 rounded-2xl border-2 border-orange-200 bg-white p-5 shadow-sm"
+      >
+        <h2
+          id="ma-classe"
+          className="font-display mb-3 flex items-center gap-2 text-lg font-bold text-gray-900"
+        >
+          <School className="h-5 w-5 text-orange-500" aria-hidden />
+          Ma classe
+        </h2>
+
+        {studentClass ? (
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <InfoRow
+              label="Niveau"
+              value={studentClass}
+              hint={classLongName(studentClass)}
+            />
+            {schooling && (
+              <InfoRow
+                label="Classe"
+                value={schoolClassDisplay(schooling.class, schooling.classLabel)}
+              />
+            )}
+            {schooling && (
+              <InfoRow label="École" value={schooling.schoolName} />
+            )}
+            {schooling?.teacherName && (
+              <InfoRow label="Mon prof" value={schooling.teacherName} />
+            )}
+          </dl>
+        ) : (
+          <p className="text-sm text-gray-600">
+            Ta classe n&apos;est pas encore renseignée. Ton école s&apos;en
+            occupe : dès que c&apos;est fait, tes exercices suivront ton
+            niveau.
+          </p>
+        )}
+
+        {studentClass && (
+          <p className="mt-3 text-xs text-gray-500">
+            Tes exercices sont prévus pour le {studentClass}. Si ta classe
+            change, ton école la mettra à jour.
+          </p>
+        )}
+      </section>
 
       {/* Stats grid — 2x2 on mobile, kept simple */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4">
@@ -208,10 +279,19 @@ export default function StudentProfilePage() {
       </div>
 
       {/* Recent badges (kept) */}
-      <div>
-        <h2 className="font-display mb-4 text-lg font-bold text-gray-900">
-          Derniers badges
-        </h2>
+      <div className="mb-8">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="font-display text-lg font-bold text-gray-900">
+            Derniers badges
+          </h2>
+          <Link
+            href="/student/badges"
+            className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-orange-600 hover:text-orange-800"
+          >
+            Voir mon coffre
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </div>
         {stats.recentBadges.length === 0 ? (
           <p className="text-sm text-gray-500">
             Aucun badge obtenu pour le moment. Continue tes exercices !
@@ -235,6 +315,98 @@ export default function StudentProfilePage() {
           </div>
         )}
       </div>
+
+      <LogoutCard />
+    </div>
+  );
+}
+
+/**
+ * La déconnexion, en bas de page, en deux temps : un premier bouton, puis une
+ * confirmation sur la même ligne. Un enfant qui tape à côté ne se retrouve pas
+ * devant l'écran de connexion sans comprendre — et rien ne bouge tant qu'il
+ * n'a pas dit « oui ».
+ */
+function LogoutCard() {
+  const doLogout = useLogout();
+  const [confirming, setConfirming] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  async function handleConfirm() {
+    setLeaving(true);
+    try {
+      await doLogout();
+    } catch {
+      setLeaving(false);
+      setConfirming(false);
+    }
+  }
+
+  return (
+    <section
+      aria-labelledby="deconnexion"
+      className="rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm"
+    >
+      <h2 id="deconnexion" className="sr-only">
+        Déconnexion
+      </h2>
+      {confirming ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-medium text-gray-700">
+            Tu veux vraiment te déconnecter ?
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={leaving}
+              className="min-h-11 flex-1 rounded-2xl border-2 border-gray-200 px-4 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60 sm:flex-none"
+            >
+              Rester
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={leaving}
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 px-4 text-sm font-bold text-white shadow-md transition-colors hover:bg-red-600 disabled:opacity-60 sm:flex-none"
+            >
+              {leaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <LogOut className="h-4 w-4" aria-hidden />
+              )}
+              Oui, je me déconnecte
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border-2 border-red-200 px-4 text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
+        >
+          <LogOut className="h-4 w-4" aria-hidden />
+          Se déconnecter
+        </button>
+      )}
+    </section>
+  );
+}
+
+function InfoRow({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-xl bg-orange-50 px-4 py-3">
+      <dt className="text-xs font-medium text-gray-500">{label}</dt>
+      <dd className="font-display text-lg font-bold text-gray-900">{value}</dd>
+      {hint && <dd className="text-xs text-gray-500">{hint}</dd>}
     </div>
   );
 }
