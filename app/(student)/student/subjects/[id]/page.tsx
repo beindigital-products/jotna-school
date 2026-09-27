@@ -82,16 +82,14 @@ export default function SubjectTopicsPage({
             {subject.name}
           </h1>
           {/* D10 — le niveau qui a filtré ce parcours, fourni par l'école. */}
-          {studentClass && (
-            <span
-              className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-sm font-bold shadow-sm"
-              style={{ color: subject.color }}
-              aria-label={`Programme ${studentClass}`}
-            >
-              <GraduationCap className="h-4 w-4" aria-hidden />
-              {studentClass}
-            </span>
-          )}
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-sm font-bold shadow-sm"
+            style={{ color: subject.color }}
+            aria-label={`Programme ${studentClass}`}
+          >
+            <GraduationCap className="h-4 w-4" aria-hidden />
+            {studentClass}
+          </span>
         </div>
         <p className="mt-1 text-base opacity-95 sm:text-lg">
           {topics.length} thématique{topics.length !== 1 ? "s" : ""} ·{" "}
@@ -106,15 +104,6 @@ export default function SubjectTopicsPage({
           </div>
         )}
       </motion.div>
-
-      {/* Sans classe renseignée, tout l'élémentaire s'affiche : on le dit. */}
-      {!studentClass && topics.length > 0 && (
-        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Ta classe n&apos;est pas encore renseignée par ton école : voici
-          toutes les thématiques. Dès qu&apos;elle le sera, tu ne verras que
-          celles de ton niveau.
-        </p>
-      )}
 
       {/* Sentier — vertical path with connector */}
       {topics.length === 0 ? (

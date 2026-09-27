@@ -740,37 +740,25 @@ export const getStudentSubjectMap = query({
     //
     // `profiles.class` vient de l'école : `schools.enrollStudent`,
     // `schools.transferStudent` et l'import en masse l'alignent sur la classe
-    // d'inscription. Quand il est renseigné, l'élève ne voit que les
-    // thématiques de SON niveau, lues par l'index `by_subjectId_class`. La
-    // chaîne de déblocage (D4) se résout alors à l'intérieur de ce niveau, et
-    // non plus à travers les six de l'élémentaire.
+    // d'inscription. L'élève ne voit que les thématiques de SON niveau, lues
+    // par l'index `by_subjectId_class`. La chaîne de déblocage (D4) se résout
+    // donc à l'intérieur de ce niveau, et non à travers les six de
+    // l'élémentaire.
     //
-    // Sans classe (compte autonome, inscription pas encore faite), on garde
-    // l'ancien comportement : tout l'élémentaire, collège et lycée masqués
-    // (`convex/curriculum.ts`). L'écran le dit à l'enfant plutôt que de lui
-    // cacher des thématiques sans explication.
-    //
-    // Une classe masquée sur un profil (donnée héritée) tombe dans le même cas
-    // que l'absence : aucune thématique visible ne lui correspond, et un
-    // catalogue vide ressemblerait à une panne.
-    const studentClass =
-      profile.class && !isHiddenClass(profile.class) ? profile.class : null;
+    // Sans classe, le paywall a déjà refusé plus haut (`no_class`,
+    // `accessRules.decideAccess`) : on ne sert pas un programme au hasard.
+    // Le test ci-dessous ne fait que resserrer le type pour TypeScript ; il
+    // reprend la même règle que `access.loadAccessInput`, classe masquée
+    // comprise.
+    const studentClass = profile.class;
+    if (!studentClass || isHiddenClass(studentClass)) return null;
 
-    const topics = studentClass
-      ? await ctx.db
-          .query("topics")
-          .withIndex("by_subjectId_class", (q) =>
-            q.eq("subjectId", args.subjectId).eq("class", studentClass),
-          )
-          .take(1000)
-      : (
-          await ctx.db
-            .query("topics")
-            .withIndex("by_subjectId", (q) =>
-              q.eq("subjectId", args.subjectId),
-            )
-            .take(1000)
-        ).filter((topic) => !isHiddenClass(topic.class));
+    const topics = await ctx.db
+      .query("topics")
+      .withIndex("by_subjectId_class", (q) =>
+        q.eq("subjectId", args.subjectId).eq("class", studentClass),
+      )
+      .take(1000);
     topics.sort((a, b) => a.order - b.order);
 
     const allProgress = await ctx.db

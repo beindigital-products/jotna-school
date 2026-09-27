@@ -16,6 +16,7 @@ export type AccessReason =
   | "not_student"
   | "no_school"
   | "seat_released"
+  | "no_class"
   | "no_subscription"
   | "pending_payment"
   | "past_due"
@@ -42,6 +43,11 @@ export interface AccessInput {
   activeMembership: { schoolId: string } | null;
   /** Vrai si l'élève a une inscription passée en "released". */
   hasReleasedMembership: boolean;
+  /**
+   * Vrai si le profil porte une classe VISIBLE (`profiles.class`, hors
+   * collège et lycée masqués). Lu seulement quand l'inscription est active.
+   */
+  hasClass: boolean;
   /** Abonnement le plus récent de l'école, quel que soit son statut. */
   subscription: { status: SubscriptionStatus; endsAt: number } | null;
   /** `dueAt` de la tranche échue la plus ancienne. Lu seulement si past_due. */
@@ -60,6 +66,21 @@ export function decideAccess(input: AccessInput): AccessState {
     return input.hasReleasedMembership
       ? { ok: false, reason: "seat_released" }
       : { ok: false, reason: "no_school" };
+  }
+
+  // PAS DE CLASSE, PAS D'EXERCICES. Le parcours suit la classe de l'élève
+  // (`students.getStudentSubjectMap`, D10) : sans elle, on ne sait pas quels
+  // exercices lui donner, et lui servir tout l'élémentaire mettrait un CE1
+  // devant des fractions de CM2. C'est à l'école de la renseigner, comme
+  // l'inscription — d'où ce refus juste après `no_school`, avant tout motif
+  // d'abonnement.
+  //
+  // En pratique, `enrollStudent`, `transferStudent` et l'import écrivent la
+  // classe dans la même transaction que l'inscription : ce refus ne mord que
+  // sur un profil désaligné (donnée héritée, classe masquée). Il échoue en
+  // FERMÉ, comme toutes les autres branches de cette fonction.
+  if (!input.hasClass) {
+    return { ok: false, reason: "no_class" };
   }
 
   const sub = input.subscription;

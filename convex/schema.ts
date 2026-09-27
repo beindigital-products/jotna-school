@@ -47,9 +47,9 @@ export default defineSchema({
     // l'import en masse (`studentImport.ts`), qui l'alignent sur la classe
     // d'inscription. Aucun écran ne laisse l'enfant ou le parent le saisir.
     //
-    // Lecture (D10) : `students.getStudentSubjectMap` ne montre que les
-    // thématiques de ce niveau quand il est renseigné, et tout l'élémentaire
-    // sinon. La session de palier tient son niveau de `topic.class`, pas
+    // Lectures : le paywall (`accessRules.decideAccess`) refuse `no_class` à
+    // un élève inscrit sans classe visible, et `students.getStudentSubjectMap`
+    // (D10) ne montre que les thématiques de ce niveau. La session de palier tient son niveau de `topic.class`, pas
     // d'ici — les deux coïncident dès que le parcours est filtré.
     class: v.optional(classEnum),
   }).index("by_userId", ["userId"]),

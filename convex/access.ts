@@ -15,6 +15,7 @@ import {
   type AccessInput,
   type AccessState,
 } from "./accessRules";
+import { isHiddenClass } from "./curriculum";
 
 /**
  * L'abonnement d'une école que le paywall tient pour COURANT.
@@ -185,6 +186,7 @@ export async function loadAccessInput(
     role: null,
     activeMembership: null,
     hasReleasedMembership: false,
+    hasClass: false,
     subscription: null,
     oldestOverdueDueAt: null,
   };
@@ -224,12 +226,18 @@ export async function loadAccessInput(
   // contrat.
   const current = await currentSchoolSubscription(ctx, active.schoolId, now);
 
+  // Lu sur le profil déjà chargé : aucune lecture de plus sur le chemin le
+  // plus chaud du dépôt. Une classe masquée (collège, lycée) compte comme
+  // absente — aucune thématique visible ne lui correspond.
+  const hasClass = !!profile.class && !isHiddenClass(profile.class);
+
   if (!current) {
     return {
       ...empty,
       role: "student",
       activeMembership: { schoolId: active.schoolId as string },
       hasReleasedMembership: hasReleased,
+      hasClass,
     };
   }
 
@@ -245,6 +253,7 @@ export async function loadAccessInput(
     role: "student",
     activeMembership: { schoolId: active.schoolId as string },
     hasReleasedMembership: hasReleased,
+    hasClass,
     subscription: {
       status: current.status,
       endsAt: current.endsAt,

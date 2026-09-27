@@ -15,6 +15,7 @@ function base(overrides: Partial<AccessInput> = {}): AccessInput {
     role: "student",
     activeMembership: { schoolId: "school_1" },
     hasReleasedMembership: false,
+    hasClass: true,
     subscription: { status: "active", endsAt: NOW + 100 * DAY },
     oldestOverdueDueAt: null,
     ...overrides,
@@ -50,6 +51,27 @@ describe("decideAccess — rattachement école", () => {
     expect(
       decideAccess(base({ activeMembership: null, hasReleasedMembership: true })),
     ).toEqual({ ok: false, reason: "seat_released" });
+  });
+});
+
+describe("decideAccess — classe", () => {
+  it("refuse un élève inscrit dont la classe n'est pas renseignée", () => {
+    expect(decideAccess(base({ hasClass: false }))).toEqual({
+      ok: false,
+      reason: "no_class",
+    });
+  });
+
+  it("dit l'absence de classe avant tout motif d'abonnement", () => {
+    expect(
+      decideAccess(base({ hasClass: false, subscription: null })),
+    ).toEqual({ ok: false, reason: "no_class" });
+  });
+
+  it("garde no_school quand l'élève n'a ni école ni classe", () => {
+    expect(
+      decideAccess(base({ activeMembership: null, hasClass: false })),
+    ).toEqual({ ok: false, reason: "no_school" });
   });
 });
 
