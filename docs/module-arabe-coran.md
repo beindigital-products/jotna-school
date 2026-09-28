@@ -150,25 +150,32 @@ exercices de reconnaissance et écrit au doigt. Il ne peut simplement ni
 **entendre** la lettre ni **se faire écouter**, ce qui est la moitié du module.
 
 ```bash
-npx convex env set ELEVENLABS_API_KEY  <clé>
-npx convex env set ELEVENLABS_VOICE_ID <identifiant de voix>
+npx convex env set ELEVENLABS_API_KEY <clé>
 ```
 
 Optionnelles, avec leurs valeurs par défaut :
 
 | Variable | Défaut | À quoi elle sert |
 | --- | --- | --- |
+| `ELEVENLABS_VOICE_ID` | `LE1b8WpPSScCUklGPKzg` (Ekram) | La voix qui lit tout le parcours. Voir plus bas pourquoi celle-ci. |
 | `ELEVENLABS_MODEL_ID` | `eleven_multilingual_v2` | Le modèle de synthèse. Il doit lire l'arabe **vocalisé** : un modèle qui ignore les voyelles brèves prononcerait بَ et بِ de la même façon, et le niveau 2 du parcours n'aurait plus d'objet. |
 | `ELEVENLABS_STT_MODEL_ID` | `scribe_v1` | Le modèle de transcription qui écoute l'enfant. |
 | `ELEVENLABS_STT_LANGUAGE` | `ara` | Code ISO-639-3. `ar` fonctionne aussi. |
 | `ELEVENLABS_SPEED` | — | Vitesse de diction, entre `0.7` et `1.2`. Une valeur hors de cet intervalle est ignorée. Ralentir aide les débutants. |
 
-**`ELEVENLABS_VOICE_ID` n'a pas de valeur par défaut, et c'est voulu.** Choisir
-la voix est une décision pédagogique : on veut une diction douce, posée,
-articulée — pas une voix de présentateur. Elle dépend du compte qui la possède.
-Écoutez plusieurs voix arabes dans la bibliothèque ElevenLabs, faites-en écouter
-une à un enseignant, puis posez son identifiant. Une voix choisie sans que
-personne ne l'ait entendue finira dans les oreilles de six cents enfants.
+**La voix par défaut, Ekram, a été choisie à l'oreille.** Choisir la voix est
+une décision pédagogique : on veut une diction douce, posée, articulée — pas une
+voix de présentateur. Le 28 septembre 2026, le même verset a été synthétisé avec
+quatre voix arabes du compte, et Ekram, une voix de femme en arabe standard, a
+été retenue à l'écoute. Une mesure avait d'abord vérifié qu'elle prononce بَ, بِ
+et بُ avec trois voyelles distinctes.
+
+Pour en changer, écoutez plusieurs voix arabes dans la bibliothèque ElevenLabs,
+faites-en écouter une à un enseignant, puis posez son identifiant dans
+`ELEVENLABS_VOICE_ID`. L'identifiant dépend du compte qui porte la clé : sur un
+autre compte ElevenLabs, vérifiez que la voix y est disponible, sinon la leçon
+reste muette. Une voix choisie sans que personne ne l'ait entendue finira dans
+les oreilles de six cents enfants.
 
 ### Ce que ça coûte, et pourquoi c'est borné
 

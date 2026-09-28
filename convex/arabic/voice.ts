@@ -15,9 +15,9 @@
  * LE FOURNISSEUR EST ELEVENLABS. C'est ce que demandait la commande (« une
  * belle voix en arabe, douce et compréhensible ») : leur modèle multilingue
  * lit l'arabe vocalisé, et leur transcription (Scribe) le rend. Tout passe par
- * `voiceConfig()` — clé, voix, modèles — de sorte qu'aucun identifiant n'est
- * écrit en dur et qu'un changement de fournisseur se fasse dans ce seul
- * fichier.
+ * `voiceConfig()` — clé, voix, modèles — de sorte que chaque identifiant ait
+ * sa valeur en un seul endroit, surchargeable par l'environnement, et qu'un
+ * changement de fournisseur se fasse dans ce seul fichier.
  *
  * RIEN NE MARCHE SANS CLÉ, ET RIEN NE CASSE NON PLUS. Sans
  * `ELEVENLABS_API_KEY`, les deux actions rendent un état « indisponible » que
@@ -72,6 +72,22 @@ const API_BASE = "https://api.elevenlabs.io/v1";
 const DEFAULT_TTS_MODEL = "eleven_multilingual_v2";
 const DEFAULT_STT_MODEL = "scribe_v1";
 
+/**
+ * La voix par défaut : Ekram, une voix de femme en arabe standard, calme.
+ *
+ * CHOISIE À L'OREILLE, PAS AU HASARD. Le 28 septembre 2026, le même verset a
+ * été synthétisé avec quatre voix arabes du compte (Ekram, Layla, Mustafa,
+ * Senen), et Ekram a été retenue à l'écoute. Une mesure l'avait d'abord
+ * qualifiée : ses trois syllabes بَ بِ بُ portent trois voyelles nettement
+ * distinctes, condition du niveau 2 du parcours.
+ *
+ * `ELEVENLABS_VOICE_ID` la remplace. L'identifiant vient de la bibliothèque
+ * du compte ElevenLabs qui porte la clé : sur un autre compte, vérifier que la
+ * voix y est disponible, sinon l'API répond `voice_not_found`, l'action rend
+ * `provider_error` et la leçon continue sans le son.
+ */
+const DEFAULT_VOICE_ID = "LE1b8WpPSScCUklGPKzg";
+
 /** ISO-639-3. Leur API accepte aussi « ar » ; on fixe le plus explicite. */
 const DEFAULT_STT_LANGUAGE = "ara";
 
@@ -104,16 +120,13 @@ interface VoiceConfig {
 /**
  * La configuration, ou `null` si le fournisseur n'est pas branché.
  *
- * `ELEVENLABS_VOICE_ID` n'a PAS de valeur par défaut, et c'est délibéré :
- * choisir une voix est une décision pédagogique (on veut une diction douce et
- * lente, pas une voix de présentateur), elle dépend du compte qui la possède,
- * et un identifiant inventé ici produirait soit une erreur, soit — pire — une
- * voix que personne n'a écoutée avant de la donner à des enfants. Le mode
- * d'emploi est dans `docs/module-arabe-coran.md`.
+ * Seule la clé est obligatoire. La voix et les modèles ont une valeur par
+ * défaut, chacune surchargeable par l'environnement. Le mode d'emploi est dans
+ * `docs/module-arabe-coran.md`.
  */
 function voiceConfig(): VoiceConfig | null {
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  const voiceId = process.env.ELEVENLABS_VOICE_ID;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID ?? DEFAULT_VOICE_ID;
   if (!apiKey || !voiceId) return null;
 
   const rawSpeed = Number(process.env.ELEVENLABS_SPEED);
