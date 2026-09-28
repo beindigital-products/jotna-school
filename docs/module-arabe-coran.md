@@ -61,8 +61,31 @@ comparaison entre les deux colonnes qui rend l'écran utile : un enfant déclar�
 n'emporte pas le jugement de son ancienne école : la ligne reste en base mais ne
 s'applique plus, et la nouvelle école le place elle-même.
 
-Qui a le droit : la même garde que l'allumage (admin, ou directeur de cette
-école). Un professeur ne place pas.
+### Qui place
+
+| Rôle | Ce qu'il peut placer | Où |
+| --- | --- | --- |
+| `admin` | tout le monde | fiche de l'école |
+| `directeur` | les élèves de **son** école (`schoolStaff` actif) | fiche de l'école |
+| `professeur` | les élèves de **ses propres classes** | `/teacher/students` |
+
+Le professeur est celui qui entend l'enfant lire ; lui refuser le placement
+obligerait à faire remonter chaque élève à un directeur qui ne l'a jamais
+entendu. Mais **ses** élèves, et eux seuls : le lien est
+`schoolClasses.teacherId`, celui que tout le dépôt utilise déjà pour dire « les
+élèves de ce professeur » — pas `schoolStaff`, qui ouvrirait toute l'école à
+tout le corps enseignant.
+
+**Ni l'élève ni son parent ne placent.** Un enfant qui se déclarerait
+« confirmé » sauterait sept leçons d'alphabet et se retrouverait devant
+Al-Fātiḥa sans savoir lire : il ne tricherait pas, il se punirait. Et placer,
+c'est décider d'un parcours scolaire à l'intérieur d'une école — un parent qui
+juge son enfant mal placé en parle au maître, qui peut désormais corriger
+lui-même.
+
+La décision vit dans `convex/arabic/placementRules.ts`, en fonction pure : le
+dépôt n'a pas `convex-test`, donc une garde écrite à l'intérieur d'une mutation
+ne serait vérifiée par aucun test.
 
 ---
 
@@ -220,14 +243,15 @@ Deux points à trancher par l'école :
 | `convex/arabic/matching.ts` | Normalisation de l'arabe, jugement d'une prononciation, d'une lecture et d'une récitation. |
 | `convex/arabic/progressRules.ts` | Déverrouillage des leçons, plancher de placement, note, étoiles. |
 | `convex/arabic/memorization.ts` | Ce qui est mémorisé et quand ça revient (requête, application du résultat). |
-| `convex/arabic/placement.ts` | Le placement des élèves par l'école. |
+| `convex/arabic/placement.ts` | Le placement des élèves (lecture, écriture, listes école et professeur). |
+| `convex/arabic/placementRules.ts` | Qui a le droit de placer qui — fonction pure, testée. |
 | `convex/arabic/lessons.ts` | Parcours et progression de l'élève (requêtes et mutations). |
 | `convex/arabic/voice.ts` | Synthèse et transcription (actions, `"use node"`). |
 | `convex/arabic/db.ts` | Ce que les actions ne peuvent pas faire elles-mêmes (cache, quota, écriture des tentatives). |
 | `convex/modules.ts`, `convex/moduleCatalog.ts` | L'allumage par école. |
 | `lib/arabic/tracing.ts` | La note du tracé au doigt. |
 | `lib/arabic/session.ts` | L'enchaînement des exercices d'une leçon. |
-| `components/arabic/*` | Écoute, micro, carré d'écriture, exercices, texte masqué. |
+| `components/arabic/*` | Écoute, micro, carré d'écriture, exercices, texte masqué, éditeur de placement (partagé par la fiche d'école et l'espace professeur). |
 | `app/(student)/student/arabe/*` | Parcours, alphabet, séance. La séance est `/student/arabe/lecon?key=<leçon>` : le bundle est exporté en statique pour Capacitor (`output: "export"`), et aucune route `[segment]` n'y survit sans `generateStaticParams`. |
 
 **Le contenu est du code, pas des lignes en base** : rien à ensemencer, rien à
@@ -248,9 +272,11 @@ audio et les compteurs vivent en base.
 - **Il ne certifie pas une mémorisation.** Le module sait si les mots y sont et
   dans l'ordre ; il ne sait rien du tajwīd. Une sourate « sue » au sens du
   module peut être fautive au sens d'un maître.
-- **Il n'a pas encore d'écran enseignant.** Les progressions sont en base
-  (`arabicLessonProgress`, `arabicAttempts`, `arabicHifz`, indexées par élève),
-  et l'administration voit celle d'un élève à la fois depuis la fiche de son
-  école. Un tableau de classe pour le professeur reste à faire.
+- **Il n'a pas encore de tableau de classe.** Le professeur place ses élèves et
+  voit la progression de chacun en ouvrant sa ligne, mais aucun écran ne montre
+  la classe d'un coup d'œil — qui bute sur quelle lettre, qui n'a pas révisé sa
+  sourate cette semaine. Les données sont là (`arabicLessonProgress`,
+  `arabicAttempts`, `arabicHifz`, indexées par élève) ; c'est la suite naturelle
+  du chantier.
 - **Il ne traduit pas le Coran verset par verset.** Traduire est un acte
   d'exégèse ; on donne le nom de la sourate et son sens, rien de plus.

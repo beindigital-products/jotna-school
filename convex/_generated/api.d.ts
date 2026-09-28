@@ -26,6 +26,7 @@ import type * as arabic_lessons from "../arabic/lessons.js";
 import type * as arabic_matching from "../arabic/matching.js";
 import type * as arabic_memorization from "../arabic/memorization.js";
 import type * as arabic_placement from "../arabic/placement.js";
+import type * as arabic_placementRules from "../arabic/placementRules.js";
 import type * as arabic_progressRules from "../arabic/progressRules.js";
 import type * as arabic_quran from "../arabic/quran.js";
 import type * as arabic_voice from "../arabic/voice.js";
@@ -114,6 +115,7 @@ declare const fullApi: ApiFromModules<{
   "arabic/matching": typeof arabic_matching;
   "arabic/memorization": typeof arabic_memorization;
   "arabic/placement": typeof arabic_placement;
+  "arabic/placementRules": typeof arabic_placementRules;
   "arabic/progressRules": typeof arabic_progressRules;
   "arabic/quran": typeof arabic_quran;
   "arabic/voice": typeof arabic_voice;

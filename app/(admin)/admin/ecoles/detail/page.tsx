@@ -22,7 +22,10 @@ import { refusalMessage } from "@/lib/refusalMessage";
 // Les trois niveaux de placement viennent du module, pas de cet écran : c'est
 // la même liste que celle que le serveur accepte et que `placementFloorOrder`
 // interprète. La recopier ici, ce serait la laisser diverger d'un accent.
-import { PLACEMENT_LEVELS } from "@/convex/arabic/progressRules";
+import {
+  ArabicPlacementList,
+  PLACEMENT_NOTICE,
+} from "@/components/arabic/placement-editor";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -1927,24 +1930,17 @@ function ModulesSection({ schoolId }: { schoolId: Doc<"schools">["_id"] }) {
 }
 
 /**
- * LE PLACEMENT DES ÉLÈVES dans le module d'arabe.
+ * LE PLACEMENT DES ÉLÈVES dans le module d'arabe, vu par l'école.
  *
  * NE S'AFFICHE QUE MODULE ALLUMÉ, parce que placer des enfants dans un
  * enseignement que l'école n'a pas pris n'a pas de sens — et parce qu'une
  * école qui hésite à l'allumer ne doit pas voir apparaître une liste de ses
  * élèves sous un titre religieux.
  *
- * CE QUE LE TABLEAU MONTRE, ET POURQUOI DEUX COLONNES. À gauche ce que l'école
- * DÉCLARE (le niveau, la leçon, la sourate) ; à droite, quand on ouvre une
- * ligne, ce que l'élève a RÉELLEMENT fait. Les deux ensemble sont ce qui rend
- * l'écran utile : un enfant déclaré « confirmé » qui n'a jamais dépassé la
- * troisième leçon d'alphabet se voit d'un coup d'œil, et personne ne peut le
- * voir autrement.
- *
- * PLACER N'EST PAS VALIDER. Le texte de l'écran le dit, parce que c'est le
- * seul endroit où un directeur pourrait croire le contraire : cocher
- * « confirmé » OUVRE le parcours jusqu'aux sourates, ça ne donne ni étoile ni
- * leçon terminée. L'enfant garde tout à gagner.
+ * L'ÉDITEUR LUI-MÊME EST PARTAGÉ avec l'espace professeur
+ * (`components/arabic/placement-editor.tsx`) : le directeur place tous les
+ * élèves de son école, le professeur les siens, mais ils lisent le même
+ * avertissement et les mêmes libellés. Cet écran n'apporte que la liste.
  */
 function ArabicPlacementPanel({
   schoolId,
@@ -1953,7 +1949,6 @@ function ArabicPlacementPanel({
 }) {
   const roster = useQuery(api.arabic.placement.listForSchool, { schoolId });
   const options = useQuery(api.arabic.placement.options);
-  const [open, setOpen] = useState<Id<"profiles"> | null>(null);
 
   return (
     <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -1962,10 +1957,9 @@ function ArabicPlacementPanel({
         <h3 className="font-medium text-gray-900">Niveau des élèves en arabe</h3>
       </div>
       <p className="mb-4 text-sm text-gray-500">
-        Indiquez où chaque élève en est : le parcours s&apos;ouvre jusque-là au
-        lieu de recommencer à l&apos;alphabet. Placer un élève{" "}
-        <strong>ouvre</strong> des leçons, ne les valide pas — il garde ses
-        étoiles à gagner.
+        {PLACEMENT_NOTICE} Placer un élève <strong>ouvre</strong> des leçons, ne
+        les valide pas — il garde ses étoiles à gagner. Les professeurs peuvent
+        placer les élèves de leurs propres classes depuis leur espace.
       </p>
 
       {roster === undefined || options === undefined ? (
@@ -1973,253 +1967,14 @@ function ArabicPlacementPanel({
           <Loader2 className="h-4 w-4 animate-spin" />
           Chargement...
         </div>
-      ) : roster.students.length === 0 ? (
-        <p className="text-sm text-gray-500">
-          Aucun élève inscrit dans cette école pour le moment.
-        </p>
       ) : (
-        <>
-          {roster.truncated && <PartialListNotice subject="élèves" />}
-          <ul className="divide-y divide-gray-100">
-            {roster.students.map((student) => (
-              <PlacementRow
-                key={student.studentId}
-                schoolId={schoolId}
-                student={student}
-                options={options}
-                open={open === student.studentId}
-                onToggle={() =>
-                  setOpen((current) =>
-                    current === student.studentId ? null : student.studentId,
-                  )
-                }
-              />
-            ))}
-          </ul>
-        </>
+        <ArabicPlacementList
+          students={roster.students}
+          options={options}
+          truncated={roster.truncated}
+        />
       )}
     </div>
-  );
-}
-
-type PlacementRoster = FunctionReturnType<
-  typeof api.arabic.placement.listForSchool
->;
-type PlacementOptions = FunctionReturnType<typeof api.arabic.placement.options>;
-
-function PlacementRow({
-  schoolId,
-  student,
-  options,
-  open,
-  onToggle,
-}: {
-  schoolId: Doc<"schools">["_id"];
-  student: PlacementRoster["students"][number];
-  options: PlacementOptions;
-  open: boolean;
-  onToggle: () => void;
-}) {
-  const setForStudent = useMutation(api.arabic.placement.setForStudent);
-  const clearForStudent = useMutation(api.arabic.placement.clearForStudent);
-  // La progression RÉELLE n'est lue que si la ligne est ouverte : la charger
-  // pour trois cents élèves à chaque frappe ferait d'un tableau de bord une
-  // souscription qui se réinvalide à chaque exercice fait en classe.
-  const progress = useQuery(
-    api.arabic.placement.getStudentProgress,
-    open ? { studentId: student.studentId, schoolId } : "skip",
-  );
-
-  const [level, setLevel] = useState(student.level ?? "debutant");
-  const [lessonKey, setLessonKey] = useState(student.startLessonKey ?? "");
-  const [surahKey, setSurahKey] = useState(student.surahKey ?? "");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const save = async () => {
-    setPending(true);
-    setError(null);
-    try {
-      await setForStudent({
-        schoolId,
-        studentId: student.studentId,
-        level,
-        ...(lessonKey ? { startLessonKey: lessonKey } : {}),
-        ...(surahKey ? { surahKey } : {}),
-      });
-    } catch (err) {
-      setError(refusalMessage(err, "Impossible d'enregistrer ce placement"));
-    } finally {
-      setPending(false);
-    }
-  };
-
-  const clear = async () => {
-    setPending(true);
-    setError(null);
-    try {
-      await clearForStudent({ schoolId, studentId: student.studentId });
-      setLevel("debutant");
-      setLessonKey("");
-      setSurahKey("");
-    } catch (err) {
-      setError(refusalMessage(err, "Impossible de retirer ce placement"));
-    } finally {
-      setPending(false);
-    }
-  };
-
-  return (
-    <li className="py-3">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 text-left"
-      >
-        <span className="min-w-0">
-          <span className="block truncate font-medium text-gray-900">
-            {student.name}
-          </span>
-          <span className="block text-sm text-gray-500">
-            {student.level
-              ? (PLACEMENT_LEVELS.find(
-                  (entry) => entry.key === student.level,
-                )?.label ?? student.level)
-              : "Non placé — commence à l'alphabet"}
-            {student.surahKey && ` · apprend ${student.surahKey}`}
-          </span>
-        </span>
-        <span className="shrink-0 text-sm font-medium text-indigo-600">
-          {open ? "Fermer" : "Modifier"}
-        </span>
-      </button>
-
-      {open && (
-        <div className="mt-3 space-y-3 rounded-lg bg-gray-50 p-3">
-          {error && (
-            <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-sm text-red-700">
-              {error}
-            </p>
-          )}
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">
-                Niveau
-              </span>
-              <select
-                value={level}
-                onChange={(event) =>
-                  setLevel(event.target.value as typeof level)
-                }
-                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-              >
-                {PLACEMENT_LEVELS.map((entry) => (
-                  <option key={entry.key} value={entry.key}>
-                    {entry.label}
-                  </option>
-                ))}
-              </select>
-              <span className="mt-1 block text-xs text-gray-500">
-                {PLACEMENT_LEVELS.find((entry) => entry.key === level)?.hint}
-              </span>
-            </label>
-
-            <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">
-                Leçon où il s&apos;est arrêté
-              </span>
-              <select
-                value={lessonKey}
-                onChange={(event) => setLessonKey(event.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-              >
-                <option value="">— non précisé —</option>
-                {options.lessons.map((lesson) => (
-                  <option key={lesson.key} value={lesson.key}>
-                    {lesson.order}. {lesson.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">
-                Sourate en cours
-              </span>
-              <select
-                value={surahKey}
-                onChange={(event) => setSurahKey(event.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-              >
-                <option value="">— non précisé —</option>
-                {options.surahs.map((surah) => (
-                  <option key={surah.key} value={surah.key}>
-                    {surah.nameFr} ({surah.ayahCount} versets)
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm">
-            <p className="mb-1 font-medium text-gray-700">
-              Ce que l&apos;élève a réellement fait
-            </p>
-            {progress === undefined ? (
-              <span className="flex items-center gap-2 text-gray-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Chargement...
-              </span>
-            ) : !progress.found ? (
-              <span className="text-gray-500">Aucune donnée.</span>
-            ) : (
-              <ul className="space-y-0.5 text-gray-600">
-                <li>
-                  {progress.completedCount} leçon
-                  {progress.completedCount > 1 ? "s" : ""} terminée
-                  {progress.completedCount > 1 ? "s" : ""}
-                  {progress.lastCompleted &&
-                    ` · la plus avancée : ${progress.lastCompleted.title}`}
-                </li>
-                <li>
-                  {progress.memorized.length === 0
-                    ? "Aucune sourate en mémorisation."
-                    : progress.memorized
-                        .map(
-                          (entry) =>
-                            `${entry.nameFr} : ${entry.verses} verset${entry.verses > 1 ? "s" : ""}`,
-                        )
-                        .join(" · ")}
-                </li>
-              </ul>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={save}
-              disabled={pending}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Enregistrer
-            </button>
-            {student.level && (
-              <button
-                type="button"
-                onClick={clear}
-                disabled={pending}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-              >
-                Retirer le placement
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </li>
   );
 }
 

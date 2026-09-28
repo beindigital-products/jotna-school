@@ -25,11 +25,14 @@
  *     jugement d'un directeur n'engage pas son confrère. La ligne n'est pas
  *     effacée pour autant — s'il revient, elle revaut.
  *
- * QUI ÉCRIT : la même garde que l'allumage du module
- * (`modules.callerAdministersSchool`) — un `admin`, ou le `directeur` rattaché
- * à CETTE école. Un professeur ne place pas : il voit l'élève tous les jours et
- * saurait mieux que personne, mais la porte d'un enseignement religieux se
- * tient au même niveau que son interrupteur.
+ * QUI ÉCRIT : trois portes, décidées par `placementRules.mayPlaceStudent` —
+ * un `admin`, le `directeur` rattaché à CETTE école, et le `professeur` pour
+ * LES ÉLÈVES QU'IL ENSEIGNE. C'est lui qui les voit tous les jours et qui sait
+ * lire leur niveau ; le lui refuser obligerait à faire remonter chaque enfant
+ * à un directeur qui ne l'a jamais entendu lire. Ses élèves, en revanche, et
+ * eux seuls : le lien est `schoolClasses.teacherId`, celui que tout le dépôt
+ * utilise déjà. Ni l'élève ni son parent ne placent — voir `placementRules.ts`,
+ * qui porte la décision et ses refus.
  *
  * UNE REQUÊTE NE LÈVE JAMAIS (spec §5.4) ; une mutation lève des `ConvexError`
  * porteuses de phrases, que l'écran affiche.
@@ -43,7 +46,9 @@ import {
   type QueryCtx,
 } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
+import { callerProfile, studentIdsTaughtBy } from "../access";
 import { callerAdministersSchool } from "../modules";
+import { mayPlaceStudent } from "./placementRules";
 import { ARABIC_LESSONS, getLesson } from "./curriculum";
 import { SURAHS } from "./quran";
 import { hifzRowsOf } from "./memorization";
@@ -54,6 +59,9 @@ import {
   type PlacementLevel,
 } from "./progressRules";
 
+/** Écoles lues pour un membre du personnel — une personne sert une école, deux au pire. */
+const STAFF_SCHOOLS_LIMIT = 20;
+
 /** Élèves lus pour le tableau de bord d'une école. Au-delà, la liste est dite partielle. */
 const SCHOOL_STUDENTS_LIMIT = 400;
 
@@ -61,6 +69,87 @@ const SCHOOL_STUDENTS_LIMIT = 400;
 const PROGRESS_ROWS_LIMIT = 100;
 
 const UNKNOWN_NAME = "Élève";
+
+/**
+ * Le profil de l'appelant s'il peut PLACER cet élève, `null` sinon.
+ *
+ * Elle ne fait que réunir les faits ; la décision est dans `placementRules.ts`,
+ * pur et testé. Les lectures sont posées PARESSEUSEMENT, dans l'ordre du moins
+ * cher au plus cher : un `admin` ne coûte rien, un directeur une lecture de
+ * `schoolStaff`, un professeur le chemin élève → inscription → classe.
+ *
+ * LE CHEMIN DU PROFESSEUR PART DE L'ÉLÈVE, jamais de ses classes — exactement
+ * comme la quatrième branche de `access.callerMayReadStudent`, et pour la même
+ * raison : depuis l'élève il y a une inscription et une classe à lire, depuis
+ * le professeur il y a vingt classes et leurs douze cents inscrits.
+ *
+ * `.take(4)` et non `.first()` : rien n'interdit deux inscriptions actives, et
+ * s'arrêter à la première rendrait le placement incohérent avec la liste que
+ * `listForTeacher` construit.
+ */
+async function callerMayPlace(
+  ctx: QueryCtx | MutationCtx,
+  studentId: Id<"profiles">,
+  schoolId: Id<"schools">,
+): Promise<Doc<"profiles"> | null> {
+  const profile = await callerProfile(ctx);
+  if (!profile) return null;
+
+  if (profile.role === "admin") {
+    return mayPlaceStudent({
+      role: "admin",
+      staffOfSchool: false,
+      teachesStudent: false,
+    })
+      ? profile
+      : null;
+  }
+
+  if (profile.role === "directeur") {
+    const rows = await ctx.db
+      .query("schoolStaff")
+      .withIndex("by_profile", (q) => q.eq("profileId", profile._id))
+      .take(STAFF_SCHOOLS_LIMIT);
+    const staffOfSchool = rows.some(
+      (row) => row.schoolId === schoolId && row.status === "active",
+    );
+    return mayPlaceStudent({
+      role: "directeur",
+      staffOfSchool,
+      teachesStudent: false,
+    })
+      ? profile
+      : null;
+  }
+
+  if (profile.role === "professeur") {
+    const memberships = await ctx.db
+      .query("schoolMemberships")
+      .withIndex("by_student_status", (q) =>
+        q.eq("studentId", studentId).eq("status", "active"),
+      )
+      .take(4);
+
+    let teachesStudent = false;
+    for (const membership of memberships) {
+      if (membership.schoolId !== schoolId) continue;
+      const schoolClass = await ctx.db.get(membership.schoolClassId);
+      if (schoolClass?.teacherId === profile._id) {
+        teachesStudent = true;
+        break;
+      }
+    }
+    return mayPlaceStudent({
+      role: "professeur",
+      staffOfSchool: false,
+      teachesStudent,
+    })
+      ? profile
+      : null;
+  }
+
+  return null;
+}
 
 /**
  * Le placement qui s'applique à cet élève DANS cette école, ou `null`.
@@ -138,6 +227,7 @@ export const listForSchool = query({
         const placement = byStudent.get(membership.studentId as string);
         return {
           studentId: membership.studentId,
+          schoolId: membership.schoolId,
           name: student?.name ?? UNKNOWN_NAME,
           class: student?.class ?? null,
           level: (placement?.level ?? null) as PlacementLevel | null,
@@ -174,7 +264,9 @@ export const getStudentProgress = query({
       lastCompleted: null as { key: string; title: string } | null,
       memorized: [] as { surahKey: string; nameFr: string; verses: number }[],
     };
-    if (!(await callerAdministersSchool(ctx, args.schoolId))) return empty;
+    if (!(await callerMayPlace(ctx, args.studentId, args.schoolId))) {
+      return empty;
+    }
 
     const membership = await ctx.db
       .query("schoolMemberships")
@@ -217,6 +309,69 @@ export const getStudentProgress = query({
           verses: row.versesMemorized,
         })),
     };
+  },
+});
+
+/**
+ * Les élèves QUE L'APPELANT ENSEIGNE, et leur placement.
+ *
+ * Le pendant de `listForSchool` pour l'espace professeur. Deux différences qui
+ * viennent toutes deux du même fait — un professeur n'a pas d'école, il a des
+ * classes :
+ *
+ *   - PAS DE `schoolId` EN ARGUMENT. Il serait faux : un enseignant rattaché à
+ *     deux écoles verrait la moitié de ses élèves, et lui en demander une le
+ *     ferait choisir entre ses propres classes. Les élèves sont résolus par
+ *     `access.studentIdsTaughtBy`, la même arête que ses trois autres écrans ;
+ *   - CHAQUE LIGNE PORTE SON ÉCOLE, parce qu'elles peuvent différer, et que
+ *     c'est elle que la mutation demandera.
+ *
+ * UN ADMIN PASSE AUSSI, comme dans `profiles.getTeacherStudents` : il traverse
+ * les espaces pour dépanner, et une liste vide le ferait croire à une panne.
+ * Il n'enseigne rien, donc il ne verra que ce que ses classes disent — c'est-à-
+ * dire rien, ce qui est la réponse juste.
+ */
+export const listForTeacher = query({
+  args: {},
+  handler: async (ctx) => {
+    const profile = await callerProfile(ctx);
+    if (!profile) return { students: [] };
+    if (profile.role !== "professeur" && profile.role !== "admin") {
+      return { students: [] };
+    }
+
+    const studentIds = await studentIdsTaughtBy(ctx, profile._id);
+
+    const rows = await Promise.all(
+      studentIds.map(async (studentId) => {
+        const membership = await ctx.db
+          .query("schoolMemberships")
+          .withIndex("by_student_status", (q) =>
+            q.eq("studentId", studentId).eq("status", "active"),
+          )
+          .first();
+        if (!membership) return null;
+
+        const student = await ctx.db.get(studentId);
+        const row = await placementFor(ctx, studentId, membership.schoolId);
+
+        return {
+          studentId,
+          schoolId: membership.schoolId,
+          name: student?.name ?? UNKNOWN_NAME,
+          class: student?.class ?? null,
+          level: (row?.level ?? null) as PlacementLevel | null,
+          startLessonKey: row?.startLessonKey ?? null,
+          surahKey: row?.surahKey ?? null,
+          updatedAt: row?.updatedAt ?? null,
+        };
+      }),
+    );
+
+    const students = rows.filter((row): row is NonNullable<typeof row> =>
+      row !== null,
+    );
+    return { students: students.sort((a, b) => a.name.localeCompare(b.name)) };
   },
 });
 
@@ -282,7 +437,7 @@ export const setForStudent = mutation({
     surahKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const actor = await callerAdministersSchool(ctx, args.schoolId);
+    const actor = await callerMayPlace(ctx, args.studentId, args.schoolId);
     if (!actor) throw new ConvexError("Rôle non autorisé");
 
     const student = await ctx.db.get(args.studentId);
@@ -352,7 +507,7 @@ export const setForStudent = mutation({
 export const clearForStudent = mutation({
   args: { schoolId: v.id("schools"), studentId: v.id("profiles") },
   handler: async (ctx, args) => {
-    const actor = await callerAdministersSchool(ctx, args.schoolId);
+    const actor = await callerMayPlace(ctx, args.studentId, args.schoolId);
     if (!actor) throw new ConvexError("Rôle non autorisé");
 
     const existing = await placementFor(ctx, args.studentId, args.schoolId);

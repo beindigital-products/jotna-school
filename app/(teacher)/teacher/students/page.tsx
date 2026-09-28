@@ -3,7 +3,18 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
-import { UserCircle, Users, BookOpen, ArrowRight } from "lucide-react";
+import {
+  UserCircle,
+  Users,
+  BookOpen,
+  ArrowRight,
+  GraduationCap,
+  Loader2,
+} from "lucide-react";
+import {
+  ArabicPlacementList,
+  PLACEMENT_NOTICE,
+} from "@/components/arabic/placement-editor";
 
 export default function TeacherStudentsPage() {
   const profile = useQuery(api.profiles.getCurrentProfile);
@@ -104,6 +115,58 @@ export default function TeacherStudentsPage() {
           ))}
         </div>
       )}
+
+      <ArabicPlacementSection />
     </div>
+  );
+}
+
+/**
+ * LE PLACEMENT EN ARABE, pour les élèves de ce professeur.
+ *
+ * NE S'AFFICHE QUE SI SON ÉCOLE A ALLUMÉ LE MODULE. `modules.getMine` répond
+ * pour le personnel comme pour les élèves — allumé dès qu'UNE des écoles du
+ * professeur l'a allumé — donc un enseignant dont aucune école n'enseigne
+ * l'arabe ne voit rien, pas même un bloc vide.
+ *
+ * LE PROFESSEUR PLACE SES ÉLÈVES, PAS CEUX DE L'ÉCOLE. `listForTeacher` les
+ * résout par ses classes (`schoolClasses.teacherId`), la même arête que « Mes
+ * élèves » juste au-dessus : les deux listes disent donc toujours la même
+ * chose, et la garde du serveur (`placementRules.mayPlaceStudent`) vérifie le
+ * même lien à l'écriture.
+ */
+function ArabicPlacementSection() {
+  const modules = useQuery(api.modules.getMine);
+  const roster = useQuery(api.arabic.placement.listForTeacher);
+  const options = useQuery(api.arabic.placement.options);
+
+  const enabled = modules?.some(
+    (module_) => module_.key === "arabe_coran" && module_.enabled,
+  );
+  if (!enabled) return null;
+
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="mb-1 flex items-center gap-2">
+        <GraduationCap className="h-5 w-5 text-gray-400" />
+        <h2 className="font-semibold text-gray-900">
+          Niveau de mes élèves en arabe
+        </h2>
+      </div>
+      <p className="mb-4 text-sm text-gray-500">
+        {PLACEMENT_NOTICE} Placer un élève <strong>ouvre</strong> des leçons, ne
+        les valide pas — il garde ses étoiles à gagner, et peut revenir en
+        arrière tout seul si vous le placez trop haut.
+      </p>
+
+      {roster === undefined || options === undefined ? (
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Chargement...
+        </div>
+      ) : (
+        <ArabicPlacementList students={roster.students} options={options} />
+      )}
+    </section>
   );
 }

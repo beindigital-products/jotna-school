@@ -39,6 +39,7 @@ import {
   placementFloorOrder,
   starsFor,
 } from "../arabic/progressRules";
+import { mayPlaceStudent } from "../arabic/placementRules";
 import {
   hifzLessonKey,
   isDue,
@@ -850,5 +851,88 @@ describe("linkPointOf", () => {
         linkPoints(surah.ayahs.length),
       );
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Qui peut placer un élève.
+//
+// Le dépôt n'a pas `convex-test` : la décision est donc une fonction pure
+// (`arabic/placementRules.ts`) que le code Convex nourrit de faits lus en base.
+// Ces tests portent sur la décision, seule partie qui puisse se tromper en
+// silence — une garde qui vit à l'intérieur d'une mutation n'est vérifiée par
+// personne.
+// ---------------------------------------------------------------------------
+
+describe("mayPlaceStudent", () => {
+  const rien = { staffOfSchool: false, teachesStudent: false };
+
+  it("l'admin traverse, comme partout dans ce dépôt", () => {
+    expect(mayPlaceStudent({ role: "admin", ...rien })).toBe(true);
+  });
+
+  it("le directeur place dans SON école, pas chez la voisine", () => {
+    expect(
+      mayPlaceStudent({ role: "directeur", ...rien, staffOfSchool: true }),
+    ).toBe(true);
+    expect(mayPlaceStudent({ role: "directeur", ...rien })).toBe(false);
+  });
+
+  it("le professeur place SES élèves, pas ceux de son collègue", () => {
+    expect(
+      mayPlaceStudent({ role: "professeur", ...rien, teachesStudent: true }),
+    ).toBe(true);
+    expect(mayPlaceStudent({ role: "professeur", ...rien })).toBe(false);
+  });
+
+  it("être rattaché à l'école ne suffit pas à un professeur", () => {
+    // Le lien qui compte est `schoolClasses.teacherId`, pas `schoolStaff` :
+    // sinon tout le corps enseignant placerait n'importe quel élève de
+    // l'école, y compris ceux qu'il n'a jamais entendus lire.
+    expect(
+      mayPlaceStudent({
+        role: "professeur",
+        staffOfSchool: true,
+        teachesStudent: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("enseigner un élève ne fait pas d'un directeur le sien", () => {
+    // La symétrie de l'inverse : chaque rôle a SA porte, et brouiller les deux
+    // ferait qu'un directeur sans rattachement passerait par la porte du
+    // professeur.
+    expect(
+      mayPlaceStudent({
+        role: "directeur",
+        staffOfSchool: false,
+        teachesStudent: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("l'élève ne se place PAS lui-même", () => {
+    // Un enfant qui se déclare « confirmé » saute sept leçons d'alphabet et
+    // se retrouve devant Al-Fātiḥa sans savoir lire : il ne triche pas, il se
+    // punit. Aucun fait ne doit lui ouvrir cette porte.
+    expect(mayPlaceStudent({ role: "student", ...rien })).toBe(false);
+    expect(
+      mayPlaceStudent({
+        role: "student",
+        staffOfSchool: true,
+        teachesStudent: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("le parent non plus, même celui qui lit tous les bilans", () => {
+    expect(mayPlaceStudent({ role: "parent", ...rien })).toBe(false);
+    expect(
+      mayPlaceStudent({
+        role: "parent",
+        staffOfSchool: true,
+        teachesStudent: true,
+      }),
+    ).toBe(false);
   });
 });
