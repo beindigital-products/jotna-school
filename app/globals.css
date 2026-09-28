@@ -123,8 +123,12 @@
   0%, 100% { opacity: 0.25; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1.15); }
 }
+/* Les pointillés du chemin déjà parcouru avancent en boucle. Le décalage
+   vaut EXACTEMENT une période du motif (`stroke-dasharray="1 24"` → 25) :
+   à la reprise, un tiret retombe pile sur la place du suivant, sans saut.
+   Lent et régulier, pour que ça coule au lieu de sauter. */
 @keyframes trail-dash {
-  to { stroke-dashoffset: -32; }
+  to { stroke-dashoffset: -25; }
 }
 @keyframes pop-in {
   0% { transform: scale(0.6); opacity: 0; }
@@ -138,6 +142,14 @@
 @keyframes shimmer {
   from { background-position: -200% 0; }
   to { background-position: 200% 0; }
+}
+/* La poussière derrière les pattes de Pio quand il marche sur la carte. */
+@keyframes dust-puff {
+  0% { transform: translate(0, 0) scale(0.4); opacity: 0.85; }
+  100% { transform: translate(-22px, -16px) scale(1.5); opacity: 0; }
+}
+.pio-dust {
+  animation: dust-puff 0.66s ease-out infinite;
 }
 /* Une réponse fausse secoue ce qu'on a choisi. Les exercices l'appelaient
    déjà (`animate-[shake_...]`) sans qu'elle existe : rien ne bougeait. */

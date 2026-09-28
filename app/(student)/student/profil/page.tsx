@@ -13,6 +13,7 @@ import {
   Sparkles,
   School,
   LogOut,
+  Pencil,
 } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -151,6 +152,15 @@ export default function StudentProfilePage() {
               {remaining} bonne{remaining > 1 ? "s" : ""} réponse{remaining > 1 ? "s" : ""} avant le niveau {level + 1}
             </p>
           )}
+
+          <GameButton
+            href="/student/profil/edit"
+            tone="sky"
+            icon={<Pencil className="h-5 w-5" aria-hidden />}
+            className="mt-4"
+          >
+            Modifier mon profil
+          </GameButton>
         </div>
       </div>
 

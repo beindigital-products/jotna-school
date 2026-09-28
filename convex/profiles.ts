@@ -1,4 +1,5 @@
 import { query, mutation, internalMutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { v, ConvexError } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { decideLinkChild } from "./linkRules";
@@ -275,6 +276,48 @@ export const updateProfile = mutation({
     if (Object.keys(decision.patch).length === 0) return;
 
     await ctx.db.patch(profile._id, decision.patch);
+  },
+});
+
+// ---------------------------------------------------------------------------
+// L'AVATAR DE L'ÉLÈVE — il choisit une photo, on la range dans le stockage
+// Convex et on pose son URL sur le profil.
+//
+// `generateAvatarUploadUrl` rend une URL d'envoi (un droit d'ÉCRIRE dans le
+// stockage du projet) : réservée à un profil authentifié, qui de toute façon
+// ne peut changer que SON avatar. `setMyAvatar` prend l'identifiant du fichier
+// déposé, en lit l'URL de service et la pose sur le profil de la SESSION.
+//
+// On garde l'URL, pas l'identifiant de stockage : le champ `avatar` est une
+// chaîne, et un avatar remplacé laisse au plus un fichier orphelin, sans
+// conséquence de sécurité. La photo est déjà réduite à un carré côté client,
+// donc le fichier reste léger — le terrain, c'est Dakar, la donnée est chère.
+// ---------------------------------------------------------------------------
+export const generateAvatarUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new ConvexError("Non authentifié");
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const setMyAvatar = mutation({
+  args: { storageId: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new ConvexError("Non authentifié");
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (!profile) throw new ConvexError("Profil introuvable");
+
+    const url = await ctx.storage.getUrl(args.storageId as Id<"_storage">);
+    if (!url) throw new ConvexError("Image introuvable après l'envoi.");
+
+    await ctx.db.patch(profile._id, { avatar: url });
   },
 });
 
