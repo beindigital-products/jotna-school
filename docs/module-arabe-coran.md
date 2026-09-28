@@ -159,7 +159,7 @@ Optionnelles, avec leurs valeurs par défaut :
 | --- | --- | --- |
 | `ELEVENLABS_VOICE_ID` | `LE1b8WpPSScCUklGPKzg` (Ekram) | La voix qui lit tout le parcours. Voir plus bas pourquoi celle-ci. |
 | `ELEVENLABS_MODEL_ID` | `eleven_multilingual_v2` | Le modèle de synthèse. Il doit lire l'arabe **vocalisé** : un modèle qui ignore les voyelles brèves prononcerait بَ et بِ de la même façon, et le niveau 2 du parcours n'aurait plus d'objet. |
-| `ELEVENLABS_STT_MODEL_ID` | `scribe_v1` | Le modèle de transcription qui écoute l'enfant. |
+| `ELEVENLABS_STT_MODEL_ID` | `scribe_v2` | Le modèle de transcription qui écoute l'enfant. `scribe_v1`, déprécié par ElevenLabs, transcrivait nos essais de la même façon. |
 | `ELEVENLABS_STT_LANGUAGE` | `ara` | Code ISO-639-3. `ar` fonctionne aussi. |
 | `ELEVENLABS_SPEED` | — | Vitesse de diction, entre `0.7` et `1.2`. Une valeur hors de cet intervalle est ignorée. Ralentir aide les débutants. |
 

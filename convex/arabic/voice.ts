@@ -70,7 +70,17 @@ const API_BASE = "https://api.elevenlabs.io/v1";
  * d'objet. Surchargeable par `ELEVENLABS_MODEL_ID`.
  */
 const DEFAULT_TTS_MODEL = "eleven_multilingual_v2";
-const DEFAULT_STT_MODEL = "scribe_v1";
+
+/**
+ * Le modèle de transcription par défaut.
+ *
+ * ElevenLabs a déprécié `scribe_v1`. Le 28 septembre 2026, les deux modèles
+ * ont transcrit les mêmes enregistrements (بَاء, تَاء, des syllabes, un verset)
+ * de façon identique une fois le texte passé par `normalizeArabic` : seules la
+ * ponctuation et une hamza finale différaient. Surchargeable par
+ * `ELEVENLABS_STT_MODEL_ID`.
+ */
+const DEFAULT_STT_MODEL = "scribe_v2";
 
 /**
  * La voix par défaut : Ekram, une voix de femme en arabe standard, calme.
