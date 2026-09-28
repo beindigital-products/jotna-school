@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useQuery } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { Menu } from "@base-ui/react/menu";
 import { ChevronsUpDown, LogOut, Settings, UserCircle } from "lucide-react";
 import { api } from "@/convex/_generated/api";
-import { useLogout } from "@/hooks/use-logout";
+import { logout, clearConvexAuthTokens } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 type Variant = "sidebar" | "compact";
@@ -31,8 +32,20 @@ export function UserMenu({
   className,
   fallbackLabel = "Compte",
 }: UserMenuProps) {
-  const handleLogout = useLogout();
+  const { signOut } = useAuthActions();
   const profile = useQuery(api.profiles.getCurrentProfile);
+
+  async function handleLogout() {
+    await logout(signOut);
+    clearConvexAuthTokens();
+    // LA SEULE NAVIGATION DE DOCUMENT QUI RESTE, ET ELLE EST VOULUE : un
+    // rechargement complet jette l'état en mémoire, ce qu'une navigation
+    // interne de Next conserverait. Dans l'application Capacitor elle atterrit
+    // sur la racine — `CapacitorRouter` sert `/index.html` pour tout chemin
+    // sans extension — d'où `NativeAppGate` renvoie aussitôt sur /login. Les
+    // deux plateformes finissent donc au même endroit, déconnectées.
+    window.location.href = "/login";
+  }
 
   const name = profile?.name ?? fallbackLabel;
   const email = profile?.email ?? "";

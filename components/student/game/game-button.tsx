@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
  *
  * `href` rend un lien, sinon un bouton : même apparence, sémantique juste.
  */
-type Tone = "orange" | "green" | "sky" | "white";
+type Tone = "orange" | "green" | "sky" | "white" | "red";
 type Size = "md" | "lg";
 
 const TONES: Record<Tone, { face: string; depth: string }> = {
@@ -32,6 +32,12 @@ const TONES: Record<Tone, { face: string; depth: string }> = {
   white: {
     face: "bg-white text-amber-900",
     depth: "#d6c39a",
+  },
+  // Rouge doux : l'action qui sort du jeu (se déconnecter). Distincte des tons
+  // d'action « dans le jeu », sans être alarmante pour un enfant.
+  red: {
+    face: "bg-gradient-to-b from-rose-400 to-red-600 text-white",
+    depth: "#991b1b",
   },
 };
 

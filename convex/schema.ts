@@ -362,6 +362,17 @@ export default defineSchema({
     averageScore: v.optional(v.number()), // 0..10
     failedExerciseIds: v.optional(v.array(v.id("exercises"))),
     regenCount: v.number(), // 0..3, capped at submitPalier-level
+    // Champs HÉRITÉS du système « étoiles-exactes » de la branche, tolérés en
+    // option pour ne pas invalider les tentatives déjà en base (déploiement de
+    // dev). La logique courante (priorité main) ne les lit pas ; ils
+    // s'éteignent d'eux-mêmes à mesure que de nouvelles tentatives s'écrivent.
+    correctCount: v.optional(v.number()),
+    exerciseCount: v.optional(v.number()),
+    firstTryCount: v.optional(v.number()),
+    noHintCount: v.optional(v.number()),
+    hintsUsed: v.optional(v.number()),
+    starsTotal: v.optional(v.number()),
+    timeSpentMs: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_user_palier", ["userId", "palierId"])

@@ -6,6 +6,7 @@ import { animate, motion, useMotionValue, useScroll, useTransform } from "framer
 import {
   Check,
   Flag,
+  ListChecks,
   Lock,
   Map as MapIcon,
   Play,
@@ -33,6 +34,10 @@ import {
   preloadAll,
   setSoundEnabledLocal,
 } from "@/lib/sounds";
+
+// La fête « missions du jour faites » ne se joue qu'une fois par jour et par
+// appareil : cette clé mémorise le dernier jour déjà fêté (commodité d'écran).
+const QUESTS_CELEBRATED_KEY = "jotna:questsCelebratedDay";
 
 /**
  * LA FIN D'UN PALIER — l'écran qui récompense, entre deux séances.
@@ -281,6 +286,8 @@ export function PalierResultScreen({
           )}
         </motion.section>
       )}
+
+      {validated && <QuestsDoneCard />}
 
       {!validated && regenerating && <JotnaLoader message={kidMessages.regenLoading} />}
       {!validated && !result.canRegen && !regenerating && capAlternatives}
@@ -606,6 +613,69 @@ function useVictoryConfetti(enabled: boolean) {
       timers.forEach(clearTimeout);
     };
   }, [enabled]);
+}
+
+/**
+ * MISSIONS DU JOUR RÉUSSIES — la carte qui félicite l'enfant en fin de palier
+ * quand ses trois missions du jour sont toutes faites. Une fois par jour : une
+ * garde `localStorage` par clé de jour évite de rejouer la fête à chaque palier
+ * suivant. `getMyDaily` reflète déjà l'état d'APRÈS ce palier (les missions
+ * s'accrochent dans `submitPalier`), donc la fête tombe pile au bon moment.
+ */
+function QuestsDoneCard() {
+  const daily = useQuery(api.quests.getMyDaily);
+  // Le jour déjà fêté, capturé une seule fois au montage (avant toute écriture).
+  const [celebratedAtMount] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem(QUESTS_CELEBRATED_KEY);
+    } catch {
+      return null;
+    }
+  });
+
+  const allDone = !!daily && !daily.pending && daily.allDone;
+  const show = allDone && celebratedAtMount !== daily?.dayKey;
+
+  // Mémoriser « fêté aujourd'hui » : un effet d'écriture pur, sans setState.
+  useEffect(() => {
+    if (!show || !daily) return;
+    try {
+      localStorage.setItem(QUESTS_CELEBRATED_KEY, daily.dayKey);
+    } catch {
+      // Stockage bloqué : tant pis, la fête pourra se rejouer une fois.
+    }
+  }, [show, daily]);
+
+  if (!show || !daily) return null;
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, scale: 0.9, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ delay: 0.7, type: "spring", stiffness: 180 }}
+      className="rounded-3xl border-2 border-lime-300 bg-gradient-to-br from-lime-50 to-emerald-50 p-5 shadow-md"
+    >
+      <div className="flex items-center gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-lime-400 to-green-600 text-white shadow">
+          <ListChecks className="h-8 w-8" aria-hidden />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-sm font-extrabold uppercase tracking-wider text-green-700">
+            Missions du jour
+          </p>
+          <p className="font-display text-lg font-extrabold text-green-900">
+            Toutes réussies&nbsp;! Bravo&nbsp;!
+          </p>
+          {daily.bonusStars > 0 && (
+            <p className="text-xs font-bold text-green-700">
+              + {daily.bonusStars} étoile{daily.bonusStars > 1 ? "s" : ""} bonus aujourd&apos;hui
+            </p>
+          )}
+        </div>
+      </div>
+    </motion.section>
+  );
 }
 
 /**
