@@ -4,8 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Tent, Map as MapIcon, Trophy, NotebookPen, Star, Flame } from "lucide-react";
-import { UserMenu } from "@/components/ui/user-menu";
+import { Tent, Map as MapIcon, Trophy, NotebookPen } from "lucide-react";
 import { Brand } from "@/components/landing/brand";
 import { AccessGate } from "@/components/AccessGate";
 import { MotionConfig } from "framer-motion";
@@ -68,11 +67,17 @@ export default function StudentLayout({
       <div className="flex min-h-screen flex-col bg-[linear-gradient(180deg,#bfe6fb_0%,#f9efd2_45%,#f6dfa4_100%)]">
         {!focusMode && (
           <header className="sticky top-0 z-20 border-b border-amber-200/60 bg-[#fff7e0]/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
-            <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-2 px-3 sm:h-20 sm:px-4">
-              <Brand href="/student/home" size="sm" />
+            {/* Une seule ligne : logo + état du joueur à gauche (l'avatar est
+                descendu dans la barre du bas sur téléphone), les lieux au centre
+                et l'avatar à droite sur grand écran. */}
+            <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:h-20">
+              {/* À gauche : le logo. */}
+              <Brand href="/student/home" size="md" />
 
-              {/* Tablette et bureau : les quatre lieux en haut. */}
-              <nav className="hidden items-center gap-1.5 sm:flex">
+              {/* À droite : le niveau (et, sur grand écran, la navigation puis
+                  l'avatar). */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                <nav className="hidden items-center gap-1.5 sm:flex">
                 {NAV.map((item) => {
                   const active = isActivePath(pathname, item.href);
                   return (
@@ -91,15 +96,11 @@ export default function StudentLayout({
                     </Link>
                   );
                 })}
-              </nav>
+                </nav>
 
-              <div className="flex items-center gap-2">
-                <PlayerHud />
-                <UserMenu
-                  profileHref="/student/profil"
-                  variant="compact"
-                  fallbackLabel="Élève"
-                />
+                <LevelPill />
+
+                <ProfileAvatarLink className="hidden sm:flex" />
               </div>
             </div>
           </header>
@@ -142,13 +143,50 @@ export default function StudentLayout({
 }
 
 /**
- * Le HUD du joueur : niveau + barre d'expérience, étoiles, série.
- *
- * `getMyStats` est déjà lu par l'accueil et le carnet : Convex partage une
- * même souscription entre ses lecteurs, ce HUD ne coûte donc aucune lecture
- * de plus.
+ * L'avatar de l'en-tête. Il ne déroule plus un menu : il mène droit à la page
+ * « Modifier mon profil » (`/student/profil/edit`), où l'enfant change son nom
+ * et le son, et se déconnecte. Nom et avatar viennent de `getMyStats`, déjà lu
+ * par le HUD : Convex partage la souscription, aucune lecture de plus. Son
+ * allure ne change pas — c'est le geste, plus le clic, qui change.
  */
-function PlayerHud() {
+function ProfileAvatarLink({ className = "" }: { className?: string }) {
+  const stats = useQuery(api.students.getMyStats);
+  const name = stats?.student.name ?? "";
+  const avatar = stats?.student.avatar ?? null;
+  const initials =
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("") || "?";
+
+  return (
+    <Link
+      href="/student/profil/edit"
+      aria-label="Modifier mon profil"
+      className={`h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md ring-2 ring-white transition hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 ${className || "flex"}`}
+    >
+      {avatar ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={avatar} alt="" className="h-full w-full object-cover" draggable={false} />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-400 to-teal-400 font-display text-base font-bold text-white">
+          {initials}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+/**
+ * LE NIVEAU DU JOUEUR, à droite de l'en-tête (le logo est à gauche). Les
+ * étoiles ne sont plus dans l'en-tête ; leur total vit dans le carnet.
+ *
+ * `getMyStats` est déjà lu par l'accueil et le carnet : Convex partage une même
+ * souscription, cette pièce ne coûte aucune lecture de plus.
+ */
+function LevelPill() {
   const stats = useQuery(api.students.getMyStats);
   if (!stats) return null;
 
@@ -157,58 +195,30 @@ function PlayerHud() {
   const gained = Math.max(0, Math.min(EXOS_PER_LEVEL, EXOS_PER_LEVEL - remaining));
   const pct = Math.round((gained / EXOS_PER_LEVEL) * 100);
 
-  const showStreak = stats.streaksEnabled && stats.currentStreak > 0;
-  const showStars = stats.totalStars > 0;
-
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2">
-      {/* LE NIVEAU : une pastille ORANGE à texte blanc, pas un pilule blanc
-          sur un en-tête blanc. La barre a une piste sombre pour se lire même
-          vide, et le compteur dit ce qu'elle mesure. */}
-      <div
-        className="flex items-center gap-2 rounded-full border-2 border-white bg-gradient-to-r from-amber-400 to-orange-500 py-1 pl-1.5 pr-3 shadow-md shadow-orange-300/60"
-        aria-label={`Niveau ${level}, ${gained} bonnes réponses sur ${EXOS_PER_LEVEL} vers le niveau ${level + 1}`}
-      >
-        <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-white px-1.5 font-display text-base font-extrabold leading-none text-orange-600 shadow-inner">
-          {level}
+    <div
+      className="flex items-center gap-2 rounded-full border-2 border-white bg-gradient-to-r from-amber-400 to-orange-500 py-1 pl-1.5 pr-3 shadow-md shadow-orange-300/60"
+      aria-label={`Niveau ${level}, ${gained} bonnes réponses sur ${EXOS_PER_LEVEL} vers le niveau ${level + 1}`}
+    >
+      <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-white px-1.5 font-display text-base font-extrabold leading-none text-orange-600 shadow-inner">
+        {level}
+      </span>
+      <div className="flex flex-col">
+        <span className="text-outline font-display text-[11px] font-extrabold uppercase leading-none tracking-wider text-white">
+          Niveau
         </span>
-        <div className="flex flex-col">
-          <span className="text-outline font-display text-[11px] font-extrabold uppercase leading-none tracking-wider text-white">
-            Niveau
-          </span>
-          <div className="mt-1 flex items-center gap-1.5">
-            <div className="h-2.5 w-14 overflow-hidden rounded-full bg-black/25 sm:w-20" aria-hidden>
-              <div
-                className="h-full rounded-full bg-lime-300 transition-[width] duration-700"
-                style={{ width: `${Math.max(pct, 3)}%` }}
-              />
-            </div>
-            <span className="text-outline font-display text-[11px] font-extrabold leading-none text-white">
-              {gained}/{EXOS_PER_LEVEL}
-            </span>
+        <div className="mt-1 flex items-center gap-1.5">
+          <div className="h-2.5 w-14 overflow-hidden rounded-full bg-black/25 sm:w-20" aria-hidden>
+            <div
+              className="h-full rounded-full bg-lime-300 transition-[width] duration-700"
+              style={{ width: `${Math.max(pct, 3)}%` }}
+            />
           </div>
+          <span className="text-outline font-display text-[11px] font-extrabold leading-none text-white">
+            {gained}/{EXOS_PER_LEVEL}
+          </span>
         </div>
       </div>
-
-      {showStars && (
-        <span
-          className="inline-flex items-center gap-1 rounded-full border-2 border-white bg-yellow-300 px-2.5 py-1.5 font-display text-sm font-extrabold text-yellow-950 shadow-md shadow-yellow-300/60"
-          aria-label={`${stats.totalStars} étoiles gagnées`}
-        >
-          <Star className="h-4 w-4 fill-yellow-600 text-yellow-700" aria-hidden />
-          <span>{stats.totalStars}</span>
-        </span>
-      )}
-
-      {showStreak && (
-        <span
-          className="inline-flex items-center gap-1 rounded-full border-2 border-white bg-orange-200 px-2.5 py-1.5 font-display text-sm font-extrabold text-orange-950 shadow-md shadow-orange-300/60"
-          aria-label={`Série de ${stats.currentStreak} jour${stats.currentStreak > 1 ? "s" : ""}`}
-        >
-          <Flame className="h-4 w-4 fill-orange-500 text-orange-600" aria-hidden />
-          <span>{stats.currentStreak}</span>
-        </span>
-      )}
     </div>
   );
 }
