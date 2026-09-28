@@ -311,3 +311,74 @@ export const enrollStudentInDevSchool = internalMutation({
     };
   },
 });
+
+/**
+ * DÉPLACE UN ÉLÈVE DÉJÀ INSCRIT vers un autre niveau — helper de dev, pour
+ * regarder le rendu d'une classe donnée. Trouve (ou crée, libellé « A ») la
+ * classe cible dans l'école de son inscription active, y bascule l'inscription
+ * et aligne `profiles.class`. `enrollStudentInDevSchool` refuse un élève déjà
+ * inscrit ; celui-ci est fait pour ce cas.
+ *
+ *     npx convex run testSeeds:devMoveStudentToClass '{"studentEmail":"…","class":"CP"}'
+ */
+export const devMoveStudentToClass = internalMutation({
+  args: {
+    studentEmail: v.string(),
+    class: visibleClassValidator,
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", args.studentEmail))
+      .unique();
+    if (!user) throw new Error(`Aucun compte pour ${args.studentEmail}`);
+    const student = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id as string))
+      .unique();
+    if (!student || student.role !== "student") {
+      throw new Error(`${args.studentEmail} n'est pas un profil élève`);
+    }
+
+    const membership = await ctx.db
+      .query("schoolMemberships")
+      .withIndex("by_student_status", (q) =>
+        q.eq("studentId", student._id).eq("status", "active"),
+      )
+      .first();
+    if (!membership) throw new Error("Cet élève n'a pas d'inscription active");
+
+    const currentClass = await ctx.db.get(membership.schoolClassId);
+    const schoolId = membership.schoolId;
+
+    let target = await ctx.db
+      .query("schoolClasses")
+      .withIndex("by_school_class", (q) =>
+        q.eq("schoolId", schoolId).eq("class", args.class),
+      )
+      .first();
+    if (!target) {
+      const teacherId =
+        currentClass?.teacherId ??
+        (await ctx.db.query("profiles").take(500)).find(
+          (p) => p.role === "professeur",
+        )?._id;
+      const classId = await ctx.db.insert("schoolClasses", {
+        schoolId,
+        class: args.class,
+        label: "A",
+        teacherId,
+      });
+      target = (await ctx.db.get(classId))!;
+    }
+
+    await ctx.db.patch(membership._id, { schoolClassId: target._id });
+    await ctx.db.patch(student._id, { class: target.class });
+
+    return {
+      student: student.name,
+      from: currentClass ? `${currentClass.class} ${currentClass.label}` : "—",
+      to: `${target.class} ${target.label}`,
+    };
+  },
+});
