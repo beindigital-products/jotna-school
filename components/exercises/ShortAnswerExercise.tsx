@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
 
 interface ShortAnswerPayload {
-  acceptedAnswers: string[];
-  tolerance?: string;
+  acceptedAnswers?: string[];
+  tolerance?: string | null;
+  /** Posé par le serveur (`paliers.sanitizePayload`) : le clavier à ouvrir. */
+  inputMode?: "numeric" | "decimal" | "text";
 }
 
 interface ShortAnswerExerciseProps {
@@ -25,8 +27,13 @@ export default function ShortAnswerExercise({
   isCorrect,
 }: ShortAnswerExerciseProps) {
   const [answer, setAnswer] = useState("");
-  // payload is used for typing, suppress unused warning
-  void payload;
+  // LE CLAVIER SUIT LA RÉPONSE ATTENDUE. Un enfant qui doit taper « 18 » n'a
+  // pas à chercher les chiffres sur un clavier de lettres : `inputMode`
+  // ouvre le pavé numérique (ou décimal) sur iOS et Android, sans
+  // contraindre la valeur — la vérification reste côté serveur.
+  const mode = payload?.inputMode ?? "text";
+  const placeholder =
+    mode === "numeric" || mode === "decimal" ? "Tape le nombre ici..." : "Tape ta réponse ici...";
 
   const handleSubmit = () => {
     if (answer.trim()) {
@@ -44,28 +51,21 @@ export default function ShortAnswerExercise({
     <div className="space-y-6">
       <ExercisePrompt prompt={prompt} />
 
-      {isCorrect === true && (
-        <div className="flex items-center gap-2 rounded-2xl bg-green-100 border-2 border-green-300 px-4 py-3 text-green-800 font-semibold">
-          <Check className="h-5 w-5" />
-          Bravo, bonne reponse !
-        </div>
-      )}
-      {isCorrect === false && (
-        <div className="flex items-center gap-2 rounded-2xl bg-red-100 border-2 border-red-300 px-4 py-3 text-red-800 font-semibold animate-[shake_0.5s_ease-in-out]">
-          <X className="h-5 w-5" />
-          Essaie encore !
-        </div>
-      )}
-
       <div className="relative">
         <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400" />
         <input
           type="text"
+          inputMode={mode}
+          pattern={mode === "numeric" ? "-?[0-9]*" : undefined}
+          autoComplete="off"
+          autoCorrect={mode === "text" ? "on" : "off"}
+          autoCapitalize={mode === "text" ? "sentences" : "off"}
+          enterKeyHint="done"
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder="Tape ta reponse ici..."
+          placeholder={placeholder}
           className={`
             w-full rounded-2xl border-3 pl-14 pr-5 py-5 text-xl font-semibold transition-all
             ${isCorrect === true

@@ -134,7 +134,7 @@ Deux points à trancher par l'école :
 | `lib/arabic/tracing.ts` | La note du tracé au doigt. |
 | `lib/arabic/session.ts` | L'enchaînement des exercices d'une leçon. |
 | `components/arabic/*` | Écoute, micro, carré d'écriture, exercices. |
-| `app/(student)/student/arabe/*` | Parcours, alphabet, séance. |
+| `app/(student)/student/arabe/*` | Parcours, alphabet, séance. La séance est `/student/arabe/lecon?key=<leçon>` : le bundle est exporté en statique pour Capacitor (`output: "export"`), et aucune route `[segment]` n'y survit sans `generateStaticParams`. |
 
 **Le contenu est du code, pas des lignes en base** : rien à ensemencer, rien à
 migrer, et une faute de frappe se voit en revue. Seules la progression, le cache

@@ -6,18 +6,9 @@
  */
 
 export const kidMessages = {
-  // Validation palier
-  palierValidated: (stars: number) =>
-    `🎉 Bravo ! Tu as gagné ${stars}⭐ ! Palier validé.`,
-  palierValidatedShort: '🎉 Palier validé !',
-  palierFailed: (stars: number) =>
-    `Palier non validé (${stars}⭐ sur 30). Pas grave, on va réessayer ensemble !`,
-
-  // Régénération (Decision 87)
-  regenIntro:
-    "On va te proposer des nouveaux exercices similaires pour t'aider à mieux comprendre 💡",
+  // Régénération (Decision 87). Les phrases de fin de palier sont celles de
+  // Pio (`lib/pioCopy.ts`).
   regenLoading: 'Aïssatou prépare tes nouveaux exos...',
-  regenCta: 'Allez !',
 
   // Limites budget / quota (Decision 82)
   budgetExceeded:

@@ -14,13 +14,18 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import {
+  attemptsRemainingAfter,
   computePalierScore,
+  countRealAttempts,
+  MAX_ATTEMPTS_PER_EXERCISE,
   PALIER_VALIDATION_THRESHOLD,
   scoreExerciseFromAttempts,
 } from "./paliers/scoring";
+import { numericallyEqual } from "./paliers/mathRepair";
 import { shuffleDeterministic } from "./paliers";
 import { internal } from "./_generated/api";
 import { checkAccess, requireAccess } from "./access";
+import { effectivePalierCount, isTopicComplete } from "./palierRules";
 
 // ===========================================================================
 // Verification helpers — server-side only, never expose correctAnswer.
@@ -76,8 +81,24 @@ function verifyShortAnswer(
   submitted: string,
   payload: { acceptedAnswers: string[] },
 ): boolean {
-  const norm = submitted.toLowerCase().trim();
-  return payload.acceptedAnswers.some((a) => a.toLowerCase().trim() === norm);
+  // « 2,5 » et « 2.5 », « 1 000 » et « 1000 » : la même réponse. On compare
+  // des formes canoniques, sans exiger du modèle toutes les variantes. Et
+  // « 18 m » vaut « 18 », « 60% » vaut « 0,6 » : deux formes numériques qui
+  // disent le même nombre (`numericallyEqual`). Une fraction, elle, se
+  // compare à l'identique : « 1/2 » n'accepte pas « 0,5 ».
+  const norm = canonicalAnswer(submitted);
+  return payload.acceptedAnswers.some(
+    (a) => canonicalAnswer(a) === norm || numericallyEqual(a, submitted),
+  );
+}
+
+function canonicalAnswer(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/(\d)[\s\u00a0\u202f]+(?=\d)/g, "$1")
+    .replace(/(\d),(\d)/g, "$1.$2")
+    .replace(/\s+/g, " ");
 }
 
 // ===========================================================================
@@ -147,7 +168,9 @@ export const verifyAttempt = mutation({
       )
       .take(100);
 
-    const attemptNumber = previous.length + 1;
+    // Les lignes d'indice (`attemptNumber: 0`) ne comptent pas : voir
+    // `countRealAttempts`. Les compter sautait un essai après chaque indice.
+    const attemptNumber = countRealAttempts(previous) + 1;
     const hintsUsedCount = previous.reduce((acc, a) => acc + a.hintsUsedCount, 0);
 
     const isCorrect = verifyByType(exercise, args.userAnswer);
@@ -169,7 +192,7 @@ export const verifyAttempt = mutation({
       isCorrect,
       attemptNumber,
       hintsUsedSoFar: hintsUsedCount,
-      attemptsRemaining: Math.max(0, 5 - attemptNumber),
+      attemptsRemaining: attemptsRemainingAfter(attemptNumber),
     };
   },
 });
@@ -311,9 +334,30 @@ export const submitPalier = mutation({
       completedAt: Date.now(),
     });
 
+    // LA THÉMATIQUE EST FRANCHIE QUAND SON DERNIER PALIER L'EST. Son nombre de
+    // paliers est dynamique (`palierRules.effectivePalierCount`), et c'est ici,
+    // seul endroit où un palier se valide, que `studentTopicProgress.completedAt`
+    // se pose. La carte, le camp et les bulletins le lisent.
+    if (isValidated) {
+      await markTopicCompleteIfDone(ctx, profile._id, palierAttempt.palierId);
+    }
+
     // D7 — record daily activity for streak (no-op if streaks disabled).
     await ctx.runMutation(internal.streak.recordKidActivity, {
       studentId: profile._id,
+    });
+
+    // Missions du jour (quests.ts) — même point d'accroche que la série :
+    // une fin de palier fait avancer les missions. La matière vient du
+    // palier ; sans elle, seules les missions sans matière avancent.
+    const questPalier = await ctx.db.get(palierAttempt.palierId);
+    const questTopic = questPalier ? await ctx.db.get(questPalier.topicId) : null;
+    await ctx.runMutation(internal.quests.recordActivity, {
+      studentId: profile._id,
+      exercises: exerciseIds.length,
+      stars: result.starsTotal,
+      palierValidated: isValidated,
+      subjectId: questTopic?.subjectId,
     });
 
     // Cumulative regen check (Decision 60) — UI uses canRegen flag.
@@ -333,12 +377,79 @@ export const submitPalier = mutation({
       average: result.average,
       starsTotal: result.starsTotal,
       threshold: PALIER_VALIDATION_THRESHOLD,
+      // Un palier n'a pas toujours dix exercices (le modèle en rend parfois
+      // neuf de valides) : l'écran de fin compte ses étoiles sur ce nombre.
+      exerciseCount: exerciseIds.length,
       failedCount: failedIds.length,
       canRegen: !isValidated && cumulativeRegens < 3,
       cumulativeRegens,
     };
   },
 });
+
+/**
+ * Pose `completedAt` sur la progression de la thématique si tous ses paliers
+ * sont validés par cet élève. Idempotent : une thématique déjà franchie ne
+ * change pas de date.
+ */
+async function markTopicCompleteIfDone(
+  ctx: MutationCtx,
+  studentId: Id<"profiles">,
+  palierId: Id<"paliers">,
+) {
+  const palier = await ctx.db.get(palierId);
+  if (!palier) return;
+  const topic = await ctx.db.get(palier.topicId);
+  if (!topic) return;
+  const palierCount = effectivePalierCount(topic);
+
+  // Les paliers de cette thématique pour ce niveau, puis les tentatives
+  // validées de l'élève dessus — la tentative qu'on vient de valider est vue,
+  // une transaction lit ses propres écritures.
+  const paliers = await ctx.db
+    .query("paliers")
+    .withIndex("by_topic_class", (q) =>
+      q.eq("topicId", topic._id).eq("class", palier.class),
+    )
+    .take(50);
+  const indexByPalierId = new Map(
+    paliers.map((p) => [p._id as string, p.palierIndex] as const),
+  );
+  const attempts = await ctx.db
+    .query("palierAttempts")
+    .withIndex("by_user", (q) => q.eq("userId", studentId))
+    .take(500);
+  const validated = new Set<number>();
+  for (const attempt of attempts) {
+    if (attempt.status !== "validated") continue;
+    const index = indexByPalierId.get(attempt.palierId as string);
+    if (index !== undefined) validated.add(index);
+  }
+  if (!isTopicComplete(validated, palierCount)) return;
+
+  const existing = await ctx.db
+    .query("studentTopicProgress")
+    .withIndex("by_studentId_topicId", (q) =>
+      q.eq("studentId", studentId).eq("topicId", topic._id),
+    )
+    .unique();
+  const now = Date.now();
+  if (existing) {
+    if (existing.completedAt == null) {
+      await ctx.db.patch(existing._id, { completedAt: now });
+    }
+    return;
+  }
+  await ctx.db.insert("studentTopicProgress", {
+    studentId,
+    topicId: topic._id,
+    completedExercises: 0,
+    correctExercises: 0,
+    totalHintsUsed: 0,
+    masteryLevel: 0,
+    completedAt: now,
+  });
+}
 
 // ===========================================================================
 // QUERIES
@@ -413,7 +524,8 @@ export const getProgressForPalierAttempt = query({
 
       const realAttempts = rows.filter((a) => a.attemptNumber > 0);
       const isCompleted =
-        realAttempts.some((a) => a.isCorrect) || realAttempts.length >= 5;
+        realAttempts.some((a) => a.isCorrect) ||
+        realAttempts.length >= MAX_ATTEMPTS_PER_EXERCISE;
       if (isCompleted) {
         completedCount += 1;
         continue;

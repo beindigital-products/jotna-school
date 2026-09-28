@@ -47,7 +47,9 @@
  */
 
 import { internalMutation, internalQuery } from "./_generated/server";
+import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+import { visibleClassValidator } from "./curriculum";
 
 /**
  * État du déploiement — aiUsage récents, paliers, compteurs, trois derniers
@@ -177,6 +179,135 @@ export const seedMvp1 = internalMutation({
       topicsCreated: created,
       topicsSkipped: skipped,
       settingsExisted: !!existingSettings,
+    };
+  },
+});
+
+/**
+ * Inscrit un élève déjà enregistré (par /register) dans une école de
+ * développement — pour vérifier à l'écran ce qu'un enfant scolarisé voit.
+ *
+ * Crée, s'ils manquent : une école « active », une classe du niveau demandé
+ * (libellé « A »), un profil de professeur rattaché à la classe, et un
+ * abonnement « active » d'un an pour dix sièges. Puis pose l'inscription
+ * active de l'élève et aligne `profiles.class` sur la classe, exactement
+ * comme `schools.enrollStudent`. Sans abonnement, `decideAccess` rendrait
+ * `no_subscription` et l'enfant verrait le paywall.
+ *
+ * INTERNE, comme le reste du module : un outil de terminal, sans écran.
+ * Idempotent sur l'école, la classe et le professeur ; refuse un élève qui a
+ * déjà une inscription active, comme la vraie mutation.
+ */
+export const enrollStudentInDevSchool = internalMutation({
+  args: {
+    studentEmail: v.string(),
+    class: visibleClassValidator,
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", args.studentEmail))
+      .unique();
+    if (!user) throw new Error(`Aucun compte pour ${args.studentEmail}`);
+    const student = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id as string))
+      .unique();
+    if (!student || student.role !== "student") {
+      throw new Error(`${args.studentEmail} n'est pas un profil élève`);
+    }
+
+    const existing = await ctx.db
+      .query("schoolMemberships")
+      .withIndex("by_student_status", (q) =>
+        q.eq("studentId", student._id).eq("status", "active"),
+      )
+      .first();
+    if (existing) throw new Error("Cet élève a déjà une inscription active");
+
+    const now = Date.now();
+    const SCHOOL_NAME = "École Seydou Nourou Tall";
+
+    let school = (await ctx.db.query("schools").take(100)).find(
+      (s) => s.name === SCHOOL_NAME,
+    );
+    if (!school) {
+      const schoolId = await ctx.db.insert("schools", {
+        name: SCHOOL_NAME,
+        city: "Dakar",
+        contactName: "Direction",
+        contactEmail: "direction@example.test",
+        status: "active",
+        createdAt: now,
+      });
+      school = (await ctx.db.get(schoolId))!;
+    }
+
+    let teacher = (await ctx.db.query("profiles").take(500)).find(
+      (p) => p.role === "professeur" && p.name === "Mme Fatou Ndiaye",
+    );
+    if (!teacher) {
+      const teacherId = await ctx.db.insert("profiles", {
+        userId: `dev-seed-teacher-${school._id}`,
+        role: "professeur",
+        name: "Mme Fatou Ndiaye",
+      });
+      teacher = (await ctx.db.get(teacherId))!;
+    }
+
+    let schoolClass = await ctx.db
+      .query("schoolClasses")
+      .withIndex("by_school_class", (q) =>
+        q.eq("schoolId", school._id).eq("class", args.class),
+      )
+      .first();
+    if (!schoolClass) {
+      const classId = await ctx.db.insert("schoolClasses", {
+        schoolId: school._id,
+        class: args.class,
+        label: "A",
+        teacherId: teacher._id,
+      });
+      schoolClass = (await ctx.db.get(classId))!;
+    }
+
+    const subscription = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_owner", (q) =>
+        q.eq("ownerType", "school").eq("ownerId", school._id as string),
+      )
+      .first();
+    if (!subscription) {
+      const oneYear = 365 * 24 * 60 * 60 * 1000;
+      await ctx.db.insert("subscriptions", {
+        ownerType: "school",
+        ownerId: school._id as string,
+        seatsPurchased: 10,
+        pricePerSeatFcfa: 5000,
+        totalFcfa: 50000,
+        startsAt: now - 24 * 60 * 60 * 1000,
+        endsAt: now + oneYear,
+        status: "active",
+        createdAt: now,
+      });
+    }
+
+    const membershipId = await ctx.db.insert("schoolMemberships", {
+      schoolId: school._id,
+      studentId: student._id,
+      schoolClassId: schoolClass._id,
+      status: "active",
+      enrolledAt: now,
+    });
+    if (student.class !== schoolClass.class) {
+      await ctx.db.patch(student._id, { class: schoolClass.class });
+    }
+
+    return {
+      membershipId,
+      school: school.name,
+      class: `${schoolClass.class} ${schoolClass.label}`,
+      teacher: teacher.name,
     };
   },
 });

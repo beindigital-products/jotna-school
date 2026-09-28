@@ -102,7 +102,7 @@ export default function ArabePathPage() {
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Link
-            href={`/student/arabe/lecon/${next}`}
+            href={`/student/arabe/lecon?key=${next}`}
             className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-white px-5 py-3 text-base font-extrabold text-teal-700 shadow-md hover:bg-teal-50"
           >
             {doneCount === 0 ? "Commencer" : "Continuer"}
@@ -151,7 +151,7 @@ export default function ArabePathPage() {
                   <li key={lesson.key}>
                     {unlocked ? (
                       <Link
-                        href={`/student/arabe/lecon/${lesson.key}`}
+                        href={`/student/arabe/lecon?key=${lesson.key}`}
                         className="flex h-full items-start gap-3 rounded-3xl border-2 border-transparent bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
                         style={{ borderColor: done ? level.color : undefined }}
                       >

@@ -137,6 +137,25 @@ export function scoreToStarsSingle(score: number): number {
   return 0;
 }
 
+/**
+ * UN INDICE N'EST PAS UN ESSAI. `requestHint` pose une ligne d'`attempts`
+ * sentinelle (`attemptNumber: 0`) pour que le score déduise l'indice ; le
+ * compte des essais et le numéro du suivant ne regardent que les lignes
+ * numérotées. Les compter faisait sauter l'enfant de « encore 4 essais » à
+ * « encore 2 » après un seul indice, et gonflait le numéro d'essai que la
+ * grille de score punit.
+ */
+export function countRealAttempts(rows: readonly { attemptNumber: number }[]): number {
+  let n = 0;
+  for (const row of rows) if (row.attemptNumber > 0) n += 1;
+  return n;
+}
+
+/** Essais restants après `realAttempts` essais joués. Jamais négatif. */
+export function attemptsRemainingAfter(realAttempts: number): number {
+  return Math.max(0, MAX_ATTEMPTS_PER_EXERCISE - realAttempts);
+}
+
 function clampAttempt(n: number): number {
   if (!Number.isFinite(n) || n < 1) return 1;
   if (n > MAX_ATTEMPTS_PER_EXERCISE) return MAX_ATTEMPTS_PER_EXERCISE;

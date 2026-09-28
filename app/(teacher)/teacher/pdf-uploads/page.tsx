@@ -125,7 +125,7 @@ export default function TeacherPdfUploadsPage() {
 
       // Redirect to the detail page so the teacher can watch the extraction
       // progress and review/publish the generated exercises.
-      router.push(`/teacher/pdf-uploads/${uploadId}`);
+      router.push(`/teacher/pdf-uploads/detail?id=${uploadId}`);
     } catch (err) {
       setError(refusalMessage(err, "Erreur lors de l'envoi."));
     } finally {
@@ -353,7 +353,7 @@ export default function TeacherPdfUploadsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <Link
-                            href={`/teacher/pdf-uploads/${upload._id}`}
+                            href={`/teacher/pdf-uploads/detail?id=${upload._id}`}
                             className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600"
                             title="Voir le détail"
                           >

@@ -121,11 +121,11 @@ export default function LinkChildPage() {
             Aucun compte eleve trouve avec cette adresse email.
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Verifiez l&apos;adresse ou{" "}
-            <Link href="/parent/children/add" className="text-teal-600 hover:underline">
-              creez un nouveau compte
-            </Link>{" "}
-            pour votre enfant.
+            Les eleves inscrits par une ecole n&apos;ont pas d&apos;adresse :
+            utilisez le{" "}
+            <Link href="/parent/children/code" className="text-teal-600 hover:underline">
+              code remis par l&apos;etablissement
+            </Link>.
           </p>
         </div>
       )}

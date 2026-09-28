@@ -12,9 +12,11 @@ import type { Doc, Id } from "./_generated/dataModel";
 // masquait une divergence éventuelle au lieu de la faire échouer.
 import {
   decideAccess,
+  topicOpenTo,
   type AccessInput,
   type AccessState,
 } from "./accessRules";
+import { isHiddenClass } from "./curriculum";
 
 /**
  * L'abonnement d'une école que le paywall tient pour COURANT.
@@ -185,6 +187,7 @@ export async function loadAccessInput(
     role: null,
     activeMembership: null,
     hasReleasedMembership: false,
+    hasClass: false,
     subscription: null,
     oldestOverdueDueAt: null,
   };
@@ -224,12 +227,18 @@ export async function loadAccessInput(
   // contrat.
   const current = await currentSchoolSubscription(ctx, active.schoolId, now);
 
+  // Lu sur le profil déjà chargé : aucune lecture de plus sur le chemin le
+  // plus chaud du dépôt. Une classe masquée (collège, lycée) compte comme
+  // absente — aucune thématique visible ne lui correspond.
+  const hasClass = !!profile.class && !isHiddenClass(profile.class);
+
   if (!current) {
     return {
       ...empty,
       role: "student",
       activeMembership: { schoolId: active.schoolId as string },
       hasReleasedMembership: hasReleased,
+      hasClass,
     };
   }
 
@@ -245,6 +254,7 @@ export async function loadAccessInput(
     role: "student",
     activeMembership: { schoolId: active.schoolId as string },
     hasReleasedMembership: hasReleased,
+    hasClass,
     subscription: {
       status: current.status,
       endsAt: current.endsAt,
@@ -340,24 +350,37 @@ export async function catalogReadable(ctx: QueryCtx): Promise<boolean> {
  * - `readable` — le droit d'accès, exactement `catalogReadable` ci-dessus ;
  * - `hiddenClasses` — le droit de voir le collège et le lycée, que
  *   `convex/curriculum.ts` masque à tout le monde sauf à un `admin`, parce que
- *   c'est lui qui les prépare.
+ *   c'est lui qui les prépare ;
+ * - `opensTopic` — la classe d'une thématique est-elle ouverte à l'appelant
+ *   (`accessRules.topicOpenTo`) ? Un élève n'ouvre que celles de sa classe.
  *
  * LES POSER SÉPARÉMENT RELIRAIT `profiles`. C'est précisément le doublon que
  * `catalogReadable` avait supprimé — et il coûtait double aussi en surface
  * d'invalidation, `profiles.preferences` étant réécrit à chaque série, badge ou
  * réglage de son.
  */
-export async function catalogAccess(
-  ctx: QueryCtx,
-): Promise<{ readable: boolean; hiddenClasses: boolean }> {
+export async function catalogAccess(ctx: QueryCtx): Promise<{
+  readable: boolean;
+  hiddenClasses: boolean;
+  opensTopic: (topicClass: string | null | undefined) => boolean;
+}> {
   const profile = await currentProfile(ctx);
-  if (!profile) return { readable: false, hiddenClasses: false };
+  if (!profile) {
+    return { readable: false, hiddenClasses: false, opensTopic: () => false };
+  }
+  const caller = { role: profile.role, studentClass: profile.class ?? null };
+  const opensTopic = (topicClass: string | null | undefined) => topicOpenTo(caller, topicClass);
   if (profile.role !== "student") {
-    return { readable: true, hiddenClasses: profile.role === "admin" };
+    return {
+      readable: true,
+      hiddenClasses: profile.role === "admin",
+      opensTopic,
+    };
   }
   return {
     readable: (await checkAccess(ctx, profile)).ok,
     hiddenClasses: false,
+    opensTopic,
   };
 }
 

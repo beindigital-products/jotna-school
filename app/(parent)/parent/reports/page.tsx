@@ -64,7 +64,7 @@ export default function ParentReportsPage() {
             return (
               <Link
                 key={r._id}
-                href={`/parent/children/${r.studentId}/reports/${r.topicId}`}
+                href={`/parent/children/reports?id=${r.studentId}&topicId=${r.topicId}`}
                 className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
               >
                 <div className="flex items-start justify-between">

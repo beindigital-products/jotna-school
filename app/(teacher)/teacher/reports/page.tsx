@@ -60,7 +60,7 @@ export default function TeacherReportsPage() {
             return (
               <Link
                 key={r._id}
-                href={`/teacher/reports/${r.studentId}/${r.topicId}`}
+                href={`/teacher/reports/detail?studentId=${r.studentId}&topicId=${r.topicId}`}
                 className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
               >
                 <div className="flex items-start justify-between">

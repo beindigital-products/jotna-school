@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Geist_Mono, Fredoka, Amiri } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
@@ -43,6 +43,16 @@ const amiri = Amiri({
   subsets: ["arabic"],
   weight: ["400", "700"],
 });
+
+// `viewportFit: "cover"` : dans l'application Capacitor, le webview dessine
+// sous la barre d'état et l'îlot dynamique. Sans cette valeur,
+// `env(safe-area-inset-top)` vaut zéro et rien ne peut s'en écarter — le HUD
+// de l'espace élève passait sous l'horloge iOS. Sur le web, aucun effet.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Jotna School - Apprends en t'amusant",

@@ -94,7 +94,7 @@ export default function TeacherStudentsPage() {
               </div>
 
               <Link
-                href={`/teacher/students/${student._id}`}
+                href={`/teacher/students/detail?id=${student._id}`}
                 className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
               >
                 Voir le détail

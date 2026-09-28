@@ -895,6 +895,9 @@ export const getEnrollmentOutlook = query({
       role: "student",
       activeMembership: { schoolId: args.schoolId },
       hasReleasedMembership: false,
+      // L'inscription écrit la classe dans la même transaction : l'élève
+      // hypothétique en a donc une, et le verdict ne porte que sur le contrat.
+      hasClass: true,
       subscription: current
         ? { status: current.status, endsAt: current.endsAt }
         : null,
