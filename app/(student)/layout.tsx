@@ -27,7 +27,15 @@ import { MotionConfig } from "framer-motion";
  *
  * LE MODE FOCUS EST INTACT (D5, D90, G3) : pendant un palier et sur l'écran
  * de fin, ni HUD ni navigation. La pédagogie prime ; le jeu motive ENTRE les
- * exercices, pas pendant.
+ * exercices, pas pendant. Une leçon du module « Arabe & Coran » y entre aussi :
+ * elle fait écouter, parler et écrire au doigt.
+ *
+ * QUATRE LIEUX, PAS CINQ. Le module optionnel « Arabe & Coran » n'ajoute PAS
+ * d'onglet : la barre du bas donne 4,5 rem à chaque lieu, un cinquième
+ * déborderait sur un écran de 320 px, et la métaphore des quatre lieux y
+ * perdrait sa lisibilité. Son entrée est une carte du Camp
+ * (`app/(student)/student/home/page.tsx`), affichée seulement si l'école a
+ * allumé le module.
  */
 const NAV = [
   { href: "/student/home", label: "Camp", icon: Tent },
@@ -40,8 +48,14 @@ const NAV = [
 const EXOS_PER_LEVEL = 50;
 
 function isFocusRoute(pathname: string): boolean {
-  // L'écran de fin de palier vit dans la séance : même mode.
-  return /^\/student\/topics\/session/.test(pathname);
+  return (
+    // L'écran de fin de palier vit dans la séance : même mode.
+    /^\/student\/topics\/session/.test(pathname) ||
+    // Une leçon d'arabe demande la même concentration qu'un palier : elle fait
+    // écouter, répéter au micro et écrire au doigt, et la barre du bas
+    // passerait sous le carré d'écriture sur un téléphone.
+    /^\/student\/arabe\/lecon/.test(pathname)
+  );
 }
 
 function isActivePath(pathname: string, href: string): boolean {

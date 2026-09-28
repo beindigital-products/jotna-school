@@ -184,6 +184,9 @@ export default function StudentHomePage() {
         <QuestBoard />
       </section>
 
+      {/* ── Les modules que l'école a allumés (rien si aucun) ───────────── */}
+      <SchoolModules />
+
       {/* ── La série, si elle vit ───────────────────────────────────────── */}
       {streakAlive && stats && (
         <section className="px-4 sm:px-0">
@@ -254,6 +257,55 @@ export default function StudentHomePage() {
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * LES MODULES OPTIONNELS DE L'ÉCOLE — aujourd'hui « Arabe & Coran ».
+ *
+ * NE REND RIEN quand l'école n'en a allumé aucun : ni titre, ni cadre vide.
+ * Un enfant dont l'école n'a pas pris l'arabe ne doit pas voir la place où il
+ * aurait été — c'est la règle du catalogue (`convex/moduleCatalog.ts`), tenue
+ * jusqu'à l'écran.
+ *
+ * SA PROPRE REQUÊTE, plutôt qu'une donnée descendue de l'accueil : la carte
+ * n'a besoin de rien d'autre, et l'accueil n'a pas à attendre cette réponse
+ * pour dessiner Pio.
+ *
+ * IL N'Y A PAS D'ONGLET pour ce module (voir l'en-tête de
+ * `app/(student)/layout.tsx`) : cette carte est donc la porte d'entrée, et
+ * c'est pourquoi elle est large et nommée, pas un médaillon de plus.
+ */
+function SchoolModules() {
+  const modules = useQuery(api.modules.getMine);
+  const open = (modules ?? []).filter((module_) => module_.enabled);
+  if (open.length === 0) return null;
+
+  return (
+    <section className="px-4 sm:px-0">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {open.map((module_) => (
+          <Link
+            key={module_.key}
+            href={module_.href}
+            className="flex items-center gap-4 rounded-3xl p-5 text-white shadow-lg transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-300 active:scale-[0.98]"
+            style={{ backgroundColor: module_.color }}
+          >
+            <span className="text-4xl" aria-hidden>
+              {module_.emoji}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="font-display block text-xl font-extrabold">
+                {module_.title}
+              </span>
+              <span className="mt-0.5 block text-sm opacity-95">
+                {module_.summary}
+              </span>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
