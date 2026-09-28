@@ -56,6 +56,8 @@ export interface RecordOutcome {
   score: number;
   heard: string;
   missing: string[];
+  /** Le mot sur lequel une récitation a décroché. `null` hors mémorisation. */
+  firstMiss: string | null;
 }
 
 type Phase = "idle" | "recording" | "sending" | "done" | "blocked";
@@ -69,7 +71,7 @@ export function RecordButton({
 }: {
   lessonKey: string;
   itemKey: string;
-  drill: "pronounce" | "read";
+  drill: "pronounce" | "read" | "recite";
   onOutcome: (outcome: RecordOutcome) => void;
   /** Sert à choisir la phrase de verdict sans hasard. */
   attemptIndex: number;
@@ -78,6 +80,15 @@ export function RecordButton({
   const [phase, setPhase] = useState<Phase>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [heard, setHeard] = useState<string | null>(null);
+  /**
+   * Le mot sur lequel une RÉCITATION a décroché.
+   *
+   * Affiché, jamais reproché : il ne remplace pas le verdict, il l'explique.
+   * Un enfant qui voit « on s'est arrêté ici » sait où reprendre ; un enfant à
+   * qui on dit seulement « réessaie » recommence tout depuis le début, et
+   * bute au même endroit.
+   */
+  const [stopped, setStopped] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -120,11 +131,13 @@ export function RecordButton({
           setPhase("done");
           setMessage(verdictMessage(result.verdict, attemptIndex));
           setHeard(result.heard || null);
+          setStopped(result.verdict === "ok" ? null : result.firstMiss);
           onOutcome({
             verdict: result.verdict,
             score: result.score,
             heard: result.heard,
             missing: result.missing,
+            firstMiss: result.firstMiss,
           });
           return;
         }
@@ -249,6 +262,14 @@ export function RecordButton({
           className="rounded-2xl bg-white px-4 py-3 text-center text-base font-semibold text-gray-800 shadow-sm"
         >
           {message}
+          {stopped && (
+            <span className="mt-1 block text-sm font-medium text-gray-500">
+              {arabicCopy.memorize.stoppedAt}{" "}
+              <span dir="rtl" lang="ar" className="font-arabic text-lg">
+                {stopped}
+              </span>
+            </span>
+          )}
           {heard && (
             <span className="mt-1 block text-sm font-medium text-gray-500">
               {arabicCopy.heardPrefix}{" "}

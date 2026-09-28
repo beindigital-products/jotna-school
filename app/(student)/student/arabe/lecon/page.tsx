@@ -53,6 +53,7 @@ import {
   type SessionStep,
 } from "@/lib/arabic/session";
 import { arabicCopy } from "@/lib/arabic/copy";
+import { MaskedText } from "@/components/arabic/masked-text";
 import { LetterCard } from "@/components/arabic/letter-card";
 import { ListenButton } from "@/components/arabic/listen-button";
 import { RecordButton } from "@/components/arabic/record-button";
@@ -72,6 +73,12 @@ function ArabicLessonPageInner() {
   const lesson = getLesson(lessonKey);
 
   const path = useQuery(api.arabic.lessons.getPath);
+  // LA SÉANCE DE MÉMORISATION REPREND OÙ L'ENFANT S'EST ARRÊTÉ, et c'est la
+  // seule qui dépende d'un état serveur : redonner les trois premiers versets
+  // à qui en sait six lui ferait perdre exactement ce qu'il est venu gagner.
+  // La requête est posée pour toutes les leçons — une leçon d'alphabet
+  // l'ignore — parce qu'un hook conditionnel n'existe pas.
+  const hifz = useQuery(api.arabic.memorization.getState);
   // L'état de CETTE leçon : ce qu'elle vaut déjà. Un enfant qui révise doit
   // voir ce qu'il avait obtenu, sinon refaire une leçon ressemble à la
   // découvrir — et la surprise de perdre ses étoiles n'existe pas, `completeLesson`
@@ -80,7 +87,18 @@ function ArabicLessonPageInner() {
   const recordAttempt = useMutation(api.arabic.lessons.recordAttempt);
   const completeLesson = useMutation(api.arabic.lessons.completeLesson);
 
-  const steps = useMemo(() => (lesson ? buildSession(lesson) : []), [lesson]);
+  const versesMemorized = useMemo(() => {
+    if (!lesson?.surahKey || !hifz) return 0;
+    return (
+      hifz.surahs.find((entry) => entry.surahKey === lesson.surahKey)
+        ?.versesMemorized ?? 0
+    );
+  }, [hifz, lesson]);
+
+  const steps = useMemo(
+    () => (lesson ? buildSession(lesson, { versesMemorized }) : []),
+    [lesson, versesMemorized],
+  );
   const [index, setIndex] = useState(0);
   const [stepDone, setStepDone] = useState(false);
   const [tries, setTries] = useState(0);
@@ -140,6 +158,11 @@ function ArabicLessonPageInner() {
 
   if (!lesson) return <NotFound />;
   if (path === undefined) return <JotnaLoader />;
+  // On n'ouvre pas une séance de mémorisation avant de savoir où l'enfant en
+  // est : bâtir la séance sur un compteur à zéro puis la reconstruire une
+  // seconde plus tard lui redonnerait le verset 1 sous les yeux, puis le
+  // verset 4 — la séance aurait changé sous son doigt.
+  if (lesson.kind === "hifz" && hifz === undefined) return <JotnaLoader />;
 
   if (!path.enabled) {
     return (
@@ -152,7 +175,7 @@ function ArabicLessonPageInner() {
   const completed = new Set(
     path.progress.filter((row) => row.status === "completed").map((r) => r.lessonKey),
   );
-  if (!isLessonUnlocked(lessonKey, completed)) {
+  if (!isLessonUnlocked(lessonKey, completed, path.placement.floorOrder)) {
     return (
       <Centered title="Cette leçon n'est pas encore ouverte">
         {arabicCopy.lockedLesson}
@@ -425,6 +448,37 @@ function StepView({
               onOutcome={onVoiceOutcome}
             />
           )}
+        </div>
+      );
+    }
+
+    case "recite": {
+      const item = lesson?.items.find((entry) => entry.key === step.itemKey);
+      if (!item) return null;
+      const isLink = step.mask === "hidden" && item.fr?.startsWith("Les versets");
+      return (
+        <div className="space-y-5 text-center">
+          <h2 className="font-display text-xl font-extrabold text-gray-900">
+            {isLink
+              ? arabicCopy.memorize.linkTitle
+              : arabicCopy.memorize.listenFirst}
+          </h2>
+          {item.fr && (
+            <p className="text-base font-medium text-gray-500">{item.fr}</p>
+          )}
+          <MaskedText text={item.ar} mask={step.mask} />
+          <ListenButton
+            speechRef={{ kind: "lessonItem", lessonKey, itemKey: item.key }}
+            className="mx-auto"
+          />
+          <RecordButton
+            key={`${lessonKey}:${item.key}:recite`}
+            lessonKey={lessonKey}
+            itemKey={item.key}
+            drill="recite"
+            attemptIndex={tries}
+            onOutcome={onVoiceOutcome}
+          />
         </div>
       );
     }

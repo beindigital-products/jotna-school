@@ -150,8 +150,13 @@ async function staffSeesModule(
  * `admin` partout ; `directeur` seulement là où `schoolStaff` le dit ACTIF.
  * La vérification porte sur le lien, pas sur le rôle : sans elle, le directeur
  * d'une école allumerait des modules chez sa voisine.
+ *
+ * EXPORTÉE, contrairement à `schoolModuleEnabled` : c'est une garde COMPLÈTE,
+ * qui répond sur un appelant et une école, et le placement des élèves
+ * (`arabic/placement.ts`) pose exactement la même question. L'écrire deux fois
+ * serait laisser deux gardes diverger sur qui a le droit d'écrire.
  */
-async function callerAdministersSchool(
+export async function callerAdministersSchool(
   ctx: QueryCtx | MutationCtx,
   schoolId: Id<"schools">,
 ): Promise<Doc<"profiles"> | null> {

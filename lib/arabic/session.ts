@@ -28,6 +28,7 @@ import {
 } from "@/convex/arabic/alphabet";
 import type { ArabicLesson, DrillKind } from "@/convex/arabic/curriculum";
 import { lettersSeenUpTo } from "@/convex/arabic/curriculum";
+import { linkItemKey, linkPoints, type MaskDegree } from "@/convex/arabic/hifz";
 
 /** Items de lecture retenus par séance — au-delà, on échantillonne. */
 export const ITEMS_PER_SESSION = 8;
@@ -53,7 +54,13 @@ export type SessionStep =
   /** On écoute la syllabe, le mot ou le verset. Non noté. */
   | { kind: "discoverItem"; itemKey: string }
   /** On le lit à voix haute. */
-  | { kind: "read"; itemKey: string };
+  | { kind: "read"; itemKey: string }
+  /**
+   * On le RÉCITE, texte masqué. `mask` dit ce qui reste visible — c'est
+   * l'étape qui porte le degré, pas le composant, pour qu'un test puisse
+   * vérifier qu'une révision se fait bien à texte caché.
+   */
+  | { kind: "recite"; itemKey: string; mask: MaskDegree };
 
 /** Les étapes qui comptent pour la note — les autres sont de la découverte. */
 export function isScored(step: SessionStep): boolean {
@@ -69,6 +76,7 @@ export function drillOf(step: SessionStep): DrillKind | null {
     case "forms":
     case "write":
     case "read":
+    case "recite":
       return step.kind;
     case "pronounce":
       return "pronounce";
@@ -98,12 +106,18 @@ export function seedFromKey(key: string): number {
  * Seules les familles déclarées par la leçon (`lesson.drills`) sont retenues :
  * c'est le curriculum qui décide, pas cette fonction.
  */
-export function buildSession(lesson: ArabicLesson): SessionStep[] {
+export function buildSession(
+  lesson: ArabicLesson,
+  options?: { versesMemorized?: number },
+): SessionStep[] {
   const seed = seedFromKey(lesson.key);
   const has = (drill: DrillKind) => lesson.drills.includes(drill);
 
   if (lesson.kind === "alphabet") {
     return buildLetterSession(lesson, seed, has);
+  }
+  if (lesson.kind === "hifz") {
+    return buildHifzSession(lesson, options?.versesMemorized ?? 0);
   }
   return buildReadingSession(lesson, seed, has);
 }
@@ -217,6 +231,92 @@ function buildReadingSession(
   if (has("read")) {
     for (const item of chosen) {
       steps.push({ kind: "read", itemKey: item.key });
+    }
+  }
+
+  return steps;
+}
+
+/** Versets NEUFS par séance de mémorisation. Voir `buildHifzSession`. */
+export const VERSES_PER_HIFZ_SESSION = 3;
+
+/**
+ * La séance de mémorisation — la seule qui dépende de ce que l'enfant sait
+ * déjà.
+ *
+ * POURQUOI ELLE PREND UN ARGUMENT alors qu'aucune autre n'en prend. Les autres
+ * séances RÉVISENT un contenu fixe : la leçon des quatre premières lettres est
+ * la même au premier et au dixième passage. Une séance de ḥifẓ, non — on
+ * reprend là où on s'est arrêté, et redonner les versets 1 à 3 à un enfant qui
+ * en est au sixième serait lui faire perdre la seule chose qui compte ici, le
+ * temps de mémorisation. `versesMemorized` vient du serveur
+ * (`arabic.memorization.getState`), jamais d'un compteur local.
+ *
+ * TROIS VERSETS NEUFS AU PLUS. C'est le volume qu'un maître donne en une fois,
+ * et ce n'est pas un hasard : au-delà, ce qu'on ajoute chasse ce qu'on venait
+ * d'apprendre. Une sourate de sept versets se mémorise donc en trois séances,
+ * ce qui est la vérité du geste plutôt qu'un plafond technique.
+ *
+ * ET CHAQUE SÉANCE FINIT PAR UNE LIAISON, à texte entièrement caché : c'est
+ * elle qui vérifie qu'on est passé du verset 3 au verset 4 sans qu'on donne le
+ * départ. Les versets neufs, eux, se récitent avec les AMORCES — première fois
+ * qu'on les dit sans les lire, on laisse la première lettre de chaque mot.
+ *
+ * QUAND TOUT EST MÉMORISÉ, la séance devient une RÉVISION : la sourate
+ * entière, cachée, et rien d'autre. Deux minutes, et l'échelon de révision
+ * espacée bouge. C'est ce qui doit rester faisable tous les jours.
+ */
+function buildHifzSession(
+  lesson: ArabicLesson,
+  versesMemorized: number,
+): SessionStep[] {
+  const surahKey = lesson.surahKey;
+  if (!surahKey) return [];
+
+  // Les versets sont les items dont la clé n'est pas une liaison ; c'est la
+  // leçon qui les a construits dans l'ordre (`curriculum.ts`).
+  const linkKeys = new Set(
+    linkPoints(lesson.items.length).map((upTo) => linkItemKey(surahKey, upTo)),
+  );
+  const verses = lesson.items.filter((item) => !linkKeys.has(item.key));
+  const points = linkPoints(verses.length);
+  // `Number.isFinite` D'ABORD, et ce n'est pas de la paranoïa : `Math.floor`,
+  // `Math.max` et `Math.min` propagent tous NaN sans broncher, `slice(NaN, NaN)`
+  // rend un tableau vide et `NaN >= length` est faux — une séance de zéro
+  // étape, donc un écran bloqué sur lequel l'enfant ne peut rien faire. Un
+  // test le tient (`lib/__tests__/arabic-session.test.ts`).
+  const floored = Math.floor(versesMemorized);
+  const known = Number.isFinite(floored)
+    ? Math.min(Math.max(0, floored), verses.length)
+    : 0;
+
+  // Tout est su : on ne réapprend pas, on vérifie.
+  if (known >= verses.length && verses.length > 0) {
+    const whole = linkItemKey(surahKey, verses.length);
+    const hasWhole = lesson.items.some((item) => item.key === whole);
+    const target = hasWhole ? whole : verses[verses.length - 1].key;
+    return [
+      { kind: "discoverItem", itemKey: target },
+      { kind: "recite", itemKey: target, mask: "hidden" },
+    ];
+  }
+
+  const fresh = verses.slice(known, known + VERSES_PER_HIFZ_SESSION);
+  const steps: SessionStep[] = [];
+  for (const verse of fresh) {
+    steps.push({ kind: "discoverItem", itemKey: verse.key });
+    steps.push({ kind: "recite", itemKey: verse.key, mask: "hints" });
+  }
+
+  // La plus grande liaison désormais à portée — celle qui couvre tout ce que
+  // l'enfant sait, pas seulement les versets du jour.
+  const reach = known + fresh.length;
+  const point = [...points].reverse().find((upTo) => upTo <= reach);
+  if (point !== undefined) {
+    const key = linkItemKey(surahKey, point);
+    if (lesson.items.some((item) => item.key === key)) {
+      steps.push({ kind: "discoverItem", itemKey: key });
+      steps.push({ kind: "recite", itemKey: key, mask: "hidden" });
     }
   }
 

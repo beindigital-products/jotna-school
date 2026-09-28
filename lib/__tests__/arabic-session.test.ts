@@ -5,13 +5,19 @@ import {
   isScored,
   ITEMS_PER_SESSION,
   seedFromKey,
+  VERSES_PER_HIFZ_SESSION,
   type SessionStep,
 } from "../arabic/session";
 import { ARABIC_LESSONS, getLesson } from "@/convex/arabic/curriculum";
+import { hifzLessonKey, linkItemKey } from "@/convex/arabic/hifz";
+import { getSurah } from "@/convex/arabic/quran";
 
 const alphabetLesson = getLesson("alphabet-1")!;
 const coranLesson = getLesson("coran-an-nas")!;
 const mixedHarakat = getLesson("harakat-melange")!;
+// An-Nās fait six versets : assez pour que la séance ait à en laisser.
+const hifzLesson = getLesson(hifzLessonKey("an-nas"))!;
+const hifzSurah = getSurah("an-nas")!;
 
 describe("seedFromKey", () => {
   it("stable et non nul", () => {
@@ -123,9 +129,12 @@ describe("toutes les leçons du parcours", () => {
   });
 
   it("chaque étape notée porte une famille que le serveur accepte", () => {
+    // Recopiée à la main depuis les validateurs de `arabic/lessons.ts` et
+    // `arabic/db.ts` : c'est le but. Une famille que la séance joue sans que
+    // le serveur l'accepte perdrait silencieusement toutes ses tentatives.
     const accepted = new Set([
       "recognizeGlyph", "recognizeName", "dots", "forms", "pronounce",
-      "write", "read",
+      "write", "read", "recite",
     ]);
     for (const lesson of ARABIC_LESSONS) {
       for (const step of buildSession(lesson)) {
@@ -162,6 +171,112 @@ describe("toutes les leçons du parcours", () => {
       ]);
       for (const step of buildSession(lesson) as SessionStep[]) {
         expect(known.has(step.itemKey)).toBe(true);
+      }
+    }
+  });
+});
+
+describe("buildSession — séance de mémorisation", () => {
+  it("donne au plus trois versets neufs, jamais toute la sourate d'un coup", () => {
+    const steps = buildSession(hifzLesson, { versesMemorized: 0 });
+    const recited = steps.filter((step) => step.kind === "recite");
+    const versets = recited.filter((step) =>
+      hifzSurah.ayahs.some(
+        (ayah) => step.itemKey === `an-nas-${ayah.number}`,
+      ),
+    );
+    expect(versets.length).toBe(VERSES_PER_HIFZ_SESSION);
+    expect(versets.length).toBeLessThan(hifzSurah.ayahs.length);
+  });
+
+  it("fait ÉCOUTER avant de faire réciter, verset par verset", () => {
+    const steps = buildSession(hifzLesson, { versesMemorized: 0 });
+    for (let i = 0; i < steps.length; i += 2) {
+      expect(steps[i].kind).toBe("discoverItem");
+      expect(steps[i + 1].kind).toBe("recite");
+      expect(steps[i + 1].itemKey).toBe(steps[i].itemKey);
+    }
+  });
+
+  it("les versets neufs se récitent avec les amorces, la liaison sans rien", () => {
+    const steps = buildSession(hifzLesson, { versesMemorized: 0 });
+    const recited = steps.filter(
+      (step): step is Extract<SessionStep, { kind: "recite" }> =>
+        step.kind === "recite",
+    );
+    const last = recited[recited.length - 1];
+    expect(last.mask).toBe("hidden");
+    expect(last.itemKey).toBe(linkItemKey("an-nas", 3));
+    for (const step of recited.slice(0, -1)) expect(step.mask).toBe("hints");
+  });
+
+  it("reprend là où l'enfant s'est arrêté", () => {
+    const steps = buildSession(hifzLesson, { versesMemorized: 3 });
+    const premier = steps[0];
+    expect(premier.itemKey).toBe("an-nas-4");
+    // Et ne redonne aucun des versets déjà tenus.
+    for (const step of steps) {
+      expect(["an-nas-1", "an-nas-2", "an-nas-3"]).not.toContain(step.itemKey);
+    }
+  });
+
+  it("la liaison couvre TOUT ce qui est su, pas seulement les versets du jour", () => {
+    const steps = buildSession(hifzLesson, { versesMemorized: 3 });
+    const recited = steps.filter((step) => step.kind === "recite");
+    const last = recited[recited.length - 1];
+    expect(last.itemKey).toBe(linkItemKey("an-nas", 6));
+  });
+
+  it("tout su : la séance devient une révision, courte et à texte caché", () => {
+    const steps = buildSession(hifzLesson, {
+      versesMemorized: hifzSurah.ayahs.length,
+    });
+    expect(steps.length).toBe(2);
+    expect(steps[0].kind).toBe("discoverItem");
+    expect(steps[1]).toEqual({
+      kind: "recite",
+      itemKey: linkItemKey("an-nas", hifzSurah.ayahs.length),
+      mask: "hidden",
+    });
+  });
+
+  it("un compteur absurde ne casse pas la séance", () => {
+    for (const versesMemorized of [-3, 1.7, 999, Number.NaN]) {
+      const steps = buildSession(hifzLesson, { versesMemorized });
+      expect(steps.length).toBeGreaterThan(0);
+      expect(steps.length).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it("chaque sourate se mémorise en un nombre fini de séances", () => {
+    // La garde qui compte vraiment : une séance qui n'avancerait pas ferait
+    // tourner un enfant en rond sur le même verset, indéfiniment.
+    for (const surah of ["al-ikhlas", "al-asr", "al-fatiha", "an-nas"]) {
+      const lesson = getLesson(hifzLessonKey(surah))!;
+      const total = getSurah(surah)!.ayahs.length;
+      let known = 0;
+      let seances = 0;
+      while (known < total && seances < 20) {
+        const steps = buildSession(lesson, { versesMemorized: known });
+        expect(steps.length).toBeGreaterThan(0);
+        known += VERSES_PER_HIFZ_SESSION;
+        seances += 1;
+      }
+      expect(known).toBeGreaterThanOrEqual(total);
+      expect(seances).toBeLessThanOrEqual(
+        Math.ceil(total / VERSES_PER_HIFZ_SESSION),
+      );
+    }
+  });
+
+  it("chaque item récité appartient bien à la leçon — le serveur le refuserait sinon", () => {
+    for (const lesson of ARABIC_LESSONS) {
+      if (lesson.kind !== "hifz") continue;
+      const known = new Set(lesson.items.map((item) => item.key));
+      for (let v = 0; v <= lesson.items.length; v++) {
+        for (const step of buildSession(lesson, { versesMemorized: v })) {
+          expect(known.has(step.itemKey)).toBe(true);
+        }
       }
     }
   });

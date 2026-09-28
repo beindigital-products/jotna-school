@@ -3,6 +3,7 @@ import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { classEnum, visibleClassValidator } from "./curriculum";
 import { moduleKeyValidator } from "./moduleCatalog";
+import { placementLevelValidator } from "./arabic/progressRules";
 
 // ---------------------------------------------------------------------------
 // AI gateway purposes — mirrors aiGateway/registry.ts. Listed here as
@@ -1144,6 +1145,79 @@ export default defineSchema({
     ttsChars: v.number(),
     updatedAt: v.number(),
   }).index("by_student_day", ["studentId", "dayKey"]),
+
+  // LE PLACEMENT D'UN ÉLÈVE, décidé par son école.
+  //
+  // CE QUE C'EST : la déclaration d'un adulte — « cet enfant connaît déjà ses
+  // lettres », « il apprend Al-Falaq avec son grand-père ». Le module s'en sert
+  // pour OUVRIR des leçons (`progressRules.placementFloorOrder`), jamais pour
+  // en valider : un élève placé « confirmé » a l'alphabet ouvert et NON FAIT.
+  // Cocher une case ne remplit pas un cahier.
+  //
+  // `schoolId` EST SUR LA LIGNE, et c'est ce qui rend le placement réversible :
+  // il appartient à l'école qui l'a posé. Un enfant transféré ailleurs n'emporte
+  // pas le jugement de son ancienne école — la lecture vérifie que l'école de
+  // la ligne est bien celle où il est inscrit AUJOURD'HUI, et l'ignore sinon.
+  // La ligne, elle, n'est pas effacée : s'il revient, elle revaut.
+  //
+  // UNE SEULE LIGNE PAR (élève, école) — `by_student_school` la trouve, et
+  // c'est aussi ce qui fait que replacer un élève réécrit au lieu d'empiler.
+  arabicPlacement: defineTable({
+    studentId: v.id("profiles"),
+    schoolId: v.id("schools"),
+    level: placementLevelValidator,
+    /** La leçon où l'élève s'est arrêté, si l'école la connaît. */
+    startLessonKey: v.optional(v.string()),
+    /** La sourate qu'il apprend, si l'école la connaît. */
+    surahKey: v.optional(v.string()),
+    /** L'auteur du placement. Copié, jamais relu pour autoriser quoi que ce soit. */
+    updatedBy: v.id("profiles"),
+    updatedAt: v.number(),
+  })
+    .index("by_student_school", ["studentId", "schoolId"])
+    // « qui est placé dans cette école ? » — la liste du tableau de bord.
+    .index("by_school", ["schoolId"]),
+
+  // LA MÉMORISATION D'UNE SOURATE — une ligne par (élève, sourate).
+  //
+  // POURQUOI PAS `arabicLessonProgress`. Une leçon se termine ; une sourate
+  // mémorisée, non. Ce qui compte ici n'est pas « fait / pas fait » mais QUAND
+  // ELLE REVIENT : une sourate apprise et jamais revue est perdue, et c'est le
+  // seul fait qui gouverne tout ce module (`hifz.ts`). Mettre ça dans une table
+  // de progression de leçons obligerait à y faire vivre une horloge qui n'a
+  // rien à y faire.
+  //
+  // `strength` EST UN ÉCHELON, pas une note : 0 = appris aujourd'hui, 5 = tenu
+  // depuis trois mois. Il monte d'un cran quand la récitation passe, redescend
+  // d'UN cran quand elle casse — jamais à zéro, parce qu'un enfant fatigué un
+  // mardi soir n'a pas tout oublié.
+  //
+  // PAS D'INDEX SUR `dueAt`, et c'est un choix mesuré : le parcours compte six
+  // sourates. « Qu'est-ce qui est à réviser ? » se répond en lisant les
+  // quelques lignes de l'élève et en comparant les échéances — un index de plus
+  // coûterait une écriture de plus à chaque révision pour trier six lignes.
+  // Le jour où un recueil entier entre dans le module, il se justifiera.
+  arabicHifz: defineTable({
+    studentId: v.id("profiles"),
+    surahKey: v.string(),
+    /** 0..5 — l'échelon de révision espacée (`hifz.REVIEW_INTERVALS_DAYS`). */
+    strength: v.number(),
+    /** Versets consécutifs tenus depuis le premier. 0 tant que rien ne tient. */
+    versesMemorized: v.number(),
+    /** 0..1 — la note de la dernière séance, telle qu'elle a fait bouger l'échelon. */
+    lastScore: v.number(),
+    lastVerdict: v.union(
+      v.literal("ok"),
+      v.literal("close"),
+      v.literal("retry"),
+    ),
+    lastReviewedAt: v.number(),
+    /** Quand la sourate doit revenir. C'est le champ qui fait vivre le module. */
+    dueAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_student", ["studentId"])
+    .index("by_student_surah", ["studentId", "surahKey"]),
 
   // ---------------------------------------------------------------------------
   // dailyMissions — les missions du jour du Monde de Pio (conception §6, G7).

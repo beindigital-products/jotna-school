@@ -87,6 +87,44 @@ export const arabicCopy = {
 
   quranNote:
     "On lit doucement, verset par verset. Écoute d'abord, puis lis à ton tour.",
+
+  /**
+   * LA MÉMORISATION SE DIT AUTREMENT. Ici l'enfant ne déchiffre pas : il donne
+   * ce qu'il a gardé, et se tromper veut dire avoir oublié — ce qui pique
+   * bien plus qu'une lettre mal lue. Deux règles en découlent :
+   *
+   *   - ON NE DIT JAMAIS « tu as oublié ». On dit où l'on s'est arrêté, et on
+   *     propose de réécouter. C'est ce que fait un maître qui souffle le mot
+   *     suivant, et c'est aussi la seule chose honnête : la transcription peut
+   *     très bien avoir manqué un mot que l'enfant a dit ;
+   *   - ON NE FÉLICITE PAS UNE SOURATE COMME UN NIVEAU PASSÉ. Pas de « tu as
+   *     débloqué », pas de confettis. « C'est récité » suffit, et la révision
+   *     prévue dit la suite.
+   */
+  memorize: {
+    listenFirst: "Écoute bien, puis récite",
+    hintsNote: "Je te laisse la première lettre de chaque mot.",
+    hiddenNote: "À toi, de mémoire.",
+    linkTitle: "Enchaîne, sans reprendre le départ",
+    words: (count: number) =>
+      count === 1 ? "1 mot à dire" : `${count} mots à dire`,
+    stoppedAt: "On s'est arrêté ici :",
+    due: "À réviser aujourd'hui",
+    reviewOn: (days: number) =>
+      days <= 0
+        ? "À réviser aujourd'hui"
+        : days === 1
+          ? "À réviser demain"
+          : `À réviser dans ${days} jours`,
+    versesHeld: (held: number, total: number) =>
+      held === 0
+        ? `${total} versets à apprendre`
+        : held >= total
+          ? "Sourate entière sue"
+          : `${held} versets sur ${total}`,
+    readFirst:
+      "Lis d'abord cette sourate dans « Mes premières sourates » — on ne mémorise pas ce qu'on ne sait pas lire.",
+  },
 } as const;
 
 /**

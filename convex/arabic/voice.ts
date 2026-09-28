@@ -55,6 +55,7 @@ import {
   acceptedFormsForLetter,
   judgePronunciation,
   judgeReading,
+  judgeRecitation,
   type PronunciationVerdict,
 } from "./matching";
 
@@ -309,6 +310,12 @@ type VerifyResult =
       heard: string;
       /** Les mots du verset qui manquaient. Vide hors lecture suivie. */
       missing: string[];
+      /**
+       * Le mot sur lequel une RÉCITATION a décroché — « tu as buté ici ».
+       * `null` partout ailleurs : lire un verset sous les yeux n'a pas de
+       * point de rupture, seulement des mots manqués.
+       */
+      firstMiss: string | null;
       remaining: number;
     }
   | { status: "quota_reached" }
@@ -327,7 +334,11 @@ export const verifyPronunciation = action({
   args: {
     lessonKey: v.string(),
     itemKey: v.string(),
-    drill: v.union(v.literal("pronounce"), v.literal("read")),
+    drill: v.union(
+      v.literal("pronounce"),
+      v.literal("read"),
+      v.literal("recite"),
+    ),
     audio: v.bytes(),
     mimeType: v.string(),
   },
@@ -375,8 +386,24 @@ export const verifyPronunciation = action({
       return { status: "unavailable", reason: "provider_error" };
     }
 
+    // LA FAMILLE D'EXERCICE DÉCIDE DU JUGE, pas la forme du texte. Réciter de
+    // mémoire « وَالْعَصْرِ » — un verset d'un seul mot — reste de la
+    // récitation : l'ordre y compte, le seuil y est plus haut, et le juger
+    // comme un mot lu appellerait « mémorisé » ce qui ne l'est pas.
+    // Une lettre ne se récite pas : `expected` n'est jamais « letter » pour une
+    // leçon de mémorisation (elles n'ont pas de lettres), mais la famille vient
+    // du client — on rend alors un texte vide, que le juge refuse proprement.
+    const recitation =
+      args.drill === "recite"
+        ? judgeRecitation({
+            expected: expected.kind === "letter" ? "" : expected.text,
+            transcript,
+          })
+        : null;
+
     const judgement =
-      expected.kind === "letter"
+      recitation ??
+      (expected.kind === "letter"
         ? judgePronunciation({
             accepted: expected.accepted,
             transcript,
@@ -387,9 +414,10 @@ export const verifyPronunciation = action({
               accepted: [expected.text],
               transcript,
             })
-          : judgeReading({ expected: expected.text, transcript });
+          : judgeReading({ expected: expected.text, transcript }));
 
     const missing = "missing" in judgement ? judgement.missing : [];
+    const firstMiss = recitation?.firstMiss ?? null;
 
     await ctx.runMutation(internal.arabic.db.recordServerAttempt, {
       studentId: caller.profileId,
@@ -410,6 +438,7 @@ export const verifyPronunciation = action({
       score: judgement.score,
       heard: judgement.heard,
       missing,
+      firstMiss,
       remaining: quota.remaining,
     };
   },

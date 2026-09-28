@@ -24,8 +24,11 @@ import {
   acceptedFormsForLetter,
   judgePronunciation,
   judgeReading,
+  judgeRecitation,
   levenshtein,
   normalizeArabic,
+  READING_OK,
+  RECITATION_OK,
   similarity,
   tokenize,
 } from "../arabic/matching";
@@ -33,8 +36,22 @@ import {
   isLessonUnlocked,
   lessonScore,
   nextLessonKey,
+  placementFloorOrder,
   starsFor,
 } from "../arabic/progressRules";
+import {
+  hifzLessonKey,
+  isDue,
+  linkPointOf,
+  linkPoints,
+  linkText,
+  maskAyah,
+  MAX_STRENGTH,
+  nextDueAt,
+  nextStrength,
+  versesMemorizedFrom,
+  wordCount,
+} from "../arabic/hifz";
 
 // ---------------------------------------------------------------------------
 // L'alphabet — la donnée de référence. Ces tests ne jugent pas du goût des
@@ -468,5 +485,370 @@ describe("note et étoiles", () => {
     expect(starsFor(0)).toBe(1);
     expect(starsFor(0.7)).toBe(2);
     expect(starsFor(0.95)).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// La mémorisation — ce qui la distingue de la lecture, tenu par des tests.
+//
+// Trois choses doivent rester vraies, et aucune n'est évidente : le masque ne
+// doit pas laisser fuir le texte, la récitation doit exiger l'ORDRE, et
+// l'échelle de révision ne doit jamais renvoyer un enfant à zéro.
+// ---------------------------------------------------------------------------
+
+describe("masque", () => {
+  const verset = "قُلْ هُوَ اللَّهُ أَحَدٌ";
+
+  it("« full » rend le texte intact", () => {
+    expect(maskAyah(verset, "full")).toBe(verset);
+  });
+
+  it("conserve le nombre de mots à tous les degrés — c'est l'aide du maître", () => {
+    for (const degree of ["full", "hints", "hidden"] as const) {
+      expect(wordCount(maskAyah(verset, degree))).toBe(wordCount(verset));
+    }
+  });
+
+  it("« hints » ne laisse QUE la première lettre de chaque mot", () => {
+    const masked = maskAyah(verset, "hints");
+    const words = verset.split(" ");
+    masked.split(" ").forEach((shown, i) => {
+      // La première lettre du mot d'origine, sans sa voyelle.
+      expect(shown.startsWith(words[i][0])).toBe(true);
+      // Et rien du reste : le mot masqué est plus court que l'original.
+      expect(normalizeArabic(shown).length).toBeLessThan(
+        normalizeArabic(words[i]).length + 1,
+      );
+    });
+  });
+
+  it("« hidden » ne laisse AUCUNE lettre du verset", () => {
+    const masked = maskAyah(verset, "hidden");
+    for (const word of tokenize(normalizeArabic(verset))) {
+      expect(masked.includes(word)).toBe(false);
+    }
+    expect(normalizeArabic(masked).trim()).toBe("");
+  });
+
+  it("masquer une chaîne vide ne casse rien", () => {
+    expect(maskAyah("", "hidden")).toBe("");
+    expect(wordCount("")).toBe(0);
+  });
+});
+
+describe("liaisons", () => {
+  it("se terminent toujours par la sourate entière", () => {
+    for (const surah of SURAHS) {
+      const points = linkPoints(surah.ayahs.length);
+      expect(points[points.length - 1]).toBe(surah.ayahs.length);
+    }
+  });
+
+  it("ne répètent jamais deux fois le même palier", () => {
+    for (const surah of SURAHS) {
+      const points = linkPoints(surah.ayahs.length);
+      expect(new Set(points).size).toBe(points.length);
+    }
+  });
+
+  it("le texte d'une liaison porte tous les versets jusqu'au palier", () => {
+    const surah = getSurah("al-ikhlas");
+    if (!surah) throw new Error("sourate de test introuvable");
+    const text = linkText(surah, 3);
+    for (const ayah of surah.ayahs.slice(0, 3)) {
+      expect(text.includes(ayah.ar)).toBe(true);
+    }
+    expect(text.includes(surah.ayahs[3].ar)).toBe(false);
+  });
+});
+
+describe("judgeRecitation", () => {
+  const verset = "قُلْ هُوَ اللَّهُ أَحَدٌ";
+
+  it("accepte une récitation exacte", () => {
+    const judgement = judgeRecitation({ expected: verset, transcript: verset });
+    expect(judgement.verdict).toBe("ok");
+    expect(judgement.score).toBe(1);
+    expect(judgement.firstMiss).toBeNull();
+  });
+
+  it("REFUSE les bons mots dans le désordre — c'est toute la différence", () => {
+    // La lecture suivie accepterait : les mots y sont tous. La mémorisation,
+    // non — savoir le vocabulaire d'un verset n'est pas savoir le verset.
+    const inverse = verset.split(" ").reverse().join(" ");
+    const recite = judgeRecitation({ expected: verset, transcript: inverse });
+    const read = judgeReading({ expected: verset, transcript: inverse });
+    expect(read.verdict).toBe("ok");
+    expect(recite.verdict).not.toBe("ok");
+  });
+
+  it("répéter un mot ne valide pas un verset", () => {
+    const judgement = judgeRecitation({
+      expected: verset,
+      transcript: "قُلْ قُلْ قُلْ قُلْ",
+    });
+    expect(judgement.verdict).not.toBe("ok");
+  });
+
+  it("dit où la récitation a décroché", () => {
+    const words = verset.split(" ");
+    const judgement = judgeRecitation({
+      expected: verset,
+      transcript: [words[0], words[1], words[3]].join(" "),
+    });
+    expect(judgement.firstMiss).not.toBeNull();
+    expect(judgement.missing.length).toBeGreaterThan(0);
+  });
+
+  it("une hésitation au milieu ne fait pas tout tomber", () => {
+    const words = verset.split(" ");
+    const avecBruit = [words[0], "اه", ...words.slice(1)].join(" ");
+    expect(judgeRecitation({ expected: verset, transcript: avecBruit }).verdict)
+      .toBe("ok");
+  });
+
+  it("le silence ne vaut rien", () => {
+    expect(judgeRecitation({ expected: verset, transcript: "" }).verdict).toBe(
+      "retry",
+    );
+  });
+
+  it("est plus exigeant que la lecture — le texte n'est plus sous les yeux", () => {
+    expect(RECITATION_OK).toBeGreaterThan(READING_OK);
+  });
+});
+
+describe("révision espacée", () => {
+  it("une réussite fait monter d'un cran, jusqu'au plafond", () => {
+    expect(nextStrength(0, "ok")).toBe(1);
+    expect(nextStrength(MAX_STRENGTH, "ok")).toBe(MAX_STRENGTH);
+  });
+
+  it("« presque » laisse la sourate où elle est", () => {
+    expect(nextStrength(3, "close")).toBe(3);
+  });
+
+  it("un échec ne renvoie JAMAIS à zéro — un mardi soir n'efface pas trois mois", () => {
+    expect(nextStrength(5, "retry")).toBe(4);
+    expect(nextStrength(1, "retry")).toBe(0);
+    expect(nextStrength(0, "retry")).toBe(0);
+  });
+
+  it("plus la sourate est sue, plus elle revient tard", () => {
+    const now = 1_700_000_000_000;
+    for (let strength = 1; strength <= MAX_STRENGTH; strength++) {
+      expect(nextDueAt(strength, now)).toBeGreaterThan(
+        nextDueAt(strength - 1, now),
+      );
+    }
+  });
+
+  it("une force fraîche revient dès le lendemain", () => {
+    const now = 1_700_000_000_000;
+    expect(nextDueAt(0, now) - now).toBe(86_400_000);
+  });
+
+  it("une échéance passée est due, une échéance future ne l'est pas", () => {
+    const now = 1_700_000_000_000;
+    expect(isDue(now - 1, now)).toBe(true);
+    expect(isDue(now + 1, now)).toBe(false);
+  });
+
+  it("une force absurde ne fait pas sortir de l'échelle", () => {
+    const now = 1_700_000_000_000;
+    expect(nextDueAt(-5, now)).toBe(nextDueAt(0, now));
+    expect(nextDueAt(999, now)).toBe(nextDueAt(MAX_STRENGTH, now));
+    expect(nextDueAt(Number.NaN, now)).toBe(nextDueAt(0, now));
+  });
+});
+
+describe("versets tenus", () => {
+  it("ne compte QUE les versets consécutifs depuis le premier", () => {
+    // Savoir les versets 1, 2 et 4, ce n'est pas en savoir trois : c'est en
+    // savoir deux, et un morceau détaché.
+    expect(
+      versesMemorizedFrom(
+        "al-ikhlas",
+        new Set(["al-ikhlas-1", "al-ikhlas-2", "al-ikhlas-4"]),
+      ),
+    ).toBe(2);
+  });
+
+  it("compte la sourate entière quand tout y est", () => {
+    const surah = getSurah("al-ikhlas");
+    if (!surah) throw new Error("sourate de test introuvable");
+    const all = new Set(
+      surah.ayahs.map((ayah) => `al-ikhlas-${ayah.number}`),
+    );
+    expect(versesMemorizedFrom("al-ikhlas", all)).toBe(surah.ayahs.length);
+  });
+
+  it("rend 0 pour une sourate inconnue", () => {
+    expect(versesMemorizedFrom("inventee", new Set(["inventee-1"]))).toBe(0);
+  });
+});
+
+describe("curriculum — le niveau de mémorisation", () => {
+  it("une leçon de mémorisation par sourate, et pas une de plus", () => {
+    const hifz = ARABIC_LESSONS.filter((lesson) => lesson.kind === "hifz");
+    expect(hifz.length).toBe(SURAHS.length);
+    expect(new Set(hifz.map((lesson) => lesson.surahKey)).size).toBe(
+      SURAHS.length,
+    );
+  });
+
+  it("vient APRÈS la lecture — on ne mémorise pas ce qu'on ne sait pas lire", () => {
+    for (const surah of SURAHS) {
+      const lue = getLesson(`coran-${surah.key}`);
+      const sue = getLesson(hifzLessonKey(surah.key));
+      expect(lue).not.toBeNull();
+      expect(sue).not.toBeNull();
+      expect(sue!.order).toBeGreaterThan(lue!.order);
+    }
+  });
+
+  it("porte les versets ET les liaisons, sans rien recopier", () => {
+    for (const surah of SURAHS) {
+      const lesson = getLesson(hifzLessonKey(surah.key));
+      expect(lesson).not.toBeNull();
+      expect(lesson!.items.length).toBe(
+        surah.ayahs.length + linkPoints(surah.ayahs.length).length,
+      );
+      // Chaque verset apparaît tel quel — la liaison est faite depuis eux.
+      for (const ayah of surah.ayahs) {
+        expect(
+          lesson!.items.some((item) => item.ar === ayah.ar),
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("ne fait ni écrire ni lire — seulement réciter", () => {
+    for (const lesson of ARABIC_LESSONS) {
+      if (lesson.kind !== "hifz") continue;
+      expect([...lesson.drills]).toEqual(["recite"]);
+    }
+  });
+});
+
+describe("placement", () => {
+  const rien = new Set<string>();
+
+  it("« débutant » n'ouvre rien de plus que la règle séquentielle", () => {
+    const floor = placementFloorOrder({ level: "debutant" });
+    expect(floor).toBe(0);
+    expect(isLessonUnlocked(ARABIC_LESSONS[1].key, rien, floor)).toBe(false);
+  });
+
+  it("« intermédiaire » ouvre jusqu'aux voyelles, « confirmé » jusqu'aux sourates", () => {
+    const inter = placementFloorOrder({ level: "intermediaire" });
+    const confirme = placementFloorOrder({ level: "confirme" });
+    expect(inter).toBeGreaterThan(0);
+    expect(confirme).toBeGreaterThan(inter);
+
+    const premiereVoyelle = ARABIC_LESSONS.find(
+      (lesson) => lesson.levelKey === "harakat",
+    );
+    const premiereSourate = ARABIC_LESSONS.find(
+      (lesson) => lesson.levelKey === "coran",
+    );
+    expect(isLessonUnlocked(premiereVoyelle!.key, rien, inter)).toBe(true);
+    expect(isLessonUnlocked(premiereSourate!.key, rien, inter)).toBe(false);
+    expect(isLessonUnlocked(premiereSourate!.key, rien, confirme)).toBe(true);
+  });
+
+  it("un plancher OUVRE tout ce qui le précède, il n'en ferme rien", () => {
+    const floor = placementFloorOrder({ level: "confirme" });
+    for (const lesson of ARABIC_LESSONS) {
+      if (lesson.order > floor) continue;
+      expect(isLessonUnlocked(lesson.key, rien, floor)).toBe(true);
+    }
+  });
+
+  it("une leçon ouverte par placement n'est PAS terminée — placer ne valide pas", () => {
+    // Le plancher n'écrit rien : la seule source de « terminé » reste
+    // `completedKeys`, que seule `completeLesson` remplit.
+    const floor = placementFloorOrder({ level: "confirme" });
+    const ouvertes = ARABIC_LESSONS.filter(
+      (lesson) => lesson.order <= floor,
+    );
+    expect(ouvertes.length).toBeGreaterThan(0);
+    for (const lesson of ouvertes) expect(rien.has(lesson.key)).toBe(false);
+  });
+
+  it("on prend le repère le plus avancé des trois", () => {
+    const parSourate = placementFloorOrder({
+      level: "debutant",
+      surahKey: "an-nas",
+    });
+    expect(parSourate).toBe(
+      getLesson(hifzLessonKey("an-nas"))!.order,
+    );
+    // Le niveau ne peut pas faire redescendre une sourate déjà déclarée.
+    expect(
+      placementFloorOrder({ level: "intermediaire", surahKey: "an-nas" }),
+    ).toBe(parSourate);
+  });
+
+  it("une clé inventée ne déplace rien", () => {
+    expect(
+      placementFloorOrder({ level: "debutant", startLessonKey: "inventee" }),
+    ).toBe(0);
+    expect(
+      placementFloorOrder({ level: "debutant", surahKey: "inventee" }),
+    ).toBe(0);
+  });
+
+  it("aucun placement rend le parcours d'origine", () => {
+    expect(placementFloorOrder(null)).toBe(0);
+    expect(placementFloorOrder(undefined)).toBe(0);
+  });
+
+  it("« Continuer » ne renvoie pas un élève placé au début du parcours", () => {
+    const floor = placementFloorOrder({ level: "confirme" });
+    const suite = nextLessonKey(rien, floor);
+    expect(getLesson(suite)!.order).toBeGreaterThanOrEqual(floor);
+    // Sans plancher, c'est bien la première leçon qui sortirait.
+    expect(nextLessonKey(rien)).toBe(ARABIC_LESSONS[0].key);
+  });
+
+  it("quand tout ce qui suit le plancher est fait, on revient en arrière", () => {
+    const floor = placementFloorOrder({ level: "confirme" });
+    const toutApres = new Set(
+      ARABIC_LESSONS.filter((lesson) => lesson.order >= floor).map(
+        (lesson) => lesson.key,
+      ),
+    );
+    const suite = nextLessonKey(toutApres, floor);
+    expect(toutApres.has(suite)).toBe(false);
+  });
+});
+
+describe("linkPointOf", () => {
+  it("reconnaît une liaison et son palier", () => {
+    expect(linkPointOf("an-nas", "an-nas-lien-3")).toBe(3);
+    expect(linkPointOf("an-nas", "an-nas-lien-6")).toBe(6);
+  });
+
+  it("ne confond pas un verset avec une liaison", () => {
+    // C'est ce qui décide quelle tentative fait bouger l'échelon de révision :
+    // prendre un verset pour une liaison ferait monter une sourate sur un seul
+    // verset récité, sans jamais l'avoir enchaînée.
+    expect(linkPointOf("an-nas", "an-nas-3")).toBeNull();
+    expect(linkPointOf("an-nas", "al-falaq-lien-3")).toBeNull();
+    expect(linkPointOf("an-nas", "an-nas-lien-zero")).toBeNull();
+    expect(linkPointOf("an-nas", "an-nas-lien-0")).toBeNull();
+  });
+
+  it("chaque liaison du curriculum se relit avec sa propre clé", () => {
+    for (const surah of SURAHS) {
+      const lesson = getLesson(hifzLessonKey(surah.key))!;
+      const paliers = lesson.items
+        .map((item) => linkPointOf(surah.key, item.key))
+        .filter((point): point is number => point !== null);
+      expect(paliers.sort((a, b) => a - b)).toEqual(
+        linkPoints(surah.ayahs.length),
+      );
+    }
   });
 });

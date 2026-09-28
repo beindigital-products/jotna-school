@@ -1,5 +1,5 @@
 /**
- * LE PARCOURS « ARABE & CORAN » — cinq niveaux, vingt-quatre leçons.
+ * LE PARCOURS « ARABE & CORAN » — six niveaux, trente leçons.
  *
  * L'ORDRE EST LA PÉDAGOGIE, et il ne se contourne pas : on ne lit pas une
  * sourate avant de savoir qu'une lettre change de forme selon sa place, et on
@@ -16,6 +16,10 @@
  *   4. MES PREMIERS MOTS — des mots courts et connus, pour lire sans
  *      déchiffrer lettre à lettre.
  *   5. MES PREMIÈRES SOURATES — six sourates courtes, verset par verset.
+ *   6. MÉMORISER — les mêmes sourates, mais le texte s'efface. On ne mémorise
+ *      pas ce qu'on ne sait pas lire : ce niveau vient APRÈS, jamais à la
+ *      place. Et il ne se termine pas — une sourate mémorisée revient en
+ *      révision (`hifz.ts`), parce que l'oubli, lui, ne s'arrête pas.
  *
  * LE CONTENU EST CALCULÉ, PAS RECOPIÉ, partout où il peut l'être : les leçons
  * de l'alphabet découpent `ARABIC_LETTERS`, les leçons de voyelles lisent les
@@ -44,6 +48,7 @@ import {
   type ArabicLetterKey,
 } from "./alphabet";
 import { SURAHS, type Surah } from "./quran";
+import { hifzLessonKey, linkItemKey, linkPoints, linkText } from "./hifz";
 
 /** Les familles d'exercices qu'une leçon peut enchaîner. */
 export type DrillKind =
@@ -60,14 +65,17 @@ export type DrillKind =
   /** L'élève écrit la lettre au doigt, le tracé est jugé. */
   | "write"
   /** L'élève lit l'item à voix haute (syllabe, mot, verset). */
-  | "read";
+  | "read"
+  /** L'élève récite l'item DE MÉMOIRE, texte masqué. Jugé dans l'ordre. */
+  | "recite";
 
 export type ArabicLessonKind =
   | "alphabet"
   | "harakat"
   | "assemblage"
   | "mots"
-  | "coran";
+  | "coran"
+  | "hifz";
 
 /** Une chose à lire : une syllabe, un mot, un verset. */
 export interface ReadingItem {
@@ -149,6 +157,14 @@ export const ARABIC_LEVELS: readonly ArabicLevel[] = [
     subtitleFr: "Six sourates courtes, verset par verset.",
     emoji: "🕌",
     color: "#15803d",
+  },
+  {
+    key: "hifz",
+    order: 6,
+    title: "Mémoriser",
+    subtitleFr: "Le texte s'efface, et tu récites. Puis tu reviens réviser.",
+    emoji: "🧠",
+    color: "#b45309",
   },
 ];
 
@@ -420,6 +436,54 @@ function coranLessons(startOrder: number): ArabicLesson[] {
   }));
 }
 
+// ---------------------------------------------------------------------------
+// Niveau 6 — mémoriser.
+//
+// LES MÊMES SOURATES QUE LE NIVEAU 5, ET C'EST VOULU : on ne mémorise pas un
+// texte qu'on ne sait pas lire. Le niveau 5 apprend à le déchiffrer, le
+// niveau 6 le fait disparaître. Une sourate y figure donc deux fois, sous deux
+// clés de leçon différentes — et le déverrouillage séquentiel fait que la
+// mémorisation d'Al-Ikhlāṣ n'arrive qu'après que les six sourates ont été LUES.
+//
+// LES ITEMS SONT LES VERSETS, PLUS LES LIAISONS (`hifz.ts`). Une liaison est
+// un item comme un autre : elle porte le texte de plusieurs versets mis bout à
+// bout, donc elle se fait entendre et se fait juger sans rien de spécial.
+// Le texte des liaisons est CALCULÉ depuis `SURAHS` — il n'y a toujours qu'UNE
+// copie du texte coranique dans ce dépôt, et c'est celle de `quran.ts`.
+// ---------------------------------------------------------------------------
+
+function hifzLessons(startOrder: number): ArabicLesson[] {
+  return SURAHS.map((surah: Surah, i) => {
+    const verses: ReadingItem[] = surah.ayahs.map((ayah) => ({
+      key: `${surah.key}-${ayah.number}`,
+      ar: ayah.ar,
+      fr: `Verset ${ayah.number}`,
+    }));
+
+    const links: ReadingItem[] = linkPoints(surah.ayahs.length).map((upTo) => ({
+      key: linkItemKey(surah.key, upTo),
+      ar: linkText(surah, upTo),
+      fr:
+        upTo === surah.ayahs.length
+          ? "La sourate en entier"
+          : `Les versets 1 à ${upTo}, d'affilée`,
+    }));
+
+    return {
+      key: hifzLessonKey(surah.key),
+      levelKey: "hifz",
+      order: startOrder + i,
+      title: `Mémoriser ${surah.nameFr}`,
+      goalFr: `${surah.ayahs.length} versets à savoir par cœur, puis à enchaîner sans reprendre le départ.`,
+      kind: "hifz" as const,
+      letters: [],
+      items: [...verses, ...links],
+      drills: ["recite"] as DrillKind[],
+      surahKey: surah.key,
+    };
+  });
+}
+
 /** Le parcours complet, dans l'ordre. `order` est unique et contigu. */
 export const ARABIC_LESSONS: readonly ArabicLesson[] = (() => {
   const alphabet = alphabetLessons(1);
@@ -431,7 +495,15 @@ export const ARABIC_LESSONS: readonly ArabicLesson[] = (() => {
   const coran = coranLessons(
     alphabet.length + harakat.length + assemblage.length + mots.length + 1,
   );
-  return [...alphabet, ...harakat, ...assemblage, ...mots, ...coran];
+  const hifz = hifzLessons(
+    alphabet.length +
+      harakat.length +
+      assemblage.length +
+      mots.length +
+      coran.length +
+      1,
+  );
+  return [...alphabet, ...harakat, ...assemblage, ...mots, ...coran, ...hifz];
 })();
 
 const LESSON_BY_KEY: ReadonlyMap<string, ArabicLesson> = new Map(

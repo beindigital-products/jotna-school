@@ -3,10 +3,17 @@
 /**
  * LE PARCOURS — la carte du module, vue par l'enfant.
  *
- * Cinq niveaux, vingt-quatre leçons, et une seule leçon ouverte à la fois
+ * Six niveaux, trente leçons, et une seule leçon ouverte à la fois
  * (`isLessonUnlocked`). Ce n'est pas une contrainte technique : on n'assemble
  * pas des lettres qu'on ne sait pas nommer, et laisser un enfant de six ans
  * choisir Al-Fātiḥa en premier écran, c'est le faire échouer.
+ *
+ * DEUX CHOSES PEUVENT OUVRIR PLUS LARGE, et aucune ne valide quoi que ce soit :
+ * le PLACEMENT décidé par l'école (`path.placement.floorOrder`), qui ouvre le
+ * parcours là où l'enfant en est déjà, et la RÉVISION d'une sourate mémorisée,
+ * qui revient d'elle-même quand son échéance tombe. Une leçon ouverte par un
+ * placement reste non faite et sans étoiles : cocher une case ne remplit pas
+ * un cahier.
  *
  * LE CONTENU NE VIENT PAS DU SERVEUR. Les niveaux et les leçons sont du code
  * (`convex/arabic/curriculum.ts`), donc déjà dans le paquet de cette page ;
@@ -19,7 +26,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Lock, Sparkles, Star } from "lucide-react";
+import { ArrowRight, Check, Lock, Repeat, Sparkles, Star } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import {
   ARABIC_LESSONS,
@@ -30,12 +37,14 @@ import {
   isLessonUnlocked,
   nextLessonKey,
 } from "@/convex/arabic/progressRules";
+import { hifzLessonKey } from "@/convex/arabic/hifz";
 import { arabicCopy } from "@/lib/arabic/copy";
 import { JotnaLoader } from "@/components/jotna-loader";
 import { Pio } from "@/components/student/pio";
 
 export default function ArabePathPage() {
   const path = useQuery(api.arabic.lessons.getPath);
+  const hifz = useQuery(api.arabic.memorization.getState);
 
   const completed = useMemo(
     () =>
@@ -46,6 +55,11 @@ export default function ArabePathPage() {
       ),
     [path],
   );
+
+  const hifzBySurah = useMemo(() => {
+    const surahs = hifz?.surahs ?? [];
+    return new Map(surahs.map((surah) => [surah.surahKey, surah]));
+  }, [hifz]);
 
   const starsByLesson = useMemo(() => {
     const map = new Map<string, number>();
@@ -75,8 +89,10 @@ export default function ArabePathPage() {
     );
   }
 
-  const next = nextLessonKey(completed);
+  const floor = path.placement.floorOrder;
+  const next = nextLessonKey(completed, floor);
   const doneCount = completed.size;
+  const due = (hifz?.surahs ?? []).filter((surah) => surah.due);
 
   return (
     <div className="space-y-8">
@@ -121,6 +137,32 @@ export default function ArabePathPage() {
         </div>
       </motion.div>
 
+      {due.length > 0 && (
+        <section className="rounded-3xl border-2 border-amber-300 bg-amber-50 p-5">
+          <h2 className="font-display flex items-center gap-2 text-lg font-extrabold text-amber-900">
+            <Repeat className="h-5 w-5" aria-hidden />
+            {arabicCopy.memorize.due}
+          </h2>
+          <p className="mt-1 text-sm font-medium text-amber-800">
+            Une sourate qu&apos;on ne redit pas s&apos;efface. Deux minutes
+            suffisent.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {due.map((surah) => (
+              <li key={surah.surahKey}>
+                <Link
+                  href={`/student/arabe/lecon?key=${hifzLessonKey(surah.surahKey)}`}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-amber-600 px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-amber-700"
+                >
+                  {surah.nameFr}
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {ARABIC_LEVELS.map((level) => {
         const lessons = ARABIC_LESSONS.filter(
           (lesson) => lesson.levelKey === level.key,
@@ -143,7 +185,7 @@ export default function ArabePathPage() {
 
             <ul className="grid gap-3 sm:grid-cols-2">
               {lessons.map((lesson) => {
-                const unlocked = isLessonUnlocked(lesson.key, completed);
+                const unlocked = isLessonUnlocked(lesson.key, completed, floor);
                 const done = completed.has(lesson.key);
                 const stars = starsByLesson.get(lesson.key) ?? 0;
 
@@ -163,7 +205,14 @@ export default function ArabePathPage() {
                           <span className="mt-0.5 block text-sm text-gray-500">
                             {lesson.goalFr}
                           </span>
-                          {done && <StarRow stars={stars} />}
+                          {lesson.surahKey && lesson.kind === "hifz" ? (
+                            <HifzNote
+                              state={hifzBySurah.get(lesson.surahKey)}
+                              now={hifz?.now ?? Date.now()}
+                            />
+                          ) : (
+                            done && <StarRow stars={stars} />
+                          )}
                         </span>
                       </Link>
                     ) : (
@@ -225,6 +274,54 @@ function StarRow({ stars }: { stars: number }) {
           aria-hidden
         />
       ))}
+    </span>
+  );
+}
+
+/**
+ * L'état d'une sourate en mémorisation, sur sa carte.
+ *
+ * PAS D'ÉTOILES ICI, ET C'EST VOULU. Les étoiles disent « c'est fait » ; une
+ * sourate mémorisée n'est jamais finie, elle est seulement à jour. Ce que
+ * l'enfant a besoin de lire est combien de versets tiennent et quand la
+ * sourate revient — deux faits, pas une récompense.
+ */
+function HifzNote({
+  state,
+  now,
+}: {
+  state:
+    | {
+        versesMemorized: number;
+        ayahCount: number;
+        dueAt: number | null;
+        due: boolean;
+        started: boolean;
+      }
+    | undefined;
+  now: number;
+}) {
+  if (!state?.started) return null;
+
+  const days =
+    state.dueAt === null
+      ? 0
+      : Math.ceil((state.dueAt - now) / 86_400_000);
+
+  return (
+    <span className="mt-1.5 flex flex-wrap items-center gap-2 text-sm font-semibold">
+      <span className="text-gray-600">
+        {arabicCopy.memorize.versesHeld(state.versesMemorized, state.ayahCount)}
+      </span>
+      <span
+        className={
+          state.due
+            ? "rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-800"
+            : "rounded-full bg-gray-100 px-2.5 py-0.5 text-gray-500"
+        }
+      >
+        {arabicCopy.memorize.reviewOn(days)}
+      </span>
     </span>
   );
 }

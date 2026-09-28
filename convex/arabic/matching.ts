@@ -290,3 +290,115 @@ export function acceptedFormsForLetter(letter: {
     letter.isolated + "ا",
   ];
 }
+
+// ---------------------------------------------------------------------------
+// Réciter de mémoire
+// ---------------------------------------------------------------------------
+
+/**
+ * LES SEUILS DE RÉCITATION SONT PLUS HAUTS QUE CEUX DE LECTURE, et ce n'est
+ * pas une sévérité gratuite.
+ *
+ * En LECTURE, le texte est sous les yeux : retrouver 70 % des mots veut dire
+ * que l'enfant a déchiffré l'essentiel et bute sur le reste — c'est un
+ * apprentissage en cours, et le dire « réussi » est juste. En MÉMORISATION,
+ * le texte n'est plus là : 70 % veut dire qu'un mot sur trois manque, et
+ * appeler ça « mémorisé » serait mentir à l'enfant, à son maître, et à la
+ * révision espacée qui repousserait la sourate de trois jours sur cette
+ * promesse.
+ *
+ * On ne monte pas à 0,95 pour autant : la transcription reste bruitée, et une
+ * sourate refusée pour un mot mal entendu ferait abandonner. 0,8 laisse passer
+ * un mot sur cinq sur une sourate courte — l'ordre de grandeur de l'erreur de
+ * la machine, pas celui de l'oubli.
+ */
+export const RECITATION_OK = 0.8;
+export const RECITATION_CLOSE = 0.55;
+
+/**
+ * Combien de mots entendus on accepte de sauter pour retrouver le suivant.
+ *
+ * Une récitation d'enfant porte des hésitations, des reprises et des mots
+ * parasites que la transcription écrit (« euh », un mot redit). Une fenêtre de
+ * deux laisse passer ce bruit sans laisser passer une INVERSION : deux versets
+ * récités à l'envers ne se rattrapent pas en deux mots.
+ */
+const RECITATION_LOOKAHEAD = 2;
+
+export interface RecitationJudgement {
+  verdict: PronunciationVerdict;
+  /** La part des mots attendus retrouvés DANS L'ORDRE, 0..1. */
+  score: number;
+  /** Les mots attendus qu'on n'a pas retrouvés à leur place. */
+  missing: string[];
+  /**
+   * Le premier mot sur lequel la récitation a décroché, ou `null` si elle est
+   * allée au bout. C'est ce qu'un maître dit — « tu as buté ici » — et la
+   * seule chose vraiment utile à montrer après un échec.
+   */
+  firstMiss: string | null;
+  heard: string;
+}
+
+/**
+ * Juge une récitation de mémoire.
+ *
+ * L'ORDRE COMPTE, ET C'EST TOUTE LA DIFFÉRENCE AVEC `judgeReading`. Réciter
+ * les bons mots dans le désordre, ce n'est pas savoir un verset : c'est se
+ * souvenir de son vocabulaire. On avance donc un CURSEUR dans ce qui a été
+ * entendu, et un mot ne compte que s'il arrive à sa place — à deux mots de
+ * bruit près.
+ *
+ * Le curseur avance même sur un mot manqué (il ne recule jamais) : sans ça,
+ * un enfant qui saute un verset au milieu verrait tous les mots suivants
+ * refusés, et sa note tomberait à zéro pour un seul oubli.
+ */
+export function judgeRecitation(args: {
+  expected: string;
+  transcript: string;
+}): RecitationJudgement {
+  const heard = normalizeArabic(args.transcript);
+  const expectedWords = tokenize(normalizeArabic(args.expected));
+  const heardWords = tokenize(heard);
+
+  if (expectedWords.length === 0) {
+    return { verdict: "retry", score: 0, missing: [], firstMiss: null, heard };
+  }
+
+  let cursor = 0;
+  let matched = 0;
+  const missing: string[] = [];
+  let firstMiss: string | null = null;
+
+  for (const word of expectedWords) {
+    let foundAt = -1;
+    const limit = Math.min(heardWords.length, cursor + 1 + RECITATION_LOOKAHEAD);
+    for (let i = cursor; i < limit; i++) {
+      if (similarity(word, heardWords[i]) >= WORD_MATCH) {
+        foundAt = i;
+        break;
+      }
+    }
+
+    if (foundAt >= 0) {
+      matched += 1;
+      cursor = foundAt + 1;
+    } else {
+      missing.push(word);
+      if (firstMiss === null) firstMiss = word;
+      // Le curseur avance quand même : un mot oublié ne doit pas décaler
+      // tout le reste du verset.
+      cursor = Math.min(heardWords.length, cursor + 1);
+    }
+  }
+
+  const score = matched / expectedWords.length;
+  const verdict: PronunciationVerdict =
+    score >= RECITATION_OK
+      ? "ok"
+      : score >= RECITATION_CLOSE
+        ? "close"
+        : "retry";
+
+  return { verdict, score, missing, firstMiss, heard };
+}

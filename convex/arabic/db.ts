@@ -226,7 +226,11 @@ export const recordServerAttempt = internalMutation({
   args: {
     studentId: v.id("profiles"),
     lessonKey: v.string(),
-    drill: v.union(v.literal("pronounce"), v.literal("read")),
+    drill: v.union(
+      v.literal("pronounce"),
+      v.literal("read"),
+      v.literal("recite"),
+    ),
     itemKey: v.string(),
     correct: v.boolean(),
     score: v.number(),

@@ -33,6 +33,8 @@ import { callerProfile } from "../access";
 import { moduleAccessForProfile } from "../modules";
 import { getLesson, type ArabicLesson } from "./curriculum";
 import { lessonScore, starsFor, type AttemptValue } from "./progressRules";
+import { placementForStudent } from "./placement";
+import { applyOutcome } from "./memorization";
 
 const MODULE_KEY = "arabe_coran" as const;
 
@@ -50,6 +52,7 @@ const drillValidator = v.union(
   v.literal("pronounce"),
   v.literal("write"),
   v.literal("read"),
+  v.literal("recite"),
 );
 
 const verdictValidator = v.union(
@@ -138,6 +141,7 @@ export const getPath = query({
         reason: access.reason,
         isStudent: profile?.role === "student",
         progress: [],
+        placement: { level: null, surahKey: null, floorOrder: 0 },
       };
     }
 
@@ -157,6 +161,10 @@ export const getPath = query({
         bestScore: row.bestScore,
         completedAt: row.completedAt ?? null,
       })),
+      // Le PLANCHER voyage avec la progression, dans la même souscription :
+      // l'écran applique `isLessonUnlocked` avec les deux, et n'a jamais à
+      // décider tout seul de ce que « confirmé » ouvre.
+      placement: await placementForStudent(ctx, profile._id),
     };
   },
 });
@@ -326,6 +334,23 @@ export const completeLesson = mutation({
     const existing = await progressRow(ctx, student._id, args.lessonKey);
     const drillsDone = [...new Set(attempts.map((a) => a.drill))];
 
+    // LA MÉMORISATION SE CLÔT ICI, au même instant que les étoiles et depuis
+    // les MÊMES tentatives écrites — jamais depuis un verdict envoyé par
+    // l'écran. Une sourate repoussée de trois mois se décide au même endroit
+    // que le reste : c'est ce qui rend la révision espacée digne de confiance.
+    // `applyOutcome` ne fait rien si la leçon n'en est pas une, et c'est elle
+    // qui choisit LAQUELLE des tentatives fait bouger l'échelon.
+    const hifz = await applyOutcome(ctx, {
+      studentId: student._id,
+      lessonKey: args.lessonKey,
+      attempts: attempts.map((attempt) => ({
+        itemKey: attempt.itemKey,
+        ...(attempt.score !== undefined ? { score: attempt.score } : {}),
+        at: attempt.at,
+      })),
+      now,
+    });
+
     if (existing) {
       await ctx.db.patch(existing._id, {
         status: "completed",
@@ -349,7 +374,7 @@ export const completeLesson = mutation({
       });
     }
 
-    return { stars, score };
+    return { stars, score, hifz };
   },
 });
 
