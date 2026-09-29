@@ -9,6 +9,11 @@ Le jeu motive entre les exercices, jamais pendant.
 Ce document dit ce qui a été construit, pourquoi, et comment l'étendre sans
 casser ce qui tient.
 
+Depuis le 29 septembre 2026, cet espace n'existe que dans l'application iOS
+et Android ; le site web ne sert plus que l'école, les professeurs et les
+parents (`docs/capacitor-ios.md`, « Deux cibles »). Pour le voir dans un
+navigateur en local, lancez `pnpm dev:app`.
+
 ## D'où vient la conception
 
 Le monde de jeu avait déjà été conçu et livré en juillet 2026 sur la branche
@@ -20,7 +25,7 @@ Deux choses ont été reprises telles quelles, parce qu'elles lui appartiennent 
 - les décors de savane et les quatre biomes, dans `public/images/world/`.
 
 Les décisions de conception de juillet, consignées dans `tasks/redesign-gaming.md`
-sur cette branche, ont servi de grammaire : hub, carte, quêtes, tiers
+sur cette branche (le fichier n'est pas sur `main`), ont servi de grammaire : hub, carte, quêtes, tiers
 d'appareil, séance intacte. Elles sont citées ci-dessous par leur numéro
 (G1, G3, G5, G7, G9, G10, D8, D12, D15).
 
@@ -85,10 +90,10 @@ Le sentier est calculé, pas dessiné (`trail-geometry.ts`) : des courbes de
 Bézier échantillonnées en JavaScript, avec la longueur cumulée à chaque étape
 et un point pour n'importe quelle distance. C'est ce qui fait marcher Pio
 (`pio-walker.tsx`). Sa position est une seule abscisse sur le sentier, animée
-d'une étape à l'autre à vitesse constante, entre 0,45 et 2,4 secondes. Le
-corps ne se déforme jamais : la marche est un rebond du sprite entier, un
-retournement quand il change de sens, une ombre qui respire et de la
-poussière derrière les pattes. La caméra le suit. Sous
+d'une étape à l'autre au rythme de ses pas : 90 pixels par seconde, entre une
+et six secondes (`WALK_SPEED`). Le corps ne se déforme jamais : Pio marche
+dans un clip vidéo, et le code ne fait que le déplacer, le retourner quand il
+change de sens et poser son ombre au sol. La caméra le suit. Sous
 `prefers-reduced-motion`, Pio est déjà arrivé.
 
 Sur un appareil « full », le sol est la savane peinte, répétée en miroir vers
@@ -98,14 +103,15 @@ buissons en CSS. La géométrie a ses tests dans
 
 ## Le HUD
 
-En haut de chaque lieu : le niveau et la barre qui mène au suivant, les
-étoiles, la série. Étoiles et série n'apparaissent qu'une fois gagnées (D8,
-cold start sans zéros). Le niveau s'affiche toujours : « Niveau 1 » est un
-départ, pas un zéro.
+En haut de chaque lieu, à droite de l'en-tête : le niveau et la barre qui
+mène au suivant. Le niveau s'affiche toujours : « Niveau 1 » est un départ,
+pas un zéro. Les étoiles ont quitté l'en-tête pour le carnet, et la série vit
+au camp, où elle n'apparaît qu'une fois gagnée (D8, cold start sans zéros).
 
 Le HUD lit `students.getMyStats`, que l'accueil et le carnet lisent aussi.
 Convex partage une même souscription entre ses lecteurs : le HUD ne coûte
-aucune lecture de plus.
+aucune lecture de plus. Le niveau ne monte pas encore avec les paliers : voir
+`docs/progression-niveau-etoiles-trophees.md`.
 
 ## Les missions du jour
 
@@ -174,8 +180,10 @@ composant `components/student/pio.tsx` rend désormais l'avatar officiel, avec
 la même interface pour ses appelants et quatre poses de plus. Depuis
 septembre 2026, chaque pose est un clip vidéo en boucle, sans arrière-plan,
 généré sur OpenArt ; plus aucune animation du personnage n'est codée. La marche
-sur la carte est elle aussi un clip (`walk`) : le code ne fait que déplacer le
-sprite le long du sentier. Voir `docs/pio-animations.md`.
+sur la carte est elle aussi faite de clips : `walk` pour le Pio de tous les
+jours ; `walkAway` (de dos, quand il monte) et `walkToward` (de face, quand il
+redescend) pour son boubou du module Arabe & Coran. Le code ne fait que
+déplacer le sprite le long du sentier. Voir `docs/pio-animations.md`.
 
 ## Étendre le jeu
 
@@ -198,7 +206,8 @@ au même endroit.
 
 **Ajouter une pose de Pio** : déposer l'image dans `public/images/pio/`,
 générer et encoder son clip (`docs/pio-animations.md`), puis l'ajouter à
-`PioState`, `POSES`, `POSTERS` et `LABELS` dans `pio.tsx`.
+`PioState`, `POSES` et `LABELS`, et à la liste `poses` de sa tenue dans
+`OUTFITS` (`pio.tsx`).
 
 **Changer une réplique** : `lib/pioCopy.ts`. Pio tutoie, ne gronde jamais,
 parle court.

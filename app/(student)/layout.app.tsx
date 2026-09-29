@@ -17,13 +17,13 @@ import { MotionConfig } from "framer-motion";
  * navigation les nomme ainsi, pas « Accueil / Coffre / Profil » : un enfant
  * n'ouvre pas un profil, il ouvre son carnet.
  *
- * LE HUD EN HAUT dit trois choses, toujours au même endroit : le niveau et la
- * barre qui mène au suivant, les étoiles, la série. Un jeu montre l'état du
- * joueur sans qu'il ait à le chercher.
+ * LE HUD EN HAUT dit le niveau et la barre qui mène au suivant, toujours au
+ * même endroit : un jeu montre l'état du joueur sans qu'il ait à le chercher.
+ * Les étoiles ont quitté l'en-tête pour le carnet (`LevelPill`, plus bas).
  *
- * COLD START SANS ZÉROS (D8) : étoiles et série n'apparaissent qu'une fois
- * gagnées. Le niveau, lui, s'affiche toujours — « Niveau 1 » n'est pas un
- * zéro, c'est un départ, et la barre vide dessous dit « remplis-moi ».
+ * COLD START SANS ZÉROS (D8) : le niveau s'affiche toujours — « Niveau 1 »
+ * n'est pas un zéro, c'est un départ, et la barre vide dessous dit
+ * « remplis-moi ». La série, au camp, n'apparaît qu'une fois gagnée.
  *
  * LE MODE FOCUS EST INTACT (D5, D90, G3) : pendant un palier et sur l'écran
  * de fin, ni HUD ni navigation. La pédagogie prime ; le jeu motive ENTRE les
@@ -33,7 +33,7 @@ import { MotionConfig } from "framer-motion";
  * QUATRE LIEUX, PAS CINQ. Le module optionnel « Arabe & Coran » n'ajoute PAS
  * d'onglet : la barre du bas donne 4,5 rem à chaque lieu, un cinquième
  * déborderait sur un écran de 320 px, et la métaphore des quatre lieux y
- * perdrait sa lisibilité. Son entrée est une carte du Camp
+ * perdrait sa lisibilité. Son entrée est un médaillon du Camp
  * (`app/(student)/student/home/page.app.tsx`), affichée seulement si l'école a
  * allumé le module.
  */
