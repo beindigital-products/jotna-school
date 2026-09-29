@@ -561,7 +561,7 @@ function LessonSummary({ lessonKey, stars }: { lessonKey: string; stars: number 
   return (
     // La carte au MILIEU de l'écran, en hauteur comme en largeur : le `main`
     // du mode focus a déjà écarté l'encoche et la barre d'accueil
-    // (app/(student)/layout.tsx), on centre dans ce qui reste.
+    // (app/(student)/layout.app.tsx), on centre dans ce qui reste.
     <div className="flex min-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_1.5rem)] items-center justify-center px-4 py-4 sm:px-0">
       <motion.div
         initial={{ opacity: 0, scale: 0.94 }}

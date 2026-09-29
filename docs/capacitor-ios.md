@@ -12,9 +12,33 @@ dans le navigateur.
 pnpm ios:sync
 ```
 
-Cette commande enchaîne `next build` et `cap sync ios`. Elle régénère `out/`,
-recopie le tout dans `ios/App/App/public`, puis met à jour les dépendances
-Swift. Lancez-la après chaque changement de code web.
+Cette commande enchaîne `JOTNA_TARGET=app next build` et `cap sync ios`. Elle
+régénère `out/` pour l'application, recopie le tout dans `ios/App/App/public`,
+puis met à jour les dépendances Swift. Lancez-la après chaque changement de
+code web.
+
+## Deux cibles : le site et l'application
+
+Depuis le 29 septembre 2026, le site web ne sert que l'école, les professeurs
+et les parents. L'espace élève (Pio, la carte, le module Arabe & Coran) n'existe
+que dans l'application iOS et Android. Comme l'application emballe le même
+code, les pages élève ne sont pas supprimées : elles portent l'extension
+`.app.tsx` (`app/(student)/**`), et seule la cible `app` les compile.
+
+| Commande | Cible | Espace élève |
+| --- | --- | --- |
+| `pnpm dev`, `pnpm build` | site web | absent : un élève connecté arrive sur `/eleve`, qui l'envoie vers l'application |
+| `pnpm dev:app`, `pnpm build:app`, `pnpm ios:sync`, `pnpm android:sync` | application | présent |
+
+`next.config.ts` choisit `pageExtensions` d'après `JOTNA_TARGET` et pose
+`NEXT_PUBLIC_JOTNA_TARGET`, que lit `lib/build-target.ts`. Pour travailler sur
+l'espace élève dans un navigateur, lancez `pnpm dev:app` : avec `pnpm dev`,
+`/student/home` répond 404. La CI construit les deux cibles et échoue si le
+site contient une page élève.
+
+**Ne synchronisez jamais un `out/` construit par `pnpm build`** : l'application
+perdrait l'espace élève. Les scripts `ios:sync` et `android:sync` s'en
+chargent.
 
 Ensuite, ouvrez le projet dans Xcode :
 
@@ -81,7 +105,7 @@ web ces valeurs valent zéro et les classes sont sans effet.
 
 Deux écrans n'ont pas d'en-tête et portent donc cet écart eux-mêmes : la
 connexion en cours (`app/post-auth/page.tsx`) et la séance d'exercices, seule
-route du mode focus, par le `main` de `app/(student)/layout.tsx`. Chargement,
+route du mode focus, par le `main` de `app/(student)/layout.app.tsx`. Chargement,
 démarrage, affichage d'un exercice et fin du palier passent tous par ce
 `main` ; un nouvel écran plein sans en-tête doit faire de même. Le mode focus
 pose aussi une barre crème fixe sous la barre d'état, pour que la zone de

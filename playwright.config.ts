@@ -28,7 +28,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm dev",
+    // La cible `app` : elle contient les tableaux de bord ET l'espace élève,
+    // que plusieurs parcours testent (`lib/build-target.ts`).
+    command: "pnpm dev:app",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { HAS_STUDENT_SPACE } from "@/lib/build-target";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
@@ -76,7 +77,10 @@ export default function LoginPage() {
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          Élève : saisissez le code de votre billet, comme mot de passe aussi.
+          {/* Sur le site web, l'espace élève n'existe pas (`lib/build-target.ts`). */}
+          {HAS_STUDENT_SPACE
+            ? "Élève : saisissez le code de votre billet, comme mot de passe aussi."
+            : "Élève : ton espace est dans l'application Jotna School, sur tablette ou téléphone."}
         </p>
       </div>
 

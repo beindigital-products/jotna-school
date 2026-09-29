@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UserMenu } from "@/components/ui/user-menu";
 import { RoleGate } from "@/components/RoleGate";
+import { roleHomePath } from "@/lib/auth";
 
 const sidebarLinks = [
   {
@@ -58,7 +59,7 @@ export default function TeacherLayout({
       if (profile.role === "parent") {
         router.replace("/parent/dashboard");
       } else if (profile.role === "student") {
-        router.replace("/student/home");
+        router.replace(roleHomePath("student"));
       } else {
         router.replace("/login");
       }

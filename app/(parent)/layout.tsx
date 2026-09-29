@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UserMenu } from "@/components/ui/user-menu";
 import { RoleGate } from "@/components/RoleGate";
+import { roleHomePath } from "@/lib/auth";
 
 const sidebarLinks = [
   { href: "/parent/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -55,7 +56,7 @@ export default function ParentLayout({
     } else if (profile.role === "admin") {
       router.replace("/admin/dashboard");
     } else if (profile.role === "student") {
-      router.replace("/student/home");
+      router.replace(roleHomePath("student"));
     }
   }, [profile, router]);
 
