@@ -246,6 +246,12 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   }, []);
 
   const nextExoRef = useRef<() => void>(() => {});
+  // Le moment où l'exercice courant est apparu : le temps de réponse envoyé
+  // au serveur en découle (trophées de rapidité, temps du carnet).
+  const exoShownAtRef = useRef<number>(0);
+  useEffect(() => {
+    exoShownAtRef.current = Date.now();
+  }, [currentIndex, exercises]);
   // Le minuteur de l'alerte de réponse : gardé pour qu'une réponse suivante
   // ne se fasse pas effacer par le minuteur de la précédente.
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -292,6 +298,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
 
   const handleNextExo = useCallback(async () => {
     if (!exercises) return;
+    exoShownAtRef.current = Date.now();
     if (palierAttemptId) setLocalStateAttemptId(palierAttemptId);
     setFeedback(null);
     setHintShown(null);
@@ -332,7 +339,9 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
           exerciseId: exo._id,
           palierAttemptId,
           userAnswer: answer,
+          timeSpentMs: exoShownAtRef.current > 0 ? Math.max(0, Date.now() - exoShownAtRef.current) : 0,
         });
+        exoShownAtRef.current = Date.now();
         setFeedback({
           correct: res.isCorrect,
           attemptsRemaining: res.attemptsRemaining,

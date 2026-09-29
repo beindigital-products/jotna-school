@@ -18,10 +18,10 @@
     "semantic_hash": "87f1eb2048b2e23413f70b5933f5ad84"
   },
   "app/(admin)/admin/badges/page.tsx": {
-    "mtime": 1790544323.397953,
-    "seen": 1790695917.102175,
-    "ast_hash": "5a77555e4b46703f12c182d83f791f54",
-    "semantic_hash": "5a77555e4b46703f12c182d83f791f54"
+    "mtime": 1790702012.8403716,
+    "seen": 1790703474.531863,
+    "ast_hash": "a59eebb034ddf2ccbf80bb65ef01c7ba",
+    "semantic_hash": ""
   },
   "app/(admin)/admin/dashboard/page.tsx": {
     "mtime": 1789821511.0631094,
@@ -240,10 +240,10 @@
     "semantic_hash": "dbbd8e2e83509b1fe564d6bf467e4aca"
   },
   "app/(student)/layout.app.tsx": {
-    "mtime": 1790693839.0691426,
-    "seen": 1790695917.102203,
-    "ast_hash": "b28013e1f54e62684f178f8792c3b2af",
-    "semantic_hash": "b28013e1f54e62684f178f8792c3b2af"
+    "mtime": 1790700742.9882689,
+    "seen": 1790703474.531905,
+    "ast_hash": "be64efd08756393673f555391f1727fa",
+    "semantic_hash": ""
   },
   "app/(student)/loading.app.tsx": {
     "mtime": 1789821511.0775933,
@@ -270,10 +270,10 @@
     "semantic_hash": "f630449302c103f928ac31f5e78f9f7a"
   },
   "app/(student)/student/badges/page.app.tsx": {
-    "mtime": 1790543919.8943021,
-    "seen": 1790695917.102207,
-    "ast_hash": "2b4e6e545d5faa2a616abfbb67aa86fe",
-    "semantic_hash": "2b4e6e545d5faa2a616abfbb67aa86fe"
+    "mtime": 1790702012.8407292,
+    "seen": 1790703474.5319092,
+    "ast_hash": "09caa44f18cf0d67614dc99f8c053059",
+    "semantic_hash": ""
   },
   "app/(student)/student/home/page.app.tsx": {
     "mtime": 1790693839.072647,
@@ -300,16 +300,16 @@
     "semantic_hash": "247e409cce5f250ce18875ec9a85b4b7"
   },
   "app/(student)/student/subjects/page.app.tsx": {
-    "mtime": 1790543919.897357,
-    "seen": 1790695917.10221,
-    "ast_hash": "7ab6d42cd12c9c0d0b4a0d2b0a39f7c4",
-    "semantic_hash": "7ab6d42cd12c9c0d0b4a0d2b0a39f7c4"
+    "mtime": 1790702012.8410091,
+    "seen": 1790703474.531914,
+    "ast_hash": "4de9cd9e4077d1fe1315a550a93022c0",
+    "semantic_hash": ""
   },
   "app/(student)/student/topics/session/page.app.tsx": {
-    "mtime": 1790543919.8982427,
-    "seen": 1790695917.102211,
-    "ast_hash": "121b821cda10148914353467c1e7525d",
-    "semantic_hash": "121b821cda10148914353467c1e7525d"
+    "mtime": 1790702012.8414187,
+    "seen": 1790703474.531915,
+    "ast_hash": "406e66a130448dab94b06259db2a650c",
+    "semantic_hash": ""
   },
   "app/(teacher)/error.tsx": {
     "mtime": 1789821511.0801694,
@@ -750,10 +750,10 @@
     "semantic_hash": "1c7775098ec7ca2f543b7aa5701d54e5"
   },
   "components/student/game/palier-result.tsx": {
-    "mtime": 1790557248.0481656,
-    "seen": 1790695917.1022642,
-    "ast_hash": "fd8654b3ad929fb42830a642a78c23ff",
-    "semantic_hash": "fd8654b3ad929fb42830a642a78c23ff"
+    "mtime": 1790702730.4403372,
+    "seen": 1790703474.53199,
+    "ast_hash": "e8e4e5d116f7286014ab61ec672d38a5",
+    "semantic_hash": ""
   },
   "components/student/game/quest-board.tsx": {
     "mtime": 1790463556.5771644,
@@ -954,8 +954,8 @@
     "semantic_hash": "2f225366824f32cae89df4cd0fd568ff"
   },
   "convex/__tests__/dragDropRepair.test.ts": {
-    "mtime": 1790543834.9268572,
-    "seen": 1790695917.102289,
+    "mtime": 1790702033.4286213,
+    "seen": 1790703474.532025,
     "ast_hash": "2e741afb7c9ce18745bb01a599a3e943",
     "semantic_hash": "2e741afb7c9ce18745bb01a599a3e943"
   },
@@ -1254,10 +1254,10 @@
     "semantic_hash": "4c1b61836e6ce7e2160658abcde23291"
   },
   "convex/badges.ts": {
-    "mtime": 1790544175.5011032,
-    "seen": 1790695917.102327,
-    "ast_hash": "2e1f715244e733006bc723c84259b242",
-    "semantic_hash": "2e1f715244e733006bc723c84259b242"
+    "mtime": 1790702593.7809234,
+    "seen": 1790703474.532078,
+    "ast_hash": "e458838749c49ecd5e943760608f6785",
+    "semantic_hash": ""
   },
   "convex/billing.ts": {
     "mtime": 1789827625.0076325,
@@ -1362,10 +1362,10 @@
     "semantic_hash": "c4179f026e313acc96cc46006b7e52fd"
   },
   "convex/palierAttempts.ts": {
-    "mtime": 1790543834.9276805,
-    "seen": 1790695917.1023412,
-    "ast_hash": "3794aa545697737d0d3789f5e4c83cf3",
-    "semantic_hash": "3794aa545697737d0d3789f5e4c83cf3"
+    "mtime": 1790702462.4896622,
+    "seen": 1790703474.532099,
+    "ast_hash": "3d2b9fb16f9dc703352dc11612dd9f92",
+    "semantic_hash": ""
   },
   "convex/palierRules.ts": {
     "mtime": 1790472204.921265,
@@ -1374,14 +1374,14 @@
     "semantic_hash": "55e8ed3806d54c0899390bec9c76c18e"
   },
   "convex/paliers/dragDropRepair.ts": {
-    "mtime": 1790543834.9320748,
-    "seen": 1790695917.102342,
+    "mtime": 1790702033.4289143,
+    "seen": 1790703474.5321012,
     "ast_hash": "2c29b311ec5508ccd7f30566ff4b789e",
     "semantic_hash": "2c29b311ec5508ccd7f30566ff4b789e"
   },
   "convex/paliers/index.ts": {
-    "mtime": 1790543834.9350905,
-    "seen": 1790695917.1023428,
+    "mtime": 1790702033.4292421,
+    "seen": 1790703474.5321019,
     "ast_hash": "706c9d4ddfd0af015f595d5aa984e7f9",
     "semantic_hash": "706c9d4ddfd0af015f595d5aa984e7f9"
   },
@@ -1392,8 +1392,8 @@
     "semantic_hash": "9d7d2bf0bc505d008719e43a64ee48b4"
   },
   "convex/paliers/pregen.ts": {
-    "mtime": 1790543834.9377847,
-    "seen": 1790695917.102345,
+    "mtime": 1790702033.4294672,
+    "seen": 1790703474.532104,
     "ast_hash": "49d2acb00e670c1ecb0cceca385dacd7",
     "semantic_hash": "49d2acb00e670c1ecb0cceca385dacd7"
   },
@@ -1470,10 +1470,10 @@
     "semantic_hash": "4cf7248be3e0b50f49d78cb5b55a0bf0"
   },
   "convex/reports.ts": {
-    "mtime": 1789821511.0819695,
-    "seen": 1790695917.102355,
-    "ast_hash": "58ed1dde9157dabc18e9ccd11c8ecdc1",
-    "semantic_hash": "58ed1dde9157dabc18e9ccd11c8ecdc1"
+    "mtime": 1790702538.5934207,
+    "seen": 1790703474.532119,
+    "ast_hash": "6f71fc168232bb0fbdb21a6d952dba52",
+    "semantic_hash": ""
   },
   "convex/reportsEmail.ts": {
     "mtime": 1789836970.6468804,
@@ -1500,10 +1500,10 @@
     "semantic_hash": "52389820c4ce232d4354023a9b2c1022"
   },
   "convex/schema.ts": {
-    "mtime": 1790624348.867314,
-    "seen": 1790695917.102359,
-    "ast_hash": "641a395ff4486616f82158f21c3617be",
-    "semantic_hash": "641a395ff4486616f82158f21c3617be"
+    "mtime": 1790702276.53183,
+    "seen": 1790703474.5321238,
+    "ast_hash": "62b71de6904a2b604cb3b37e4e272d7b",
+    "semantic_hash": ""
   },
   "convex/schools.ts": {
     "mtime": 1790543370.4893951,
@@ -1554,10 +1554,10 @@
     "semantic_hash": "f9fbefde648730095c3d249565eed067"
   },
   "convex/students.ts": {
-    "mtime": 1790616836.4009998,
-    "seen": 1790695917.102365,
-    "ast_hash": "9c15d7ec2adc05d643c1faff1c2b98b3",
-    "semantic_hash": "9c15d7ec2adc05d643c1faff1c2b98b3"
+    "mtime": 1790702698.12578,
+    "seen": 1790703474.5321338,
+    "ast_hash": "4f35d352ab8bec9bc9e64850017425f4",
+    "semantic_hash": ""
   },
   "convex/subjects.ts": {
     "mtime": 1789821511.0633864,
@@ -1992,22 +1992,22 @@
     "semantic_hash": "6516e1cd806b0acb66b032c2f1a572c3"
   },
   "CLAUDE.md": {
-    "mtime": 1789821510.9862957,
-    "seen": 1790695917.102421,
-    "ast_hash": "1b3cd9625914734985602050be990d9d",
-    "semantic_hash": "1b3cd9625914734985602050be990d9d"
+    "mtime": 1790695953.185257,
+    "seen": 1790703474.532215,
+    "ast_hash": "d691981fe9b8840d69857b13e29b2798",
+    "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1789821511.0619438,
-    "seen": 1790695917.102422,
-    "ast_hash": "f15aaa42d5d299d091b1171097ea56ad",
-    "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
+    "mtime": 1790700112.3297935,
+    "seen": 1790703474.532216,
+    "ast_hash": "99f3e422474924d9e1bbe7bb6c6534e1",
+    "semantic_hash": ""
   },
   "docs/capacitor-ios.md": {
-    "mtime": 1790693839.0735087,
-    "seen": 1790695917.102423,
-    "ast_hash": "daee984a603ec7b22a82b011e0a49829",
-    "semantic_hash": "daee984a603ec7b22a82b011e0a49829"
+    "mtime": 1790700040.7445347,
+    "seen": 1790703474.532217,
+    "ast_hash": "c408ea577ee22c01271c876f467fa9bc",
+    "semantic_hash": ""
   },
   "docs/comptes-et-acces.md": {
     "mtime": 1790453374.595696,
@@ -2028,14 +2028,14 @@
     "semantic_hash": "db643208edbe6b154bce43fabc2350a7"
   },
   "docs/monde-de-pio.md": {
-    "mtime": 1790543919.9020193,
-    "seen": 1790695917.102426,
-    "ast_hash": "bcef2052aa8685a9d58c8ddfae15b589",
-    "semantic_hash": "bcef2052aa8685a9d58c8ddfae15b589"
+    "mtime": 1790703450.015017,
+    "seen": 1790703474.5322208,
+    "ast_hash": "9f57398eef485cdd9d6a36e2ba88c13a",
+    "semantic_hash": ""
   },
   "docs/paliers-et-exercices.md": {
-    "mtime": 1790543919.9031181,
-    "seen": 1790695917.102426,
+    "mtime": 1790702033.4297087,
+    "seen": 1790703474.532222,
     "ast_hash": "089912b7c35d12d5548b0cbd3ae75c3f",
     "semantic_hash": "089912b7c35d12d5548b0cbd3ae75c3f"
   },
@@ -2046,10 +2046,10 @@
     "semantic_hash": "f0111a3d4beb0868e9120d99bd66d278"
   },
   "docs/progression-niveau-etoiles-trophees.md": {
-    "mtime": 1790530446.7750146,
-    "seen": 1790695917.1024342,
-    "ast_hash": "17173ec20bc9de104e3d50ec6c3f16df",
-    "semantic_hash": "17173ec20bc9de104e3d50ec6c3f16df"
+    "mtime": 1790703441.5648863,
+    "seen": 1790703474.532224,
+    "ast_hash": "d320e855052e594faaa5e078975931d7",
+    "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
     "mtime": 1790450393.568,
@@ -2074,5 +2074,47 @@
     "seen": 1790695917.102444,
     "ast_hash": "89df9bac5adbad36eaed39480d84137a",
     "semantic_hash": "89df9bac5adbad36eaed39480d84137a"
+  },
+  "convex/__tests__/badgeRules.test.ts": {
+    "mtime": 1790702812.13596,
+    "seen": 1790703474.532019,
+    "ast_hash": "19098bc4b0886edd98b292c8bad81cce",
+    "semantic_hash": ""
+  },
+  "convex/__tests__/progressionRules.test.ts": {
+    "mtime": 1790702824.109895,
+    "seen": 1790703474.532035,
+    "ast_hash": "37250d4c58e51187ceb3602ef513bef2",
+    "semantic_hash": ""
+  },
+  "convex/__tests__/reportRules.test.ts": {
+    "mtime": 1790702852.912333,
+    "seen": 1790703474.532039,
+    "ast_hash": "fe1f28f8d12212508d44220b5445d296",
+    "semantic_hash": ""
+  },
+  "convex/badgeRules.ts": {
+    "mtime": 1790702611.2017975,
+    "seen": 1790703474.532077,
+    "ast_hash": "d81f46cebe7a1518226048ec0bd862fe",
+    "semantic_hash": ""
+  },
+  "convex/progression.ts": {
+    "mtime": 1790702402.9038188,
+    "seen": 1790703474.532114,
+    "ast_hash": "56b078290a1cac6427f21ea8f603923e",
+    "semantic_hash": ""
+  },
+  "convex/progressionRules.ts": {
+    "mtime": 1790702308.926846,
+    "seen": 1790703474.532115,
+    "ast_hash": "90b4fbfffbc42458a9c7905659e1a49b",
+    "semantic_hash": ""
+  },
+  "convex/reportRules.ts": {
+    "mtime": 1790702503.0242014,
+    "seen": 1790703474.532119,
+    "ast_hash": "05d3ae6ecfa8355b7ae7ef7c79d1a907",
+    "semantic_hash": ""
   }
 }

@@ -199,6 +199,11 @@ export default defineSchema({
     correctExercises: v.number(),
     totalHintsUsed: v.number(),
     masteryLevel: v.number(),
+    // LES ÉTOILES DE LA THÉMATIQUE : pour chaque palier, celles de la
+    // meilleure tentative finie (trois par exercice au plus), additionnées.
+    // Posé par `progression.syncTopicProgress` ; le carnet et le bandeau du
+    // sentier en font la somme. Absent sur une ligne pas encore recalculée.
+    starsEarned: v.optional(v.number()),
     completedAt: v.optional(v.number()),
   })
     .index("by_studentId", ["studentId"])
@@ -364,12 +369,12 @@ export default defineSchema({
     averageScore: v.optional(v.number()), // 0..10
     failedExerciseIds: v.optional(v.array(v.id("exercises"))),
     regenCount: v.number(), // 0..3, capped at submitPalier-level
-    // Champs HÉRITÉS du système « étoiles-exactes » de la branche, tolérés en
-    // option pour ne pas invalider les tentatives déjà en base (déploiement de
-    // dev). La logique courante (priorité main) ne les lit pas ; ils
-    // s'éteignent d'eux-mêmes à mesure que de nouvelles tentatives s'écrivent.
-    correctCount: v.optional(v.number()),
+    // LE RÉSUMÉ DE LA TENTATIVE, posé à `submitPalier` (`progressionRules`).
+    // C'est de lui que vivent la jauge de niveau, les étoiles du camp et
+    // les trophées ; `progression:rebuild` le pose sur les tentatives d'avant.
+    // Facultatif : une tentative en cours ou pas encore rattrapée n'en a pas.
     exerciseCount: v.optional(v.number()),
+    correctCount: v.optional(v.number()),
     firstTryCount: v.optional(v.number()),
     noHintCount: v.optional(v.number()),
     hintsUsed: v.optional(v.number()),

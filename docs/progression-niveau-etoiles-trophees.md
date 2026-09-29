@@ -1,71 +1,96 @@
 # Niveau, étoiles, série, missions, trophées : d'où vient ce qui monte
 
 L'enfant voit cinq choses monter : sa jauge de niveau, ses étoiles, sa série
-de jours, ses missions du jour et ses trophées. Ce document dit où chacune se
-calcule dans le code d'aujourd'hui (29 septembre 2026), et ce qui ne marche
-pas encore.
+de jours, ses missions du jour et ses trophées. Les parents et les
+professeurs voient en plus la maîtrise des thématiques et les bulletins. Ce
+document dit où chacune se calcule dans le code (29 septembre 2026).
 
-## Un moteur écrit, puis retiré
+## Un moteur retiré, puis remis en place
 
-Un moteur de progression plus complet a été écrit le 27 septembre 2026 sur la
-branche de l'application iOS : `convex/progression.ts`, `progressionRules.ts`,
-`badgeRules.ts`, leurs tests et un rattrapage `progression:rebuild`. Le soir
-même, la fusion avec `main` (commit `e4e8cea`) a gardé le backend de `main`,
-avec ses étoiles approximées, et a retiré ces modules. Ce document décrivait
-le moteur retiré ; il décrit maintenant le code en place.
+Un moteur de progression a été écrit le 27 septembre 2026 sur la branche de
+l'application iOS (commit `2d0652a`) : `convex/progressionRules.ts` et
+`badgeRules.ts` pour les règles, `progression.ts` pour la base, et un
+rattrapage `progression:rebuild`. Le soir même, la fusion avec `main`
+(commit `e4e8cea`) a pris tout `convex/` de `main` pour éviter les conflits,
+et ces modules sont partis avec. Jusqu'au 29 septembre, les paliers ne
+faisaient monter ni le niveau ni les trophées.
 
-Les sept champs de résumé que ce moteur posait sur `palierAttempts`
-(`correctCount`, `exerciseCount`, `firstTryCount`, `noHintCount`, `hintsUsed`,
-`starsTotal`, `timeSpentMs`) restent dans le schéma, facultatifs, pour que les
-tentatives déjà écrites en développement restent valides. Aucun code ne les
-lit.
+Le moteur est revenu le 29 septembre, adapté au code de `main`, avec quatre
+ajouts : une tentative ne se note qu'une fois, le bulletin naît quand une
+thématique est franchie, les étoiles d'une thématique sont rangées avec
+elle, et une thématique « sans faute » l'est vraiment.
 
-## La fin d'un palier
+## Tout part de la fin d'un palier
 
 Chaque réponse passe par `palierAttempts.verifyAttempt`, qui écrit une ligne
-`attempts` par essai ; un indice passe par `requestHint`.
-`palierAttempts.submitPalier` est le seul endroit où un palier se valide ou
-échoue. Il note chaque exercice (`paliers/scoring.ts`) : 10 au premier essai,
-7 au deuxième, 4 au troisième, 1 au quatrième ou au cinquième, moins 1 par
-indice, jamais sous zéro. Le palier est validé quand la moyenne atteint 7.
+`attempts` avec le temps mesuré par l'écran depuis l'apparition de
+l'exercice, borné à dix minutes. Un indice passe par `requestHint`, qui
+écrit une ligne sentinelle (`attemptNumber: 0`) : ce n'est pas une réponse.
+Une tentative déjà notée refuse toute nouvelle réponse (« Tentative
+terminée »).
 
-Sur la tentative, il n'enregistre que le statut, la moyenne, les exercices
-ratés et la date. Si le palier est validé, `markTopicCompleteIfDone` pose
-`studentTopicProgress.completedAt` quand tous les paliers de la thématique le
-sont. Puis, validé ou non, la série (`streak.recordKidActivity`) et les
-missions (`quests.recordActivity`) avancent. Le reste du résultat (étoiles,
-seuil, nombre d'exercices) est rendu à l'écran de fin, pas enregistré.
+`palierAttempts.submitPalier` note chaque exercice (`paliers/scoring.ts`) :
+10 au premier essai, 7 au deuxième, 4 au troisième, 1 au quatrième ou au
+cinquième, moins 1 par indice, jamais sous zéro. Le palier est validé quand
+la moyenne atteint 7. Puis, dans l'ordre :
+
+1. il range sur la tentative son statut, sa moyenne, ses exercices ratés et
+   son résumé (`progressionRules.summarizePalier`) : exercices joués et
+   résolus, résolus du premier coup, résolus sans indice, indices, étoiles,
+   temps ;
+2. il recalcule la thématique (`progression.syncTopicProgress`) depuis
+   toutes les tentatives finies de l'élève sur ses paliers : exercices faits
+   et résolus, indices, maîtrise, étoiles, et `completedAt` quand tous les
+   paliers sont validés ;
+3. si la thématique vient d'être franchie, il planifie son bulletin
+   (`reports.generate`) ;
+4. il planifie l'examen des trophées (`badges.checkAndAward`) ;
+5. il fait avancer la série (`streak.recordKidActivity`) et les missions
+   (`quests.recordActivity`).
+
+Rien ne s'incrémente à l'aveugle : la thématique se recompte depuis ses
+tentatives, si bien qu'un rejeu ou une reprise ne font pas dériver les
+compteurs.
+
+Une tentative ne se note qu'une fois. Un second envoi (double appui, réseau
+qui rejoue) trouve la tentative déjà notée : il rend le même résultat et
+n'écrit rien, ni série ni missions. Après un échec, la nouvelle chance
+(`paliers/index.regenerateFailedExercises`) remplace les exercices ratés et
+remet la tentative en cours : elle se note alors de nouveau.
 
 ## Le niveau
 
-Cinquante bonnes réponses font un niveau (`students.EXOS_PER_LEVEL`,
-`computeLevel`). Le total est la somme de `studentTopicProgress.correctExercises`
-sur les thématiques. La jauge de l'en-tête, le carnet et l'écran de niveau
-lisent tous `students.getMyStats` ; ils recopient la constante 50 chez eux.
+Cinquante bonnes réponses font un niveau (`progressionRules.computeLevel`).
+Une bonne réponse est un exercice résolu en cinq essais au plus, dans une
+tentative finie, validée ou non ; les rejeux comptent. Le total est la somme
+de `studentTopicProgress.correctExercises` sur les thématiques, que lit
+`students.getMyStats`. L'écran de fin importe la constante 50 de
+`progressionRules` ; l'en-tête et le carnet la recopient.
 
-**Les réponses des paliers ne comptent pas.** `correctExercises` n'est écrit
-que par l'ancien flux d'exercices (`attempts.submit` et
-`attempts.markAttemptCorrectByAI`), qu'aucun écran n'appelle plus :
-`components/exercises/ExercisePlayer.tsx` n'est monté nulle part. Un élève qui
-ne joue que des paliers reste « niveau 1, 0/50 », et son carnet compte zéro
-exercice.
+## Les étoiles
 
-## Les étoiles : trois comptes différents
+Un exercice rapporte jusqu'à trois étoiles selon sa note : trois à partir de
+9, deux à partir de 6, une à partir de 3. Les étoiles d'un palier sont celles
+de sa meilleure tentative finie, jamais la somme des rejeux. Celles d'une
+thématique, la somme de ses paliers, sont rangées dans
+`studentTopicProgress.starsEarned`.
 
-- **L'écran de fin de palier** compte juste. Trois étoiles par exercice au
-  plus (note de 9 ou plus : 3 ; de 6 ou plus : 2 ; de 3 ou plus : 1), sur
-  « nombre d'exercices × 3 », avec un seuil de 70 % arrondi au-dessus. Ce
-  total (`starsTotal`) n'est pas enregistré.
-- **Le carnet** (`getMyStats.totalStars`) donne à chaque tentative validée,
-  rejeux compris, une note approximée de sa moyenne
-  (`approxStarsForValidatedPalier` : 3 à partir de 9, 2 à partir de 7, sinon
-  1), et ajoute les étoiles de mission (`preferences.questBonusStars`).
-- **Le sentier** montre sur chaque étape la note approximée de la meilleure
-  moyenne validée de ce palier, et le bandeau en fait la somme, sans étoiles
-  de mission.
+- L'écran de fin montre les étoiles exactes de la tentative.
+- Le carnet (`getMyStats.totalStars`) additionne les thématiques, plus les
+  étoiles de mission.
+- Le bandeau d'une matière (`getStudentSubjectMap.totalStars`) additionne
+  ses thématiques visibles.
 
-L'en-tête de l'espace élève n'affiche plus d'étoiles : il ne montre que le
-niveau. Le camp ne s'en sert que pour reconnaître une première visite.
+Un palier a aussi une note, d'une à trois étoiles
+(`progressionRules.palierStarRating`) : trois à 90 % des étoiles, deux dès le
+seuil de 70 % arrondi au-dessus, une sinon. L'écran de fin et l'étape du
+sentier montrent la même ; le sentier prend la meilleure tentative validée.
+La validation et ce seuil ne coïncident pas : un palier réussi entièrement au
+deuxième essai a une moyenne de 7, donc il est validé, mais il gagne 20
+étoiles sur 30, sous le seuil de 21, et reçoit une seule étoile de note.
+
+Une tentative d'avant, sans résumé, compte des étoiles approchées depuis sa
+moyenne jusqu'au rattrapage.
 
 ## Les missions du jour
 
@@ -75,85 +100,132 @@ passage au camp (`quests.ensureDaily`) ou à la première fin de palier du jour
 (`quests.recordActivity`). Une mission faite vaut une étoile, les trois en
 valent deux de plus (`ALL_DONE_BONUS`) ; le cumul de vie vit dans
 `profiles.preferences.questBonusStars`, borné à 10 000. La mission « gagner
-des étoiles » compte les étoiles exactes de l'écran de fin. Un parent peut
+des étoiles » compte les étoiles exactes de l'écran de fin. Après une
+nouvelle chance, la tentative notée de nouveau fait avancer les missions de
+tous ses exercices, pas seulement de ceux qui ont été rejoués. Un parent peut
 couper les missions (`dailyMissionEnabled`).
 
 ## La série
 
 La série vit dans `profiles.preferences.streak` (jours d'affilée, record,
 dernier jour actif, gel disponible). `streak.recordKidActivity` l'avance à
-chaque fin de palier. Le jour est la date UTC, qui est l'heure de Dakar ; un
-gel est offert tous les sept jours. Chaque nuit à 00 h 05, une tâche
+chaque tentative notée. Le jour est la date UTC, qui est l'heure de Dakar ;
+un gel est offert tous les sept jours. Chaque nuit à 00 h 05, une tâche
 planifiée (`crons.ts`) remet à zéro la série des élèves qui ont sauté un jour
 sans gel disponible. Un parent peut couper la série (`streaksEnabled`).
 
 ## La maîtrise d'une thématique
 
-`studentTopicProgress.masteryLevel` est toujours à zéro : il n'est écrit qu'à
-la création de la ligne. Son seul lecteur, `progress.getSubjectProgress`, n'a
-pas d'appelant.
+`studentTopicProgress.masteryLevel` vaut la meilleure moyenne d'un palier
+validé de la thématique, sur 100. Les trophées « Maître de… »
+(`subject_avg_mastery`) en font la moyenne par matière.
+`progress.getSubjectProgress` la lit aussi, mais n'a pas d'appelant.
 
-Les bulletins des parents et des professeurs sont des `topicReports`, lus par
-`reports.listByStudent`, `listByTeacher` et `listByParent` ; leur score est le
-rapport des bonnes réponses aux réponses. Mais `reports.generate`, seule
-fonction à créer ces lignes, n'a pas d'appelant non plus. Les fiches élève
-des professeurs et de l'administration (`students.getStudentDetail`) montrent
-les bonnes réponses sur le total, par matière.
+## Les bulletins
+
+Un bulletin est une ligne de `topicReports`, lue par
+`reports.listByStudent`, `listByTeacher` et `listByParent`.
+`reports.generate` le produit quand l'élève franchit une thématique, une
+fois par élève et par thématique. Il lit les réponses des tentatives finies
+sur les paliers de la thématique, sans les indices
+(`reportRules.buildTopicReport`) :
+
+- le score est la part des bonnes réponses parmi les réponses données ;
+- les forces et les faiblesses sont des types d'exercice : plus de 80 % de
+  bonnes réponses, moins de 50 % ;
+- une erreur fréquente est un exercice tenté au moins trois fois, avec une
+  majorité de mauvaises réponses.
+
+Le bulletin part ensuite par e-mail (`reportsEmail.sendEmail`, par Resend) à
+chaque tuteur qui a une adresse et n'a pas décoché « Recevoir les rapports
+par e-mail ». Le rattrapage ne produit aucun bulletin : une thématique
+franchie avant lui n'écrit pas aux parents.
+
+Les fiches élève des professeurs et de l'administration
+(`students.getStudentDetail`) montrent les bonnes réponses sur le total, par
+matière.
 
 ## Les trophées
 
 Un trophée est une ligne de `badges` : un nom, une description, une icône,
-une condition (une clé libre), une matière facultative et une rareté. Dix
-autres champs du schéma (`catalogKey`, `conditionParams`, `tiers`…) ne sont lus
-par aucun code.
+une rareté, une condition et ses paramètres (`conditionParams` : un seuil,
+une durée, une heure, une matière). `badgeRules.ts` sait juger 28
+conditions : thématiques terminées ou sans faute, exercices résolus,
+réponses données, réussites du premier coup ou sans indice, réussites après
+plusieurs essais, réponses rapides, séances, week-ends, heures matinales ou
+tardives, paliers validés, matières commencées ou terminées, maîtrise d'une
+matière, série, missions, et les trois clés de l'ancien moteur. Il ne juge
+pas `teacher_kudos` : la salle des trophées ne le montre pas, et
+l'administration le signale.
 
-`badges.checkAndAward` connaît trois clés : `complete_topic` (une thématique
-terminée), `perfect_score` (une thématique terminée sans erreur) et `streak_3`
-(trois thématiques terminées, pas trois jours de série). Il ignore toute autre
-clé. `getConditionText` écrit le critère affiché.
-
-**Aucun trophée n'est attribué aujourd'hui.** `checkAndAward` n'est lancé que
-par `attempts.submit`, l'ancien flux qu'aucun écran n'appelle ; ni
-`submitPalier` ni la correction par l'IA ne le lancent.
+`badges.checkAndAward` juge chaque trophée pas encore gagné sur un
+instantané de l'élève (`buildStudentSnapshot`) : ses 4 000 lignes d'essai et
+ses 500 tentatives les plus récentes, les thématiques visibles pour sa
+classe, ses missions et sa série. Il tourne à chaque fin de palier et après
+le rattrapage. Une thématique est sans faute quand chacun de ses paliers a
+été validé au moins une fois sans erreur, chaque exercice réussi à la
+première réponse.
 
 La salle des trophées (`/student/badges`) montre une jauge de collection et,
-dans la fiche d'un trophée, son critère ; il n'y a pas de barre de progression
-par trophée. Un trophée gagné s'annonce à la fin d'un palier
-(`getMyStats.unseenBadges`). Dans l'administration, créer un trophée demande
-un nom, une description, une icône, l'une des trois conditions et, au besoin,
-une matière.
+sous chaque trophée fermé, une barre qui dit où l'enfant en est
+(`badges.getMyBadgeProgress`). Un trophée gagné s'annonce à la fin d'un
+palier (`getMyStats.unseenBadges`), puis l'écran de niveau s'ouvre s'il y a
+lieu. Dans l'administration, un trophée se crée avec l'une des conditions,
+un seuil facultatif et une matière facultative.
 
-`npx convex run badges:normalizeRarities` convertit une fois les anciennes
-raretés vers les quatre d'aujourd'hui (commun, rare, épique, légendaire). Il
-n'a ni `confirmDeployment` ni mode d'essai.
+Deux commandes d'entretien :
+
+    npx convex run badges:normalizeCatalog '{"confirmDeployment":"<nom>","dryRun":true}'
+    npx convex run badges:normalizeRarities
+
+La première complète, par clé de catalogue, les paramètres manquants ; sur
+le déploiement de développement, ils sont déjà posés. La seconde convertit
+une fois les anciennes raretés vers les quatre d'aujourd'hui (commun, rare,
+épique, légendaire) ; elle n'a ni `confirmDeployment` ni mode d'essai.
 
 ## Le temps
 
-`attempts.timeSpentMs` existe, mais l'écran des paliers ne l'envoie pas : ses
-réponses valent zéro, et aucune borne n'est posée côté serveur. Le carnet
-affiche le temps cumulé dans une case « Temps », visible quand la série est
-coupée : pour un élève qui ne joue que des paliers, elle reste à zéro.
+L'écran des paliers envoie le temps de chaque réponse, que `verifyAttempt`
+borne à dix minutes. Le carnet l'additionne dans sa case « Temps », visible
+quand la série est coupée, sur les 1 000 premières lignes d'essai de
+l'élève : au-delà, le total ne bouge plus. Les réponses données avant la
+remise en place du moteur valent zéro.
 
-## Ce qui ne marche pas encore
+## Rattraper l'existant
 
-1. Les paliers ne font pas monter le niveau (`correctExercises`).
-2. Les paliers n'attribuent aucun trophée (`checkAndAward`).
-3. La maîtrise reste à zéro, et rien ne produit les bulletins
-   (`reports.generate` n'a pas d'appelant).
-4. Le temps passé sur un exercice n'est pas envoyé.
-5. `submitPalier` accepte qu'on soumette de nouveau une tentative déjà
-   terminée : la série et les missions avancent alors une seconde fois.
-6. Les étoiles se comptent de trois façons, dont deux approximées.
+Après le déploiement de ce code, une fois sur chaque déploiement :
 
-Aucun rattrapage n'existe pour la progression : `progression:rebuild` et
-`badges:normalizeCatalog` sont partis avec le moteur retiré.
+    npx convex run progression:rebuild '{"confirmDeployment":"<nom>","dryRun":true}'
+    npx convex run progression:rebuild '{"confirmDeployment":"<nom>"}'
+
+Le rattrapage parcourt toutes les tentatives par pages de 50 et planifie
+seul la page suivante. Il résume les tentatives finies qui n'ont pas de
+résumé, recalcule chaque thématique où l'élève a fini un palier, et
+réexamine les trophées de chaque élève. Sans lui, les élèves d'avant gardent
+une jauge à zéro, et le carnet ne compte que leurs étoiles de mission. Il a
+tourné sur le déploiement de développement le 29 septembre 2026.
+
+## Ce qui reste
+
+- L'ancien flux d'exercices (`attempts.submit`, avec
+  `components/exercises/ExercisePlayer.tsx`) n'est monté nulle part, mais il
+  écrit encore `correctExercises` à sa façon. Le recalcul de la thématique
+  l'écrase à la fin du palier suivant.
+- La validation et le seuil d'étoiles ne coïncident pas (voir « Les
+  étoiles »).
+- Le temps du carnet s'arrête à 1 000 lignes d'essai.
+- L'en-tête et le carnet recopient la constante 50.
+- `badges.test.ts`, `attempts.test.ts` et `reports.test.ts` réécrivent la
+  logique sur une fausse base au lieu d'importer le code.
 
 ## Les tests
 
-Les règles en place sont testées par `convex/__tests__/scoring.test.ts`
-(notes et étoiles d'un palier), `streak.test.ts` (série, niveau et étoiles
-approximées), `questRules.test.ts`, `palierRules.test.ts` et
-`subjectMap.test.ts`. `badges.test.ts`, `attempts.test.ts` et `reports.test.ts`
-réécrivent la logique sur une fausse base au lieu d'importer le code : ils ne
-protègent pas les fonctions réelles. Côté parcours :
-`e2e/palier-progression-guard.spec.ts` et `e2e/mvp1-play-palier.spec.ts`.
+Les règles sont testées par `convex/__tests__/progressionRules.test.ts`
+(résumé, niveau, étoiles, note, maîtrise), `badgeRules.test.ts` (conditions,
+instantané, attribution), `reportRules.test.ts` (bulletin),
+`scoring.test.ts` (notes et étoiles d'un palier), `streak.test.ts`,
+`questRules.test.ts`, `palierRules.test.ts` et `subjectMap.test.ts`. Côté
+parcours : `e2e/palier-progression-guard.spec.ts` et
+`e2e/mvp1-play-palier.spec.ts`. La fin de palier elle-même (écritures,
+idempotence, bulletin) a été vérifiée sur le déploiement de développement,
+pas par un test automatique.

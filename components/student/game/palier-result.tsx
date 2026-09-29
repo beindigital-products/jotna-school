@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { animate, motion, useMotionValue, useScroll, useTransform } from "framer-motion";
 import {
@@ -19,6 +19,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { difficultyStage } from "@/convex/palierRules";
 import { PALIER_SIZE } from "@/convex/paliers/scoring";
+import { EXOS_PER_LEVEL, STARS_PER_EXERCISE, palierStarRating } from "@/convex/progressionRules";
 import { JotnaLoader } from "@/components/jotna-loader";
 import { BadgeShield } from "@/components/student/badge-icon";
 import { GameButton } from "@/components/student/game/game-button";
@@ -79,9 +80,6 @@ type UnseenBadge = {
   };
 };
 
-/** Reflète `students.EXOS_PER_LEVEL` — même valeur que dans le carnet. */
-const EXOS_PER_LEVEL = 50;
-const STARS_PER_EXERCISE = 3;
 const CONFETTI_COLORS = ["#f97316", "#fbbf24", "#6ab04c", "#38bdf8", "#ec4899"];
 
 export function PalierResultScreen({
@@ -192,7 +190,8 @@ export function PalierResultScreen({
         </div>
       </motion.section>
 
-      {validated && <BigStars count={bigStars(starsTotal, threshold, maxStars)} />}
+      {/* La même note que l'étape du sentier (`progressionRules.palierStarRating`). */}
+      {validated && <BigStars count={palierStarRating(starsTotal, exerciseCount)} />}
 
       <motion.section
         initial={{ opacity: 0, y: 12 }}
@@ -375,13 +374,6 @@ function useBareStatusBar() {
 // ---------------------------------------------------------------------------
 // Les morceaux
 // ---------------------------------------------------------------------------
-
-/** Trois si l'enfant frôle le sans-faute, deux dès la validation, sinon une. */
-function bigStars(starsTotal: number, threshold: number, maxStars: number): number {
-  if (starsTotal >= maxStars * 0.9) return 3;
-  if (starsTotal >= threshold) return 2;
-  return 1;
-}
 
 function BigStars({ count }: { count: number }) {
   return (
@@ -697,26 +689,43 @@ function useVictoryExtras(enabled: boolean) {
     if (myStats?.soundEnabled === true) void preloadAll();
   }, [myStats?.soundEnabled]);
 
+  // LES INSTANTANÉS ET LEURS MINUTEURS SONT DEUX EFFETS. Dans un seul, le
+  // `setState` de l'instantané relançait l'effet, dont le nettoyage annulait
+  // le minuteur qu'il venait d'armer : la fenêtre de niveau ne s'ouvrait
+  // jamais, et le son du trophée ne partait pas. L'ancien écran de victoire
+  // avait le même défaut.
   useEffect(() => {
     if (!myStats || badges !== null || myStats.unseenBadges.length === 0) return;
     const unseen = myStats.unseenBadges as UnseenBadge[];
     // eslint-disable-next-line react-hooks/set-state-in-effect -- instantané pris une fois à l'arrivée (D25)
     setBadges(unseen);
-    const timer = setTimeout(() => void playBadge(), 800);
     void markBadgesSeen({ badgeIds: unseen.map((b) => b.badgeId) });
-    return () => clearTimeout(timer);
   }, [myStats, badges, markBadgesSeen]);
+
+  useEffect(() => {
+    if (!badges || badges.length === 0) return;
+    const timer = setTimeout(() => void playBadge(), 800);
+    return () => clearTimeout(timer);
+  }, [badges]);
 
   useEffect(() => {
     if (!myStats || levelUp !== null || !myStats.unseenLevelUp) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- instantané pris une fois à l'arrivée (D2b)
     setLevelUp(myStats.unseenLevelUp.level);
-    const timer = setTimeout(
-      () => setLevelUpOpen(true),
-      myStats.unseenBadges.length > 0 ? 2200 : 1400,
-    );
-    return () => clearTimeout(timer);
   }, [myStats, levelUp]);
+
+  // Le trophée d'abord, le niveau ensuite : les deux joies ne se superposent pas.
+  const hasBadgeCard = badges !== null && badges.length > 0;
+  useEffect(() => {
+    if (levelUp === null) return;
+    const timer = setTimeout(() => setLevelUpOpen(true), hasBadgeCard ? 2200 : 1400);
+    return () => clearTimeout(timer);
+  }, [levelUp, hasBadgeCard]);
+
+  const dismissLevelUp = useCallback(() => {
+    setLevelUpOpen(false);
+    if (levelUp !== null) void markLevelSeen({ level: levelUp });
+  }, [levelUp, markLevelSeen]);
 
   useEffect(() => {
     if (!myStats || myStats.soundOptInDecided) return;
@@ -742,14 +751,7 @@ function useVictoryExtras(enabled: boolean) {
           onOpenChange={setOptInOpen}
         />
         {levelUp !== null && (
-          <LevelUpOverlay
-            level={levelUp}
-            open={levelUpOpen}
-            onDismiss={() => {
-              setLevelUpOpen(false);
-              void markLevelSeen({ level: levelUp });
-            }}
-          />
+          <LevelUpOverlay level={levelUp} open={levelUpOpen} onDismiss={dismissLevelUp} />
         )}
       </>
     ) : null,
