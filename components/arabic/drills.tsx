@@ -26,14 +26,15 @@
  * des lettres qui se ressemblent et que l'enfant a déjà vues.
  */
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Volume2 } from "lucide-react";
 import { getLetter, shuffle, type ArabicLetterKey } from "@/convex/arabic/alphabet";
 import { LETTER_WORDS } from "@/convex/arabic/letterWords";
 import { bravo } from "@/convex/arabic/consignes";
-import { getSoundEnabledLocal, playCorrect } from "@/lib/sounds";
+import { getSoundEnabledLocal, playCorrect, preloadAll } from "@/lib/sounds";
 import { ArabicGlyph } from "./arabic-glyph";
+import { AirPuffs, BURST_DELAY, BalloonPop, seedOf } from "./balloon-fx";
 import { speech, useSpeech } from "./speech";
 
 /** Le temps de la petite fête avant l'étape suivante. */
@@ -187,13 +188,56 @@ export function WordTile({
 // Éclater le bon ballon
 // ---------------------------------------------------------------------------
 
-const BALLOON_COLORS = [
-  "from-rose-400 to-rose-600",
-  "from-sky-400 to-sky-600",
-  "from-violet-400 to-violet-600",
-  "from-amber-400 to-orange-500",
+/** Chaque ballon : son dégradé, la teinte de son caoutchouc et celle de son onde de choc. */
+const BALLOONS = [
+  { gradient: "from-rose-400 to-rose-600", rubber: "#e11d48", light: "#fda4af" },
+  { gradient: "from-sky-400 to-sky-600", rubber: "#0284c7", light: "#7dd3fc" },
+  { gradient: "from-violet-400 to-violet-600", rubber: "#7c3aed", light: "#c4b5fd" },
+  { gradient: "from-amber-400 to-orange-500", rubber: "#ea580c", light: "#fcd34d" },
 ];
 
+/**
+ * Le « MashaAllah » et le son, quand les confettis retombent (voir
+ * `BalloonPick.tap`). Lancer l'audio coûte un moment au fil principal
+ * (mesuré : environ 300 ms dans le simulateur iOS) ; pendant l'envol des
+ * éclats, il le figeait.
+ */
+const CHEER_DELAY_MS = 600;
+
+/**
+ * La fête d'un ballon éclaté : les confettis retombent, et Pio garde après sa
+ * phrase le même temps qu'avant (`CELEBRATE_MS`) avant l'étape suivante.
+ */
+const POP_CELEBRATE_MS = CHEER_DELAY_MS + CELEBRATE_MS;
+
+/** Un ballon au repos. */
+const BALLOON_REST = { x: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 };
+
+/**
+ * Un ballon faux : il dit non en tremblant, puis l'air s'en va et il
+ * s'affaisse vers son nœud, penché. Il ne descend pas : son nœud reste au
+ * bout de la ficelle, qui sinon le traverserait. Il grise sous un voile
+ * (`BalloonPick`), pas sous un filtre.
+ *
+ * RIEN QUE DES TRANSFORMATIONS ET DES OPACITÉS, dans tout le jeu : un filtre
+ * (`grayscale`, `drop-shadow` flou) ou une couleur animés redessinent
+ * l'élément à chaque image. Mesuré dans le simulateur iOS, l'éclatement
+ * tombait alors à une dizaine d'images par seconde.
+ */
+const BALLOON_DEFLATE = {
+  x: [0, -9, 9, -7, 7, -3, 0],
+  rotate: [0, -8, 8, -6, 6, 10, 12],
+  scaleX: [1, 1.04, 0.96, 1.02, 0.94, 0.86, 0.84],
+  scaleY: [1, 0.96, 1.02, 0.92, 0.86, 0.76, 0.72],
+  opacity: [1, 1, 1, 0.95, 0.85, 0.7, 0.6],
+};
+
+/**
+ * Pio dit un son, l'enfant éclate le bon ballon. Le bon éclate en confettis
+ * et garde sa lettre, qui grandit et devient dorée ; un faux dit non de la
+ * tête, se dégonfle et grise (`balloon-fx.tsx`). Quand le bon a éclaté, ceux
+ * qui restent gonflés s'envolent.
+ */
 export function BalloonPick({
   options,
   target,
@@ -215,7 +259,12 @@ export function BalloonPick({
   const [answered, setAnswered] = useState(false);
   const [missed, setMissed] = useState<Set<string>>(new Set());
   const [popped, setPopped] = useState(false);
-  const [shaking, setShaking] = useState<string | null>(null);
+
+  // Le son de la bonne réponse est chargé dès l'arrivée des ballons : chargé
+  // à l'éclatement, il coûtait au pire moment.
+  useEffect(() => {
+    if (getSoundEnabledLocal()) void preloadAll();
+  }, []);
 
   function tap(key: string) {
     if (popped || missed.has(key)) return;
@@ -225,56 +274,145 @@ export function BalloonPick({
     }
     if (key === target) {
       setPopped(true);
-      cheer.good(round);
-      window.setTimeout(onSolved, CELEBRATE_MS);
+      // La voix et le son attendent que les éclats aient pris leur envol
+      // (`CHEER_DELAY_MS`).
+      window.setTimeout(() => cheer.good(round), CHEER_DELAY_MS);
+      window.setTimeout(onSolved, POP_CELEBRATE_MS);
       return;
     }
     setMissed((previous) => new Set(previous).add(key));
-    setShaking(key);
-    window.setTimeout(() => setShaking(null), 450);
     cheer.bad();
   }
 
   return (
     <div className="flex items-end justify-center gap-4 pt-4 sm:gap-6">
       {options.map((key, i) => {
+        const balloon = BALLOONS[i % BALLOONS.length];
         const isTarget = key === target;
         const isMissed = missed.has(key);
         const isPopped = popped && isTarget;
+        // Le bon ballon a éclaté : ceux qui sont encore gonflés s'envolent.
+        const flyAway = popped && !isTarget && !isMissed;
+        const idle = !popped && !isMissed;
         return (
-          <div key={key} className="relative flex flex-col items-center">
-            <motion.button
-              type="button"
-              onClick={() => tap(key)}
-              aria-label={ariaLabel(key)}
-              disabled={isMissed}
-              animate={
-                isPopped
-                  ? { scale: [1, 1.35, 0], opacity: [1, 1, 0] }
-                  : isMissed
-                    ? { scale: 0.78, opacity: 0.35, y: 12 }
-                    : { y: [0, -10, 0] }
-              }
+          <motion.div
+            key={key}
+            className="relative flex flex-col items-center"
+            // À chaque question, les ballons montent l'un après l'autre.
+            initial={{ y: 140, opacity: 0 }}
+            animate={flyAway ? { y: -460, x: i % 2 === 0 ? -24 : 24, opacity: 0 } : { y: 0, x: 0, opacity: 1 }}
+            transition={
+              flyAway
+                ? { duration: 1.1, delay: 0.3 + i * 0.08, ease: "easeIn" }
+                : { type: "spring", stiffness: 110, damping: 13, delay: i * 0.12 }
+            }
+          >
+            {/* Le ballon flotte et se balance au bout de sa ficelle. */}
+            <motion.div
+              className="relative flex flex-col items-center"
+              style={{ transformOrigin: "50% 100%", willChange: "transform" }}
+              animate={idle ? { y: [0, -10, 0], rotate: [-3, 3, -3] } : { y: 0, rotate: 0 }}
               transition={
-                isPopped
-                  ? { duration: 0.55 }
-                  : isMissed
-                    ? { duration: 0.3 }
-                    : { duration: 2.4 + i * 0.3, repeat: Infinity, ease: "easeInOut" }
+                idle
+                  ? {
+                      y: { duration: 2.4 + i * 0.3, repeat: Infinity, ease: "easeInOut" },
+                      rotate: { duration: 3.2 + i * 0.4, repeat: Infinity, ease: "easeInOut" },
+                    }
+                  : { duration: 0.3 }
               }
-              whileTap={{ scale: 0.92 }}
-              className={`relative flex h-32 w-28 items-center justify-center rounded-[50%_50%_46%_46%/55%_55%_45%_45%] border-[3px] border-white/70 bg-gradient-to-b text-white shadow-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 ${
-                BALLOON_COLORS[i % BALLOON_COLORS.length]
-              } ${isMissed ? "grayscale" : ""} ${shaking === key ? "animate-[head-shake_0.45s_ease-in-out]" : ""}`}
             >
-              {/* Le reflet du ballon */}
-              <span aria-hidden className="absolute left-5 top-4 h-6 w-3 rotate-[25deg] rounded-full bg-white/45" />
-              <span className="drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]">{renderLabel(key)}</span>
-            </motion.button>
-            {/* La ficelle */}
-            <span aria-hidden className={`h-10 w-0.5 bg-gray-400/70 ${isPopped ? "opacity-0" : ""}`} />
-            <Burst show={isPopped} />
-          </div>
+              <motion.div
+                className="relative h-32 w-28"
+                style={{ transformOrigin: "50% 100%" }}
+                initial={false}
+                animate={isMissed ? BALLOON_DEFLATE : BALLOON_REST}
+                transition={isMissed ? { duration: 0.95, ease: "easeOut" } : { duration: 0.2 }}
+              >
+                {/* L'enveloppe : c'est elle qu'on touche, et elle qui éclate. */}
+                <motion.button
+                  type="button"
+                  onClick={() => tap(key)}
+                  aria-label={ariaLabel(key)}
+                  disabled={isMissed || popped}
+                  initial={false}
+                  // Un dernier gonflement, puis l'enveloppe crève à `BURST_DELAY`.
+                  animate={isPopped ? { scale: [1, 1.18, 1.32], opacity: [1, 1, 0] } : { scale: 1, opacity: 1 }}
+                  transition={
+                    isPopped
+                      ? { duration: BURST_DELAY + 0.06, times: [0, BURST_DELAY / (BURST_DELAY + 0.06), 1], ease: "easeOut" }
+                      : { duration: 0.2 }
+                  }
+                  whileTap={idle ? { scale: 0.92 } : undefined}
+                  className={`absolute inset-0 rounded-[50%_50%_46%_46%/55%_55%_45%_45%] border-[3px] border-white/70 bg-gradient-to-b shadow-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 ${balloon.gradient}`}
+                >
+                  {/* Le voile gris d'un ballon faux : une opacité, pas un filtre. */}
+                  <motion.span
+                    aria-hidden
+                    className="absolute inset-0 rounded-[50%_50%_46%_46%/55%_55%_45%_45%] bg-stone-400"
+                    initial={false}
+                    animate={{ opacity: isMissed ? 0.88 : 0 }}
+                    transition={{ duration: 0.7, delay: isMissed ? 0.2 : 0 }}
+                  />
+                  {/* Le reflet du ballon */}
+                  <span aria-hidden className="absolute left-5 top-4 h-6 w-3 rotate-[25deg] rounded-full bg-white/45" />
+                  {/* Le nœud */}
+                  <span
+                    aria-hidden
+                    className="absolute -bottom-2 left-1/2 h-3.5 w-3.5 -translate-x-1/2 rotate-45 rounded-[3px] transition-colors duration-700"
+                    style={{ background: isMissed ? "#a8a29e" : balloon.rubber }}
+                  />
+                </motion.button>
+                {/* La lettre n'éclate pas : libérée, elle grandit, devient dorée
+                    et brille d'un halo posé derrière elle. */}
+                <motion.span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                  initial={false}
+                  animate={isPopped ? { scale: [1, 1.7, 1.45], y: [0, -22, -14] } : { scale: 1, y: 0 }}
+                  transition={isPopped ? { duration: 0.6, delay: BURST_DELAY, ease: "easeOut" } : { duration: 0.2 }}
+                  style={{
+                    willChange: "transform",
+                    filter: isPopped ? "none" : "drop-shadow(0 2px 2px rgba(0,0,0,0.35))",
+                  }}
+                >
+                  <motion.span
+                    aria-hidden
+                    className="absolute left-1/2 top-1/2 -ml-14 -mt-14 block h-28 w-28 rounded-full"
+                    style={{
+                      willChange: "transform, opacity",
+                      background:
+                        "radial-gradient(circle, rgba(255,251,235,0.98) 0%, rgba(253,224,71,0.6) 42%, rgba(253,224,71,0) 70%)",
+                    }}
+                    initial={false}
+                    animate={isPopped ? { opacity: 1, scale: [0.4, 1.2, 1.05] } : { opacity: 0, scale: 0.4 }}
+                    transition={isPopped ? { duration: 0.6, delay: BURST_DELAY, ease: "easeOut" } : { duration: 0.2 }}
+                  />
+                  <span className="relative text-white">{renderLabel(key)}</span>
+                  {/* La lettre dorée, en fondu par-dessus la blanche : animer la
+                      couleur redessinait la lettre à chaque image. */}
+                  <motion.span
+                    aria-hidden
+                    className="absolute inset-0 flex items-center justify-center text-amber-600"
+                    initial={false}
+                    animate={{ opacity: isPopped ? 1 : 0 }}
+                    transition={{ duration: 0.25, delay: isPopped ? BURST_DELAY : 0 }}
+                  >
+                    {renderLabel(key)}
+                  </motion.span>
+                </motion.span>
+              </motion.div>
+              {/* La ficelle : elle tombe quand le ballon éclate. */}
+              <motion.span
+                aria-hidden
+                className="block h-10 w-0.5 origin-top bg-gray-400/70"
+                initial={false}
+                animate={isPopped ? { y: 36, rotate: 18, opacity: 0 } : { y: 0, rotate: 0, opacity: 1 }}
+                transition={isPopped ? { duration: 0.7, delay: 0.18, ease: "easeIn" } : { duration: 0.2 }}
+              />
+            </motion.div>
+            <BalloonPop show={isPopped} color={balloon.rubber} light={balloon.light} seed={seedOf(`${key}:${round}`)} />
+            <AirPuffs show={isMissed} seed={seedOf(key)} />
+          </motion.div>
         );
       })}
     </div>
