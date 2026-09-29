@@ -5,7 +5,9 @@
  *
  * DEUX ACTIONS, DEUX SENS :
  *   - `speak` fabrique l'audio d'un texte du parcours (nom de lettre,
- *     syllabe, mot, verset) et rend une URL. Le résultat est MIS EN CACHE :
+ *     syllabe, mot, verset, mot-image d'une lettre) ou d'une CONSIGNE en
+ *     français (`consignes.ts`, même voix), et rend une URL. Le
+ *     résultat est MIS EN CACHE :
  *     le texte du module est fini, donc chaque son n'est payé qu'une fois pour
  *     toutes les écoles et tous les enfants ;
  *   - `verifyPronunciation` reçoit quelques secondes d'enregistrement, les
@@ -45,17 +47,21 @@
  */
 
 import { v } from "convex/values";
-import { action } from "../_generated/server";
+import { action, internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "../_generated/dataModel";
 import { getLetter } from "./alphabet";
+import { isConsigneKey, spokenConsigne } from "./consignes";
 import { getLesson } from "./curriculum";
+import { letterWord } from "./letterWords";
 import {
   acceptedFormsForLetter,
   judgePronunciation,
   judgeReading,
   judgeRecitation,
+  latinFormsForLetter,
+  type LatinForms,
   type PronunciationVerdict,
 } from "./matching";
 
@@ -83,20 +89,51 @@ const DEFAULT_TTS_MODEL = "eleven_multilingual_v2";
 const DEFAULT_STT_MODEL = "scribe_v2";
 
 /**
- * La voix par défaut : Ekram, une voix de femme en arabe standard, calme.
+ * La voix par défaut : Omar (« Best Arab Narrator »), une voix d'homme en
+ * arabe standard, grave et chaude. C'est AUSSI la voix des consignes en
+ * français : Pio n'a qu'une voix (`voiceConfig`).
  *
- * CHOISIE À L'OREILLE, PAS AU HASARD. Le 28 septembre 2026, le même verset a
- * été synthétisé avec quatre voix arabes du compte (Ekram, Layla, Mustafa,
- * Senen), et Ekram a été retenue à l'écoute. Une mesure l'avait d'abord
- * qualifiée : ses trois syllabes بَ بِ بُ portent trois voyelles nettement
- * distinctes, condition du niveau 2 du parcours.
+ * UNE VOIX D'HOMME, DEMANDÉE PAR LE PROPRIÉTAIRE le 28 septembre 2026 :
+ * « agréable, douce, mais une voix d'homme ». Elle remplace Ekram, une voix de
+ * femme. Treize voix d'homme ont lu les mêmes textes, et celle d'Omar a été
+ * retenue sur trois mesures :
+ * - ses syllabes بَ بِ بُ portent trois voyelles bien distinctes (4,8 Bark au
+ *   plus proche, contre 4,5 pour Ekram ; seul Tariq, une voix bien plus dure,
+ *   fait mieux), condition du niveau 2 ;
+ * - les 27 versets du module, transcrits par `scribe_v2`, rendent exactement
+ *   leur texte (Ekram, au même essai, avait ajouté des mots avant un verset) ;
+ * - son volume rejoint celui de la voix des consignes (−20 LUFS pour les
+ *   deux), l'enfant n'entend donc pas de saut entre le français et l'arabe.
+ * Une mesure ne remplace pas l'oreille : c'est l'écoute du propriétaire qui
+ * la confirme. Anas (`R6nda3uM038xEEKi7GFl`), plus douce encore mais aux
+ * voyelles moins séparées, est la voix de rechange.
  *
  * `ELEVENLABS_VOICE_ID` la remplace. L'identifiant vient de la bibliothèque
  * du compte ElevenLabs qui porte la clé : sur un autre compte, vérifier que la
  * voix y est disponible, sinon l'API répond `voice_not_found`, l'action rend
  * `provider_error` et la leçon continue sans le son.
  */
-const DEFAULT_VOICE_ID = "LE1b8WpPSScCUklGPKzg";
+const DEFAULT_VOICE_ID = "vY0W52tbYe3pDfogQWP7";
+
+/*
+ * UNE SEULE VOIX POUR PIO, EN FRANÇAIS COMME EN ARABE. Le 29 septembre 2026,
+ * le propriétaire a entendu deux voix dans une même consigne (« Touche la
+ * lettre… » par la voix française, puis « بَاء » par Omar) et a demandé une
+ * seule voix, ou une voix moins robotique. La voix française d'alors,
+ * « Alexandre FR » (`EGS8Z4YTFhSL6Mm6LpoK`), était la plus monotone des
+ * voix mesurées : sa hauteur ne variait que sur 4 à 5 demi-tons, contre 8 à
+ * 11 pour Omar. Omar lit les consignes françaises sans une erreur de
+ * transcription (`scribe_v2` en français) et dit les formules arabes
+ * (« مَا شَاءَ اللَّه ») au milieu d'une phrase française.
+ *
+ * Les consignes prennent donc la voix du parcours. `ELEVENLABS_FR_VOICE_ID`
+ * leur redonne une voix à part ; `npx convex run arabic/voice:listVoices`
+ * liste les voix du compte.
+ *
+ * PLUS DE RALENTI SUR LES CONSIGNES : Omar parle posément de lui-même (18
+ * caractères par seconde en français, contre 19 à 22 pour Alexandre ralenti
+ * à 0,92), et le ralenti de la synthèse ajoutait de l'artifice.
+ */
 
 /** ISO-639-3. Leur API accepte aussi « ar » ; on fixe le plus explicite. */
 const DEFAULT_STT_LANGUAGE = "ara";
@@ -120,6 +157,8 @@ const ALLOWED_MIME: Readonly<Record<string, string>> = {
 interface VoiceConfig {
   apiKey: string;
   voiceId: string;
+  /** La voix des consignes en français : celle du parcours, sauf réglage. */
+  frVoiceId: string;
   ttsModel: string;
   sttModel: string;
   sttLanguage: string;
@@ -143,6 +182,7 @@ function voiceConfig(): VoiceConfig | null {
   return {
     apiKey,
     voiceId,
+    frVoiceId: process.env.ELEVENLABS_FR_VOICE_ID ?? voiceId,
     ttsModel: process.env.ELEVENLABS_MODEL_ID ?? DEFAULT_TTS_MODEL,
     sttModel: process.env.ELEVENLABS_STT_MODEL_ID ?? DEFAULT_STT_MODEL,
     sttLanguage: process.env.ELEVENLABS_STT_LANGUAGE ?? DEFAULT_STT_LANGUAGE,
@@ -176,32 +216,56 @@ const refValidator = v.union(
     lessonKey: v.string(),
     itemKey: v.string(),
   }),
+  // Une consigne française du catalogue fermé (`consignes.ts`).
+  v.object({
+    kind: v.literal("instruction"),
+    key: v.string(),
+  }),
+  // Le mot-image d'une lettre : « أَسَد » pour أ (`letterWords.ts`).
+  v.object({
+    kind: v.literal("letterWord"),
+    letterKey: v.string(),
+  }),
 );
 
 type SpeechRef =
   | { kind: "letterName"; letterKey: string }
   | { kind: "letterSyllable"; letterKey: string; haraka: "fatha" | "kasra" | "damma" }
-  | { kind: "lessonItem"; lessonKey: string; itemKey: string };
+  | { kind: "lessonItem"; lessonKey: string; itemKey: string }
+  | { kind: "instruction"; key: string }
+  | { kind: "letterWord"; letterKey: string };
 
-/** Le texte arabe désigné par une référence, ou `null` si elle ne désigne rien. */
-function resolveText(ref: SpeechRef): string | null {
+/** Ce qu'il faut dire, et dans quelle langue — donc avec quelle voix. */
+type Speech = { text: string; lang: "ar" | "fr" };
+
+/** Le texte désigné par une référence, ou `null` si elle ne désigne rien. */
+function resolveSpeech(ref: SpeechRef): Speech | null {
+  const ar = (text: string | null | undefined): Speech | null =>
+    text ? { text, lang: "ar" } : null;
+
+  if (ref.kind === "instruction") {
+    return isConsigneKey(ref.key) ? { text: spokenConsigne(ref.key), lang: "fr" } : null;
+  }
+  if (ref.kind === "letterWord") {
+    return ar(letterWord(ref.letterKey)?.ar);
+  }
   if (ref.kind === "letterName") {
-    return getLetter(ref.letterKey)?.nameAr ?? null;
+    return ar(getLetter(ref.letterKey)?.nameAr);
   }
   if (ref.kind === "letterSyllable") {
     const letter = getLetter(ref.letterKey);
-    return letter ? letter.syllables[ref.haraka] : null;
+    return ar(letter ? letter.syllables[ref.haraka] : null);
   }
   const lesson = getLesson(ref.lessonKey);
   if (!lesson) return null;
 
   const item = lesson.items.find((candidate) => candidate.key === ref.itemKey);
-  if (item) return item.ar;
+  if (item) return ar(item.ar);
 
   // Une leçon d'alphabet n'a pas d'items : ses « items » sont ses lettres, et
   // l'écran demande le NOM quand il désigne une lettre.
   if ((lesson.letters as readonly string[]).includes(ref.itemKey)) {
-    return getLetter(ref.itemKey)?.nameAr ?? null;
+    return ar(getLetter(ref.itemKey)?.nameAr);
   }
   return null;
 }
@@ -230,16 +294,19 @@ export const speak = action({
       return { status: "unavailable", reason: "not_allowed" };
     }
 
-    const text = resolveText(args.ref as SpeechRef);
-    if (!text) return { status: "unavailable", reason: "unknown_text" };
+    const speech = resolveSpeech(args.ref as SpeechRef);
+    if (!speech) return { status: "unavailable", reason: "unknown_text" };
+    const { text } = speech;
 
     const config = voiceConfig();
     if (!config) return { status: "unavailable", reason: "not_configured" };
+    // Une seule voix par défaut : `frVoiceId` vaut `voiceId` sauf réglage.
+    const voiceId = speech.lang === "fr" ? config.frVoiceId : config.voiceId;
 
     // La clé porte la voix ET le modèle : changer de voix ne resservira pas
     // l'ancienne. Le texte est court (un verset au plus), donc lisible tel
     // quel dans le tableau de bord — pas d'empreinte à déchiffrer.
-    const cacheKey = `${config.voiceId}|${config.ttsModel}|${text}`;
+    const cacheKey = `${voiceId}|${config.ttsModel}|${text}`;
 
     const cached = await ctx.runQuery(internal.arabic.db.findClip, { cacheKey });
     if (cached) {
@@ -251,7 +318,7 @@ export const speak = action({
 
     let audio: Blob;
     try {
-      audio = await synthesize(text, config);
+      audio = await synthesize(text, config, voiceId);
     } catch (error) {
       console.error("[arabe] synthèse vocale en échec", error);
       return { status: "unavailable", reason: "provider_error" };
@@ -263,7 +330,7 @@ export const speak = action({
       {
         cacheKey,
         text,
-        voiceId: config.voiceId,
+        voiceId,
         modelId: config.ttsModel,
         storageId,
         bytes: audio.size,
@@ -283,10 +350,50 @@ export const speak = action({
   },
 });
 
+/**
+ * Les voix du compte ElevenLabs, pour choisir celle des consignes en
+ * français. INTERNE : un outil de réglage, lancé à la main
+ * (`npx convex run arabic/voice:listVoices`), jamais appelé par un écran.
+ */
+export const listVoices = internalAction({
+  args: {},
+  handler: async () => {
+    const config = voiceConfig();
+    if (!config) return [];
+    const response = await fetch(`${API_BASE}/voices`, {
+      headers: { "xi-api-key": config.apiKey },
+    });
+    if (!response.ok) return [];
+    const payload = (await response.json()) as {
+      voices?: Array<{
+        voice_id: string;
+        name: string;
+        category?: string;
+        labels?: Record<string, string>;
+        verified_languages?: Array<{ language: string; accent?: string | null }>;
+      }>;
+    };
+    return (payload.voices ?? []).map((voice) => ({
+      id: voice.voice_id,
+      name: voice.name,
+      category: voice.category ?? null,
+      labels: voice.labels ?? {},
+      languages: (voice.verified_languages ?? []).map(
+        (entry) => `${entry.language}${entry.accent ? `/${entry.accent}` : ""}`,
+      ),
+    }));
+  },
+});
+
 /** Appelle la synthèse et rend le mp3. Lève si le fournisseur refuse. */
-async function synthesize(text: string, config: VoiceConfig): Promise<Blob> {
+async function synthesize(
+  text: string,
+  config: VoiceConfig,
+  voiceId: string,
+): Promise<Blob> {
+  const speed = config.speed;
   const response = await fetch(
-    `${API_BASE}/text-to-speech/${encodeURIComponent(config.voiceId)}?output_format=mp3_44100_128`,
+    `${API_BASE}/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
     {
       method: "POST",
       headers: {
@@ -305,7 +412,7 @@ async function synthesize(text: string, config: VoiceConfig): Promise<Blob> {
           similarity_boost: 0.8,
           style: 0,
           use_speaker_boost: true,
-          ...(config.speed !== null ? { speed: config.speed } : {}),
+          ...(speed !== null ? { speed } : {}),
         },
       }),
     },
@@ -364,6 +471,8 @@ export const verifyPronunciation = action({
     ),
     audio: v.bytes(),
     mimeType: v.string(),
+    /** La crête de la jauge du micro côté appareil (0 à 1), pour le journal. */
+    peakLevel: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<VerifyResult> => {
     const userId = await getAuthUserId(ctx);
@@ -431,6 +540,7 @@ export const verifyPronunciation = action({
             accepted: expected.accepted,
             transcript,
             requireGlyph: expected.glyph,
+            latin: expected.latin,
           })
         : expected.kind === "word"
           ? judgePronunciation({
@@ -442,6 +552,15 @@ export const verifyPronunciation = action({
     const missing = "missing" in judgement ? judgement.missing : [];
     const firstMiss = recitation?.firstMiss ?? null;
 
+    // Une ligne TECHNIQUE par essai, jamais le contenu : elle suffit à dire si
+    // l'audio était vide ou illisible, ou si la transcription a répondu en
+    // latin, quand un adulte signale que « l'appli n'entend pas ».
+    console.log(
+      `[arabe] essai ${args.drill} « ${args.itemKey} » : ${args.audio.byteLength} o, ` +
+        `${baseMime(args.mimeType)} (${audioContainer(args.audio)}), crête ` +
+        `${args.peakLevel === undefined ? "inconnue" : args.peakLevel.toFixed(3)}, transcription de ` +
+        `${transcript.trim().length} caractères (${scriptOf(transcript)}), verdict ${judgement.verdict}`,
+    );
     await ctx.runMutation(internal.arabic.db.recordServerAttempt, {
       studentId: caller.profileId,
       lessonKey: args.lessonKey,
@@ -472,8 +591,28 @@ function baseMime(mimeType: string): string {
   return mimeType.split(";")[0].trim().toLowerCase();
 }
 
+/** Le conteneur réel, lu dans les premiers octets : le type annoncé peut mentir. */
+function audioContainer(audio: ArrayBuffer): string {
+  const head = new Uint8Array(audio.slice(0, 12));
+  const ascii = (from: number, to: number) => String.fromCharCode(...head.slice(from, to));
+  if (ascii(4, 8) === "ftyp") return "mp4";
+  if (head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3) return "webm";
+  if (ascii(0, 4) === "OggS") return "ogg";
+  if (ascii(0, 4) === "RIFF") return "wav";
+  if (ascii(0, 3) === "ID3" || (head[0] === 0xff && (head[1] & 0xe0) === 0xe0)) return "mp3";
+  return "inconnu";
+}
+
+/** L'écriture d'une transcription, sans en garder un mot. */
+function scriptOf(text: string): "vide" | "arabe" | "latin" | "autre" {
+  if (text.trim().length === 0) return "vide";
+  if (/[؀-ۿ]/.test(text)) return "arabe";
+  if (/[A-Za-z]/.test(text)) return "latin";
+  return "autre";
+}
+
 type Expected =
-  | { kind: "letter"; accepted: string[]; glyph: string }
+  | { kind: "letter"; accepted: string[]; glyph: string; latin: LatinForms }
   | { kind: "word"; text: string }
   | { kind: "ayah"; text: string };
 
@@ -496,6 +635,8 @@ function resolveExpected(lessonKey: string, itemKey: string): Expected | null {
       kind: "letter",
       accepted: acceptedFormsForLetter(letter),
       glyph: letter.isolated,
+      // Un nom de lettre transcrit « Jim » ou « Cuff » : voir `latinSkeleton`.
+      latin: latinFormsForLetter(letter),
     };
   }
 

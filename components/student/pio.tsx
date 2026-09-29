@@ -43,6 +43,14 @@ import { useIsNativeApp } from "@/hooks/use-native-app";
  * comme avec les anciens PNG (572 × 800). Le clip a de l'air au-dessus de sa
  * tête pour qu'il puisse sauter : la vidéo déborde donc du cadre vers le haut,
  * sans changer la place que Pio occupe dans la mise en page.
+ *
+ * PIO A DES TENUES. `classic` est le Pio de tous les jours (tunique, loupe,
+ * sacoche) ; `boubou` est sa tenue du module Arabe & Coran : grand boubou
+ * vert émeraude brodé d'or et kufi assorti, avec ses propres poses (le salut
+ * main sur le cœur, l'écoute, la prononciation, le bravo). Une tenue n'a pas
+ * forcément toutes les poses : une pose absente retombe sur la plus proche
+ * qui existe dans CETTE tenue (`OUTFITS`), jamais sur une autre tenue — Pio ne
+ * change pas d'habits au milieu d'un écran.
  */
 export type PioState =
   | "idle"
@@ -54,7 +62,21 @@ export type PioState =
   | "think"
   | "sleep"
   /** La marche sur la carte : Pio marche sur place, la carte le déplace. */
-  | "walk";
+  | "walk"
+  /** La marche qui s'éloigne, vue de dos : Pio monte le chemin. */
+  | "walkAway"
+  /** La marche qui s'approche, vue de face : Pio redescend le chemin. */
+  | "walkToward"
+  /** Le salut, main sur le cœur. */
+  | "salam"
+  /** Pio écoute l'enfant parler. */
+  | "listen"
+  /** Pio montre comment on prononce. */
+  | "recite"
+  /** Pio applaudit. */
+  | "bravo";
+
+export type PioOutfit = "classic" | "boubou";
 
 const POSES: readonly PioState[] = [
   "idle",
@@ -66,21 +88,80 @@ const POSES: readonly PioState[] = [
   "think",
   "sleep",
   "walk",
+  "walkAway",
+  "walkToward",
+  "salam",
+  "listen",
+  "recite",
+  "bravo",
 ];
 
-/** L'affiche et l'image de repli de chaque clip. La marche part de la pose calme. */
-const POSTERS: Record<PioState, string> = {
-  idle: "/images/pio/idle.png",
-  hello: "/images/pio/hello.png",
-  cheer: "/images/pio/cheer.png",
-  // « sad » applicatif = pose douce, Pio serre ses livres — jamais moqueur.
-  sad: "/images/pio/sad.png",
-  amazed: "/images/pio/amazed.png",
-  encourage: "/images/pio/encourage.png",
-  think: "/images/pio/think.png",
-  sleep: "/images/pio/sleep.png",
-  walk: "/images/pio/idle.png",
+type OutfitSpec = {
+  /** Les poses qui existent vraiment dans cette tenue : un PNG et un clip chacune. */
+  poses: readonly PioState[];
+  /** Pour une pose absente, la plus proche qui existe dans la même tenue. */
+  fallback: Partial<Record<PioState, PioState>>;
+  images: string;
+  videos: string;
+  /**
+   * Vers où regardent les clips de marche de cette tenue, sans retournement :
+   * 1 à droite, -1 à gauche. La carte retourne Pio d'après ce sens, pour
+   * qu'il regarde toujours là où il va (`pio-walker.tsx`).
+   */
+  walkFacing: 1 | -1;
 };
+
+const OUTFITS: Record<PioOutfit, OutfitSpec> = {
+  classic: {
+    poses: ["idle", "hello", "cheer", "sad", "amazed", "encourage", "think", "sleep", "walk"],
+    // « sad » applicatif = pose douce, Pio serre ses livres — jamais moqueur.
+    fallback: {
+      salam: "hello",
+      listen: "think",
+      recite: "hello",
+      bravo: "cheer",
+      walkAway: "walk",
+      walkToward: "walk",
+    },
+    images: "/images/pio",
+    videos: "/videos/pio",
+    // Le clip `walk` marche vers la gauche, de trois quarts.
+    walkFacing: -1,
+  },
+  boubou: {
+    poses: ["idle", "salam", "listen", "recite", "bravo", "encourage", "walkAway", "walkToward"],
+    fallback: {
+      hello: "salam",
+      cheer: "bravo",
+      amazed: "bravo",
+      sad: "encourage",
+      think: "idle",
+      sleep: "idle",
+      walk: "walkToward",
+    },
+    images: "/images/pio/boubou",
+    videos: "/videos/pio/boubou",
+    // `walkAway` (de dos) et `walkToward` (de face) partent vers la droite.
+    walkFacing: 1,
+  },
+};
+
+/** Le sens des clips de marche d'une tenue : 1 vers la droite, -1 vers la gauche. */
+export function pioWalkFacing(outfit: PioOutfit): 1 | -1 {
+  return OUTFITS[outfit].walkFacing;
+}
+
+/** La pose réellement jouée pour cette tenue. */
+function resolvePose(outfit: PioOutfit, state: PioState): PioState {
+  const spec = OUTFITS[outfit];
+  if (spec.poses.includes(state)) return state;
+  return spec.fallback[state] ?? "idle";
+}
+
+/** L'affiche et l'image de repli d'un clip. La marche part de la pose calme. */
+function posterFor(outfit: PioOutfit, pose: PioState): string {
+  return `${OUTFITS[outfit].images}/${pose === "walk" ? "idle" : pose}.png`;
+}
 
 const LABELS: Record<PioState, string> = {
   idle: "Pio te regarde",
@@ -92,6 +173,12 @@ const LABELS: Record<PioState, string> = {
   think: "Pio réfléchit",
   sleep: "Pio se repose",
   walk: "Pio marche",
+  walkAway: "Pio marche",
+  walkToward: "Pio marche",
+  salam: "Pio te salue, la main sur le cœur",
+  listen: "Pio t'écoute",
+  recite: "Pio te montre comment le dire",
+  bravo: "Pio t'applaudit",
 };
 
 /**
@@ -104,10 +191,15 @@ const CLIP = { width: 576, height: 1024, pioHeight: 800, bottomGap: 96 } as cons
 /** 572 × 800 : la largeur de Pio découle de sa hauteur, comme avant. */
 const ASPECT = 572 / 800;
 
-export function pioClipSources(state: PioState): { mov: string; webm: string } {
+export function pioClipSources(
+  state: PioState,
+  outfit: PioOutfit = "classic",
+): { mov: string; webm: string } {
+  const pose = resolvePose(outfit, state);
+  const dir = OUTFITS[outfit].videos;
   return {
-    mov: `/videos/pio/${state}.mov`,
-    webm: `/videos/pio/${state}.webm`,
+    mov: `${dir}/${pose}.mov`,
+    webm: `${dir}/${pose}.webm`,
   };
 }
 
@@ -117,6 +209,8 @@ export function isPioState(value: string): value is PioState {
 
 type PioProps = {
   state?: PioState;
+  /** La tenue. `boubou` : le module Arabe & Coran. */
+  outfit?: PioOutfit;
   /** Hauteur de Pio debout, en pixels. La largeur suit le ratio de l'image. */
   size?: number;
   className?: string;
@@ -128,6 +222,7 @@ type PioProps = {
 
 export function Pio({
   state = "idle",
+  outfit = "classic",
   size = 96,
   className = "",
   animated = true,
@@ -137,6 +232,7 @@ export function Pio({
   const isNativeApp = useIsNativeApp();
   const width = Math.round(size * ASPECT);
   const playing = isNativeApp && animated && !reducedMotion;
+  const pose = resolvePose(outfit, state);
 
   return (
     <div
@@ -146,10 +242,10 @@ export function Pio({
       style={{ width, height: size }}
     >
       {playing ? (
-        <PioClip key={state} state={state} size={size} priority={priority} />
+        <PioClip key={`${outfit}:${pose}`} state={pose} outfit={outfit} size={size} priority={priority} />
       ) : (
         <Image
-          src={POSTERS[state]}
+          src={posterFor(outfit, pose)}
           alt=""
           width={572}
           height={800}
@@ -169,10 +265,12 @@ export function Pio({
  */
 function PioClip({
   state,
+  outfit,
   size,
   priority,
 }: {
   state: PioState;
+  outfit: PioOutfit;
   size: number;
   priority: boolean;
 }) {
@@ -188,7 +286,7 @@ function PioClip({
   // premier plan n'ait pas de sursaut quand la lecture démarre.
   const posterHeight = CLIP.width * (800 / 572);
   const posterY = (headroom / (CLIP.height - posterHeight)) * 100;
-  const sources = pioClipSources(state);
+  const sources = pioClipSources(state, outfit);
 
   useEffect(() => {
     const video = ref.current;
@@ -208,7 +306,7 @@ function PioClip({
       style={{ width, height, top, objectFit: "contain", objectPosition: `50% ${posterY.toFixed(1)}%` }}
       width={CLIP.width}
       height={CLIP.height}
-      poster={POSTERS[state]}
+      poster={posterFor(outfit, state)}
       autoPlay
       loop
       muted

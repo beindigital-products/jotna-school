@@ -3,16 +3,9 @@
 /**
  * LE BOUTON « ÉCOUTER » — la brique la plus utilisée du module.
  *
- * Il demande au serveur l'audio d'un texte du parcours (`arabic.voice.speak`),
- * puis le joue. Le serveur met le fichier en cache ; ce composant met en cache
- * l'URL, pour qu'un enfant qui réécoute dix fois la même lettre ne déclenche
- * qu'UN aller-retour — le reste est du `<audio>` local.
- *
- * LE CACHE EST AU NIVEAU DU MODULE, pas du composant : la même lettre est
- * affichée par la carte, par le QCM et par l'exercice de prononciation, et
- * c'est le même son. Une `Map` de quelques dizaines d'URL, vidée au
- * rechargement de la page — rien à invalider, l'URL de stockage Convex ne
- * change pas tant que le clip existe.
+ * Il fait dire une référence du parcours (lettre, syllabe, mot, verset,
+ * consigne) par le lecteur partagé (`./speech.ts`) : cache des URL, un seul
+ * son à la fois dans le module, arrêt quand le bouton disparaît.
  *
  * IL IGNORE LE RÉGLAGE « SONS » DE L'ESPACE ÉLÈVE, et c'est voulu : ce réglage
  * (`lib/sounds`) coupe les bruitages de récompense, qui sont un ornement. Ici,
@@ -25,29 +18,12 @@
  * API est muette ne sert personne.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useAction } from "convex/react";
-import { Loader2, Volume2, VolumeX } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { useEffect, useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 import { arabicCopy } from "@/lib/arabic/copy";
+import { useSpeech, type SpeechRef } from "./speech";
 
-export type SpeechRef =
-  | { kind: "letterName"; letterKey: string }
-  | {
-      kind: "letterSyllable";
-      letterKey: string;
-      haraka: "fatha" | "kasra" | "damma";
-    }
-  | { kind: "lessonItem"; lessonKey: string; itemKey: string };
-
-/** URL par référence, pour la durée de la page. */
-const urlCache = new Map<string, string>();
-
-function cacheKeyOf(ref: SpeechRef): string {
-  return JSON.stringify(ref);
-}
-
-type State = "idle" | "loading" | "playing" | "unavailable" | "not_configured";
+export type { SpeechRef } from "./speech";
 
 export function ListenButton({
   speechRef,
@@ -55,93 +31,56 @@ export function ListenButton({
   variant = "primary",
   className = "",
   onUnavailable,
+  rate = 1,
+  onPlayingChange,
 }: {
   speechRef: SpeechRef;
   label?: string;
   variant?: "primary" | "ghost" | "chip";
   className?: string;
   onUnavailable?: (reason: string) => void;
+  /**
+   * La vitesse de lecture. `0.7` : l'écoute LENTE du coach, le même clip joué
+   * plus doucement (le navigateur garde la hauteur de la voix) — pas de
+   * second appel au serveur, pas de second fichier.
+   */
+  rate?: number;
+  /** Prévient l'appelant quand la voix commence et s'arrête (Pio parle). */
+  onPlayingChange?: (playing: boolean) => void;
 }) {
-  const speak = useAction(api.arabic.voice.speak);
-  const [state, setState] = useState<State>("idle");
+  const { say, speaking } = useSpeech();
   const [played, setPlayed] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [unavailable, setUnavailable] = useState<"not_configured" | "unavailable" | null>(null);
 
-  // Un composant démonté ne doit ni jouer ni réveiller un état disparu.
   useEffect(() => {
-    return () => {
-      audioRef.current?.pause();
-      audioRef.current = null;
-    };
-  }, []);
+    onPlayingChange?.(speaking);
+  }, [onPlayingChange, speaking]);
 
-  const play = useCallback(
-    async (url: string) => {
-      audioRef.current?.pause();
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      setState("playing");
-      audio.onended = () => setState("idle");
-      audio.onerror = () => setState("unavailable");
-      try {
-        await audio.play();
-        setPlayed(true);
-      } catch {
-        // Lecture refusée par le navigateur (geste utilisateur manquant) :
-        // le bouton redevient simplement cliquable.
-        setState("idle");
-      }
-    },
-    [],
-  );
-
-  const handleClick = useCallback(async () => {
-    const key = cacheKeyOf(speechRef);
-    const cached = urlCache.get(key);
-    if (cached) {
-      await play(cached);
+  async function handleClick() {
+    const outcome = await say([speechRef], { rate });
+    if (outcome.ok) {
+      setPlayed(true);
       return;
     }
+    if (outcome.reason === "interrupted") return;
+    setUnavailable(outcome.reason);
+    onUnavailable?.(outcome.reason);
+  }
 
-    setState("loading");
-    try {
-      const result = await speak({ ref: speechRef });
-      if (result.status === "ready") {
-        urlCache.set(key, result.url);
-        await play(result.url);
-        return;
-      }
-      const unavailableState =
-        result.reason === "not_configured" ? "not_configured" : "unavailable";
-      setState(unavailableState);
-      onUnavailable?.(result.reason);
-    } catch {
-      setState("unavailable");
-      onUnavailable?.("network");
-    }
-  }, [onUnavailable, play, speak, speechRef]);
-
-  if (state === "not_configured" || state === "unavailable") {
+  if (unavailable) {
     return (
       <span
         className={`inline-flex items-center gap-2 rounded-2xl bg-gray-100 px-3 py-2 text-sm font-medium text-gray-500 ${className}`}
       >
         <VolumeX className="h-4 w-4" aria-hidden />
-        {state === "not_configured"
+        {unavailable === "not_configured"
           ? arabicCopy.listen.notConfigured
           : arabicCopy.listen.unavailable}
       </span>
     );
   }
 
-  const busy = state === "loading";
-  const text =
-    label ??
-    (busy
-      ? arabicCopy.listen.loading
-      : played
-        ? arabicCopy.listen.replay
-        : arabicCopy.listen.idle);
+  const text = label ?? (played ? arabicCopy.listen.replay : arabicCopy.listen.idle);
 
   const styles =
     variant === "primary"
@@ -154,18 +93,10 @@ export function ListenButton({
     <button
       type="button"
       onClick={handleClick}
-      disabled={busy}
       aria-label={`${arabicCopy.listen.idle} — ${describe(speechRef)}`}
-      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-base font-bold transition-all disabled:opacity-70 ${styles} ${className}`}
+      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-base font-bold transition-all ${styles} ${className}`}
     >
-      {busy ? (
-        <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-      ) : (
-        <Volume2
-          className={`h-5 w-5 ${state === "playing" ? "animate-pulse" : ""}`}
-          aria-hidden
-        />
-      )}
+      <Volume2 className={`h-5 w-5 ${speaking ? "animate-pulse" : ""}`} aria-hidden />
       <span>{text}</span>
     </button>
   );
@@ -177,5 +108,7 @@ function describe(ref: SpeechRef): string {
   if (ref.kind === "letterSyllable") {
     return `lettre ${ref.letterKey} avec la ${ref.haraka}`;
   }
+  if (ref.kind === "letterWord") return `le mot de la lettre ${ref.letterKey}`;
+  if (ref.kind === "instruction") return "la consigne";
   return "le texte de la leçon";
 }

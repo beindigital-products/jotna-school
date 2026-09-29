@@ -25,6 +25,8 @@ import {
   judgePronunciation,
   judgeReading,
   judgeRecitation,
+  latinFormsForLetter,
+  latinSkeleton,
   levenshtein,
   normalizeArabic,
   READING_OK,
@@ -371,6 +373,91 @@ describe("judgePronunciation", () => {
     const out = judgePronunciation({ accepted, transcript: "" });
     expect(out.verdict).toBe("retry");
     expect(out.score).toBe(0);
+  });
+
+  it("accepte « أليف », un alif dit avec un i long, sans lui ôter son « article »", () => {
+    // Relevé le 29 septembre 2026 : « Alif » dit à la française revient
+    // « أليف » ; l'article retiré, il ne restait que « يف » (score 0,33).
+    const alif = getLetter("alif")!;
+    const out = judgePronunciation({
+      accepted: acceptedFormsForLetter(alif),
+      transcript: "أليف",
+      requireGlyph: alif.isolated,
+    });
+    expect(out.verdict).toBe("ok");
+  });
+});
+
+describe("latinSkeleton / latinFormsForLetter", () => {
+  const judgeLatin = (key: ArabicLetterKey, transcript: string) => {
+    const letter = getLetter(key)!;
+    return judgePronunciation({
+      accepted: acceptedFormsForLetter(letter),
+      transcript,
+      requireGlyph: letter.isolated,
+      latin: latinFormsForLetter(letter),
+    });
+  };
+
+  it("réduit un mot latin à ses consonnes", () => {
+    expect(latinSkeleton("Jim")).toBe("jm");
+    expect(latinSkeleton("Jeem")).toBe("jm");
+    expect(latinSkeleton("Gym")).toBe("jm");
+    expect(latinSkeleton("djîm")).toBe("jm");
+    expect(latinSkeleton("Cuff")).toBe("kf");
+    expect(latinSkeleton("qâf")).toBe("kf");
+    expect(latinSkeleton("Wow")).toBe("w");
+    expect(latinSkeleton("Sheen")).toBe("Sn");
+    expect(latinSkeleton("chîn")).toBe("Sn");
+    expect(latinSkeleton("Meme")).toBe("m");
+    expect(latinSkeleton("Bah")).toBe("b");
+    expect(latinSkeleton("Dahl")).toBe("dl");
+    expect(latinSkeleton("Alif")).toBe("lf");
+    expect(latinSkeleton("Lamb")).toBe("lm");
+    expect(latinSkeleton("ʿayn")).toBe("n");
+  });
+
+  it("accepte un nom de lettre que la transcription a écrit en latin", () => {
+    // Les réponses réelles de Scribe sur des noms bien lus, le 29 septembre 2026.
+    expect(judgeLatin("jim", "Jim. Jim.").verdict).toBe("ok");
+    expect(judgeLatin("kaf", "Cuff.").verdict).toBe("ok");
+    expect(judgeLatin("waw", "Wow!").verdict).toBe("ok");
+    expect(judgeLatin("shin", "Sheen.").verdict).toBe("ok");
+    expect(judgeLatin("mim", "Meme.").verdict).toBe("ok");
+    expect(judgeLatin("alif", "Alif.").verdict).toBe("ok");
+  });
+
+  it("ne donne que « presque » à une lettre que le latin confond avec sa voisine", () => {
+    expect(judgeLatin("qaf", "Kaf").verdict).toBe("close");
+    expect(judgeLatin("ha", "Ha").verdict).toBe("close");
+    expect(judgeLatin("haSoft", "Ha").verdict).toBe("ok");
+  });
+
+  it("montre ce qui a été entendu quand le refus vient d'un mot latin", () => {
+    const out = judgeLatin("jim", "Jean.");
+    expect(out.verdict).toBe("retry");
+    expect(out.heard).toBe("Jean.");
+  });
+
+  it("ne montre rien quand la transcription n'a aucune lettre", () => {
+    expect(judgeLatin("dhal", ".").heard).toBe("");
+  });
+
+  it("refuse une autre lettre, même écrite en latin", () => {
+    expect(judgeLatin("ba", "Ta").verdict).toBe("retry");
+    expect(judgeLatin("jim", "Kaf").verdict).toBe("retry");
+    expect(judgeLatin("ba", "เพราะ").verdict).toBe("retry");
+  });
+
+  it("donne à chaque lettre sans voisine des squelettes que nulle autre ne partage", () => {
+    const clear = ARABIC_LETTERS.filter((letter) => !latinFormsForLetter(letter).ambiguous);
+    const owner = new Map<string, string>();
+    for (const letter of clear) {
+      for (const skeleton of latinFormsForLetter(letter).skeletons) {
+        expect(owner.get(skeleton) ?? letter.key).toBe(letter.key);
+        owner.set(skeleton, letter.key);
+      }
+    }
   });
 });
 

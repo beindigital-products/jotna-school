@@ -18,7 +18,7 @@
  */
 
 import type { ArabicLetter } from "@/convex/arabic/alphabet";
-import { HARAKAT } from "@/convex/arabic/alphabet";
+import { HARAKAT, syllableFr } from "@/convex/arabic/alphabet";
 import { ListenButton } from "./listen-button";
 
 const DOT_LABEL: Record<string, string> = {
@@ -124,7 +124,7 @@ export function LetterCard({
                 letterKey: letter.key,
                 haraka: haraka.key,
               }}
-              label={`${letter.syllables[haraka.key]} — « ${letter.soundFr}${haraka.soundFr} »`}
+              label={`${letter.syllables[haraka.key]} — « ${syllableFr(letter, haraka.key)} »`}
             />
           ))}
       </div>

@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "convex/react";
+import { motion } from "framer-motion";
 import { api } from "@/convex/_generated/api";
+import { getModule } from "@/convex/moduleCatalog";
 import Link from "next/link";
 import { Play, Map as MapIcon, Flame, Compass } from "lucide-react";
 import { Pio, type PioState } from "@/components/student/pio";
@@ -136,19 +138,25 @@ export default function StudentHomePage() {
             <SpeechBubble bubbleKey={line}>{line}</SpeechBubble>
           )}
 
-          <button
-            type="button"
-            onClick={tapPio}
-            aria-label="Toucher Pio"
-            className="mt-6 rounded-full outline-none focus-visible:ring-4 focus-visible:ring-white/80"
-          >
-            <Pio
-              state={loading ? "think" : pose}
-              size={272}
-              priority
-              className="drop-shadow-[0_18px_22px_rgba(60,30,0,0.45)]"
-            />
-          </button>
+          {/* Pio au centre, les modules de l'école de part et d'autre. */}
+          <div className="relative mt-6 w-full">
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={tapPio}
+                aria-label="Toucher Pio"
+                className="rounded-full outline-none focus-visible:ring-4 focus-visible:ring-white/80"
+              >
+                <Pio
+                  state={loading ? "think" : pose}
+                  size={272}
+                  priority
+                  className="drop-shadow-[0_18px_22px_rgba(60,30,0,0.45)]"
+                />
+              </button>
+            </div>
+            <SideModules />
+          </div>
 
           <div className="mt-6 flex w-full max-w-sm flex-col items-center gap-3">
             <GameButton
@@ -183,9 +191,6 @@ export default function StudentHomePage() {
       <section className="px-4 sm:px-0">
         <QuestBoard />
       </section>
-
-      {/* ── Les modules que l'école a allumés (rien si aucun) ───────────── */}
-      <SchoolModules />
 
       {/* ── La série, si elle vit ───────────────────────────────────────── */}
       {streakAlive && stats && (
@@ -261,51 +266,106 @@ export default function StudentHomePage() {
 }
 
 /**
- * LES MODULES OPTIONNELS DE L'ÉCOLE — aujourd'hui « Arabe & Coran ».
+ * LES MODULES OPTIONNELS DE L'ÉCOLE, DE PART ET D'AUTRE DE PIO — aujourd'hui
+ * « Arabe & Coran ».
  *
- * NE REND RIEN quand l'école n'en a allumé aucun : ni titre, ni cadre vide.
- * Un enfant dont l'école n'a pas pris l'arabe ne doit pas voir la place où il
- * aurait été — c'est la règle du catalogue (`convex/moduleCatalog.ts`), tenue
+ * UNE IMAGE RONDE ET UN TITRE, RIEN D'AUTRE. Le propriétaire l'a voulu ainsi :
+ * pas de phrase d'explication sur l'accueil, l'illustration dit ce qu'est le
+ * module. Le premier se pose à droite de Pio, le suivant à gauche, et ainsi de
+ * suite ; chaque côté empile les siens. Le deuxième module n'aura rien à
+ * inventer.
+ *
+ * NE REND RIEN quand l'école n'en a allumé aucun : ni titre, ni place vide.
+ * Un enfant dont l'école n'a pas pris l'arabe ne doit pas voir où il aurait
+ * été — c'est la règle du catalogue (`convex/moduleCatalog.ts`), tenue
  * jusqu'à l'écran.
  *
- * SA PROPRE REQUÊTE, plutôt qu'une donnée descendue de l'accueil : la carte
- * n'a besoin de rien d'autre, et l'accueil n'a pas à attendre cette réponse
- * pour dessiner Pio.
+ * SA PROPRE REQUÊTE, plutôt qu'une donnée descendue de l'accueil : l'accueil
+ * n'a pas à attendre cette réponse pour dessiner Pio. Les médaillons sont posés
+ * en absolu : leur arrivée ne décale rien.
  *
  * IL N'Y A PAS D'ONGLET pour ce module (voir l'en-tête de
- * `app/(student)/layout.tsx`) : cette carte est donc la porte d'entrée, et
- * c'est pourquoi elle est large et nommée, pas un médaillon de plus.
+ * `app/(student)/layout.tsx`) : ce médaillon est la porte d'entrée.
  */
-function SchoolModules() {
+function SideModules() {
   const modules = useQuery(api.modules.getMine);
   const open = (modules ?? []).filter((module_) => module_.enabled);
   if (open.length === 0) return null;
 
+  const right = open.filter((_, i) => i % 2 === 0);
+  const left = open.filter((_, i) => i % 2 === 1);
+
   return (
-    <section className="px-4 sm:px-0">
-      <div className="grid gap-3 sm:grid-cols-2">
-        {open.map((module_) => (
-          <Link
-            key={module_.key}
-            href={module_.href}
-            className="flex items-center gap-4 rounded-3xl p-5 text-white shadow-lg transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-300 active:scale-[0.98]"
-            style={{ backgroundColor: module_.color }}
-          >
-            <span className="text-4xl" aria-hidden>
-              {module_.emoji}
+    <>
+      {left.length > 0 && (
+        <div className="absolute left-0 top-[38%] flex -translate-y-1/2 flex-col gap-4">
+          {left.map((module_, i) => (
+            <ModuleMedallion key={module_.key} module_={module_} delay={0.35 + i * 0.12} />
+          ))}
+        </div>
+      )}
+      {right.length > 0 && (
+        <div className="absolute right-0 top-[38%] flex -translate-y-1/2 flex-col gap-4">
+          {right.map((module_, i) => (
+            <ModuleMedallion key={module_.key} module_={module_} delay={0.25 + i * 0.12} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function ModuleMedallion({
+  module_,
+  delay,
+}: {
+  module_: { key: string; title: string; href: string; color: string };
+  delay: number;
+}) {
+  const image = getModule(module_.key)?.medallion;
+  return (
+    <motion.div
+      initial={{ scale: 0.4, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ delay, type: "spring", stiffness: 260, damping: 15 }}
+    >
+      <motion.div
+        animate={{ y: [0, -5, 0] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: delay + 0.6 }}
+      >
+        <Link
+          href={module_.href}
+          aria-label={`Ouvrir le module ${module_.title}`}
+          className="group flex w-[78px] flex-col items-center gap-1.5 rounded-3xl outline-none focus-visible:ring-4 focus-visible:ring-white/80 sm:w-[100px]"
+        >
+          <span className="relative block h-[70px] w-[70px] sm:h-[88px] sm:w-[88px]">
+            {/* Le halo doré qui respire : « ici, il y a quelque chose ». */}
+            <motion.span
+              aria-hidden
+              className="absolute -inset-3 rounded-full bg-[radial-gradient(circle,rgba(253,224,71,0.8)_0%,rgba(253,224,71,0.35)_45%,rgba(253,224,71,0)_70%)]"
+              animate={{ opacity: [0.55, 1, 0.55], scale: [0.94, 1.06, 0.94] }}
+              transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <span
+              className="btn-chunky relative block h-full w-full overflow-hidden rounded-full border-[4px] border-white bg-white shadow-lg transition-transform group-active:scale-95"
+              style={{ "--btn-depth": module_.color } as React.CSSProperties}
+            >
+              {image ? (
+                // eslint-disable-next-line @next/next/no-img-element -- petite vignette ; `next/image` n'apporte rien sous export statique
+                <img src={image} alt="" draggable={false} className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-3xl" style={{ backgroundColor: module_.color }}>
+                  ✨
+                </span>
+              )}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="font-display block text-xl font-extrabold">
-                {module_.title}
-              </span>
-              <span className="mt-0.5 block text-sm opacity-95">
-                {module_.summary}
-              </span>
-            </span>
-          </Link>
-        ))}
-      </div>
-    </section>
+          </span>
+          <span className="text-outline text-center font-display text-[13px] font-extrabold leading-tight text-white sm:text-sm">
+            {module_.title}
+          </span>
+        </Link>
+      </motion.div>
+    </motion.div>
   );
 }
 

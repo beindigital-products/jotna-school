@@ -24,6 +24,13 @@ export type TrailLayout = {
   bottomPad: number;
   /** Écart des étapes de part et d'autre du milieu, en pixels. */
   swing: number;
+  /**
+   * `down` (défaut) : la première étape en haut, le sentier descend.
+   * `up` : la première étape en bas, le sentier MONTE vers son but — le
+   * chemin du Coran, qui grimpe vers la Kaaba. Les marges gardent leur sens
+   * d'écran : `topPad` est toujours au-dessus du point le plus haut.
+   */
+  direction?: "down" | "up";
 };
 
 /**
@@ -49,6 +56,24 @@ export const SUBJECT_TRAIL: TrailLayout = {
 };
 
 /**
+ * Le chemin du module Arabe & Coran : trente leçons qui montent du village
+ * vers la Kaaba. Le dernier point est le parvis de la Kaaba : `topPad` couvre
+ * le ciel étoilé puis l'illustration jusqu'à ce parvis, pour que la Kaaba
+ * passe sous l'en-tête collé au cadre. `bottomPad` laisse la place au départ
+ * ET à la carte d'étape qui se lève en bas : sans elle, la première leçon et
+ * Pio resteraient cachés sous cette carte, la caméra ne pouvant pas descendre
+ * plus bas que le monde.
+ */
+export const QURAN_TRAIL: TrailLayout = {
+  worldWidth: 420,
+  rowHeight: 124,
+  topPad: 510,
+  bottomPad: 440,
+  swing: 94,
+  direction: "up",
+};
+
+/**
  * Position de la i-ème étape. Zigzag franc — une étape à gauche, la suivante
  * à droite — avec une légère respiration d'amplitude pour que les longs
  * sentiers ne soient pas tirés au cordeau.
@@ -67,8 +92,18 @@ export function trailWorldHeight(count: number, layout: TrailLayout): number {
   return layout.topPad + (count - 1) * layout.rowHeight + layout.bottomPad;
 }
 
+/**
+ * Position du i-ème point d'un sentier de `count` points, dans le sens du
+ * layout. En montée, le zigzag reste le même ; seule la hauteur s'inverse.
+ */
+export function trailPointAt(index: number, count: number, layout: TrailLayout): WorldPoint {
+  const p = trailNodePoint(index, layout);
+  if (layout.direction !== "up") return p;
+  return { x: p.x, y: layout.topPad + (count - 1 - index) * layout.rowHeight };
+}
+
 export function trailNodePoints(count: number, layout: TrailLayout): WorldPoint[] {
-  return Array.from({ length: count }, (_, i) => trailNodePoint(i, layout));
+  return Array.from({ length: count }, (_, i) => trailPointAt(i, count, layout));
 }
 
 /** Le `d` SVG qui relie les points par des courbes en S. */
@@ -175,10 +210,20 @@ function cubic(p0: WorldPoint, p1: WorldPoint, p2: WorldPoint, p3: WorldPoint, t
   };
 }
 
-/** Vitesse de marche de Pio, en pixels-monde par seconde. */
-export const WALK_SPEED = 240;
-export const WALK_MIN_SECONDS = 0.45;
-export const WALK_MAX_SECONDS = 2.4;
+/**
+ * Vitesse de marche de Pio, en pixels-monde par seconde : celle de ses pas.
+ *
+ * Ses clips de marche font environ trois pas par seconde ; pour un Pio d'une
+ * centaine de pixels, cela avance de 80 à 90 pixels par seconde. À 240 (la
+ * valeur d'avant le 29 septembre 2026), la carte le déplaçait trois fois plus
+ * vite que ses jambes : il glissait, et le propriétaire le trouvait « beaucoup,
+ * beaucoup, beaucoup trop rapide ». Une étape du chemin prend désormais deux à
+ * trois secondes ; un long trajet est borné à six secondes, quitte à presser
+ * le pas.
+ */
+export const WALK_SPEED = 90;
+export const WALK_MIN_SECONDS = 1;
+export const WALK_MAX_SECONDS = 6;
 
 /** Durée d'une marche : à vitesse constante, bornée pour rester jouable. */
 export function walkDuration(distance: number): number {

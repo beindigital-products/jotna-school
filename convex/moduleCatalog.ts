@@ -43,6 +43,11 @@ export interface ModuleDescriptor {
   studentHref: string;
   emoji: string;
   color: string;
+  /**
+   * L'illustration ronde du module sur l'accueil de l'élève, posée à côté de
+   * Pio : une image et un titre, rien d'autre.
+   */
+  medallion: string;
 }
 
 export const MODULES: readonly ModuleDescriptor[] = [
@@ -55,6 +60,7 @@ export const MODULES: readonly ModuleDescriptor[] = [
     studentHref: "/student/arabe",
     emoji: "🕌",
     color: "#15803d",
+    medallion: "/images/coran/medallion.jpg",
   },
 ];
 

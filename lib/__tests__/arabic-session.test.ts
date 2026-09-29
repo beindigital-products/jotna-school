@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   buildSession,
+  CHOICES_PER_QUESTION,
   drillOf,
   isScored,
-  ITEMS_PER_SESSION,
   seedFromKey,
+  SYLLABLES_PER_SESSION,
   VERSES_PER_HIFZ_SESSION,
   type SessionStep,
 } from "../arabic/session";
@@ -30,12 +31,27 @@ describe("seedFromKey", () => {
 describe("buildSession — leçon d'alphabet", () => {
   const steps = buildSession(alphabetLesson);
 
-  it("commence par la découverte de chaque lettre", () => {
-    const firstFour = steps.slice(0, 4);
-    expect(firstFour.every((s) => s.kind === "discoverLetter")).toBe(true);
-    expect(firstFour.map((s) => s.itemKey)).toEqual([
+  it("une lettre à la fois : rencontre, répétition, ballons — puis la suivante", () => {
+    const opening = steps.slice(0, alphabetLesson.letters.length * 3);
+    expect(opening.map((s) => [s.kind, s.itemKey])).toEqual(
+      alphabetLesson.letters.flatMap((letterKey) => [
+        ["discoverLetter", letterKey],
+        ["pronounce", letterKey],
+        ["recognizeGlyph", letterKey],
+      ]),
+    );
+  });
+
+  it("relie chaque lettre de la leçon à son image, en une seule étape", () => {
+    const match = steps.filter((s) => s.kind === "matchPictures");
+    expect(match).toHaveLength(1);
+    expect(match[0].kind === "matchPictures" && match[0].letters).toEqual([
       ...alphabetLesson.letters,
     ]);
+  });
+
+  it("aucune étape ne demande les formes attachées à un débutant", () => {
+    expect(steps.some((s) => (s.kind as string) === "forms")).toBe(false);
   });
 
   it("finit TOUJOURS par l'écriture — le geste qui fixe le reste", () => {
@@ -60,14 +76,12 @@ describe("buildSession — leçon d'alphabet", () => {
     }
   });
 
-  it("les QCM contiennent la bonne réponse et quatre choix au plus", () => {
+  it("les ballons contiennent la bonne réponse, trois au plus, sans doublon", () => {
     for (const step of steps) {
-      if (step.kind !== "recognizeGlyph" && step.kind !== "recognizeName") {
-        continue;
-      }
+      if (step.kind !== "recognizeGlyph") continue;
       expect(step.options).toContain(step.itemKey);
       expect(step.options.length).toBeGreaterThanOrEqual(2);
-      expect(step.options.length).toBeLessThanOrEqual(4);
+      expect(step.options.length).toBeLessThanOrEqual(CHOICES_PER_QUESTION);
       expect(new Set(step.options).size).toBe(step.options.length);
     }
   });
@@ -85,16 +99,36 @@ describe("buildSession — leçon d'alphabet", () => {
 });
 
 describe("buildSession — leçon de lecture", () => {
-  it("chaque verset est d'abord écouté, puis lu", () => {
+  it("chaque verset est écouté, puis lu aussitôt — le talqīn du maître", () => {
     const steps = buildSession(coranLesson);
     const discovered = steps.filter((s) => s.kind === "discoverItem");
     const read = steps.filter((s) => s.kind === "read");
     expect(discovered).toHaveLength(coranLesson.items.length);
     expect(read).toHaveLength(coranLesson.items.length);
-    // L'écoute vient AVANT la lecture, pour tous les versets.
-    const lastDiscover = steps.map((s) => s.kind).lastIndexOf("discoverItem");
-    const firstRead = steps.findIndex((s) => s.kind === "read");
-    expect(lastDiscover).toBeLessThan(firstRead);
+    // Chaque lecture suit IMMÉDIATEMENT l'écoute du même verset.
+    steps.forEach((step, i) => {
+      if (step.kind !== "read") return;
+      expect(steps[i - 1]).toEqual({ kind: "discoverItem", itemKey: step.itemKey });
+    });
+  });
+
+  it("les voyelles se vérifient à l'oreille : un jeu « quel son ? » par séance", () => {
+    const steps = buildSession(mixedHarakat);
+    const picks = steps.filter((s) => s.kind === "pickSyllable");
+    expect(picks.length).toBeGreaterThan(0);
+    for (const pick of picks) {
+      if (pick.kind !== "pickSyllable") continue;
+      expect(pick.options).toContain(pick.itemKey);
+      // Dans la leçon « mélange », les ballons ne diffèrent que par la voyelle.
+      const letterOf = (key: string) => key.slice(0, key.lastIndexOf("-"));
+      expect(new Set(pick.options.map(letterOf)).size).toBe(1);
+    }
+    const fatha = buildSession(getLesson("harakat-fatha")!);
+    for (const pick of fatha) {
+      if (pick.kind !== "pickSyllable") continue;
+      // Dans une leçon d'une seule voyelle, les ballons ne diffèrent que par la lettre.
+      expect(pick.options.every((key) => key.endsWith("-fatha"))).toBe(true);
+    }
   });
 
   it("aucune écriture au doigt sur un verset", () => {
@@ -105,12 +139,12 @@ describe("buildSession — leçon de lecture", () => {
 
   it("une leçon trop longue est échantillonnée, sans casser l'ordre", () => {
     // 12 lettres × 3 voyelles = 36 items : on n'en impose pas 36 à un enfant.
-    expect(mixedHarakat.items.length).toBeGreaterThan(ITEMS_PER_SESSION);
+    expect(mixedHarakat.items.length).toBeGreaterThan(SYLLABLES_PER_SESSION);
     const steps = buildSession(mixedHarakat);
     const picked = steps
       .filter((s) => s.kind === "discoverItem")
       .map((s) => s.itemKey);
-    expect(picked).toHaveLength(ITEMS_PER_SESSION);
+    expect(picked).toHaveLength(SYLLABLES_PER_SESSION);
 
     const order = mixedHarakat.items.map((item) => item.key);
     const positions = picked.map((key) => order.indexOf(key));

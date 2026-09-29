@@ -49,6 +49,41 @@ const SCORE_CANVAS = 192;
 /** Rayon du doigt sur la grille d'analyse, en cases. */
 const BRUSH_CELLS = 1;
 
+/** Le corps de la lettre, en fraction du côté du carré. */
+const GLYPH_SCALE = 0.62;
+
+/**
+ * Où poser la lettre pour que son ENCRE soit au centre du carré.
+ *
+ * Centrer la ligne (`textBaseline: "middle"`) laissait les lettres à boucle
+ * (ج, ع…) tomber dans le bas du carré, jusqu'à frôler le bord : Amiri les
+ * dessine loin sous la ligne de base. On mesure donc l'encre (`measureText`)
+ * et on place la ligne de base pour la centrer, comme `ArabicGlyph`. La police
+ * doit être posée sur `ctx` avant l'appel. Rend la ligne de base : la ligne
+ * d'écriture du guide passe par là.
+ */
+function inkOrigin(
+  ctx: CanvasRenderingContext2D,
+  glyph: string,
+  size: number,
+): { x: number; y: number } {
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  const box = ctx.measureText(glyph);
+  const width = box.actualBoundingBoxLeft + box.actualBoundingBoxRight;
+  const height = box.actualBoundingBoxAscent + box.actualBoundingBoxDescent;
+  if (!(width > 0 && height > 0)) {
+    // Navigateur sans boîte encrée : l'ancien centrage, approximatif mais sûr.
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    return { x: size / 2, y: size / 2 };
+  }
+  return {
+    x: size / 2 - (box.actualBoundingBoxRight - box.actualBoundingBoxLeft) / 2,
+    y: size / 2 + (box.actualBoundingBoxAscent - box.actualBoundingBoxDescent) / 2,
+  };
+}
+
 export interface TraceOutcome {
   score: number;
   verdict: TraceVerdict;
@@ -58,10 +93,13 @@ export interface TraceOutcome {
 export function TracingCanvas({
   glyph,
   onValidate,
+  showInstruction = true,
 }: {
   /** La lettre à tracer, dans la forme qu'on demande (isolée en général). */
   glyph: string;
   onValidate: (outcome: TraceOutcome) => void;
+  /** `false` quand Pio dit déjà la consigne au-dessus (séance des petits). */
+  showInstruction?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const strokesRef = useRef<Stroke[]>([]);
@@ -111,19 +149,19 @@ export function TracingCanvas({
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, size, size);
 
-    // Le guide : la lettre en pâle, et les repères de la ligne d'écriture.
+    // Le guide : la lettre en pâle, posée sur sa ligne d'écriture.
+    ctx.font = `${Math.round(size * GLYPH_SCALE)}px ${arabicFont()}`;
+    const origin = inkOrigin(ctx, glyph, size);
+
     ctx.strokeStyle = "#e5e7eb";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(0, size * 0.72);
-    ctx.lineTo(size, size * 0.72);
+    ctx.moveTo(0, origin.y);
+    ctx.lineTo(size, origin.y);
     ctx.stroke();
 
     ctx.fillStyle = "#d9f2ec";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `${Math.round(size * 0.62)}px ${arabicFont()}`;
-    ctx.fillText(glyph, size / 2, size / 2);
+    ctx.fillText(glyph, origin.x, origin.y);
 
     // Le tracé de l'enfant.
     ctx.strokeStyle = "#0f766e";
@@ -222,9 +260,11 @@ export function TracingCanvas({
 
   return (
     <div className="space-y-3">
-      <p className="text-center text-base font-semibold text-gray-700">
-        {arabicCopy.write.instruction}
-      </p>
+      {showInstruction && (
+        <p className="text-center text-base font-semibold text-gray-700">
+          {arabicCopy.write.instruction}
+        </p>
+      )}
 
       <canvas
         ref={canvasRef}
@@ -288,10 +328,11 @@ function rasterizeGlyph(glyph: string, font: string): Uint8Array | null {
     if (ctx) {
       ctx.clearRect(0, 0, SCORE_CANVAS, SCORE_CANVAS);
       ctx.fillStyle = "#000";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = `${Math.round(SCORE_CANVAS * 0.62)}px ${font}`;
-      ctx.fillText(glyph, SCORE_CANVAS / 2, SCORE_CANVAS / 2);
+      ctx.font = `${Math.round(SCORE_CANVAS * GLYPH_SCALE)}px ${font}`;
+      // Même placement que le guide affiché : l'enfant trace sur l'un, on
+      // le note contre l'autre.
+      const origin = inkOrigin(ctx, glyph, SCORE_CANVAS);
+      ctx.fillText(glyph, origin.x, origin.y);
 
       const image = ctx.getImageData(0, 0, SCORE_CANVAS, SCORE_CANVAS);
       const alpha = new Uint8Array(SCORE_CANVAS * SCORE_CANVAS);

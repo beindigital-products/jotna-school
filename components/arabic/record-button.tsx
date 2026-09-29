@@ -42,6 +42,15 @@ import type { PronunciationVerdict } from "@/convex/arabic/matching";
 /** Huit secondes : très au-delà d'une syllabe, très en deçà d'une discussion. */
 const MAX_MS = 8000;
 
+/**
+ * En dessous de ce niveau de crête (jauge de 0 à 1), l'enregistrement est du
+ * SILENCE : on ne l'envoie pas. Le 29 septembre 2026, un simulateur privé de
+ * micro envoyait huit secondes de rien, la transcription rendait un texte
+ * vide, et l'adulte lisait « parle plus fort » au lieu de « le micro
+ * n'entend rien ». Une voix, même lointaine, monte bien au-dessus.
+ */
+const SILENCE_LEVEL = 0.02;
+
 /** Par ordre de préférence — le premier que le navigateur sait produire gagne. */
 const MIME_CANDIDATES = [
   "audio/webm;codecs=opus",
@@ -60,7 +69,21 @@ export interface RecordOutcome {
   firstMiss: string | null;
 }
 
-type Phase = "idle" | "recording" | "sending" | "done" | "blocked";
+export type RecordPhase = "idle" | "recording" | "sending" | "done" | "blocked";
+type Phase = RecordPhase;
+
+/** L'`AudioContext` du navigateur, préfixé sur les vieux Safari. */
+function newAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const Ctor =
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  try {
+    return Ctor ? new Ctor() : null;
+  } catch {
+    return null;
+  }
+}
 
 export function RecordButton({
   lessonKey,
@@ -68,6 +91,8 @@ export function RecordButton({
   drill,
   onOutcome,
   attemptIndex,
+  onPhaseChange,
+  coached = false,
 }: {
   lessonKey: string;
   itemKey: string;
@@ -75,9 +100,36 @@ export function RecordButton({
   onOutcome: (outcome: RecordOutcome) => void;
   /** Sert à choisir la phrase de verdict sans hasard. */
   attemptIndex: number;
+  /** Prévient l'appelant à chaque changement de phase (Pio écoute, réfléchit…). */
+  onPhaseChange?: (phase: RecordPhase) => void;
+  /**
+   * `true` : le verdict d'un essai JUGÉ n'est pas affiché ici, c'est le coach
+   * (`pronounce-coach.tsx`) qui le dit, avec son aide. Les messages de
+   * blocage (micro refusé, quota, panne) restent affichés ici dans tous les cas.
+   */
+  coached?: boolean;
 }) {
   const verify = useAction(api.arabic.voice.verifyPronunciation);
   const [phase, setPhase] = useState<Phase>("idle");
+  /** 0..1 : la force de la voix pendant l'enregistrement, pour la jauge. */
+  const [level, setLevel] = useState(0);
+  const meterRef = useRef<{ ctx: AudioContext; raf: number } | null>(null);
+  /** La crête de la jauge sur l'enregistrement en cours, et si la jauge a tourné. */
+  const peakRef = useRef(0);
+  const meterLiveRef = useRef(false);
+  /**
+   * Les silences d'affilée. La jauge peut se tromper (un analyseur que la vue
+   * web n'alimente pas lit du silence) : au DEUXIÈME silence de suite, on
+   * envoie quand même, pour qu'un enfant ne soit jamais bloqué par la jauge.
+   */
+  const silentStreakRef = useRef(0);
+  const phaseChange = useRef(onPhaseChange);
+  useEffect(() => {
+    phaseChange.current = onPhaseChange;
+  }, [onPhaseChange]);
+  useEffect(() => {
+    phaseChange.current?.(phase);
+  }, [phase]);
   const [message, setMessage] = useState<string | null>(null);
   const [heard, setHeard] = useState<string | null>(null);
   /**
@@ -95,15 +147,74 @@ export function RecordButton({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
 
+  const stopMeter = useCallback(() => {
+    const meter = meterRef.current;
+    if (!meter) return;
+    cancelAnimationFrame(meter.raf);
+    void meter.ctx.close().catch(() => {});
+    meterRef.current = null;
+    setLevel(0);
+  }, []);
+
+  /**
+   * La jauge de voix : un analyseur branché sur le même flux que
+   * l'enregistreur. L'enfant VOIT que le micro l'entend — sans elle, un
+   * enfant qui parle trop bas croit que c'est lui qui s'est trompé.
+   * L'`AudioContext` est créé au toucher (voir `start`), sinon iOS le laisse
+   * muet ; la jauge absente, l'enregistrement marche quand même.
+   */
+  const startMeter = useCallback((stream: MediaStream, ctx: AudioContext | null) => {
+    if (!ctx) return;
+    try {
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      ctx.createMediaStreamSource(stream).connect(analyser);
+      void ctx.resume().catch(() => {});
+      // Rempli de SILENCE (128), pas de zéros : avant que l'analyseur n'ait
+      // reçu du son, un tampon à zéro se lit comme un son maximal, et la
+      // crête valait 1 sur des enregistrements muets.
+      const data = new Uint8Array(analyser.fftSize).fill(128);
+      let last = 0;
+      let startedAt = -1;
+      const meter = { ctx, raf: 0 };
+      const tick = (t: number) => {
+        if (startedAt < 0) startedAt = t;
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const current = Math.min(1, Math.sqrt(sum / data.length) * 5);
+        // La jauge ne compte que si le contexte tourne vraiment (suspendu, il
+        // ne lit rien), et après 150 ms : le temps que le son arrive.
+        if (ctx.state === "running" && t - startedAt > 150) {
+          meterLiveRef.current = true;
+          peakRef.current = Math.max(peakRef.current, current);
+        }
+        if (t - last > 70) {
+          setLevel(current);
+          last = t;
+        }
+        meter.raf = requestAnimationFrame(tick);
+      };
+      meter.raf = requestAnimationFrame(tick);
+      meterRef.current = meter;
+    } catch {
+      void ctx.close().catch(() => {});
+    }
+  }, []);
+
   const releaseMic = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    stopMeter();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     recorderRef.current = null;
-  }, []);
+  }, [stopMeter]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -114,7 +225,7 @@ export function RecordButton({
   }, [releaseMic]);
 
   const send = useCallback(
-    async (blob: Blob, mimeType: string) => {
+    async (blob: Blob, mimeType: string, peakLevel?: number) => {
       setPhase("sending");
       try {
         const audio = await blob.arrayBuffer();
@@ -124,14 +235,17 @@ export function RecordButton({
           drill,
           audio,
           mimeType,
+          peakLevel,
         });
         if (!mountedRef.current) return;
 
         if (result.status === "judged") {
           setPhase("done");
-          setMessage(verdictMessage(result.verdict, attemptIndex));
-          setHeard(result.heard || null);
-          setStopped(result.verdict === "ok" ? null : result.firstMiss);
+          if (!coached) {
+            setMessage(verdictMessage(result.verdict, attemptIndex));
+            setHeard(result.heard || null);
+            setStopped(result.verdict === "ok" ? null : result.firstMiss);
+          }
           onOutcome({
             verdict: result.verdict,
             score: result.score,
@@ -154,7 +268,7 @@ export function RecordButton({
         setMessage(arabicCopy.record.unavailable);
       }
     },
-    [attemptIndex, drill, itemKey, lessonKey, onOutcome, verify],
+    [attemptIndex, coached, drill, itemKey, lessonKey, onOutcome, verify],
   );
 
   const stop = useCallback(() => {
@@ -185,21 +299,34 @@ export function RecordButton({
       return;
     }
 
+    // Créé ICI, encore dans le geste de l'enfant : après l'`await` du micro,
+    // iOS refuserait de démarrer le son de la jauge.
+    const meterCtx = newAudioContext();
+
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({
+        // Le son BRUT. La suppression de bruit rogne les consonnes soufflées
+        // (ح, ه, خ) que l'enfant doit justement apprendre ; et le traitement
+        // de la voix d'iOS est suspect dans le simulateur, où des fichiers
+        // valides arrivaient sans aucune voix (29 septembre 2026).
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
     } catch {
+      void meterCtx?.close().catch(() => {});
       setPhase("blocked");
       setMessage(arabicCopy.record.denied);
       return;
     }
 
     if (!mountedRef.current) {
+      void meterCtx?.close().catch(() => {});
       stream.getTracks().forEach((track) => track.stop());
       return;
     }
 
     streamRef.current = stream;
+    startMeter(stream, meterCtx);
     const recorder = new MediaRecorder(stream, { mimeType });
     recorderRef.current = recorder;
     const chunks: BlobPart[] = [];
@@ -208,21 +335,32 @@ export function RecordButton({
       if (event.data.size > 0) chunks.push(event.data);
     };
     recorder.onstop = () => {
+      // Lu AVANT `releaseMic`, qui arrête la jauge.
+      const peak = peakRef.current;
+      const silent = meterLiveRef.current && peak < SILENCE_LEVEL;
       releaseMic();
       const blob = new Blob(chunks, { type: mimeType });
       if (blob.size === 0) {
         setPhase("idle");
         return;
       }
-      void send(blob, mimeType);
+      silentStreakRef.current = silent ? silentStreakRef.current + 1 : 0;
+      if (silent && silentStreakRef.current < 2) {
+        setPhase("blocked");
+        setMessage(arabicCopy.record.silent);
+        return;
+      }
+      void send(blob, mimeType, meterLiveRef.current ? peak : undefined);
     };
 
+    peakRef.current = 0;
+    meterLiveRef.current = false;
     recorder.start();
     setPhase("recording");
     timerRef.current = setTimeout(() => {
       if (recorder.state === "recording") recorder.stop();
     }, MAX_MS);
-  }, [releaseMic, send]);
+  }, [releaseMic, send, startMeter]);
 
   const busy = phase === "sending";
 
@@ -247,16 +385,17 @@ export function RecordButton({
         )}
         <span>
           {busy
-            ? arabicCopy.record.sending
+            ? arabicCopy.record.checking[drill]
             : phase === "recording"
               ? arabicCopy.record.recording
               : phase === "done"
                 ? arabicCopy.record.again
                 : arabicCopy.record.idle}
         </span>
+        {phase === "recording" && <VoiceLevel level={level} />}
       </button>
 
-      {message && (
+      {message && (phase === "blocked" || !coached) && (
         <p
           role="status"
           className="rounded-2xl bg-white px-4 py-3 text-center text-base font-semibold text-gray-800 shadow-sm"
@@ -273,7 +412,7 @@ export function RecordButton({
           {heard && (
             <span className="mt-1 block text-sm font-medium text-gray-500">
               {arabicCopy.heardPrefix}{" "}
-              <span dir="rtl" lang="ar" className="font-arabic text-lg">
+              <span dir="auto" className="font-arabic text-lg">
                 {heard}
               </span>
             </span>
@@ -281,5 +420,21 @@ export function RecordButton({
         </p>
       )}
     </div>
+  );
+}
+
+/** Cinq barres qui montent avec la voix — « le micro t'entend ». */
+function VoiceLevel({ level }: { level: number }) {
+  const shape = [0.55, 0.85, 1, 0.8, 0.6];
+  return (
+    <span aria-hidden className="flex h-7 items-end gap-1">
+      {shape.map((k, i) => (
+        <span
+          key={i}
+          className="w-1.5 rounded-full bg-white transition-[height] duration-75"
+          style={{ height: `${Math.round(18 + Math.min(1, level * k) * 82)}%` }}
+        />
+      ))}
+    </span>
   );
 }
