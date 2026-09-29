@@ -36,6 +36,8 @@ import ShortAnswerExercise from "@/components/exercises/ShortAnswerExercise";
 import MatchExercise from "@/components/exercises/MatchExercise";
 import OrderExercise from "@/components/exercises/OrderExercise";
 import DragDropExercise from "@/components/exercises/DragDropExercise";
+import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
+import { isReadingLearnerClass } from "@/convex/curriculum";
 import { motion, AnimatePresence } from "framer-motion";
 import { refusalMessage } from "@/lib/refusalMessage";
 
@@ -542,6 +544,19 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   const exo = exercises[currentIndex];
   const totalExos = exercises.length;
   const disabled = feedback !== null;
+  // LE LECTEUR DE CONSIGNES : un enfant qui apprend à lire (CI, CP) entend la
+  // consigne de chaque exercice (`components/exercises/prompt-reader.tsx`).
+  // La classe est celle de l'enfant ; à défaut, celle de la thématique.
+  const readsAloud = isReadingLearnerClass(profile?.class ?? topic.class);
+  const exerciseRenderer = (
+    <ExerciseRenderer
+      exo={exo}
+      disabled={disabled}
+      isCorrect={feedback?.correct ?? null}
+      onSubmit={handleSubmitAnswer}
+      onSkip={handleNextExo}
+    />
+  );
 
   return (
     <div className="relative mx-auto max-w-2xl pb-4">
@@ -633,13 +648,19 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
           transition={{ duration: 0.2 }}
           className="rounded-3xl bg-white p-6 shadow-md"
         >
-          <ExerciseRenderer
-            exo={exo}
-            disabled={disabled}
-            isCorrect={feedback?.correct ?? null}
-            onSubmit={handleSubmitAnswer}
-            onSkip={handleNextExo}
-          />
+          {/* La consigne se tait dès que l'enfant a répondu ou qu'une fenêtre
+              s'ouvre par-dessus. */}
+          {readsAloud ? (
+            <PromptReaderProvider
+              exerciseId={exo._id}
+              palierAttemptId={exo.palierAttemptId}
+              silenced={feedback !== null || explainOpen || sceneAlert !== null}
+            >
+              {exerciseRenderer}
+            </PromptReaderProvider>
+          ) : (
+            exerciseRenderer
+          )}
 
           {/* Hints — progressive: first hint unlocks after 1 failed attempt,
               second after 2, third after 4. Only shown when the kid has failed

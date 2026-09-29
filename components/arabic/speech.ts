@@ -11,7 +11,8 @@
  *
  * UN SEUL SON À LA FOIS, DANS TOUT LE MODULE. Toucher une lettre pendant que
  * Pio parle coupe Pio : deux voix superposées, c'est du bruit pour un enfant.
- * Le son en cours vit donc au niveau du module, pas du composant.
+ * Le son en cours vit donc au niveau de la page, pas du composant
+ * (`lib/voice-player.ts`, partagé avec le lecteur de consignes).
  *
  * CE QU'UN ÉCRAN LANCE, IL L'ARRÊTE EN PARTANT. Quand l'étape change, la
  * consigne de l'étape d'avant se tait — mais un composant n'arrête jamais le
@@ -25,6 +26,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { ConsigneKey } from "@/convex/arabic/consignes";
+import { newVoiceOwner, playUrl, stopPlaying } from "@/lib/voice-player";
 
 export type SpeechRef =
   | { kind: "letterName"; letterKey: string }
@@ -56,37 +58,6 @@ export type SayOutcome =
 /** URL par référence, pour la durée de la page. */
 const urlCache = new Map<string, string>();
 
-let playing: { audio: HTMLAudioElement; owner: number; done: () => void } | null = null;
-let nextOwner = 1;
-
-function stopPlaying(owner?: number) {
-  if (!playing) return;
-  if (owner !== undefined && playing.owner !== owner) return;
-  const current = playing;
-  playing = null;
-  current.audio.pause();
-  current.done();
-}
-
-function playUrl(url: string, owner: number, rate: number): Promise<boolean> {
-  stopPlaying();
-  return new Promise((resolve) => {
-    const audio = new Audio(url);
-    audio.playbackRate = rate;
-    let settled = false;
-    const done = (finished = false) => {
-      if (settled) return;
-      settled = true;
-      if (playing?.audio === audio) playing = null;
-      resolve(finished);
-    };
-    playing = { audio, owner, done: () => done(false) };
-    audio.onended = () => done(true);
-    audio.onerror = () => done(false);
-    audio.play().catch(() => done(false));
-  });
-}
-
 type SpeakResult =
   | { status: "ready"; url: string; cached: boolean }
   | { status: "unavailable"; reason: string };
@@ -96,7 +67,7 @@ export function useSpeech() {
   const [speaking, setSpeaking] = useState(false);
   // L'identifiant de CE composant, tiré une fois : c'est lui qui dit à qui
   // appartient le son en cours.
-  const [owner] = useState(() => nextOwner++);
+  const [owner] = useState(newVoiceOwner);
   const tokenRef = useRef(0);
 
   const urlFor = useCallback(

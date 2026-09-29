@@ -8,6 +8,7 @@ import {
   blockedStudent,
   studentIdsTaughtBy,
 } from "./access";
+import { verifyDragDrop, verifyMatch } from "./paliers/answerCheck";
 
 /**
  * Compute where the current student should resume in a given topic session.
@@ -152,26 +153,6 @@ function verifyQcm(submittedAnswer: string, payload: { correctIndex: number }): 
   return parseInt(submittedAnswer, 10) === payload.correctIndex;
 }
 
-function verifyMatch(
-  submittedAnswer: string,
-  payload: { pairs: { left: string; right: string }[] },
-): boolean {
-  try {
-    const submitted: { left: string; right: string }[] = JSON.parse(submittedAnswer);
-    if (submitted.length !== payload.pairs.length) return false;
-
-    const correctSet = new Set(
-      payload.pairs.map((p) => `${p.left}|||${p.right}`),
-    );
-    for (const pair of submitted) {
-      if (!correctSet.has(`${pair.left}|||${pair.right}`)) return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function verifyOrder(
   submittedAnswer: string,
   payload: { correctSequence: string[] },
@@ -180,21 +161,6 @@ function verifyOrder(
     const submitted: string[] = JSON.parse(submittedAnswer);
     if (submitted.length !== payload.correctSequence.length) return false;
     return submitted.every((item, i) => item === payload.correctSequence[i]);
-  } catch {
-    return false;
-  }
-}
-
-function verifyDragDrop(
-  submittedAnswer: string,
-  payload: { items: { text: string; correctZone: string }[] },
-): boolean {
-  try {
-    const submitted: Record<string, string> = JSON.parse(submittedAnswer);
-    for (const item of payload.items) {
-      if (submitted[item.text] !== item.correctZone) return false;
-    }
-    return true;
   } catch {
     return false;
   }

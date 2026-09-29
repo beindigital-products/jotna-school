@@ -44,12 +44,21 @@ const itemColors = [
   "bg-teal-50 border-teal-200 text-teal-800",
 ];
 
+/**
+ * Une étiquette à ranger. `id` est sa POSITION d'origine, `text` ce qu'elle
+ * affiche : deux lettres « a » dans « papa » sont deux étiquettes, et
+ * dnd-kit exige un identifiant unique par élément déplaçable.
+ */
+type OrderTile = { id: string; text: string };
+
 function SortableItem({
   id,
+  label,
   index,
   disabled,
 }: {
   id: string;
+  label: string;
   index: number;
   disabled: boolean;
 }) {
@@ -92,7 +101,7 @@ function SortableItem({
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/60 text-sm font-bold">
         {index + 1}
       </span>
-      <span>{id}</span>
+      <span>{label}</span>
     </div>
   );
 }
@@ -110,14 +119,23 @@ export default function OrderExercise({
       ? payload.correctSequence.filter((s): s is string => typeof s === "string")
       : [];
 
-  const [items, setItems] = useState<string[]>(() => {
-    const shuffled = [...source];
+  const [items, setItems] = useState<OrderTile[]>(() => {
+    const shuffled = source.map((text, index) => ({ id: `tuile-${index}`, text }));
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
   });
+
+  // Les hooks avant le retour anticipé : leur ordre ne doit pas dépendre
+  // du payload.
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   if (source.length < 2) {
     return (
@@ -133,26 +151,19 @@ export default function OrderExercise({
     );
   }
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setItems((prevItems) => {
-        const oldIndex = prevItems.indexOf(active.id as string);
-        const newIndex = prevItems.indexOf(over.id as string);
+        const oldIndex = prevItems.findIndex((tile) => tile.id === active.id);
+        const newIndex = prevItems.findIndex((tile) => tile.id === over.id);
         return arrayMove(prevItems, oldIndex, newIndex);
       });
     }
   };
 
   const handleSubmit = () => {
-    onSubmit(JSON.stringify(items));
+    onSubmit(JSON.stringify(items.map((tile) => tile.text)));
   };
 
   return (
@@ -164,12 +175,16 @@ export default function OrderExercise({
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={items} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={items.map((tile) => tile.id)}
+          strategy={verticalListSortingStrategy}
+        >
           <div className="space-y-3">
-            {items.map((item, index) => (
+            {items.map((tile, index) => (
               <SortableItem
-                key={item}
-                id={item}
+                key={tile.id}
+                id={tile.id}
+                label={tile.text}
                 index={index}
                 disabled={disabled}
               />

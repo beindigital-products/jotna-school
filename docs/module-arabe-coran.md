@@ -418,6 +418,7 @@ Deux points à trancher par l'école :
 | `convex/arabic/placementRules.ts` | Qui a le droit de placer qui — fonction pure, testée. |
 | `convex/arabic/lessons.ts` | Parcours et progression de l'élève (requêtes et mutations). |
 | `convex/arabic/voice.ts` | Synthèse et transcription (actions, `"use node"`). |
+| `convex/voice/elevenlabs.ts` | La voix de Pio : fournisseur, variables `ELEVENLABS_*` et synthèse. Le lecteur de consignes des exercices (`convex/voice/exercisePrompt.ts`) s'en sert aussi, avec le même cache. |
 | `convex/arabic/db.ts` | Ce que les actions ne peuvent pas faire elles-mêmes (cache, quota, écriture des tentatives). |
 | `convex/modules.ts`, `convex/moduleCatalog.ts` | L'allumage par école. |
 | `lib/arabic/tracing.ts` | La note du tracé au doigt. |

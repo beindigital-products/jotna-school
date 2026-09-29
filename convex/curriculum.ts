@@ -99,6 +99,27 @@ export function isHiddenClass(klass: string | undefined | null): boolean {
 }
 
 /**
+ * LES CLASSES OÙ L'ON APPREND À LIRE : le CI et le CP.
+ *
+ * L'enfant y apprend à lire ; il ne lit donc pas encore la consigne d'un
+ * exercice. Pio la lui dit à voix haute (`components/exercises/prompt-reader.tsx`
+ * à l'écran, `convex/voice/exercisePrompt.ts` pour la voix). L'écran et le
+ * serveur lisent cette liste : l'allonger ou la raccourcir suffit à étendre
+ * ou restreindre le lecteur de consignes.
+ */
+export const READING_LEARNER_CLASSES = [
+  "CI",
+  "CP",
+] as const satisfies readonly VisibleClassName[];
+
+const READING_LEARNERS: ReadonlySet<string> = new Set(READING_LEARNER_CLASSES);
+
+/** Vrai pour une classe où l'on apprend à lire. Un niveau absent n'en est pas une. */
+export function isReadingLearnerClass(klass: string | undefined | null): boolean {
+  return typeof klass === "string" && READING_LEARNERS.has(klass);
+}
+
+/**
  * Le validateur des ÉCRITURES : ce qu'une personne a le droit de poser.
  *
  * Plus étroit que `classEnum` à dessein. Le schéma doit accepter le collège et

@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { verifyDragDrop, verifyMatch } from "../paliers/answerCheck";
 
 // ---------------------------------------------------------------------------
 // These tests validate the answer verification logic for each exercise type
 // and the progress update behavior when an answer is correct.
 // We replicate the handler logic inline since Convex function handlers
 // are not directly callable without the Convex runtime.
+// Match and drag-drop use the real shared module (`paliers/answerCheck.ts`).
 // ---------------------------------------------------------------------------
 
 // ---- Verification logic (mirrors convex/attempts.ts) ----
@@ -16,27 +18,6 @@ function verifyQcm(
   return parseInt(submittedAnswer, 10) === payload.correctIndex;
 }
 
-function verifyMatch(
-  submittedAnswer: string,
-  payload: { pairs: { left: string; right: string }[] },
-): boolean {
-  try {
-    const submitted: { left: string; right: string }[] =
-      JSON.parse(submittedAnswer);
-    if (submitted.length !== payload.pairs.length) return false;
-
-    const correctSet = new Set(
-      payload.pairs.map((p) => `${p.left}|||${p.right}`),
-    );
-    for (const pair of submitted) {
-      if (!correctSet.has(`${pair.left}|||${pair.right}`)) return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function verifyOrder(
   submittedAnswer: string,
   payload: { correctSequence: string[] },
@@ -45,21 +26,6 @@ function verifyOrder(
     const submitted: string[] = JSON.parse(submittedAnswer);
     if (submitted.length !== payload.correctSequence.length) return false;
     return submitted.every((item, i) => item === payload.correctSequence[i]);
-  } catch {
-    return false;
-  }
-}
-
-function verifyDragDrop(
-  submittedAnswer: string,
-  payload: { items: { text: string; correctZone: string }[] },
-): boolean {
-  try {
-    const submitted: Record<string, string> = JSON.parse(submittedAnswer);
-    for (const item of payload.items) {
-      if (submitted[item.text] !== item.correctZone) return false;
-    }
-    return true;
   } catch {
     return false;
   }
