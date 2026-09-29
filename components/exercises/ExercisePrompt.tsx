@@ -1,6 +1,7 @@
 "use client";
 
 import { Quote } from "lucide-react";
+import { PromptReaderButton, usePromptReader } from "./prompt-reader";
 
 /**
  * Renders an exercise prompt with a clean two-part layout when it contains
@@ -9,8 +10,32 @@ import { Quote } from "lucide-react";
  * Splits on the first ':' or '—' and, if the trailing part is an explicit
  * quoted sentence, displays the instruction on top and the sentence below
  * in a highlighted card.
+ *
+ * Inside a `PromptReaderProvider` (pupils who are learning to read, CI/CP),
+ * a big 🔊 button sits before the prompt and Pio reads it aloud; the text
+ * is tinted while he speaks. Elsewhere (older pupils, teacher previews) the
+ * prompt renders exactly as before.
  */
 export default function ExercisePrompt({ prompt }: { prompt: string }) {
+  const reader = usePromptReader();
+  const text = <PromptText prompt={prompt} />;
+  if (!reader) return text;
+
+  return (
+    <div className="flex items-start gap-3">
+      <PromptReaderButton reader={reader} />
+      <div
+        className={`min-w-0 flex-1 rounded-2xl transition-colors duration-300 ${
+          reader.status === "playing" ? "bg-sky-50" : ""
+        }`}
+      >
+        {text}
+      </div>
+    </div>
+  );
+}
+
+function PromptText({ prompt }: { prompt: string }) {
   const { instruction, quoted } = parsePrompt(prompt);
 
   if (!quoted) {

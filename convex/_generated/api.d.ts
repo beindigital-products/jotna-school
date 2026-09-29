@@ -57,6 +57,7 @@ import type * as moduleCatalog from "../moduleCatalog.js";
 import type * as modules from "../modules.js";
 import type * as palierAttempts from "../palierAttempts.js";
 import type * as palierRules from "../palierRules.js";
+import type * as paliers_answerCheck from "../paliers/answerCheck.js";
 import type * as paliers_dragDropRepair from "../paliers/dragDropRepair.js";
 import type * as paliers_index from "../paliers/index.js";
 import type * as paliers_mathRepair from "../paliers/mathRepair.js";
@@ -95,6 +96,9 @@ import type * as subscriptionRules from "../subscriptionRules.js";
 import type * as testSeeds from "../testSeeds.js";
 import type * as testSeedsSchool from "../testSeedsSchool.js";
 import type * as topics from "../topics.js";
+import type * as voice_elevenlabs from "../voice/elevenlabs.js";
+import type * as voice_exercisePrompt from "../voice/exercisePrompt.js";
+import type * as voice_speakable from "../voice/speakable.js";
 
 import type {
   ApiFromModules,
@@ -152,6 +156,7 @@ declare const fullApi: ApiFromModules<{
   modules: typeof modules;
   palierAttempts: typeof palierAttempts;
   palierRules: typeof palierRules;
+  "paliers/answerCheck": typeof paliers_answerCheck;
   "paliers/dragDropRepair": typeof paliers_dragDropRepair;
   "paliers/index": typeof paliers_index;
   "paliers/mathRepair": typeof paliers_mathRepair;
@@ -190,6 +195,9 @@ declare const fullApi: ApiFromModules<{
   testSeeds: typeof testSeeds;
   testSeedsSchool: typeof testSeedsSchool;
   topics: typeof topics;
+  "voice/elevenlabs": typeof voice_elevenlabs;
+  "voice/exercisePrompt": typeof voice_exercisePrompt;
+  "voice/speakable": typeof voice_speakable;
 }>;
 
 /**

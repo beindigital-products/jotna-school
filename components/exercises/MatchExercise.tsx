@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { AlertTriangle, Link2 } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
+import {
+  linkTiles,
+  matchAnswer,
+  unlinkLeft,
+  type MatchLink,
+} from "@/lib/exerciseAnswers";
 
 /**
  * Server contract — the sanitized payload sent by `getExercisesForPalier`
@@ -13,6 +19,11 @@ import ExercisePrompt from "./ExercisePrompt";
  * The submission expected by `verifyMatch` is
  *   JSON.stringify([{ left, right }, …])
  * matching the kid's connections.
+ *
+ * UNE TUILE EST SA POSITION, PAS SON TEXTE. Deux tuiles peuvent se ressembler
+ * (« a » deux fois : mangue et yassa ont le même son). Suivies par leur
+ * texte, relier l'une colorait les deux et le second mot restait sans
+ * partenaire. Les liens retiennent donc des indices (`lib/exerciseAnswers.ts`).
  */
 interface MatchPayload {
   left?: string[];
@@ -48,44 +59,33 @@ export default function MatchExercise({
   const right = Array.isArray(payload?.right) ? payload.right : [];
   const malformed = left.length === 0 || right.length !== left.length;
 
-  const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
-  const [connectedPairs, setConnectedPairs] = useState<
-    { left: string; right: string }[]
-  >([]);
+  // Des INDICES dans `left` et `right`, jamais des textes (voir l'en-tête).
+  const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
+  const [links, setLinks] = useState<MatchLink[]>([]);
 
-  const handleLeftClick = (item: string) => {
+  const handleLeftClick = (index: number) => {
     if (disabled) return;
-    if (connectedPairs.some((p) => p.left === item)) {
-      setConnectedPairs(connectedPairs.filter((p) => p.left !== item));
+    if (links.some((link) => link.left === index)) {
+      setLinks(unlinkLeft(links, index));
       return;
     }
-    setSelectedLeft(item);
+    setSelectedLeft(index);
   };
 
-  const handleRightClick = (item: string) => {
-    if (disabled || !selectedLeft) return;
-    const filtered = connectedPairs.filter(
-      (p) => p.left !== selectedLeft && p.right !== item,
-    );
-    filtered.push({ left: selectedLeft, right: item });
-    setConnectedPairs(filtered);
+  const handleRightClick = (index: number) => {
+    if (disabled || selectedLeft === null) return;
+    setLinks(linkTiles(links, selectedLeft, index));
     setSelectedLeft(null);
   };
 
-  const getLeftColor = (item: string) => {
-    const pairIndex = connectedPairs.findIndex((p) => p.left === item);
-    if (pairIndex >= 0) return pairColors[pairIndex % pairColors.length];
-    return null;
-  };
-
-  const getRightColor = (item: string) => {
-    const pairIndex = connectedPairs.findIndex((p) => p.right === item);
-    if (pairIndex >= 0) return pairColors[pairIndex % pairColors.length];
-    return null;
+  /** La couleur d'une tuile reliée : celle du rang de son lien. */
+  const linkColor = (side: keyof MatchLink, index: number) => {
+    const rank = links.findIndex((link) => link[side] === index);
+    return rank >= 0 ? pairColors[rank % pairColors.length] : null;
   };
 
   const handleSubmit = () => {
-    onSubmit(JSON.stringify(connectedPairs));
+    onSubmit(matchAnswer(left, right, links));
   };
 
   // True soft-fail — should be vanishingly rare now that the contract is
@@ -130,13 +130,13 @@ export default function MatchExercise({
       <div className="grid grid-cols-2 gap-6">
         {/* Left column — original order */}
         <div className="space-y-3">
-          {left.map((item) => {
-            const color = getLeftColor(item);
-            const isActive = selectedLeft === item;
+          {left.map((item, index) => {
+            const color = linkColor("left", index);
+            const isActive = selectedLeft === index;
             return (
               <button
-                key={item}
-                onClick={() => handleLeftClick(item)}
+                key={index}
+                onClick={() => handleLeftClick(index)}
                 disabled={disabled}
                 className={`
                   w-full rounded-2xl border-3 px-4 py-4 text-center text-lg font-bold transition-all duration-200
@@ -157,12 +157,12 @@ export default function MatchExercise({
 
         {/* Right column — server-shuffled */}
         <div className="space-y-3">
-          {right.map((item) => {
-            const color = getRightColor(item);
+          {right.map((item, index) => {
+            const color = linkColor("right", index);
             return (
               <button
-                key={item}
-                onClick={() => handleRightClick(item)}
+                key={index}
+                onClick={() => handleRightClick(index)}
                 disabled={disabled}
                 className={`
                   w-full rounded-2xl border-3 px-4 py-4 text-center text-lg font-bold transition-all duration-200
@@ -171,7 +171,7 @@ export default function MatchExercise({
                     : "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50"
                   }
                   ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"}
-                  ${selectedLeft && !color ? "ring-2 ring-amber-300 ring-offset-2" : ""}
+                  ${selectedLeft !== null && !color ? "ring-2 ring-amber-300 ring-offset-2" : ""}
                 `}
               >
                 {item}
@@ -182,16 +182,16 @@ export default function MatchExercise({
       </div>
 
       {/* Connected pairs indicator */}
-      {connectedPairs.length > 0 && (
+      {links.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {connectedPairs.map((pair, i) => {
-            const color = pairColors[i % pairColors.length];
+          {links.map((link, rank) => {
+            const color = pairColors[rank % pairColors.length];
             return (
               <span
-                key={`${pair.left}-${pair.right}`}
+                key={`${link.left}-${link.right}`}
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold ${color.line} bg-white border`}
               >
-                {pair.left} <Link2 className="h-3 w-3" /> {pair.right}
+                {left[link.left]} <Link2 className="h-3 w-3" /> {right[link.right]}
               </span>
             );
           })}
@@ -200,7 +200,7 @@ export default function MatchExercise({
 
       <button
         onClick={handleSubmit}
-        disabled={disabled || connectedPairs.length !== left.length}
+        disabled={disabled || links.length !== left.length}
         className="w-full rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-6 py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
       >
         Valider

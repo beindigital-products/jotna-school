@@ -51,6 +51,49 @@ Une thématique est franchie quand tous ses paliers le sont.
 que la carte, le camp et les bulletins lisent. Les requêtes recalculent aussi
 ce franchissement depuis les tentatives, pour les données d'avant.
 
+## Des tuiles qui portent le même texte
+
+Deux tuiles d'un exercice peuvent se ressembler : « a » deux fois quand on
+relie mangue et yassa à leur son, les deux « n » de « banane » dans un
+glisser-déposer, les deux « a » de « papa » dans un ordre à reconstituer.
+Les écrans suivaient chaque tuile par son texte. Relier un « a » colorait
+les deux, et le second mot restait sans partenaire.
+
+Chaque tuile se suit maintenant par sa position (`lib/exerciseAnswers.ts`),
+et l'écran envoie des valeurs. Le serveur les compare comme des
+multi-ensembles (`convex/paliers/answerCheck.ts`) : une paire attendue deux
+fois doit revenir deux fois, ni plus, ni moins. L'ancienne comparaison, par
+ensemble, acceptait une paire répétée à la place d'une autre.
+
+Un glisser-déposer garde sa réponse `{ étiquette: zone }`. Il n'envoie une
+entrée par tuile (`[{ text, zone }]`) que si deux copies d'une même étiquette
+sont posées dans deux zones différentes. Un serveur pas encore déployé lit ce
+tableau comme une réponse fausse, et c'en est presque toujours une.
+
+## Le lecteur de consignes (CI, CP)
+
+Au CI et au CP, l'enfant apprend à lire : il ne lit pas encore la consigne,
+alors Pio la lui dit. À l'arrivée de chaque exercice, la consigne se dit
+toute seule. Le bouton bleu devant le texte la redit à la demande. Elle se
+tait dès que l'enfant répond, ou quand une fenêtre s'ouvre par-dessus.
+
+Les classes concernées sont dans `READING_LEARNER_CLASSES`
+(`convex/curriculum.ts`). La classe lue est celle de l'enfant
+(`profiles.class`), à défaut celle de la thématique.
+
+La voix est celle du module d'arabe (`convex/voice/elevenlabs.ts`), avec le
+même cache : une consigne n'est synthétisée qu'une fois pour tous les
+enfants, et ses caractères comptent dans `arabicVoiceUsage`. L'écran n'envoie
+qu'une référence à `voice/exercisePrompt:speak`, l'exercice et la tentative
+de palier. Le serveur vérifie que l'élève joue ce palier et lit lui-même le
+texte dans l'exercice. Avant la synthèse, `convex/voice/speakable.ts` retire
+les émojis, fait d'un trou (« ma_an », « 3 + ? = 7 ») une pause et dit les
+signes de calcul en français.
+
+Sans `ELEVENLABS_API_KEY`, le bouton devient gris et l'exercice se joue sans
+le son. Le lecteur ignore le réglage « sons » de l'élève : ce réglage coupe
+les bruitages de récompense, alors que la voix est la consigne elle-même.
+
 ## Changer le nombre de paliers d'une thématique
 
 Dans l'administration, sur la matière puis la thématique : le champ

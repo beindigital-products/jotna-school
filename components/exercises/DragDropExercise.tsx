@@ -14,6 +14,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
+import { dragDropAnswer } from "@/lib/exerciseAnswers";
 
 interface DragDropPayload {
   zones?: string[];
@@ -37,12 +38,24 @@ const zoneColors = [
   { bg: "bg-purple-50", border: "border-purple-300", header: "bg-purple-200 text-purple-900", item: "bg-purple-100 border-purple-200 text-purple-800" },
 ];
 
+/*
+ * UNE ÉTIQUETTE EST SA POSITION, PAS SON TEXTE. Deux étiquettes peuvent se
+ * ressembler (les deux « a » de « banane ») : suivies par leur texte, poser
+ * l'une déplaçait l'autre. Zones et étiquettes portent donc un identifiant
+ * tiré de leur rang ; le texte ne sert qu'à l'affichage et à la réponse
+ * (`lib/exerciseAnswers.ts`).
+ */
+const zoneId = (index: number) => `zone-${index}`;
+const itemId = (index: number) => `etiquette-${index}`;
+
 function DroppableZone({
   id,
+  label,
   colorIndex,
   children,
 }: {
   id: string;
+  label: string;
   colorIndex: number;
   children: React.ReactNode;
 }) {
@@ -59,7 +72,7 @@ function DroppableZone({
       <h4
         className={`mb-3 rounded-xl ${color.header} px-3 py-2 text-center text-base font-bold`}
       >
-        {id}
+        {label}
       </h4>
       <div className="space-y-2">{children}</div>
     </div>
@@ -68,10 +81,12 @@ function DroppableZone({
 
 function DraggableItem({
   id,
+  label,
   disabled,
   inZone,
 }: {
   id: string;
+  label: string;
   disabled: boolean;
   inZone: boolean;
 }) {
@@ -95,7 +110,7 @@ function DraggableItem({
         ${disabled ? "cursor-not-allowed opacity-70" : "cursor-grab active:cursor-grabbing"}
       `}
     >
-      {id}
+      {label}
     </div>
   );
 }
@@ -112,15 +127,10 @@ export default function DragDropExercise({
     ? payload.items.filter((it): it is { text: string } => !!it && typeof it === "object" && typeof (it as Record<string, unknown>).text === "string")
     : [];
 
-  // Track which zone each item is in (null = unplaced)
-  const [assignments, setAssignments] = useState<Record<string, string | null>>(
-    () => {
-      const initial: Record<string, string | null> = {};
-      for (const item of items) {
-        initial[item.text] = null;
-      }
-      return initial;
-    },
+  // La zone de chaque étiquette, PAR POSITION : `zoneOfItem[i]` est le rang
+  // de la zone où est posée `items[i]` (null = pas encore posée).
+  const [zoneOfItem, setZoneOfItem] = useState<(number | null)[]>(() =>
+    items.map(() => null),
   );
 
   // Les hooks avant le retour anticipé : leur ordre ne doit pas dépendre
@@ -146,28 +156,34 @@ export default function DragDropExercise({
     setActiveId(event.active.id as string);
   };
 
+  const zoneIds = zones.map((_, index) => zoneId(index));
+  const itemIds = items.map((_, index) => itemId(index));
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
+    if (!over) return;
 
-    if (over && zones.includes(over.id as string)) {
-      setAssignments((prev) => ({
-        ...prev,
-        [active.id as string]: over.id as string,
-      }));
-    }
+    const zone = zoneIds.indexOf(String(over.id));
+    const item = itemIds.indexOf(String(active.id));
+    if (zone < 0 || item < 0) return;
+    setZoneOfItem((prev) => prev.map((current, index) => (index === item ? zone : current)));
   };
 
   const handleSubmit = () => {
-    const answer: Record<string, string> = {};
-    for (const [item, zone] of Object.entries(assignments)) {
-      if (zone) answer[item] = zone;
-    }
-    onSubmit(JSON.stringify(answer));
+    onSubmit(
+      dragDropAnswer(
+        items.map((item) => item.text),
+        zoneOfItem.map((zone) => (zone === null ? null : zones[zone])),
+      ),
+    );
   };
 
-  const unplacedItems = items.filter((item) => assignments[item.text] === null);
+  const unplacedItems = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ index }) => zoneOfItem[index] === null);
   const allPlaced = unplacedItems.length === 0;
+  const activeLabel = activeId ? items[itemIds.indexOf(activeId)]?.text : undefined;
 
   return (
     <div className="space-y-6">
@@ -181,23 +197,26 @@ export default function DragDropExercise({
       >
         {/* Zones */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {zones.map((zone, i) => {
-            const zoneItems = items.filter(
-              (item) => assignments[item.text] === zone,
-            );
-            return (
-              <DroppableZone key={zone} id={zone} colorIndex={i}>
-                {zoneItems.map((item) => (
+          {zones.map((zone, zoneIndex) => (
+            <DroppableZone
+              key={zoneIds[zoneIndex]}
+              id={zoneIds[zoneIndex]}
+              label={zone}
+              colorIndex={zoneIndex}
+            >
+              {items.map((item, index) =>
+                zoneOfItem[index] === zoneIndex ? (
                   <DraggableItem
-                    key={item.text}
-                    id={item.text}
+                    key={itemIds[index]}
+                    id={itemIds[index]}
+                    label={item.text}
                     disabled={disabled}
                     inZone={true}
                   />
-                ))}
-              </DroppableZone>
-            );
-          })}
+                ) : null,
+              )}
+            </DroppableZone>
+          ))}
         </div>
 
         {/* Unplaced items */}
@@ -207,10 +226,11 @@ export default function DragDropExercise({
               Glisse chaque étiquette dans la bonne case
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              {unplacedItems.map((item) => (
+              {unplacedItems.map(({ item, index }) => (
                 <DraggableItem
-                  key={item.text}
-                  id={item.text}
+                  key={itemIds[index]}
+                  id={itemIds[index]}
+                  label={item.text}
                   disabled={disabled}
                   inZone={false}
                 />
@@ -220,9 +240,9 @@ export default function DragDropExercise({
         )}
 
         <DragOverlay>
-          {activeId ? (
+          {activeLabel !== undefined ? (
             <div className="rounded-xl border-2 border-indigo-400 bg-indigo-100 px-4 py-3 text-center text-base font-bold text-indigo-800 shadow-xl">
-              {activeId}
+              {activeLabel}
             </div>
           ) : null}
         </DragOverlay>
