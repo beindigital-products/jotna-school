@@ -1,0 +1,39 @@
+# Ce que Graphify laisse hors du graphe du dépôt (en plus du .gitignore).
+# Le graphe décrit le code et la documentation : pas les médias, pas les
+# projets natifs générés par Capacitor, pas les sorties de build.
+
+# Médias : images de Pio, clips vidéo, sons, captures d'écran.
+public/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.mov
+*.webm
+*.mp4
+*.mp3
+*.pdf
+
+# Projets natifs et sorties de build.
+ios/
+android/
+out/
+.next/
+
+# Code généré par Convex, et guides d'agent Convex installés tels quels.
+convex/_generated/
+.agents/
+
+# Instantanés de pages laissés par Playwright MCP.
+.playwright-mcp/
+
+# Réglages locaux de Claude Code (ignorés par le .gitignore global, que
+# Graphify ne lit pas).
+.claude/
+
+# Plans d'implémentation archivés : l'historique, pas l'état du code.
+docs/superpowers/
+
+# Le graphe lui-même.
+graphify-out/
