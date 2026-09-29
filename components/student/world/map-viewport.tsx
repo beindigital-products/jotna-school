@@ -80,6 +80,8 @@ type Props = {
   className?: string;
   /** Ce qui entoure le monde quand il est plus petit que le cadre : la savane peinte assombrie, ou un simple dégradé. */
   frame?: "painted" | "plain";
+  /** L'image peinte du cadre ; par défaut la savane de la carte du monde. */
+  frameImage?: string;
   ref?: Ref<CameraHandle>;
 };
 
@@ -91,6 +93,7 @@ export function MapViewport({
   hud,
   className = "",
   frame = "plain",
+  frameImage = "/images/world/map-trail-bg.jpg",
   ref,
 }: Props) {
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -386,7 +389,7 @@ export function MapViewport({
         touchAction: "none",
         WebkitUserSelect: "none",
         ...(frame === "painted"
-          ? { backgroundImage: "url(/images/world/map-trail-bg.jpg)", backgroundSize: "cover", backgroundPosition: "center" }
+          ? { backgroundImage: `url(${frameImage})`, backgroundSize: "cover", backgroundPosition: "center" }
           : {}),
       }}
       onPointerDown={onPointerDown}

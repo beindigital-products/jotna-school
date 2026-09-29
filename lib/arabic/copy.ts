@@ -18,6 +18,7 @@
  *      avance.
  */
 
+import { bravo, CONSIGNES } from "@/convex/arabic/consignes";
 import type { PronunciationVerdict } from "@/convex/arabic/matching";
 
 export const arabicCopy = {
@@ -31,6 +32,13 @@ export const arabicCopy = {
 
   lockedLesson: "Termine la leçon d'avant pour ouvrir celle-ci 🔒",
 
+  /** Sous la Kaaba de l'attente (`components/arabic/quran-loader.tsx`). */
+  loading: {
+    path: "Pio prépare le chemin du Coran…",
+    lesson: "Pio prépare ta leçon…",
+    album: "Pio ouvre ton album…",
+  },
+
   listen: {
     idle: "Écouter",
     loading: "Un instant…",
@@ -43,8 +51,20 @@ export const arabicCopy = {
   record: {
     idle: "À toi ! Appuie et répète",
     recording: "Je t'écoute…",
-    sending: "Je réfléchis…",
+    /**
+     * Pendant l'analyse de l'audio, on dit CE QUI se vérifie. « Je
+     * réfléchis » ne disait rien à l'adulte qui valide la prononciation
+     * (retour du propriétaire, 29 septembre 2026).
+     */
+    checking: {
+      pronounce: "Je vérifie ta prononciation…",
+      read: "Je vérifie ta lecture…",
+      recite: "Je vérifie ta récitation…",
+    },
     again: "Réessayer",
+    /** La jauge n'a rien capté : rien n'est envoyé (`SILENCE_LEVEL`). */
+    silent:
+      "Je n'entends rien du tout. Un adulte peut vérifier que le micro est autorisé.",
     denied:
       "Je n'ai pas accès au micro. Demande à un adulte d'autoriser le micro pour cette page.",
     unsupported:
@@ -64,8 +84,8 @@ export const arabicCopy = {
       "Petit rappel : en arabe, on écrit de la DROITE vers la gauche.",
   },
 
+  /** Une réussite se dit avec les bravos de Pio (`bravo`), voir `verdictMessage`. */
   verdicts: {
-    ok: ["Bravo ! C'est exactement ça 🌟", "Parfait ! Tu l'as bien dit 🌟"],
     close: [
       "Presque ! Réécoute et redis-le une fois.",
       "Tu y es presque — écoute bien la fin du son.",
@@ -77,6 +97,7 @@ export const arabicCopy = {
   },
 
   heardPrefix: "J'ai entendu :",
+
 
   lessonDone: {
     title: (stars: number) => `Leçon terminée ! ${"⭐".repeat(stars)}`,
@@ -130,11 +151,15 @@ export const arabicCopy = {
 /**
  * La phrase de verdict, choisie sans hasard : la même tentative donne toujours
  * la même phrase, sinon un enfant qui réécoute croit que le verdict a changé.
+ *
+ * Une réussite prend le bravo que Pio dit à voix haute pour cette tentative
+ * (« MashaAllah, c'est ça ! ») : l'écrit et la voix disent la même chose.
  */
 export function verdictMessage(
   verdict: PronunciationVerdict,
   attemptIndex: number,
 ): string {
+  if (verdict === "ok") return `${CONSIGNES[bravo(attemptIndex)]} 🌟`;
   const choices = arabicCopy.verdicts[verdict];
   return choices[attemptIndex % choices.length];
 }

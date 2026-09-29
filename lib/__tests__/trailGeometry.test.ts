@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  QURAN_TRAIL,
   WORLD_TRAIL,
   buildTrail,
   trailNodePoints,
@@ -55,9 +56,9 @@ describe("géométrie du sentier", () => {
   });
 
   it("borne la durée d'une marche", () => {
-    expect(walkDuration(10)).toBe(0.45);
-    expect(walkDuration(240)).toBeCloseTo(1, 5);
-    expect(walkDuration(100000)).toBe(2.4);
+    expect(walkDuration(10)).toBe(1);
+    expect(walkDuration(225)).toBeCloseTo(2.5, 5);
+    expect(walkDuration(100000)).toBe(6);
   });
 
   it("produit un tracé SVG vide sans étape", () => {
@@ -65,5 +66,21 @@ describe("géométrie du sentier", () => {
     expect(trail.d).toBe("");
     expect(trail.total).toBe(0);
     expect(trail.pointAt(10)).toEqual({ x: 0, y: 0, dx: 0, dy: 1 });
+  });
+});
+
+describe("sentier qui monte (chemin du Coran)", () => {
+  const count = 31;
+  const pts = trailNodePoints(count, QURAN_TRAIL);
+
+  it("part d'en bas et finit en haut, au but", () => {
+    for (let i = 1; i < count; i++) expect(pts[i].y).toBeLessThan(pts[i - 1].y);
+    expect(pts[count - 1].y).toBe(QURAN_TRAIL.topPad);
+    expect(pts[0].y).toBe(trailWorldHeight(count, QURAN_TRAIL) - QURAN_TRAIL.bottomPad);
+  });
+
+  it("garde le même zigzag qu'un sentier qui descend", () => {
+    const down = trailNodePoints(count, { ...QURAN_TRAIL, direction: "down" });
+    expect(pts.map((p) => p.x)).toEqual(down.map((p) => p.x));
   });
 });

@@ -17,7 +17,7 @@ import { pioSays } from "@/lib/pioCopy";
  *
  * Toucher un monde ne l'ouvre pas tout de suite : Pio part de là où il est,
  * suit le sentier jusqu'au monde touché, le salue, et c'est alors que la
- * page s'ouvre. La marche est courte (moins de deux secondes et demie, voir
+ * page s'ouvre. Il marche au rythme de ses pas, six secondes au plus (voir
  * `walkDuration`) : c'est un plaisir, pas une attente.
  *
  * Entièrement pilotée par les données : n'importe quel nombre de mondes tient,

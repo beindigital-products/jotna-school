@@ -28,6 +28,7 @@ export function TrailNode({
   label,
   selected,
   shaking = false,
+  glyph,
   onSelect,
 }: {
   x: number;
@@ -39,6 +40,11 @@ export function TrailNode({
   selected: boolean;
   /** Le nœud fermé qu'on vient de toucher : il dit non de la tête. */
   shaking?: boolean;
+  /**
+   * Une lettre arabe à la place du ▶ sur une étape ouverte : le chemin du
+   * Coran montre la première lettre de la leçon, l'enfant la reconnaît.
+   */
+  glyph?: string;
   onSelect: () => void;
 }) {
   const isCurrent = status === "in_progress";
@@ -104,6 +110,10 @@ export function TrailNode({
             <Check className="h-10 w-10" strokeWidth={3.5} aria-hidden />
           ) : isLocked ? (
             <Lock className="h-8 w-8" aria-hidden />
+          ) : glyph ? (
+            <span dir="rtl" lang="ar" className="font-arabic -mt-1 text-[2.4rem] leading-none" aria-hidden>
+              {glyph}
+            </span>
           ) : (
             <Play className="h-9 w-9 fill-current" aria-hidden />
           )}

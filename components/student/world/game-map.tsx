@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, LocateFixed, Maximize2, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { PioState } from "@/components/student/pio";
+import { pioWalkFacing, type PioOutfit, type PioState } from "@/components/student/pio";
 import { useDeviceTier, type DeviceTier } from "@/hooks/use-device-tier";
 import { MapViewport, type CameraHandle } from "./map-viewport";
 import { PioWalkerSprite, usePioWalker } from "./pio-walker";
@@ -13,6 +13,7 @@ import {
   trailPathD,
   trailWorldHeight,
   type TrailLayout,
+  type WorldPoint,
 } from "./trail-geometry";
 
 /**
@@ -59,6 +60,20 @@ type Props = {
   hud?: ReactNode;
   className?: string;
   pioSize?: number;
+  /**
+   * Le sol du monde, à la place de la savane répétée. Le chemin du Coran y
+   * pose ses propres paysages (village, désert, Arabie, Kaaba).
+   */
+  backdrop?: ReactNode;
+  /** L'image assombrie qui remplit le cadre autour du monde (`painted`). */
+  frameImage?: string;
+  /** La tenue de Pio sur cette carte. */
+  outfit?: PioOutfit;
+  /**
+   * Remplace la position du DERNIER point du sentier : le but (la Kaaba) se
+   * pose au centre, devant son illustration, et non dans le zigzag.
+   */
+  endPoint?: WorldPoint;
 };
 
 export function GameMap({
@@ -74,17 +89,35 @@ export function GameMap({
   hud,
   className = "",
   pioSize = 100,
+  backdrop,
+  frameImage,
+  outfit = "classic",
+  endPoint,
 }: Props) {
   const camera = useRef<CameraHandle | null>(null);
   const tier = useDeviceTier();
   const totalPoints = count + tailPoints;
-  const trail = buildTrail(trailNodePoints(totalPoints, layout));
+  const points = trailNodePoints(totalPoints, layout);
+  if (endPoint && points.length > 0) points[points.length - 1] = endPoint;
+  const trail = buildTrail(points);
   const worldHeight = trailWorldHeight(totalPoints, layout);
   const safeInitial = Math.min(Math.max(0, initialPioIndex), Math.max(0, totalPoints - 1));
 
-  const walker = usePioWalker({ trail, initialIndex: safeInitial, camera, onArrive });
-  const { walking, standing, target } = walker.state;
-  const pose: PioState = walking ? "walk" : (standing !== null && poseAt?.(standing)) || "hello";
+  const walker = usePioWalker({
+    trail,
+    initialIndex: safeInitial,
+    camera,
+    onArrive,
+    walkFacing: pioWalkFacing(outfit),
+  });
+  const { walking, standing, target, heading } = walker.state;
+  // De dos quand il monte le sentier, de face quand il le redescend : une
+  // tenue qui n'a qu'une marche retombe sur `walk` (`pio.tsx`).
+  const pose: PioState = walking
+    ? heading === "away"
+      ? "walkAway"
+      : "walkToward"
+    : (standing !== null && poseAt?.(standing)) || "hello";
 
   const progressD =
     currentIndex !== null && currentIndex > 0
@@ -102,6 +135,7 @@ export function GameMap({
       initialFocus={{ x: initialPoint.x, y: initialPoint.y + 20 }}
       className={className}
       frame={tier === "full" ? "painted" : "plain"}
+      frameImage={frameImage}
       hud={
         <>
           <ZoomControls
@@ -121,7 +155,7 @@ export function GameMap({
         </>
       }
     >
-      <WorldBackdrop tier={tier} width={layout.worldWidth} height={worldHeight} />
+      {backdrop ?? <WorldBackdrop tier={tier} width={layout.worldWidth} height={worldHeight} />}
 
       <TrailSvg d={trail.d} progressD={progressD} width={layout.worldWidth} height={worldHeight} />
 
@@ -141,7 +175,7 @@ export function GameMap({
 
       {targetPoint && <DestinationMarker x={targetPoint.x} y={targetPoint.y} />}
 
-      <PioWalkerSprite walker={walker} size={pioSize} pose={pose} />
+      <PioWalkerSprite walker={walker} size={pioSize} pose={pose} outfit={outfit} />
     </MapViewport>
   );
 }

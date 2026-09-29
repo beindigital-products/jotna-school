@@ -44,6 +44,7 @@
 import {
   ARABIC_LETTERS,
   HARAKAT,
+  syllableFr,
   type ArabicLetter,
   type ArabicLetterKey,
 } from "./alphabet";
@@ -190,9 +191,11 @@ function alphabetLessons(startOrder: number): ArabicLesson[] {
       kind: "alphabet",
       letters: slice.map((l) => l.key),
       items: [],
-      // L'ordre compte : on ÉCOUTE avant de reconnaître, on reconnaît avant
-      // de prononcer, et on n'écrit qu'une lettre qu'on sait nommer.
-      drills: ["recognizeGlyph", "recognizeName", "dots", "forms", "pronounce", "write"],
+      // L'ordre compte : on ÉCOUTE, on RÉPÈTE, on reconnaît, et on n'écrit
+      // qu'une lettre qu'on sait nommer. PAS DE FORMES ATTACHÉES ici : un
+      // débutant apprend d'abord la lettre seule (première leçon de la Qaida
+      // des daaras) ; les formes viennent avec l'assemblage des mots.
+      drills: ["recognizeGlyph", "recognizeName", "dots", "pronounce", "write"],
     });
   }
   return lessons;
@@ -233,10 +236,13 @@ function harakatLessons(startOrder: number): ArabicLesson[] {
       return {
         key: `${key}-${haraka.key}`,
         ar: letter.syllables[haraka.key],
-        translit: `${letter.soundFr}${haraka.soundFr}`,
+        translit: syllableFr(letter, haraka.key),
       };
     }),
-    drills: ["read"] as DrillKind[],
+    // L'écoute d'abord (« quel son entends-tu ? »), notée sur l'appareil :
+    // c'est elle qui vérifie VRAIMENT la voyelle, que la transcription de la
+    // voix ne sait pas distinguer (`matching.ts` retire les voyelles).
+    drills: ["recognizeGlyph", "read"] as DrillKind[],
   }));
 
   const mixed: ArabicLesson = {
@@ -252,10 +258,10 @@ function harakatLessons(startOrder: number): ArabicLesson[] {
       return HARAKAT.map((haraka) => ({
         key: `${key}-${haraka.key}`,
         ar: letter.syllables[haraka.key],
-        translit: `${letter.soundFr}${haraka.soundFr}`,
+        translit: syllableFr(letter, haraka.key),
       }));
     }),
-    drills: ["read"],
+    drills: ["recognizeGlyph", "read"],
   };
 
   return [...perHaraka, mixed];

@@ -1,71 +1,71 @@
 "use client";
 
 /**
- * LA SÉANCE — une leçon, du premier écoute au dernier tracé.
+ * LA SÉANCE — une leçon, pour un enfant qui ne sait pas encore lire.
  *
- * CETTE PAGE NE DÉCIDE DE RIEN. La suite des exercices vient de
- * `buildSession` (`lib/arabic/session.ts`), les règles d'étoiles du serveur,
- * le contenu du curriculum. Elle déroule, elle affiche, elle enregistre —
- * c'est ce qui permet de tester la pédagogie sans ouvrir un navigateur.
+ * TOUT SE FAIT À L'OREILLE ET AU DOIGT (décision du 28 septembre 2026).
+ * Chaque étape a sa consigne DITE par Pio (`components/arabic/coach.tsx`),
+ * redite par le bouton 🔊 ; les jeux se jouent en touchant de gros objets
+ * (`components/arabic/drills.tsx`) ; aucune étape ne demande de lire du
+ * français. La progression se voit : Pio avance sur la barre du haut, et le
+ * gros bouton ➜ rebondit quand on peut continuer.
+ *
+ * CETTE PAGE NE DÉCIDE DE RIEN. La suite des étapes vient de `buildSession`
+ * (`lib/arabic/session.ts`), les règles d'étoiles du serveur, le contenu du
+ * curriculum. Elle déroule, elle affiche, elle enregistre.
  *
  * QUI ENREGISTRE QUOI, ET POURQUOI C'EST SÉPARÉ :
- *   - les exercices jugés SUR L'APPAREIL (QCM, points, formes, tracé) passent
- *     par `recordAttempt`, qui marque la tentative « device » ;
+ *   - les jeux notés SUR L'APPAREIL (ballons, images, points, tracé) passent
+ *     par `recordAttempt`, qui marque la tentative « device » ; la note est
+ *     celle du PREMIER geste, même si l'enfant finit toujours par réussir ;
  *   - la PRONONCIATION est enregistrée par l'action qui a entendu l'enfant
  *     (`arabic.voice.verifyPronunciation`), côté serveur, et cette page n'y
  *     touche pas. Enregistrer ici en plus compterait chaque répétition deux
- *     fois et fausserait la note.
+ *     fois.
  *
- * LA LEÇON EST DANS LA QUERY (`?key=…`), PAS DANS UN SEGMENT `[key]`. Le
- * bundle est exporté en statique et embarqué dans l'application Capacitor
- * (`next.config.ts`, `output: "export"`) : aucune route dynamique n'y survit
- * sans `generateStaticParams`, et vingt-quatre leçons pré-rendues seraient
- * vingt-quatre pages à régénérer au moindre ajout. Même choix que la séance de
- * palier et que la carte des matières.
+ * LA LEÇON EST DANS LA QUERY (`?key=…`), PAS DANS UN SEGMENT `[key]` : le
+ * bundle est exporté en statique pour Capacitor (`output: "export"`).
  *
- * ON NE BLOQUE JAMAIS UN ENFANT. Chaque étape a sa sortie (« Passer ») :
- * micro refusé, écran qui ne prend pas le doigt, lettre qui ne vient pas ce
- * jour-là. Passer ne coûte rien de plus qu'une étoile en moins, et laisser un
- * enfant coincé sur une lettre lui ferait quitter le module, pas apprendre le ع.
+ * ON NE BLOQUE JAMAIS UN ENFANT. Le petit bouton « passer » est toujours là :
+ * micro refusé, lettre qui ne vient pas ce jour-là. Passer coûte au plus une
+ * étoile ; rester coincé ferait quitter le module.
  */
 
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
-import { motion } from "framer-motion";
-import { ArrowRight, Check, Star, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Map as MapIcon, SkipForward, Star, X } from "lucide-react";
 import { api } from "@/convex/_generated/api";
-import { getLetter } from "@/convex/arabic/alphabet";
-import { ARABIC_LESSONS, getLesson } from "@/convex/arabic/curriculum";
+import { getLetter, type ArabicLetterKey } from "@/convex/arabic/alphabet";
+import { ARABIC_LESSONS, getLesson, type DrillKind } from "@/convex/arabic/curriculum";
+import { bravo, CONSIGNES } from "@/convex/arabic/consignes";
+import { LETTER_WORDS } from "@/convex/arabic/letterWords";
 import { isLessonUnlocked } from "@/convex/arabic/progressRules";
-import {
-  buildSession,
-  drillOf,
-  seedFromKey,
-  type SessionStep,
-} from "@/lib/arabic/session";
+import { buildSession, seedFromKey, type SessionStep } from "@/lib/arabic/session";
 import { arabicCopy } from "@/lib/arabic/copy";
+import { getSoundEnabledLocal, play } from "@/lib/sounds";
+import { ArabicGlyph } from "@/components/arabic/arabic-glyph";
 import { MaskedText } from "@/components/arabic/masked-text";
-import { LetterCard } from "@/components/arabic/letter-card";
 import { ListenButton } from "@/components/arabic/listen-button";
 import { RecordButton } from "@/components/arabic/record-button";
 import { TracingCanvas } from "@/components/arabic/tracing-canvas";
-import {
-  DotsDrill,
-  FormsDrill,
-  RecognizeGlyphDrill,
-  RecognizeNameDrill,
-} from "@/components/arabic/drills";
-import { JotnaLoader } from "@/components/jotna-loader";
+import { BalloonPick, DotsGame, MatchPictures, MeetLetter } from "@/components/arabic/drills";
+import { CoachLine } from "@/components/arabic/coach";
+import { PronounceCoach } from "@/components/arabic/pronounce-coach";
+import { speech, useSpeech } from "@/components/arabic/speech";
+import { QuranLoader } from "@/components/arabic/quran-loader";
 import { Pio } from "@/components/student/pio";
+import { GameButton } from "@/components/student/game/game-button";
+
+type RecordAttempt = (
+  drill: DrillKind,
+  itemKey: string,
+  correct: boolean,
+  score?: number,
+  verdict?: "ok" | "close" | "retry",
+) => void;
 
 function ArabicLessonPageInner() {
   const searchParams = useSearchParams();
@@ -73,26 +73,16 @@ function ArabicLessonPageInner() {
   const lesson = getLesson(lessonKey);
 
   const path = useQuery(api.arabic.lessons.getPath);
-  // LA SÉANCE DE MÉMORISATION REPREND OÙ L'ENFANT S'EST ARRÊTÉ, et c'est la
-  // seule qui dépende d'un état serveur : redonner les trois premiers versets
-  // à qui en sait six lui ferait perdre exactement ce qu'il est venu gagner.
-  // La requête est posée pour toutes les leçons — une leçon d'alphabet
-  // l'ignore — parce qu'un hook conditionnel n'existe pas.
+  // LA SÉANCE DE MÉMORISATION REPREND OÙ L'ENFANT S'EST ARRÊTÉ : c'est la
+  // seule qui dépende d'un état serveur. La requête est posée pour toutes les
+  // leçons (un hook conditionnel n'existe pas).
   const hifz = useQuery(api.arabic.memorization.getState);
-  // L'état de CETTE leçon : ce qu'elle vaut déjà. Un enfant qui révise doit
-  // voir ce qu'il avait obtenu, sinon refaire une leçon ressemble à la
-  // découvrir — et la surprise de perdre ses étoiles n'existe pas, `completeLesson`
-  // ne redescend jamais.
-  const state = useQuery(api.arabic.lessons.getLessonState, { lessonKey });
   const recordAttempt = useMutation(api.arabic.lessons.recordAttempt);
   const completeLesson = useMutation(api.arabic.lessons.completeLesson);
 
   const versesMemorized = useMemo(() => {
     if (!lesson?.surahKey || !hifz) return 0;
-    return (
-      hifz.surahs.find((entry) => entry.surahKey === lesson.surahKey)
-        ?.versesMemorized ?? 0
-    );
+    return hifz.surahs.find((entry) => entry.surahKey === lesson.surahKey)?.versesMemorized ?? 0;
   }, [hifz, lesson]);
 
   const steps = useMemo(
@@ -102,24 +92,19 @@ function ArabicLessonPageInner() {
   const [index, setIndex] = useState(0);
   const [stepDone, setStepDone] = useState(false);
   const [tries, setTries] = useState(0);
-  const [result, setResult] = useState<{ stars: number; score: number } | null>(
-    null,
-  );
+  const [result, setResult] = useState<{ stars: number; score: number } | null>(null);
   const completing = useRef(false);
 
   const step = steps[index];
   const atEnd = steps.length > 0 && index >= steps.length;
 
   // La clôture part d'elle-même à la dernière étape : demander un clic de plus
-  // à un enfant qui vient de finir, c'est risquer qu'il ferme l'onglet avant
-  // d'avoir ses étoiles.
+  // à un enfant qui vient de finir, c'est risquer qu'il parte sans ses étoiles.
   useEffect(() => {
     if (!atEnd || completing.current || !lesson) return;
     completing.current = true;
     void completeLesson({ lessonKey })
       .then((outcome) => setResult(outcome))
-      // Un échec de clôture ne doit pas laisser un écran vide : les tentatives
-      // sont déjà écrites, l'enfant a travaillé, on le lui dit.
       .catch(() => setResult({ stars: 1, score: 0 }));
   }, [atEnd, completeLesson, lesson, lessonKey]);
 
@@ -129,47 +114,32 @@ function ArabicLessonPageInner() {
     setIndex((current) => current + 1);
   }, []);
 
-  const onDeviceAnswer = useCallback(
-    async (
-      current: SessionStep,
-      correct: boolean,
-      score?: number,
-      verdict?: "ok" | "close" | "retry",
-    ) => {
-      setStepDone(true);
-      const drill = drillOf(current);
-      if (!drill) return;
-      try {
-        await recordAttempt({
-          lessonKey,
-          drill,
-          itemKey: current.itemKey,
-          correct,
-          ...(score !== undefined ? { score } : {}),
-          ...(verdict !== undefined ? { verdict } : {}),
-        });
-      } catch {
-        // Une tentative perdue coûte une fraction d'étoile, pas la séance :
-        // on n'interrompt pas un enfant pour un aller-retour raté.
-      }
+  const markDone = useCallback(() => setStepDone(true), []);
+
+  const record: RecordAttempt = useCallback(
+    (drill, itemKey, correct, score, verdict) => {
+      void recordAttempt({
+        lessonKey,
+        drill,
+        itemKey,
+        correct,
+        ...(score !== undefined ? { score } : {}),
+        ...(verdict !== undefined ? { verdict } : {}),
+      }).catch(() => {
+        // Une tentative perdue coûte une fraction d'étoile, pas la séance.
+      });
     },
     [lessonKey, recordAttempt],
   );
 
   if (!lesson) return <NotFound />;
-  if (path === undefined) return <JotnaLoader />;
-  // On n'ouvre pas une séance de mémorisation avant de savoir où l'enfant en
-  // est : bâtir la séance sur un compteur à zéro puis la reconstruire une
-  // seconde plus tard lui redonnerait le verset 1 sous les yeux, puis le
-  // verset 4 — la séance aurait changé sous son doigt.
-  if (lesson.kind === "hifz" && hifz === undefined) return <JotnaLoader />;
+  if (path === undefined) return <QuranLoader message={arabicCopy.loading.lesson} />;
+  if (lesson.kind === "hifz" && hifz === undefined) {
+    return <QuranLoader message={arabicCopy.loading.lesson} />;
+  }
 
   if (!path.enabled) {
-    return (
-      <Centered title={arabicCopy.notEnabled.title}>
-        {arabicCopy.notEnabled.body}
-      </Centered>
-    );
+    return <Centered title={arabicCopy.notEnabled.title}>{arabicCopy.notEnabled.body}</Centered>;
   }
 
   const completed = new Set(
@@ -177,390 +147,525 @@ function ArabicLessonPageInner() {
   );
   if (!isLessonUnlocked(lessonKey, completed, path.placement.floorOrder)) {
     return (
-      <Centered title="Cette leçon n'est pas encore ouverte">
-        {arabicCopy.lockedLesson}
-      </Centered>
+      <Centered title="Cette leçon n'est pas encore ouverte">{arabicCopy.lockedLesson}</Centered>
     );
   }
 
-  if (result) {
-    return <LessonSummary lessonKey={lessonKey} stars={result.stars} />;
-  }
-
-  if (!step) return <JotnaLoader />;
+  if (result) return <LessonSummary lessonKey={lessonKey} stars={result.stars} />;
+  if (!step) return <QuranLoader message={arabicCopy.loading.lesson} />;
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col gap-5">
-      <header className="flex items-center gap-3">
-        <Link
-          href="/student/arabe"
-          aria-label="Quitter la leçon"
-          className="flex h-11 w-11 items-center justify-center rounded-2xl text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-        >
-          <X className="h-6 w-6" aria-hidden />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-gray-500">
-            {lesson.title}
-            {state?.status === "completed" && state.stars > 0 && (
-              <span
-                className="ml-2 font-normal text-amber-500"
-                aria-label={`Déjà réussie avec ${state.stars} étoile${state.stars > 1 ? "s" : ""}`}
-              >
-                {"⭐".repeat(state.stars)}
-              </span>
-            )}
-          </p>
-          <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
-            <motion.div
-              className="h-full rounded-full bg-teal-500"
-              initial={false}
-              animate={{ width: `${(index / steps.length) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-        </div>
-        <span className="shrink-0 text-sm font-bold text-gray-500">
-          {index + 1}/{steps.length}
-        </span>
-      </header>
+    <div className="mx-auto flex min-h-[80vh] max-w-2xl flex-col gap-4 px-4 pb-4 pt-1 sm:px-0">
+      <KidHeader done={index} total={steps.length} />
 
       <main className="flex-1">
         <StepView
+          key={`${index}:${step.kind}:${step.itemKey}`}
           step={step}
           lessonKey={lessonKey}
+          round={index}
           tries={tries}
-          onDeviceAnswer={onDeviceAnswer}
+          record={record}
           onVoiceOutcome={() => {
             setTries((n) => n + 1);
             setStepDone(true);
           }}
+          onDone={markDone}
+          onNext={advance}
         />
       </main>
 
-      <footer className="sticky bottom-4 flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={advance}
-          className={`inline-flex min-h-14 items-center gap-2 rounded-3xl px-7 py-3 text-lg font-extrabold shadow-lg transition-all ${
-            stepDone
-              ? "bg-teal-600 text-white shadow-teal-200 hover:bg-teal-700"
-              : "border-2 border-gray-200 bg-white text-gray-500 hover:border-gray-300"
-          }`}
-        >
-          {stepDone ? "Suivant" : "Passer"}
-          <ArrowRight className="h-5 w-5" aria-hidden />
-        </button>
-      </footer>
+      {/* Une rencontre ou une écoute n'est pas notée : on continue quand on veut. */}
+      <KidFooter
+        done={stepDone || step.kind === "discoverLetter" || step.kind === "discoverItem"}
+        onNext={advance}
+      />
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-
 export default function ArabicLessonPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<QuranLoader message={arabicCopy.loading.lesson} />}>
       <ArabicLessonPageInner />
     </Suspense>
   );
 }
 
-function StepView({
-  step,
-  lessonKey,
-  tries,
-  onDeviceAnswer,
-  onVoiceOutcome,
-}: {
+// ---------------------------------------------------------------------------
+// Le cadre : Pio qui avance, le bouton qui rebondit
+// ---------------------------------------------------------------------------
+
+function KidHeader({ done, total }: { done: number; total: number }) {
+  const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+  return (
+    <header className="flex items-center gap-3">
+      <Link
+        href="/student/arabe"
+        aria-label="Quitter la leçon, revenir au chemin"
+        className="btn-chunky flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-b from-rose-300 to-rose-500 text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-200"
+        style={{ "--btn-depth": "#9f1239" } as React.CSSProperties}
+      >
+        <X className="h-6 w-6" strokeWidth={3} aria-hidden />
+      </Link>
+
+      {/* La barre du chemin de la leçon : Pio y avance d'une étape à l'autre. */}
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={done}
+        aria-label="Avancée de la leçon"
+        className="relative h-5 flex-1 rounded-full bg-amber-100 shadow-inner"
+      >
+        <motion.div
+          className="h-full rounded-full bg-gradient-to-r from-lime-400 to-emerald-500"
+          initial={false}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.4 }}
+        />
+        <motion.span
+          aria-hidden
+          className="absolute top-1/2"
+          initial={false}
+          animate={{ left: `${pct}%` }}
+          transition={{ duration: 0.4 }}
+          style={{ translateX: "-50%", translateY: "-50%" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- petite tête de Pio */}
+          <img
+            src="/images/pio/boubou/idle.png"
+            alt=""
+            className="h-11 w-11 rounded-full border-[3px] border-white bg-emerald-100 object-cover object-[50%_6%] shadow-md"
+          />
+        </motion.span>
+      </div>
+
+      <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-3 py-1.5 font-display text-base font-extrabold text-amber-800 shadow-inner">
+        <Star className="h-5 w-5 fill-amber-400 text-amber-500" aria-hidden />
+        {done}
+      </span>
+    </header>
+  );
+}
+
+function KidFooter({ done, onNext }: { done: boolean; onNext: () => void }) {
+  return (
+    <footer className="sticky bottom-3 flex items-end justify-between">
+      <button
+        type="button"
+        onClick={onNext}
+        aria-label="Passer cette étape"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-white/80 text-gray-400 shadow-sm hover:text-gray-600"
+      >
+        <SkipForward className="h-5 w-5" aria-hidden />
+      </button>
+      <AnimatePresence>
+        {done && (
+          <motion.button
+            type="button"
+            onClick={onNext}
+            aria-label="Continuer"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1, y: [0, -8, 0] }}
+            exit={{ scale: 0 }}
+            transition={{ scale: { type: "spring", stiffness: 300, damping: 15 }, y: { duration: 1.1, repeat: Infinity } }}
+            className="btn-chunky flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-gradient-to-b from-lime-400 to-green-600 text-white shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-lime-200"
+            style={{ "--btn-depth": "#166534" } as React.CSSProperties}
+          >
+            <ArrowRight className="h-10 w-10" strokeWidth={3.5} aria-hidden />
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </footer>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Les étapes
+// ---------------------------------------------------------------------------
+
+type StepProps = {
   step: SessionStep;
   lessonKey: string;
+  round: number;
   tries: number;
-  onDeviceAnswer: (
-    step: SessionStep,
-    correct: boolean,
-    score?: number,
-    verdict?: "ok" | "close" | "retry",
-  ) => void;
+  record: RecordAttempt;
   onVoiceOutcome: () => void;
-}) {
-  const lesson = getLesson(lessonKey);
-  const seed = seedFromKey(`${lessonKey}:${step.itemKey}`);
+  onDone: () => void;
+  onNext: () => void;
+};
 
+function StepView(props: StepProps) {
+  const { step } = props;
   switch (step.kind) {
-    case "discoverLetter": {
-      const letter = getLetter(step.itemKey);
-      return letter ? <LetterCard letter={letter} /> : null;
-    }
-
-    case "recognizeGlyph":
-      return (
-        <RecognizeGlyphDrill
-          letterKey={step.itemKey}
-          options={step.options}
-          onAnswer={(correct) => onDeviceAnswer(step, correct)}
-        />
-      );
-
-    case "recognizeName":
-      return (
-        <RecognizeNameDrill
-          letterKey={step.itemKey}
-          options={step.options}
-          onAnswer={(correct) => onDeviceAnswer(step, correct)}
-        />
-      );
-
-    case "dots":
-      return (
-        <DotsDrill
-          letterKey={step.itemKey}
-          options={step.options}
-          onAnswer={(correct) => onDeviceAnswer(step, correct)}
-        />
-      );
-
-    case "forms":
-      return (
-        <FormsDrill
-          letterKey={step.itemKey}
-          options={step.options}
-          seed={seed}
-          onAnswer={(correct) => onDeviceAnswer(step, correct)}
-        />
-      );
-
+    case "discoverLetter":
+      return <DiscoverLetterStep {...props} letterKey={step.itemKey} />;
     case "pronounce": {
       const letter = getLetter(step.itemKey);
       if (!letter) return null;
       return (
-        <div className="space-y-5 text-center">
-          <h2 className="font-display text-xl font-extrabold text-gray-900">
-            Écoute, puis répète
-          </h2>
-          <div
-            dir="rtl"
-            lang="ar"
-            className="font-arabic mx-auto flex h-36 w-36 items-center justify-center rounded-3xl bg-teal-50 text-8xl leading-none text-teal-800"
-          >
-            {letter.isolated}
-          </div>
-          <p className="text-base font-semibold text-gray-600">
-            {letter.hintFr}
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <ListenButton
-              speechRef={{ kind: "letterName", letterKey: letter.key }}
-              label="Écouter le nom"
-            />
-            <ListenButton
-              variant="chip"
-              speechRef={{
-                kind: "letterSyllable",
-                letterKey: letter.key,
-                haraka: "fatha",
-              }}
-              label={letter.syllables.fatha}
-            />
-          </div>
-          <RecordButton
-            key={`${lessonKey}:${step.itemKey}:pronounce`}
-            lessonKey={lessonKey}
-            itemKey={step.itemKey}
-            drill="pronounce"
-            attemptIndex={tries}
-            onOutcome={onVoiceOutcome}
-          />
-        </div>
+        <PronounceCoach
+          lessonKey={props.lessonKey}
+          letter={letter}
+          onOutcome={props.onVoiceOutcome}
+          onNext={props.onNext}
+        />
       );
     }
-
-    case "write": {
-      const letter = getLetter(step.itemKey);
-      if (!letter) return null;
+    case "recognizeGlyph":
       return (
         <div className="space-y-4">
-          <h2 className="font-display text-center text-xl font-extrabold text-gray-900">
-            Écris la lettre {letter.nameFr}
-          </h2>
-          <div className="flex justify-center">
-            <ListenButton
-              variant="chip"
-              speechRef={{ kind: "letterName", letterKey: letter.key }}
-              label="Réécouter"
-            />
-          </div>
-          <TracingCanvas
-            key={`${lessonKey}:${step.itemKey}:write`}
-            glyph={letter.isolated}
-            onValidate={(outcome) =>
-              onDeviceAnswer(
-                step,
-                outcome.verdict !== "retry",
-                outcome.score,
-                outcome.verdict,
-              )
-            }
+          <CoachLine
+            pose="recite"
+            line={`${CONSIGNES.find_letter}…`}
+            say={[speech.consigne("find_letter"), speech.letter(step.itemKey)]}
+          />
+          <BalloonPick
+            options={step.options}
+            target={step.itemKey}
+            round={props.round}
+            renderLabel={(key) => (
+              <ArabicGlyph text={getLetter(key)?.isolated ?? ""} className="h-20 w-20" />
+            )}
+            ariaLabel={(key) => `La lettre ${getLetter(key)?.nameFr ?? key}`}
+            onFirstAnswer={(correct) => props.record("recognizeGlyph", step.itemKey, correct)}
+            onSolved={props.onNext}
+          />
+        </div>
+      );
+    case "pickSyllable": {
+      const lesson = getLesson(props.lessonKey);
+      const arOf = (key: string) => lesson?.items.find((item) => item.key === key)?.ar ?? "";
+      return (
+        <div className="space-y-4">
+          <CoachLine
+            pose="recite"
+            line={`${CONSIGNES.find_syllable}…`}
+            say={[speech.consigne("find_syllable"), speech.item(props.lessonKey, step.itemKey)]}
+          />
+          <BalloonPick
+            options={step.options}
+            target={step.itemKey}
+            round={props.round}
+            renderLabel={(key) => <ArabicGlyph text={arOf(key)} className="h-20 w-20" />}
+            ariaLabel={(key) => `Le son ${key}`}
+            onFirstAnswer={(correct) => props.record("recognizeGlyph", step.itemKey, correct)}
+            onSolved={props.onNext}
           />
         </div>
       );
     }
-
+    case "matchPictures":
+      return (
+        <div className="space-y-4">
+          <CoachLine pose="recite" line={CONSIGNES.match} say={[speech.consigne("match")]} />
+          <MatchPictures
+            letters={step.letters}
+            seed={seedFromKey(`${props.lessonKey}:match`)}
+            onPairAnswer={(letterKey, correct) => props.record("recognizeName", letterKey, correct)}
+            onSolved={props.onNext}
+          />
+        </div>
+      );
+    case "dots":
+      return (
+        <div className="space-y-4">
+          <CoachLine pose="recite" line={CONSIGNES.dots} say={[speech.consigne("dots")]} />
+          <DotsGame
+            letterKey={step.itemKey}
+            options={step.options}
+            round={props.round}
+            onFirstAnswer={(correct) => props.record("dots", step.itemKey, correct)}
+            onSolved={props.onNext}
+          />
+        </div>
+      );
+    case "write":
+      return <WriteStep {...props} letterKey={step.itemKey} />;
     case "discoverItem":
-    case "read": {
-      const item = lesson?.items.find((entry) => entry.key === step.itemKey);
-      if (!item) return null;
-      const isQuran = lesson?.kind === "coran";
-      return (
-        <div className="space-y-5 text-center">
-          <h2 className="font-display text-xl font-extrabold text-gray-900">
-            {step.kind === "read" ? "À toi de lire" : "Écoute bien"}
-          </h2>
-          {isQuran && (
-            <p className="text-sm font-medium text-gray-500">
-              {arabicCopy.quranNote}
-            </p>
-          )}
-          <p
-            dir="rtl"
-            lang="ar"
-            className="font-arabic rounded-3xl bg-white px-5 py-8 text-4xl leading-[1.9] text-gray-900 shadow-sm sm:text-5xl"
-          >
-            {item.ar}
-          </p>
-          {item.translit && (
-            <p className="text-lg font-bold text-teal-700">{item.translit}</p>
-          )}
-          {item.fr && (
-            <p className="text-base font-medium text-gray-500">{item.fr}</p>
-          )}
-          <ListenButton
-            speechRef={{ kind: "lessonItem", lessonKey, itemKey: item.key }}
-            className="mx-auto"
-          />
-          {step.kind === "read" && (
-            <RecordButton
-              key={`${lessonKey}:${item.key}:read`}
-              lessonKey={lessonKey}
-              itemKey={item.key}
-              drill="read"
-              attemptIndex={tries}
-              onOutcome={onVoiceOutcome}
-            />
-          )}
-        </div>
-      );
-    }
-
-    case "recite": {
-      const item = lesson?.items.find((entry) => entry.key === step.itemKey);
-      if (!item) return null;
-      const isLink = step.mask === "hidden" && item.fr?.startsWith("Les versets");
-      return (
-        <div className="space-y-5 text-center">
-          <h2 className="font-display text-xl font-extrabold text-gray-900">
-            {isLink
-              ? arabicCopy.memorize.linkTitle
-              : arabicCopy.memorize.listenFirst}
-          </h2>
-          {item.fr && (
-            <p className="text-base font-medium text-gray-500">{item.fr}</p>
-          )}
-          <MaskedText text={item.ar} mask={step.mask} />
-          <ListenButton
-            speechRef={{ kind: "lessonItem", lessonKey, itemKey: item.key }}
-            className="mx-auto"
-          />
-          <RecordButton
-            key={`${lessonKey}:${item.key}:recite`}
-            lessonKey={lessonKey}
-            itemKey={item.key}
-            drill="recite"
-            attemptIndex={tries}
-            onOutcome={onVoiceOutcome}
-          />
-        </div>
-      );
-    }
-
+    case "read":
+      return <ReadingStep {...props} itemKey={step.itemKey} reading={step.kind === "read"} />;
+    case "recite":
+      return <ReciteStep {...props} itemKey={step.itemKey} mask={step.mask} />;
     default:
       return null;
   }
 }
 
-function LessonSummary({
-  lessonKey,
-  stars,
-}: {
-  lessonKey: string;
-  stars: number;
-}) {
-  const current = ARABIC_LESSONS.findIndex((item) => item.key === lessonKey);
-  const next = current >= 0 ? ARABIC_LESSONS[current + 1] : undefined;
-
+function DiscoverLetterStep({ letterKey }: StepProps & { letterKey: ArabicLetterKey }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="mx-auto max-w-md rounded-3xl bg-white p-8 text-center shadow-xl"
-    >
-      <Pio state="cheer" size={96} className="mx-auto" />
-      <h1 className="font-display mt-4 text-2xl font-extrabold text-gray-900">
-        {arabicCopy.lessonDone.title(stars)}
-      </h1>
-      <div className="mt-3 flex justify-center gap-1">
-        {[1, 2, 3].map((n) => (
-          <Star
-            key={n}
-            className={`h-8 w-8 ${
-              n <= stars ? "fill-amber-400 text-amber-400" : "text-gray-200"
-            }`}
-            aria-hidden
-          />
-        ))}
-      </div>
-      <p className="mt-3 text-base text-gray-600">{arabicCopy.lessonDone.body}</p>
-
-      <div className="mt-6 flex flex-col gap-2">
-        {next && (
-          <Link
-            href={`/student/arabe/lecon?key=${next.key}`}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-teal-600 px-6 py-3 text-base font-extrabold text-white shadow-md hover:bg-teal-700"
-          >
-            {arabicCopy.lessonDone.next}
-            <ArrowRight className="h-5 w-5" aria-hidden />
-          </Link>
-        )}
-        <Link
-          href="/student/arabe"
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 px-6 py-3 text-base font-bold text-gray-600 hover:border-gray-300"
-        >
-          <Check className="h-5 w-5" aria-hidden />
-          {arabicCopy.lessonDone.back}
-        </Link>
-      </div>
-    </motion.div>
+    <div className="space-y-5">
+      <CoachLine
+        pose="recite"
+        line={CONSIGNES.meet}
+        say={[
+          speech.consigne("meet"),
+          speech.letter(letterKey),
+          speech.consigne("meet_like"),
+          speech.word(letterKey),
+        ]}
+      />
+      <MeetLetter letterKey={letterKey} />
+      <p className="text-center text-sm font-semibold text-emerald-900/70">{CONSIGNES.meet_tap}</p>
+    </div>
   );
 }
 
-function Centered({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function WriteStep({ letterKey, record, onDone }: StepProps & { letterKey: ArabicLetterKey }) {
+  const { say } = useSpeech();
+  const letter = getLetter(letterKey);
+  if (!letter) return null;
   return (
-    <div className="mx-auto max-w-md rounded-3xl border-2 border-amber-200 bg-white p-8 text-center shadow-sm">
-      <h1 className="font-display text-xl font-extrabold text-gray-900">
-        {title}
-      </h1>
+    <div className="space-y-4">
+      <CoachLine pose="recite" line={CONSIGNES.trace} say={[speech.consigne("trace")]} />
+      {/* Le doigt qui montre le sens : de la droite vers la gauche. */}
+      <div aria-hidden className="relative mx-auto h-10 w-40">
+        <motion.span
+          className="absolute top-0 text-4xl"
+          animate={{ left: ["80%", "0%"], opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        >
+          👈
+        </motion.span>
+      </div>
+      <TracingCanvas
+        glyph={letter.isolated}
+        showInstruction={false}
+        onValidate={(outcome) => {
+          record("write", letterKey, outcome.verdict !== "retry", outcome.score, outcome.verdict);
+          if (outcome.verdict !== "retry") {
+            if (getSoundEnabledLocal()) void play("correct");
+            void say([speech.consigne("trace_done")]);
+          }
+          onDone();
+        }}
+      />
+    </div>
+  );
+}
+
+function ReadingStep({
+  itemKey,
+  reading,
+  lessonKey,
+  tries,
+  onVoiceOutcome,
+}: StepProps & { itemKey: string; reading: boolean }) {
+  const { say } = useSpeech();
+  const lesson = getLesson(lessonKey);
+  const item = lesson?.items.find((entry) => entry.key === itemKey);
+  const isQuran = lesson?.kind === "coran";
+  if (!item) return null;
+
+  const listenKey = isQuran ? "quran_listen" : "listen_item";
+  const readKey = isQuran ? "quran_read" : "read_item";
+
+  return (
+    <div className="space-y-5 text-center">
+      <CoachLine
+        // Sur un verset, Pio reste sobre : il salue et il écoute.
+        pose={reading ? "listen" : isQuran ? "salam" : "recite"}
+        line={CONSIGNES[reading ? readKey : listenKey]}
+        say={
+          reading
+            ? [speech.consigne(readKey)]
+            : [speech.consigne(listenKey), speech.item(lessonKey, itemKey)]
+        }
+      />
+      <p
+        dir="rtl"
+        lang="ar"
+        className="font-arabic rounded-[2rem] border-4 border-white bg-white px-5 py-8 text-5xl leading-[1.9] text-gray-900 shadow-lg"
+      >
+        {item.ar}
+      </p>
+      {item.translit && <p className="text-xl font-extrabold text-teal-700">{item.translit}</p>}
+      {item.fr && <p className="text-base font-medium text-gray-500">{item.fr}</p>}
+      {reading && (
+        <>
+          <ListenButton variant="chip" speechRef={speech.item(lessonKey, itemKey)} label="Écouter Pio" />
+          <RecordButton
+            key={`${lessonKey}:${itemKey}:read`}
+            lessonKey={lessonKey}
+            itemKey={itemKey}
+            drill="read"
+            attemptIndex={tries}
+            onOutcome={(outcome) => {
+              // La réussite se DIT, avec le bravo que la ligne de verdict écrit.
+              if (outcome.verdict === "ok") void say([speech.consigne(bravo(tries))]);
+              onVoiceOutcome();
+            }}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+function ReciteStep({
+  itemKey,
+  mask,
+  lessonKey,
+  tries,
+  onVoiceOutcome,
+}: StepProps & { itemKey: string; mask: "full" | "hints" | "hidden" }) {
+  const { say } = useSpeech();
+  const lesson = getLesson(lessonKey);
+  const item = lesson?.items.find((entry) => entry.key === itemKey);
+  if (!item) return null;
+  return (
+    <div className="space-y-5 text-center">
+      <CoachLine
+        pose="salam"
+        line={CONSIGNES.recite}
+        say={[speech.consigne("recite"), speech.item(lessonKey, itemKey)]}
+      />
+      {item.fr && <p className="text-base font-medium text-gray-500">{item.fr}</p>}
+      <MaskedText text={item.ar} mask={mask} />
+      <RecordButton
+        key={`${lessonKey}:${itemKey}:recite`}
+        lessonKey={lessonKey}
+        itemKey={itemKey}
+        drill="recite"
+        attemptIndex={tries}
+        onOutcome={(outcome) => {
+          if (outcome.verdict === "ok") void say([speech.consigne(bravo(tries))]);
+          onVoiceOutcome();
+        }}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// La fin de la leçon
+// ---------------------------------------------------------------------------
+
+function LessonSummary({ lessonKey, stars }: { lessonKey: string; stars: number }) {
+  const { say } = useSpeech();
+  const current = ARABIC_LESSONS.findIndex((item) => item.key === lessonKey);
+  const lesson = current >= 0 ? ARABIC_LESSONS[current] : undefined;
+  const next = current >= 0 ? ARABIC_LESSONS[current + 1] : undefined;
+  // Le Coran n'est pas un jeu (`lib/arabic/copy.ts`) : après une sourate,
+  // Pio salue, main sur le cœur, et on dit « c'est lu » ; après des lettres,
+  // il applaudit et l'enfant gagne ses autocollants.
+  const sober = lesson?.kind === "coran" || lesson?.kind === "hifz";
+  const stickers = lesson?.kind === "alphabet" ? (lesson.letters as ArabicLetterKey[]) : [];
+
+  useEffect(() => {
+    if (!sober && getSoundEnabledLocal()) void play("badge");
+    void say([speech.consigne(sober ? "lesson_done_quran" : "lesson_done")]);
+  }, [say, sober]);
+
+  return (
+    // La carte au MILIEU de l'écran, en hauteur comme en largeur : le `main`
+    // du mode focus a déjà écarté l'encoche et la barre d'accueil
+    // (app/(student)/layout.tsx), on centre dans ce qui reste.
+    <div className="flex min-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_1.5rem)] items-center justify-center px-4 py-4 sm:px-0">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md rounded-[2rem] border-4 border-white bg-gradient-to-b from-amber-50 to-white p-6 text-center shadow-xl"
+      >
+        <Pio state={sober ? "salam" : "bravo"} outfit="boubou" size={170} className="mx-auto" />
+        <h1 className="font-display mt-2 text-3xl font-extrabold text-emerald-900">
+          {sober ? "C'est lu !" : "MashaAllah !"}
+        </h1>
+
+        {!sober && (
+          <div className="mt-3 flex justify-center gap-2">
+            {[1, 2, 3].map((n) => (
+              <motion.span
+                key={n}
+                initial={{ scale: 0, rotate: -40 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.3 + n * 0.25, type: "spring", stiffness: 260, damping: 12 }}
+              >
+                <Star
+                  className={`h-14 w-14 ${n <= stars ? "fill-amber-400 text-amber-500" : "text-gray-200"}`}
+                  aria-hidden
+                />
+              </motion.span>
+            ))}
+          </div>
+        )}
+
+        {stickers.length > 0 && (
+          <div className="mt-5">
+            <p className="font-display text-sm font-extrabold uppercase tracking-wide text-amber-800">
+              Nouveaux autocollants
+            </p>
+            {/* Comme dans l'album : la lettre au centre du rond, son image en
+                pastille dans le coin. La pastille n'entre qu'en fondu — un émoji
+                qui part d'une échelle nulle peut rester blanc dans la vue web
+                d'iOS (un seul des quatre s'affichait le 29 septembre 2026). */}
+            <div dir="rtl" className="mt-3 flex justify-center gap-3">
+              {stickers.map((key, i) => (
+                <div key={key} className="relative">
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.6, y: 16 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ delay: 1.2 + i * 0.2, type: "spring", stiffness: 260, damping: 14 }}
+                    className="flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-b from-amber-200 to-amber-400 text-amber-950 shadow-md"
+                  >
+                    <ArabicGlyph text={getLetter(key)?.isolated ?? ""} fill={0.62} className="h-full w-full" />
+                  </motion.span>
+                  <motion.span
+                    aria-hidden
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.5 + i * 0.2, duration: 0.3 }}
+                    className="absolute -right-1.5 -top-1.5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-white text-lg leading-none shadow"
+                  >
+                    {LETTER_WORDS[key].emoji}
+                  </motion.span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col gap-3">
+          {next && (
+            <GameButton
+              href={`/student/arabe/lecon?key=${next.key}`}
+              tone="green"
+              size="lg"
+              className="w-full"
+              icon={<ArrowRight className="h-6 w-6" aria-hidden />}
+              ariaLabel="Leçon suivante"
+            >
+              Leçon suivante
+            </GameButton>
+          )}
+          <GameButton
+            href="/student/arabe"
+            tone="white"
+            size="lg"
+            className="w-full"
+            icon={<MapIcon className="h-6 w-6" aria-hidden />}
+            ariaLabel="Revenir au chemin"
+          >
+            Le chemin
+          </GameButton>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function Centered({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mx-4 max-w-md rounded-3xl border-2 border-amber-200 bg-white p-8 text-center shadow-sm sm:mx-auto">
+      <Pio state="encourage" outfit="boubou" size={120} className="mx-auto" />
+      <h1 className="font-display mt-3 text-xl font-extrabold text-gray-900">{title}</h1>
       <p className="mt-2 text-base text-gray-600">{children}</p>
       <Link
         href="/student/arabe"
         className="mt-5 inline-block rounded-2xl bg-teal-600 px-5 py-2.5 text-base font-bold text-white"
       >
-        Retour au parcours
+        Le chemin
       </Link>
     </div>
   );
@@ -569,8 +674,7 @@ function Centered({
 function NotFound() {
   return (
     <Centered title="Leçon introuvable">
-      Cette leçon n&apos;existe pas (ou plus). Reviens au parcours pour choisir
-      la suivante.
+      Cette leçon n&apos;existe pas (ou plus). Reviens au chemin pour choisir la suivante.
     </Centered>
   );
 }

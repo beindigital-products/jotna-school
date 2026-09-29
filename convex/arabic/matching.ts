@@ -2,7 +2,8 @@
  * JUGER UNE PRONONCIATION — ce que le module fait de ce que l'enfant a dit.
  *
  * LA CHAÎNE COMPLÈTE : l'enfant parle, `voice.ts` envoie l'audio à la
- * transcription (ElevenLabs Scribe), qui rend du TEXTE ARABE. Ce fichier
+ * transcription (ElevenLabs Scribe), qui rend du TEXTE ARABE — ou, sur un nom
+ * de lettre très court, parfois du latin (`latinSkeleton`). Ce fichier
  * compare ce texte à ce qui était attendu, et rend un verdict. Il ne parle à
  * personne — pas de `fetch`, pas de `ctx` — pour être testable ligne à ligne
  * (`convex/__tests__/arabic.test.ts`).
@@ -53,9 +54,14 @@ const NON_ARABIC = /[^ء-غف-يٱ\s]/g;
  *   - ؤ ئ → و ي : mêmes hamza portées, mêmes hésitations ;
  *   - la hamza isolée ء disparaît en fin de mot (مَاء ↔ ما) ;
  *   - l'article ال en tête de mot disparaît : un enfant à qui l'on demande
- *     « bâ » peut répondre « al-bâ », et il a raison.
+ *     « bâ » peut répondre « al-bâ », et il a raison. `keepArticle` le garde,
+ *     pour les mots qui commencent par ال sans que ce soit un article :
+ *     « أليف », un alif dit avec un i long, deviendrait « يف ».
  */
-export function normalizeArabic(input: string): string {
+export function normalizeArabic(
+  input: string,
+  options: { keepArticle?: boolean } = {},
+): string {
   let text = input.normalize("NFC").replace(DIACRITICS, "");
   text = text
     .replace(/[أإآٱٲٳ]/g, "ا") // أ إ آ ٱ → ا
@@ -67,7 +73,7 @@ export function normalizeArabic(input: string): string {
   text = text.replace(NON_ARABIC, " ");
   return text
     .split(/\s+/)
-    .map(stripArticle)
+    .map((word) => (options.keepArticle ? word : stripArticle(word)))
     .filter((word) => word.length > 0)
     .join(" ");
 }
@@ -142,7 +148,11 @@ export interface PronunciationJudgement {
   score: number;
   /** La forme acceptée qui a le mieux correspondu, normalisée. */
   best: string | null;
-  /** Ce que la transcription disait, une fois normalisée. */
+  /**
+   * Ce que la transcription disait, une fois normalisée. Sur un essai refusé
+   * sans aucune lettre arabe, le texte brut (« Jean ») : c'est lui que
+   * l'adulte doit voir pour comprendre le refus.
+   */
   heard: string;
 }
 
@@ -159,24 +169,34 @@ export interface PronunciationJudgement {
  * APPARAÎTRE dans ce qui a été entendu : on peut se tromper de voyelle, pas
  * de lettre. Un `requireGlyph` absent (syllabes mélangées, mots) laisse la
  * similarité seule décider.
+ *
+ * CHAQUE MOT ENTENDU EST COMPARÉ AVEC ET SANS SON « ARTICLE ». « أليف » (un
+ * alif dit avec un i long, le 29 septembre 2026) perdait son ال et devenait
+ * « يف » : un alif juste était refusé.
+ *
+ * `latin` RATTRAPE UNE TRANSCRIPTION ÉCRITE EN LATIN (voir `latinSkeleton`) :
+ * elle ne contient aucune lettre arabe, la similarité y vaut 0 alors que
+ * l'enfant a peut-être très bien dit la lettre.
  */
 export function judgePronunciation(args: {
   accepted: readonly string[];
   transcript: string;
   requireGlyph?: string;
+  latin?: LatinForms;
 }): PronunciationJudgement {
-  const heard = normalizeArabic(args.transcript);
+  const stripped = normalizeArabic(args.transcript);
+  const heard = normalizeArabic(args.transcript, { keepArticle: true });
+  // Le mot le plus proche de la transcription, et non la phrase entière :
+  // « la lettre bâ » transcrit en trois mots ne doit pas être puni pour les
+  // deux mots en trop.
+  const words = [...new Set([...tokenize(heard), ...tokenize(stripped)])];
+  const candidates = words.length > 0 ? words : [heard];
 
   let score = 0;
   let best: string | null = null;
   for (const candidate of args.accepted) {
     const normalized = normalizeArabic(candidate);
     if (normalized.length === 0) continue;
-    // Le mot le plus proche de la transcription, et non la phrase entière :
-    // « la lettre bâ » transcrit en trois mots ne doit pas être puni pour les
-    // deux mots en trop.
-    const words = tokenize(heard);
-    const candidates = words.length > 0 ? words : [heard];
     for (const word of candidates) {
       const s = similarity(normalized, word);
       if (s > score) {
@@ -194,10 +214,136 @@ export function judgePronunciation(args: {
   if (score >= PRONUNCIATION_OK && glyphHeard) {
     return { verdict: "ok", score, best, heard };
   }
+  if (args.latin && latinMatches(args.transcript, args.latin)) {
+    return args.latin.ambiguous
+      ? { verdict: "close", score: Math.max(score, LATIN_CLOSE_SCORE), best, heard }
+      : { verdict: "ok", score: Math.max(score, LATIN_OK_SCORE), best, heard };
+  }
   if (score >= PRONUNCIATION_CLOSE) {
     return { verdict: "close", score, best, heard };
   }
-  return { verdict: "retry", score, best, heard };
+  // Rien d'arabe : on rend le texte brut, pour que l'écran puisse montrer ce
+  // que la machine a cru entendre (« Jean ») plutôt qu'un silence trompeur.
+  return { verdict: "retry", score, best, heard: heard || rawHeard(args.transcript) };
+}
+
+/**
+ * La transcription telle quelle, resserrée et bornée, pour l'afficher. Rien
+ * si elle n'a aucune lettre : « J'ai entendu : . » n'apprend rien à personne.
+ */
+function rawHeard(transcript: string): string {
+  const text = transcript.replace(/\s+/g, " ").trim().slice(0, 60);
+  return /\p{L}/u.test(text) ? text : "";
+}
+
+// ---------------------------------------------------------------------------
+// Quand la transcription répond en latin
+// ---------------------------------------------------------------------------
+
+/**
+ * UN NOM DE LETTRE REVIENT PARFOIS EN LATIN. Sur un mot d'une syllabe, Scribe
+ * ignore souvent la langue demandée et écrit ce qu'il croit entendre en
+ * anglais : « Jim » pour جِيم, « Cuff » pour كَاف, « Wow » pour وَاو, « Sheen »
+ * pour شِين, « Meme » pour مِيم. Mesuré le 29 septembre 2026 sur les 28 noms
+ * lus par une voix arabe : six fois sur vingt-huit. Sans rattrapage, le juge
+ * ne voyait aucune lettre arabe, rendait 0, et l'enfant entendait « je n'ai
+ * pas bien entendu » après avoir bien prononcé.
+ *
+ * ON COMPARE DES SQUELETTES DE CONSONNES. L'anglais écrit les voyelles trop
+ * librement (Jim, Jeem, Gym) ; les consonnes, beaucoup moins. Le squelette
+ * garde les consonnes, réunit les digrammes (sh, ch, th, kh, gh, dh), rabat
+ * c, q et ck sur k, retire le h qui ne fait qu'allonger une voyelle (« bah »)
+ * et les consonnes doublées. « Cuff » et « kâf » donnent tous deux « kf ».
+ */
+export function latinSkeleton(input: string): string {
+  const letters = input
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+  if (letters.length === 0) return "";
+  const folded = letters
+    .replace(/dj/g, "j")
+    .replace(/sh|ch/g, "S")
+    .replace(/th/g, "T")
+    .replace(/kh/g, "K")
+    .replace(/gh/g, "G")
+    .replace(/dh/g, "D")
+    .replace(/ph/g, "f")
+    .replace(/ck|qu|q|c/g, "k")
+    .replace(/x/g, "ks")
+    .replace(/g(?=[iey])/g, "j")
+    .replace(/mb$/, "m")
+    // Le h qui ne fait qu'allonger une voyelle : « bah », « dahl ».
+    .replace(/([aeiou])h+(?=[^aeiou]|$)/g, "$1");
+  // Les voyelles partent ; y et w ne restent qu'en tête (yâ, wâw).
+  const head = /[aeiou]/.test(folded[0]) ? "" : folded[0];
+  const rest = folded.slice(1).replace(/[aeiouyw]/g, "");
+  return (head + rest).replace(/(.)\1+/g, "$1");
+}
+
+export interface LatinForms {
+  /** Les squelettes acceptés : ceux du nom de la lettre et de son son. */
+  skeletons: string[];
+  /**
+   * `true` pour une lettre que le latin ne distingue pas d'une autre : ح de ه,
+   * ع de ن, ط de ت, ض de د, ص de س, ظ de ذ, ق de ك. Entendue en latin, elle
+   * ne vaut que « presque » : on ne peut pas savoir si l'enfant a dit la
+   * lettre, ou sa voisine plus facile.
+   */
+  ambiguous: boolean;
+}
+
+/** Des noms que Scribe écrit autrement que nos translittérations. */
+const LATIN_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  zay: ["zayn", "zain"],
+  ayn: ["ain"],
+  ghayn: ["ghain"],
+};
+
+const LATIN_AMBIGUOUS: ReadonlySet<string> = new Set([
+  "ha",
+  "ayn",
+  "taEmph",
+  "dad",
+  "sad",
+  "zaEmph",
+  "qaf",
+]);
+
+/** Les formes latines d'une lettre, depuis ses translittérations françaises. */
+export function latinFormsForLetter(letter: {
+  key: string;
+  nameFr: string;
+  soundFr: string;
+}): LatinForms {
+  // « h (soufflé) » → « h », « w / ou » → « w », « 3 (son de gorge) » → rien.
+  const sound = letter.soundFr.split(/[\s/]/)[0] ?? "";
+  const skeletons = [letter.nameFr, sound, ...(LATIN_ALIASES[letter.key] ?? [])]
+    .map(latinSkeleton)
+    .filter((skeleton) => skeleton.length > 0);
+  return {
+    skeletons: [...new Set(skeletons)],
+    ambiguous: LATIN_AMBIGUOUS.has(letter.key),
+  };
+}
+
+/** Rattrapé en latin : 0,8 si la lettre est sans voisine, 0,5 sinon. */
+const LATIN_OK_SCORE = 0.8;
+const LATIN_CLOSE_SCORE = 0.5;
+
+/** Un mot latin de la transcription (ou le tout, collé) a-t-il le bon squelette ? */
+function latinMatches(transcript: string, forms: LatinForms): boolean {
+  const words = transcript
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((word) => word.length > 0);
+  if (words.length === 0) return false;
+  return [...words, words.join("")]
+    .map(latinSkeleton)
+    .some((skeleton) => skeleton.length > 0 && forms.skeletons.includes(skeleton));
 }
 
 export const READING_OK = 0.7;

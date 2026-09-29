@@ -21,6 +21,7 @@
  */
 
 import {
+  HARAKAT,
   getLetter,
   pickDistractors,
   shuffle,
@@ -33,22 +34,46 @@ import { linkItemKey, linkPoints, type MaskDegree } from "@/convex/arabic/hifz";
 /** Items de lecture retenus par séance — au-delà, on échantillonne. */
 export const ITEMS_PER_SESSION = 8;
 
-/** Choix proposés dans un QCM, bonne réponse comprise. */
-export const CHOICES_PER_QUESTION = 4;
+/**
+ * Syllabes retenues par séance de voyelles : moins que pour une sourate,
+ * parce que chacune s'écoute, se redit, puis revient dans le jeu d'écoute.
+ */
+export const SYLLABLES_PER_SESSION = 6;
+
+/** Syllabes rejouées dans le jeu « quel son entends-tu ? ». */
+export const SYLLABLE_PICKS_PER_SESSION = 4;
+
+/**
+ * Choix proposés dans un jeu de ballons, bonne réponse comprise. Trois, pas
+ * quatre : un enfant de cinq ans compare trois dessins d'un coup d'œil, et
+ * chaque ballon faux qui se dégonfle rapproche la bonne réponse.
+ */
+export const CHOICES_PER_QUESTION = 3;
+
+/** Lettres dont on compte les points, par leçon. */
+export const DOTS_PER_SESSION = 2;
 
 export type SessionStep =
-  /** On découvre la lettre : on l'écoute, on lit son conseil. Non noté. */
+  /** On rencontre la lettre : son nom, son image (أ comme أَسَد). Non noté. */
   | { kind: "discoverLetter"; itemKey: ArabicLetterKey }
-  /** On entend le nom, on retrouve la lettre parmi quatre. */
+  /** On entend le nom, on éclate le ballon de la bonne lettre. */
   | { kind: "recognizeGlyph"; itemKey: ArabicLetterKey; options: ArabicLetterKey[] }
-  /** On voit la lettre, on retrouve son nom parmi quatre. */
-  | { kind: "recognizeName"; itemKey: ArabicLetterKey; options: ArabicLetterKey[] }
+  /**
+   * On relie chaque lettre de la leçon à son image. UNE étape pour toutes les
+   * lettres ; chaque paire est notée à part, famille `recognizeName` (voir la
+   * lettre, retrouver ce qu'elle dit). `itemKey` est la première lettre.
+   */
+  | { kind: "matchPictures"; itemKey: ArabicLetterKey; letters: ArabicLetterKey[] }
   /** Combien de points ? Le détail qui sépare ب de ت de ث. */
   | { kind: "dots"; itemKey: ArabicLetterKey; options: number[] }
-  /** La lettre au milieu d'un mot : la reconnaître sous sa forme attachée. */
-  | { kind: "forms"; itemKey: ArabicLetterKey; options: ArabicLetterKey[] }
   /** L'enfant répète au micro. */
   | { kind: "pronounce"; itemKey: ArabicLetterKey }
+  /**
+   * On entend une syllabe, on éclate le ballon qui l'écrit (بَ ? بِ ? بُ ?).
+   * Famille `recognizeGlyph`, notée sur l'appareil : c'est l'exercice qui
+   * vérifie vraiment la VOYELLE.
+   */
+  | { kind: "pickSyllable"; itemKey: string; options: string[] }
   /** L'enfant écrit la lettre au doigt. */
   | { kind: "write"; itemKey: ArabicLetterKey }
   /** On écoute la syllabe, le mot ou le verset. Non noté. */
@@ -71,13 +96,15 @@ export function isScored(step: SessionStep): boolean {
 export function drillOf(step: SessionStep): DrillKind | null {
   switch (step.kind) {
     case "recognizeGlyph":
-    case "recognizeName":
     case "dots":
-    case "forms":
     case "write":
     case "read":
     case "recite":
       return step.kind;
+    case "pickSyllable":
+      return "recognizeGlyph";
+    case "matchPictures":
+      return "recognizeName";
     case "pronounce":
       return "pronounce";
     default:
@@ -98,10 +125,14 @@ export function seedFromKey(key: string): number {
 /**
  * Fabrique la séance d'une leçon.
  *
- * L'ORDRE DES FAMILLES EST FIXE, et il suit l'apprentissage : on découvre,
- * on reconnaît (à l'oreille puis à l'œil), on observe le détail (les points,
- * les formes attachées), on prononce, et on écrit en dernier — écrire une
- * lettre qu'on ne sait pas nommer n'apprend qu'un dessin.
+ * POUR UN ENFANT QUI NE SAIT PAS ENCORE LIRE (décision du 28 septembre 2026).
+ * L'ordre suit la manière dont un maître de daara enseigne, un élément à la
+ * fois : on RENCONTRE la lettre (son nom, son image), on la RÉPÈTE aussitôt,
+ * on la RETROUVE parmi des ballons — puis la lettre suivante. Les jeux qui
+ * mélangent les lettres de la leçon viennent ensuite (relier à l'image,
+ * compter les points), et on écrit en dernier : écrire une lettre qu'on ne
+ * sait pas nommer n'apprend qu'un dessin. Aucune étape ne demande de lire du
+ * français ; toutes les consignes sont dites.
  *
  * Seules les familles déclarées par la leçon (`lesson.drills`) sont retenues :
  * c'est le curriculum qui décide, pas cette fonction.
@@ -131,11 +162,7 @@ function buildLetterSession(
   const pool = lettersSeenUpTo(lesson.key);
   const steps: SessionStep[] = [];
 
-  for (const letterKey of letters) {
-    steps.push({ kind: "discoverLetter", itemKey: letterKey });
-  }
-
-  const options = (letterKey: ArabicLetterKey, salt: number) =>
+  const balloons = (letterKey: ArabicLetterKey, salt: number) =>
     shuffle(
       [
         letterKey,
@@ -144,51 +171,37 @@ function buildLetterSession(
       seed + salt + 1,
     );
 
-  if (has("recognizeGlyph")) {
-    letters.forEach((letterKey, i) => {
+  // UNE LETTRE À LA FOIS, EN TROIS GESTES. L'enfant la rencontre, la redit
+  // dans la foulée — tant que le son est encore dans l'oreille —, puis
+  // l'éclate parmi des ballons. Seulement ensuite, la lettre suivante.
+  letters.forEach((letterKey, i) => {
+    steps.push({ kind: "discoverLetter", itemKey: letterKey });
+    if (has("pronounce")) steps.push({ kind: "pronounce", itemKey: letterKey });
+    if (has("recognizeGlyph")) {
       steps.push({
         kind: "recognizeGlyph",
         itemKey: letterKey,
-        options: options(letterKey, i * 10),
+        options: balloons(letterKey, i * 10),
       });
-    });
+    }
+  });
+
+  // Les jeux qui mélangent les lettres de la leçon : chacune à son image...
+  if (has("recognizeName") && letters.length > 0) {
+    steps.push({ kind: "matchPictures", itemKey: letters[0], letters: [...letters] });
   }
 
-  if (has("recognizeName")) {
-    letters.forEach((letterKey, i) => {
-      steps.push({
-        kind: "recognizeName",
-        itemKey: letterKey,
-        options: options(letterKey, i * 10 + 3),
-      });
-    });
-  }
-
+  // ...et les points, sur les lettres qui en ont (c'est là qu'ils comptent).
   if (has("dots")) {
-    letters.forEach((letterKey, i) => {
-      if (!getLetter(letterKey)) return;
+    const dotted = letters.filter((key) => (getLetter(key)?.dots.count ?? 0) > 0);
+    const chosen = (dotted.length > 0 ? dotted : letters).slice(0, DOTS_PER_SESSION);
+    chosen.forEach((letterKey, i) => {
       steps.push({
         kind: "dots",
         itemKey: letterKey,
         options: shuffle([0, 1, 2, 3], seed + i * 7),
       });
     });
-  }
-
-  if (has("forms")) {
-    letters.forEach((letterKey, i) => {
-      steps.push({
-        kind: "forms",
-        itemKey: letterKey,
-        options: options(letterKey, i * 10 + 5),
-      });
-    });
-  }
-
-  if (has("pronounce")) {
-    for (const letterKey of letters) {
-      steps.push({ kind: "pronounce", itemKey: letterKey });
-    }
   }
 
   // L'écriture EN DERNIER, toujours : c'est le geste qui fixe ce qui vient
@@ -210,31 +223,72 @@ function buildReadingSession(
   // L'ÉCHANTILLON GARDE L'ORDRE DE LA LEÇON. Tirer au hasard puis lire dans
   // le désordre casserait la progression d'une sourate, dont les versets se
   // suivent. On choisit QUI est retenu, jamais dans quel ordre.
+  const cap = lesson.kind === "harakat" ? SYLLABLES_PER_SESSION : ITEMS_PER_SESSION;
   const chosen =
-    lesson.items.length <= ITEMS_PER_SESSION
+    lesson.items.length <= cap
       ? [...lesson.items]
       : shuffle(lesson.items, seed)
-          .slice(0, ITEMS_PER_SESSION)
+          .slice(0, cap)
           .sort(
             (a, b) =>
               lesson.items.indexOf(a) - lesson.items.indexOf(b),
           );
 
-  const steps: SessionStep[] = chosen.map((item) => ({
-    kind: "discoverItem" as const,
-    itemKey: item.key,
-  }));
+  // ÉCOUTER, PUIS LIRE AUSSITÔT, un élément à la fois : c'est le talqīn du
+  // maître de Coran — il dit, l'enfant redit. Écouter huit versets d'affilée
+  // puis les relire tous demanderait une mémoire qu'un enfant de six ans n'a
+  // pas. `read` SEUL, jamais `pronounce` : lire à voix haute EST l'exercice de
+  // prononciation à ce niveau (voir l'en-tête de `curriculum.ts`).
+  const steps: SessionStep[] = [];
+  for (const item of chosen) {
+    steps.push({ kind: "discoverItem", itemKey: item.key });
+    if (has("read")) steps.push({ kind: "read", itemKey: item.key });
+  }
 
-  // `read` SEUL, jamais `pronounce` : lire un mot à voix haute EST l'exercice
-  // de prononciation à ce niveau, et les leçons de lecture ne déclarent que
-  // celui-là (voir l'en-tête de `curriculum.ts`).
-  if (has("read")) {
-    for (const item of chosen) {
-      steps.push({ kind: "read", itemKey: item.key });
-    }
+  // Le jeu d'écoute des syllabes (leçons de voyelles) : « quel son entends-tu ? ».
+  if (has("recognizeGlyph")) {
+    shuffle(chosen, seed + 5)
+      .slice(0, SYLLABLE_PICKS_PER_SESSION)
+      .forEach((item, i) => {
+        const options = syllableOptions(lesson, item.key, seed + i * 13);
+        if (options.length >= 2) {
+          steps.push({ kind: "pickSyllable", itemKey: item.key, options });
+        }
+      });
   }
 
   return steps;
+}
+
+/**
+ * Les ballons d'un jeu de syllabes.
+ *
+ * DANS LA LEÇON « MÉLANGE », la même lettre avec ses trois voyelles (بَ بِ بُ) :
+ * l'enfant doit entendre la VOYELLE. DANS UNE LEÇON D'UNE SEULE VOYELLE, la
+ * même voyelle sur trois lettres qui se ressemblent (بَ تَ ثَ) : il doit
+ * entendre la CONSONNE — il ne connaît pas encore les autres voyelles.
+ */
+function syllableOptions(lesson: ArabicLesson, itemKey: string, seed: number): string[] {
+  const dash = itemKey.lastIndexOf("-");
+  if (dash <= 0) return [];
+  const letterKey = itemKey.slice(0, dash) as ArabicLetterKey;
+  const haraka = itemKey.slice(dash + 1);
+  const known = new Set(lesson.items.map((item) => item.key));
+
+  const others =
+    lesson.key === "harakat-melange"
+      ? HARAKAT.map((entry) => `${letterKey}-${entry.key}`)
+      : pickDistractors(
+          letterKey,
+          lesson.letters as ArabicLetterKey[],
+          CHOICES_PER_QUESTION - 1,
+          seed,
+        ).map((key) => `${key}-${haraka}`);
+
+  const distractors = others
+    .filter((key) => key !== itemKey && known.has(key))
+    .slice(0, CHOICES_PER_QUESTION - 1);
+  return shuffle([itemKey, ...distractors], seed + 1);
 }
 
 /** Versets NEUFS par séance de mémorisation. Voir `buildHifzSession`. */

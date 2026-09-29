@@ -106,6 +106,24 @@ export const HARAKAT = [
 
 export type HarakaKey = (typeof HARAKAT)[number]["key"];
 
+/**
+ * Une syllabe écrite pour un lecteur francophone : « ba », « ri », « dou ».
+ *
+ * `soundFr` décrit la consonne pour un enfant (« r (roulé) », « w / ou ») :
+ * on n'en garde que la lettre, avant l'espace ou la barre. Et alif ne porte
+ * que la voyelle — أَ se lit « a », pas « aa ». Coller `soundFr` et la voyelle
+ * donnait « r (roulé)a » ou « aou » : une aide qui égare.
+ */
+export function syllableFr(
+  letter: Pick<ArabicLetter, "key" | "soundFr">,
+  haraka: HarakaKey,
+): string {
+  const vowel = HARAKAT.find((entry) => entry.key === haraka)?.soundFr ?? "";
+  if (letter.key === "alif") return vowel;
+  const consonant = letter.soundFr.split(/[\s/]/)[0] ?? "";
+  return `${consonant}${vowel}`;
+}
+
 const FATHA = "َ";
 const KASRA = "ِ";
 const DAMMA = "ُ";
