@@ -285,7 +285,7 @@ export default function StudentHomePage() {
  * en absolu : leur arrivée ne décale rien.
  *
  * IL N'Y A PAS D'ONGLET pour ce module (voir l'en-tête de
- * `app/(student)/layout.tsx`) : ce médaillon est la porte d'entrée.
+ * `app/(student)/layout.app.tsx`) : ce médaillon est la porte d'entrée.
  */
 function SideModules() {
   const modules = useQuery(api.modules.getMine);

@@ -34,7 +34,7 @@ import { MotionConfig } from "framer-motion";
  * d'onglet : la barre du bas donne 4,5 rem à chaque lieu, un cinquième
  * déborderait sur un écran de 320 px, et la métaphore des quatre lieux y
  * perdrait sa lisibilité. Son entrée est une carte du Camp
- * (`app/(student)/student/home/page.tsx`), affichée seulement si l'école a
+ * (`app/(student)/student/home/page.app.tsx`), affichée seulement si l'école a
  * allumé le module.
  */
 const NAV = [

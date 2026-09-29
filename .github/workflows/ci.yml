@@ -49,7 +49,18 @@ jobs:
       - name: Unit tests
         run: pnpm test --run
 
-      - name: Build
+      # Deux cibles, un seul code (`lib/build-target.ts`) : le site web n'a pas
+      # d'espace élève, l'application iOS/Android l'a.
+      - name: Build (site web)
         env:
           NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL || 'https://placeholder.convex.cloud' }}
-        run: pnpm build
+        run: |
+          pnpm build
+          test ! -e out/student || { echo "Le site web contient l'espace élève" >&2; exit 1; }
+
+      - name: Build (application iOS/Android)
+        env:
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL || 'https://placeholder.convex.cloud' }}
+        run: |
+          pnpm build:app
+          test -f out/student/home/index.html || { echo "L'application n'a pas l'espace élève" >&2; exit 1; }
