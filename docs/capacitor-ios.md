@@ -1,8 +1,8 @@
 # Application iOS — export statique et Capacitor
 
 L'application web tourne aussi comme application iOS native. Le principe est
-simple : `next build` produit un site statique dans `out/`, et Capacitor
-embarque ce dossier dans un projet Xcode. Aucun serveur Next ne tourne sur le
+simple : `JOTNA_TARGET=app next build` produit un site statique dans `out/`,
+et Capacitor embarque ce dossier dans un projet Xcode. Aucun serveur Next ne tourne sur le
 téléphone. Le seul réseau utilisé est la connexion Convex, exactement comme
 dans le navigateur.
 
@@ -190,17 +190,21 @@ Pour regarder l'export statique dans un navigateur sans l'application :
 pnpm preview:export
 ```
 
+Il sert le dernier `out/` construit : `pnpm build:app` d'abord pour y voir
+l'espace élève.
+
 ## Ce qui n'est pas couvert
 
 Il n'y a pas de plugin natif installé : ni notifications, ni caméra, ni
-stockage hors ligne. L'application est le site web dans une coque native.
+stockage hors ligne. L'application est le code du site dans une coque native,
+espace élève compris. Le micro passe par la vue web (`getUserMedia`), pas par
+un plugin ; son autorisation est déclarée dans `Info.plist`.
 
-Android n'est pas configuré. La commande `npx cap add android` l'ajouterait,
-mais rien n'a été testé de ce côté.
-
-La publication sur l'App Store demande un compte développeur Apple, un
-identifiant d'application enregistré, des icônes et un écran de lancement. Rien
-de tout cela n'est fait.
+La publication sur l'App Store demande un compte Apple Developer payant et un
+identifiant d'application enregistré sous ce compte. L'icône et l'écran de
+lancement, eux, sont prêts (`pnpm ios:brand`, plus haut). Pour l'instant,
+l'application s'installe seulement en développement, signée par une équipe
+personnelle gratuite, dont le profil expire au bout de sept jours.
 
 ## Fichiers générés
 
@@ -210,7 +214,7 @@ prochain `pnpm ios:sync` écrasera vos changements.
 
 ## Android
 
-Le même export statique tourne dans l'application Android. Le projet Gradle
+La même cible `app` tourne dans l'application Android. Le projet Gradle
 vit dans `android/`, généré par `cap add android` (Capacitor 8.5.2, SDK
 Android 36, Java 21).
 
@@ -218,7 +222,7 @@ Android 36, Java 21).
 pnpm android:run
 ```
 
-Cette commande construit l'export, le copie dans
+Cette commande construit l'export de la cible `app`, le copie dans
 `android/app/src/main/assets/public` et lance l'application sur l'émulateur
 ou le téléphone branché. `pnpm android:open` ouvre le projet dans Android
 Studio.
