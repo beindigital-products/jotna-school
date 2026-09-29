@@ -10,7 +10,14 @@ import {
   resolvePalierStatuses,
 } from "./palierRules";
 import type { QueryCtx } from "./_generated/server";
-import { getConditionText, normalizeRarity } from "./badges";
+import { normalizeRarity } from "./badges";
+import { conditionText } from "./badgeRules";
+import {
+  EXOS_PER_LEVEL,
+  computeLevel,
+  exosToNextLevel,
+  palierStarRating,
+} from "./progressionRules";
 import {
   callerIsAdmin,
   callerMayReadStudent,
@@ -19,18 +26,15 @@ import {
 } from "./access";
 
 // ---------------------------------------------------------------------------
-// Star approximation helper.
-//
-// Per Decision D3c + scoring.ts: true stars are computed per-exercise (0..3
-// each, summed to 0..30 per palier). Recomputing that for every historical
-// palierAttempt would require N attempt reads × M exercises = expensive.
-//
-// For aggregate UI surfaces (topic header, subject map, profile total) we use
-// a 1..3 crown-style approximation derived from the palier's averageScore:
+// LA NOTE D'UN PALIER VALIDÉ SANS RÉSUMÉ. Une tentative notée depuis la
+// remise en place de la progression porte ses étoiles exactes
+// (`palierAttempts.starsTotal`), et sa note de une à trois étoiles est celle
+// de l'écran de fin (`progressionRules.palierStarRating`). Une tentative
+// d'avant, que `progression:rebuild` n'a pas encore résumée, n'a que sa
+// moyenne : on en tire la note, comme avant.
 //   - average >= 9 → 3 stars
 //   - average >= 7 → 2 stars (PALIER_VALIDATION_THRESHOLD)
 //   - average  < 7 → 1 star (only when defensively included)
-// Actual per-exercise stars are still rendered exactly inside the session UI.
 // ---------------------------------------------------------------------------
 export function approxStarsForValidatedPalier(averageScore: number): number {
   if (averageScore >= 9) return 3;
@@ -39,15 +43,10 @@ export function approxStarsForValidatedPalier(averageScore: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Level helpers (Decision D3b)
+// Le niveau (Decision D3b) vit dans `progressionRules.ts` ; réexporté ici
+// pour les lecteurs historiques.
 // ---------------------------------------------------------------------------
-export const EXOS_PER_LEVEL = 50;
-export function computeLevel(totalCorrectExercises: number): number {
-  return Math.floor(totalCorrectExercises / EXOS_PER_LEVEL) + 1;
-}
-export function exosToNextLevel(totalCorrectExercises: number): number {
-  return EXOS_PER_LEVEL - (totalCorrectExercises % EXOS_PER_LEVEL);
-}
+export { EXOS_PER_LEVEL, computeLevel, exosToNextLevel };
 
 // ---------------------------------------------------------------------------
 // Student preferences shape (stored under profiles.preferences, v.any()).
@@ -145,7 +144,7 @@ export function resolveTopicStatuses(
 // ---------------------------------------------------------------------------
 const EMPTY_SET: ReadonlySet<number> = new Set();
 
-async function topicsForStudent(
+export async function topicsForStudent(
   ctx: QueryCtx,
   subjectId: Id<"subjects">,
   profile: Doc<"profiles">,
@@ -181,8 +180,8 @@ type PalierProgress = {
   validated: Set<number>;
   /** Les index avec une tentative ouverte. */
   inProgress: Set<number>;
-  /** La meilleure moyenne par palier validé, pour les étoiles. */
-  bestScore: Map<number, number>;
+  /** La meilleure note (une à trois étoiles) par palier validé, celle de l'écran de fin. */
+  bestRating: Map<number, number>;
 };
 
 type PalierProgressByTopic = {
@@ -225,13 +224,16 @@ async function loadPalierProgress(
     const entry = byTopic.get(key) ?? {
       validated: new Set<number>(),
       inProgress: new Set<number>(),
-      bestScore: new Map<number, number>(),
+      bestRating: new Map<number, number>(),
     };
     if (attempt.status === "validated") {
       entry.validated.add(palier.palierIndex);
-      const score = attempt.averageScore ?? 0;
-      if (score > (entry.bestScore.get(palier.palierIndex) ?? -1)) {
-        entry.bestScore.set(palier.palierIndex, score);
+      const rating =
+        attempt.starsTotal !== undefined && attempt.exerciseCount !== undefined
+          ? palierStarRating(attempt.starsTotal, attempt.exerciseCount)
+          : approxStarsForValidatedPalier(attempt.averageScore ?? 0);
+      if (rating > (entry.bestRating.get(palier.palierIndex) ?? 0)) {
+        entry.bestRating.set(palier.palierIndex, rating);
       }
     } else if (attempt.status === "in_progress") {
       entry.inProgress.add(palier.palierIndex);
@@ -455,7 +457,8 @@ export const getStudentDetail = query({
  * pass (and possibly spoof) a studentId.
  *
  * Decision D3b — `level` derived from totalCorrectExercises (50 / level).
- * Decision D3c — `totalStars` approximated from validated palierAttempts.
+ * `totalStars` — les étoiles exactes de chaque thématique
+ *                (`studentTopicProgress.starsEarned`), plus celles de mission.
  * Decision D7  — `streaksEnabled` reflects ANY parentSettings.streaksEnabled
  *                = true. Default OFF when no settings exist (wellbeing).
  *                When OFF, streak fields are returned as zeros so the UI
@@ -551,7 +554,7 @@ export const getMyStats = query({
           badge: {
             ...badge,
             rarity: normalizeRarity(badge.rarity),
-            criteriaText: getConditionText(badge.condition),
+            criteriaText: conditionText(badge),
           },
         });
       }
@@ -563,15 +566,12 @@ export const getMyStats = query({
       .take(1000);
     const totalTimeMs = attempts.reduce((s, a) => s + a.timeSpentMs, 0);
 
-    // D3c — total stars approximated from validated palierAttempts.
-    const palierAttempts = await ctx.db
-      .query("palierAttempts")
-      .withIndex("by_user", (q) => q.eq("userId", studentId))
-      .take(500);
-    const totalStars = palierAttempts.reduce((acc, a) => {
-      if (a.status !== "validated") return acc;
-      return acc + approxStarsForValidatedPalier(a.averageScore ?? 0);
-    }, 0);
+    // LES ÉTOILES : trois par exercice au plus, la meilleure tentative de
+    // chaque palier, jamais la somme des rejeux. Chaque thématique porte les
+    // siennes (`studentTopicProgress.starsEarned`, posé à la fin d'un
+    // palier) ; le carnet en fait la somme, comme le bandeau de chaque
+    // matière. C'est l'unité de l'écran de fin de palier et des missions.
+    const totalStars = progress.reduce((s, p) => s + (p.starsEarned ?? 0), 0);
 
     const subjectCounts: Record<string, { name: string; count: number }> = {};
     for (const p of progress) {
@@ -655,7 +655,7 @@ export const getMyStats = query({
       // D3b — level
       level: computeLevel(totalCorrectExercises),
       exosToNextLevel: exosToNextLevel(totalCorrectExercises),
-      // D3c — total stars, plus les étoiles de mission (quests.ts).
+      // Les étoiles gagnées, plus les étoiles de mission (quests.ts).
       totalStars: totalStars + (prefs.questBonusStars ?? 0),
       // D7 — streak
       streaksEnabled,
@@ -916,9 +916,7 @@ export const getStudentSubjectMap = query({
       }).map((palierStatus, idx) => {
         const index = idx + 1;
         const stars =
-          palierStatus === "completed"
-            ? approxStarsForValidatedPalier(paliersDone?.bestScore.get(index) ?? 0)
-            : 0;
+          palierStatus === "completed" ? (paliersDone?.bestRating.get(index) ?? 0) : 0;
         return { index, status: palierStatus, stars };
       });
 
@@ -932,17 +930,16 @@ export const getStudentSubjectMap = query({
         palierCount,
         validatedPaliers: countValidatedWithin(validated, palierCount),
         nextPalierIndex: nextPalierIndex(validated, palierCount),
-        starsApprox: paliers.reduce((acc, p) => acc + p.stars, 0),
+        starsEarned: progress?.starsEarned ?? 0,
         completedExercises: progress?.completedExercises ?? 0,
         correctExercises: progress?.correctExercises ?? 0,
         paliers,
       };
     });
 
-    const totalStarsApprox = orderedTopics.reduce(
-      (acc, t) => acc + t.starsApprox,
-      0,
-    );
+    // Les étoiles gagnées sur la matière, dans l'unité du carnet (trois par
+    // exercice) ; chaque étape garde sa note de une à trois étoiles.
+    const totalStars = orderedTopics.reduce((acc, t) => acc + t.starsEarned, 0);
     const totalPaliers = orderedTopics.reduce((acc, t) => acc + t.palierCount, 0);
     const completedPaliers = orderedTopics.reduce(
       (acc, t) => acc + t.paliers.filter((p) => p.status === "completed").length,
@@ -957,7 +954,7 @@ export const getStudentSubjectMap = query({
         color: subject.color,
       },
       topics: orderedTopics,
-      totalStarsApprox,
+      totalStars,
       totalPaliers,
       completedPaliers,
     };

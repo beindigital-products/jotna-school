@@ -59,7 +59,8 @@ comment l'ouvrir. Un doigt qui dérape ne lance jamais une séance. L'élève ne
 voit que les thématiques de son niveau.
 
 **La Salle des trophées** (`/student/badges`). Les badges rangés par étagères,
-du plus rare au plus commun, avec une jauge de collection.
+du plus rare au plus commun, avec une jauge de collection et, sous chaque
+trophée fermé, une barre qui dit où l'enfant en est.
 
 **Le Carnet** (`/student/profil`). Une page crème avec des tampons : niveau,
 étoiles, exercices, trophées, série. Un tampon à zéro reste en pointillé.
