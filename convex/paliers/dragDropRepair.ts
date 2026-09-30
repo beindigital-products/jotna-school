@@ -19,6 +19,9 @@
  *     suite étant l'ordre des zones.
  *   - Des étiquettes qui sont des calculs (« 2 × 6 ») sous des zones
  *     génériques : les zones prennent le résultat calculé (« 12 »).
+ *   - Des calculs et leurs résultats à trier dans deux boîtes « Opérations »
+ *     et « Résultats » : c'est un appariement mal rendu, il devient un
+ *     exercice `match` (chaque calcul face à son résultat).
  *   - Une étiquette identique à sa zone, avec une seule bonne réponse
  *     (« a » dans « Mariama ___ un collier ») devient un QCM dont les
  *     options sont les zones.
@@ -46,6 +49,7 @@ export type DragDropRepairOutcome =
   | { kind: "cleaned"; payload: { zones: string[]; items: DragDropItem[] } }
   | { kind: "order"; payload: { correctSequence: string[] }; answerKey: string }
   | { kind: "qcm"; payload: { options: string[]; correctIndex: number }; answerKey: string }
+  | { kind: "match"; payload: { pairs: { left: string; right: string }[] }; answerKey: string }
   | {
       kind: "relabeled";
       payload: { zones: string[]; items: DragDropItem[] };
@@ -56,9 +60,14 @@ export type DragDropRepairOutcome =
       reason: "shape" | "zone_missing" | "generic_zones" | "tautology";
     };
 
-/** « Zone A », « zone 1 », « ZONE B », « zone3 » : un nom de boîte, pas une étiquette. */
+/**
+ * « Zone A », « zone 1 », « Résultat 2 », « Réponse B » : un nom de boîte,
+ * pas une étiquette. L'enfant ne peut pas savoir ce qu'il y a dedans.
+ */
 export function isGenericZoneLabel(label: string): boolean {
-  return /^(zone|case|boîte|boite|groupe|colonne)\s*[a-z0-9]{0,2}$/i.test(label.trim());
+  return /^(zone|case|boîte|boite|groupe|colonne|résultat|resultat|réponse|reponse|option|choix|catégorie|categorie)\s*[a-z0-9]{0,2}$/i.test(
+    label.trim(),
+  );
 }
 
 const ORDER_PROMPT = /\b(ordre|croissant|décroissant|decroissant|phrase|dialogue|chronolog\w*|étapes?|etapes?|séquence|sequence|syllabes?|former (?:le|un) mot)\b/i;
@@ -126,6 +135,14 @@ export function repairDragDrop(input: DragDropRepairInput): DragDropRepairOutcom
         answerKey: relabeled.items.map((it) => `${it.text} = ${it.correctZone}`).join(", "),
       };
     }
+    const pairs = pairsFromCalculations(items);
+    if (pairs) {
+      return {
+        kind: "match",
+        payload: { pairs },
+        answerKey: pairs.map((p) => `${p.left} = ${p.right}`).join(", "),
+      };
+    }
     return { kind: "unrepairable", reason: "generic_zones" };
   }
 
@@ -172,6 +189,30 @@ function sortedZones(zones: string[]): string[] {
     .map((x) => x.z);
 }
 
+const isCalculation = (text: string) => /[+\-−×x*÷/:]/.test(text) && /\d/.test(text);
+
+/**
+ * Des calculs (« 3 × 8 ») mêlés ou non à leurs résultats (« 24 ») : chaque
+ * calcul face à sa valeur, pour un exercice d'appariement. Deux calculs de
+ * même valeur rendraient l'appariement ambigu : on renonce.
+ */
+function pairsFromCalculations(items: DragDropItem[]): { left: string; right: string }[] | null {
+  const calculations = items.filter((it) => isCalculation(it.text));
+  if (calculations.length < 2) return null;
+  if (!items.every((it) => isCalculation(it.text) || /^-?\d+(?:[.,]\d+)?$/.test(it.text))) return null;
+  const pairs: { left: string; right: string }[] = [];
+  const seen = new Set<string>();
+  for (const it of calculations) {
+    const value = solveOrEvaluate(it.text);
+    if (value === null) return null;
+    const right = formatNumber(value);
+    if (seen.has(right)) return null;
+    seen.add(right);
+    pairs.push({ left: it.text, right });
+  }
+  return pairs;
+}
+
 /**
  * Chaque étiquette est un calcul (« 2 × 6 ») : sa zone prend le résultat.
  * Deux étiquettes d'une même zone doivent valoir pareil, deux zones ne
@@ -181,7 +222,7 @@ function relabelWithResults(
   zones: string[],
   items: DragDropItem[],
 ): { zones: string[]; items: DragDropItem[] } | null {
-  if (!items.every((it) => /[+\-−×x*÷/:]/.test(it.text) && /\d/.test(it.text))) return null;
+  if (!items.every((it) => isCalculation(it.text))) return null;
   const valueOfZone = new Map<string, number>();
   for (const it of items) {
     const value = solveOrEvaluate(it.text);

@@ -496,6 +496,7 @@ type DragDropBatch = {
   relabeled: number;
   toOrder: number;
   toQcm: number;
+  toMatch: number;
   cleaned: number;
   unrepairable: number;
   paliersInvalidated: number;
@@ -517,6 +518,7 @@ export const repairDragDrop = internalAction({
       relabeled: 0,
       toOrder: 0,
       toQcm: 0,
+      toMatch: 0,
       cleaned: 0,
       unrepairable: 0,
       paliersInvalidated: 0,
@@ -531,6 +533,7 @@ export const repairDragDrop = internalAction({
       totals.relabeled += batch.relabeled;
       totals.toOrder += batch.toOrder;
       totals.toQcm += batch.toQcm;
+      totals.toMatch += batch.toMatch;
       totals.cleaned += batch.cleaned;
       totals.unrepairable += batch.unrepairable;
       totals.paliersInvalidated += batch.paliersInvalidated;
@@ -550,6 +553,7 @@ export const repairDragDropForPaliers = internalMutation({
       relabeled: 0,
       toOrder: 0,
       toQcm: 0,
+      toMatch: 0,
       cleaned: 0,
       unrepairable: 0,
       paliersInvalidated: 0,
@@ -584,10 +588,14 @@ export const repairDragDropForPaliers = internalMutation({
         if (outcome.kind === "relabeled") batch.relabeled += 1;
         else if (outcome.kind === "order") batch.toOrder += 1;
         else if (outcome.kind === "qcm") batch.toQcm += 1;
+        else if (outcome.kind === "match") batch.toMatch += 1;
         else batch.cleaned += 1;
         if (args.dryRun) continue;
         await ctx.db.patch(ex._id, {
-          type: outcome.kind === "order" || outcome.kind === "qcm" ? outcome.kind : "drag-drop",
+          type:
+            outcome.kind === "order" || outcome.kind === "qcm" || outcome.kind === "match"
+              ? outcome.kind
+              : "drag-drop",
           payload: outcome.payload,
           ...(outcome.kind === "cleaned" ? {} : { answerKey: outcome.answerKey }),
           needsManualReview: false,
