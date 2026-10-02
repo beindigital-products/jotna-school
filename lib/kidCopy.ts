@@ -38,6 +38,32 @@ export const kidMessages = {
     'Ça prend un peu de temps... attends-moi ou réessaie dans quelques secondes.',
   genFailed: 'Petit souci ! On essaie autre chose 🔧',
 
+  // Sans internet (`docs/hors-ligne.md`) : l'enfant joue sur son téléphone,
+  // rien ne se perd, tout part quand le réseau revient. Jamais une erreur.
+  offline: {
+    badge: "Sans internet",
+    saved: "Tout est gardé dans ton téléphone 💾",
+    syncing: "Pio envoie ton travail…",
+    backpack: (pct: number) => `Pio remplit ton sac : ${pct} %`,
+    firstConnectionTitle: "Il faut internet une première fois",
+    firstConnectionBody:
+      "Connecte-toi une fois avec internet : Pio remplit ton sac, et après tu pourras jouer partout, même sans réseau.",
+    reconnectTitle: "Connecte-toi à internet",
+    reconnectBody:
+      "Ça fait longtemps que ton téléphone n'a pas vu internet. Connecte-toi un moment pour que Pio vérifie ton sac, puis tu pourras continuer.",
+    palierNotReadyTitle: "Ce palier n'est pas encore dans ton sac",
+    palierNotReadyBody:
+      "Pio le préparera la prochaine fois que tu auras internet. En attendant, tu peux jouer aux paliers déjà prêts !",
+    packEmpty:
+      "Pio prépare ton sac… Connecte-toi à internet un petit moment pour récupérer tes exercices.",
+    explainOffline:
+      "Sans internet, Pio ne peut pas t'expliquer pas à pas. Voici la bonne réponse et les indices :",
+    retryOffline: "Sans internet, on rejoue le même palier.",
+    profileOnline: "Ton prénom et ta photo se changent avec internet.",
+    logoutPending:
+      "Tes derniers exercices ne sont pas encore partis chez ton maître. Ils partiront quand tu te reconnecteras avec internet.",
+  },
+
   // Hints (Decision 93)
   hintLevel: (i: number, total: number) =>
     `Indice ${i}/${total} utilisé — un peu moins d'étoiles cette fois 🌟`,

@@ -9,8 +9,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 Le site web ne sert que l'école, les professeurs et les parents. L'espace élève
 n'existe que dans l'application iOS/Android (Capacitor, même code). Ses fichiers
 de route portent l'extension `.app.tsx` et ne sont compilés qu'avec
-`JOTNA_TARGET=app` : `pnpm dev:app` pour le voir en local (`pnpm dev` répond 404
-sur `/student/*`). Détails : `docs/capacitor-ios.md`, `lib/build-target.ts`.
+`JOTNA_TARGET=app` (`pnpm build:app`, `pnpm ios:sync`, `pnpm android:sync`).
+Même construit pour l'application, l'espace élève ne s'ouvre que dans la coque
+native : dans un navigateur, il renvoie vers `/eleve`. On le teste sur le
+simulateur iOS, l'émulateur Android ou un téléphone, jamais dans un navigateur.
+Détails : `docs/capacitor-ios.md`, `lib/build-target.ts`.
+
+Même règle pour un module importé : dans l'application, `x.app.tsx` (ou
+`x.app.ts`) remplace `x.tsx` à l'import ; le site garde `x.tsx`. Le hors-ligne
+s'en sert : le moteur n'existe que dans l'application, le site importe une
+version vide (`docs/hors-ligne.md`). TypeScript et Vitest lisent `x.tsx` : la
+version `.app` doit exporter la même chose.
 
 <!-- convex-ai-start -->
 This project uses [Convex](https://convex.dev) as its backend.

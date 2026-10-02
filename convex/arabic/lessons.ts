@@ -267,27 +267,58 @@ export const recordAttempt = mutation({
       throw new ConvexError("Exercice introuvable dans cette leçon");
     }
 
-    const now = Date.now();
-    await ctx.db.insert("arabicAttempts", {
-      studentId: student._id,
-      lessonKey: args.lessonKey,
-      drill: args.drill,
-      itemKey: args.itemKey,
-      correct: args.correct,
-      // Borné à l'écriture : une note hors de [0,1] fausserait toutes les
-      // moyennes de la leçon, et elle vient du client.
-      ...(args.score !== undefined
-        ? { score: Math.min(1, Math.max(0, args.score)) }
-        : {}),
-      ...(args.verdict !== undefined ? { verdict: args.verdict } : {}),
-      source: "device",
-      at: now,
-    });
-
-    await touchProgress(ctx, student._id, args.lessonKey, args.drill, now);
+    await insertDeviceAttempt(ctx, student._id, args, Date.now());
     return null;
   },
 });
+
+/**
+ * Écrit une tentative notée sur l'appareil et rafraîchit la progression.
+ *
+ * Partagée par `recordAttempt` (en ligne) et la synchronisation
+ * (`offline/sync.ts`, une tentative faite sans réseau, à l'instant `at` où
+ * l'enfant l'a faite). L'appelant a vérifié la leçon et l'item
+ * (`isLessonItem`).
+ */
+export async function insertDeviceAttempt(
+  ctx: MutationCtx,
+  studentId: Id<"profiles">,
+  attempt: {
+    lessonKey: string;
+    drill: string;
+    itemKey: string;
+    correct: boolean;
+    score?: number;
+    verdict?: "ok" | "close" | "retry";
+  },
+  at: number,
+  clientEventId?: string,
+): Promise<void> {
+  await ctx.db.insert("arabicAttempts", {
+    studentId,
+    lessonKey: attempt.lessonKey,
+    drill: attempt.drill,
+    itemKey: attempt.itemKey,
+    correct: attempt.correct,
+    // Borné à l'écriture : une note hors de [0,1] fausserait toutes les
+    // moyennes de la leçon, et elle vient du client.
+    ...(attempt.score !== undefined
+      ? { score: Math.min(1, Math.max(0, attempt.score)) }
+      : {}),
+    ...(attempt.verdict !== undefined ? { verdict: attempt.verdict } : {}),
+    source: "device",
+    at,
+    ...(clientEventId !== undefined ? { clientEventId } : {}),
+  });
+
+  await touchProgress(ctx, studentId, attempt.lessonKey, attempt.drill, at);
+}
+
+/** L'item visé appartient-il à cette leçon ? (`lessonHasItem`, pour les autres modules.) */
+export function isLessonItem(lessonKey: string, itemKey: string): boolean {
+  const lesson = getLesson(lessonKey);
+  return lesson !== null && lessonHasItem(lesson, itemKey);
+}
 
 /**
  * Clôt une leçon et accorde ses étoiles.
@@ -309,74 +340,96 @@ export const completeLesson = mutation({
     const lesson = getLesson(args.lessonKey);
     if (!lesson) throw new ConvexError("Leçon introuvable");
 
-    const attempts = await ctx.db
-      .query("arabicAttempts")
-      .withIndex("by_student_lesson", (q) =>
-        q.eq("studentId", student._id).eq("lessonKey", args.lessonKey),
-      )
-      .take(ATTEMPTS_PER_LESSON_LIMIT);
-
-    if (attempts.length === 0) {
+    const outcome = await closeLesson(ctx, student._id, args.lessonKey, Date.now());
+    if (!outcome) {
       throw new ConvexError("Termine au moins un exercice avant de valider.");
     }
-
-    const values: AttemptValue[] = attempts.map((attempt) => ({
-      drill: attempt.drill,
-      itemKey: attempt.itemKey,
-      correct: attempt.correct,
-      ...(attempt.score !== undefined ? { score: attempt.score } : {}),
-    }));
-
-    const score = lessonScore(values);
-    const stars = starsFor(score);
-    const now = Date.now();
-
-    const existing = await progressRow(ctx, student._id, args.lessonKey);
-    const drillsDone = [...new Set(attempts.map((a) => a.drill))];
-
-    // LA MÉMORISATION SE CLÔT ICI, au même instant que les étoiles et depuis
-    // les MÊMES tentatives écrites — jamais depuis un verdict envoyé par
-    // l'écran. Une sourate repoussée de trois mois se décide au même endroit
-    // que le reste : c'est ce qui rend la révision espacée digne de confiance.
-    // `applyOutcome` ne fait rien si la leçon n'en est pas une, et c'est elle
-    // qui choisit LAQUELLE des tentatives fait bouger l'échelon.
-    const hifz = await applyOutcome(ctx, {
-      studentId: student._id,
-      lessonKey: args.lessonKey,
-      attempts: attempts.map((attempt) => ({
-        itemKey: attempt.itemKey,
-        ...(attempt.score !== undefined ? { score: attempt.score } : {}),
-        at: attempt.at,
-      })),
-      now,
-    });
-
-    if (existing) {
-      await ctx.db.patch(existing._id, {
-        status: "completed",
-        stars: Math.max(existing.stars, stars),
-        bestScore: Math.max(existing.bestScore, score),
-        drillsDone,
-        completedAt: existing.completedAt ?? now,
-        updatedAt: now,
-      });
-    } else {
-      await ctx.db.insert("arabicLessonProgress", {
-        studentId: student._id,
-        lessonKey: args.lessonKey,
-        status: "completed",
-        stars,
-        bestScore: score,
-        drillsDone,
-        startedAt: now,
-        completedAt: now,
-        updatedAt: now,
-      });
-    }
-
-    return { stars, score, hifz };
+    return outcome;
   },
 });
+
+/**
+ * Clôt une leçon à l'instant `now` : étoiles et mémorisation, depuis les
+ * tentatives écrites. `null` quand aucune tentative n'existe.
+ *
+ * Partagée par `completeLesson` (en ligne) et la synchronisation
+ * (`offline/sync.ts`, une leçon finie sans réseau, à l'instant où l'enfant
+ * l'a finie). L'appelant a vérifié la leçon.
+ */
+export async function closeLesson(
+  ctx: MutationCtx,
+  studentId: Id<"profiles">,
+  lessonKey: string,
+  now: number,
+): Promise<{
+  stars: number;
+  score: number;
+  hifz: { surahKey: string; strength: number; dueAt: number } | null;
+} | null> {
+  const attempts = await ctx.db
+    .query("arabicAttempts")
+    .withIndex("by_student_lesson", (q) =>
+      q.eq("studentId", studentId).eq("lessonKey", lessonKey),
+    )
+    .take(ATTEMPTS_PER_LESSON_LIMIT);
+
+  if (attempts.length === 0) return null;
+
+  const values: AttemptValue[] = attempts.map((attempt) => ({
+    drill: attempt.drill,
+    itemKey: attempt.itemKey,
+    correct: attempt.correct,
+    ...(attempt.score !== undefined ? { score: attempt.score } : {}),
+  }));
+
+  const score = lessonScore(values);
+  const stars = starsFor(score);
+
+  const existing = await progressRow(ctx, studentId, lessonKey);
+  const drillsDone = [...new Set(attempts.map((a) => a.drill))];
+
+  // LA MÉMORISATION SE CLÔT ICI, au même instant que les étoiles et depuis
+  // les MÊMES tentatives écrites — jamais depuis un verdict envoyé par
+  // l'écran. Une sourate repoussée de trois mois se décide au même endroit
+  // que le reste : c'est ce qui rend la révision espacée digne de confiance.
+  // `applyOutcome` ne fait rien si la leçon n'en est pas une, et c'est elle
+  // qui choisit LAQUELLE des tentatives fait bouger l'échelon.
+  const hifz = await applyOutcome(ctx, {
+    studentId,
+    lessonKey,
+    attempts: attempts.map((attempt) => ({
+      itemKey: attempt.itemKey,
+      ...(attempt.score !== undefined ? { score: attempt.score } : {}),
+      at: attempt.at,
+    })),
+    now,
+  });
+
+  if (existing) {
+    await ctx.db.patch(existing._id, {
+      status: "completed",
+      stars: Math.max(existing.stars, stars),
+      bestScore: Math.max(existing.bestScore, score),
+      drillsDone,
+      completedAt: existing.completedAt ?? now,
+      updatedAt: now,
+    });
+  } else {
+    await ctx.db.insert("arabicLessonProgress", {
+      studentId,
+      lessonKey,
+      status: "completed",
+      stars,
+      bestScore: score,
+      drillsDone,
+      startedAt: now,
+      completedAt: now,
+      updatedAt: now,
+    });
+  }
+
+  return { stars, score, hifz };
+}
 
 /**
  * Crée ou rafraîchit la ligne de progression après une tentative.

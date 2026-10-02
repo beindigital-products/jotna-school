@@ -30,6 +30,12 @@ import {
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop } from "./dragDropRepair";
 import { computeExerciseScore } from "./scoring";
+import {
+  inputModeFor,
+  sanitizePayload,
+  shuffleDeterministic,
+  type AnswerInputMode,
+} from "./exerciseRules";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { checkAccess, requireAccess } from "../access";
 import { topicOpenTo } from "../accessRules";
@@ -234,111 +240,10 @@ function stripAnswerFromExercise(
   };
 }
 
-/**
- * Build a client-safe payload that doesn't leak the answer.
- * Server-side deterministic shuffle (Decision 75) for match/order/drag-drop.
- */
-function sanitizePayload(
-  type: Doc<"exercises">["type"],
-  payload: unknown,
-  exerciseId: Id<"exercises">,
-  attemptId: Id<"palierAttempts">,
-): unknown {
-  if (!payload || typeof payload !== "object") return {};
-  const p = payload as Record<string, unknown>;
-
-  switch (type) {
-    case "qcm":
-      return {
-        options: p.options ?? [],
-        // correctIndex stripped — submitted answers go through verifyAttempt
-      };
-    case "match": {
-      const pairs = (p.pairs as Array<{ left: string; right: string }>) ?? [];
-      const left = pairs.map((x) => x.left);
-      const right = pairs.map((x) => x.right);
-      // Shuffle right column with deterministic seed.
-      const seed = `${attemptId}:${exerciseId}:right`;
-      return { left, right: shuffleDeterministic(right, seed) };
-    }
-    case "order": {
-      const seq = (p.correctSequence as string[]) ?? [];
-      const seed = `${attemptId}:${exerciseId}:order`;
-      return { items: shuffleDeterministic(seq, seed) };
-    }
-    case "drag-drop": {
-      const items = (p.items as Array<{ text: string; correctZone: string }>) ?? [];
-      const zones = (p.zones as string[]) ?? [];
-      const seed = `${attemptId}:${exerciseId}:dd`;
-      return {
-        zones,
-        items: shuffleDeterministic(
-          items.map((it) => ({ text: it.text })),
-          seed,
-        ),
-      };
-    }
-    case "short-answer":
-      return {
-        // No accepted answers exposed — verifyAttempt enforces.
-        tolerance: p.tolerance ?? null,
-        // LE CLAVIER À OUVRIR, déduit des réponses attendues sans les
-        // révéler : un nombre entier ouvre le pavé numérique, un nombre à
-        // virgule le pavé décimal, le reste le clavier des lettres. Calculé
-        // à la lecture, donc vrai aussi pour les exercices déjà générés.
-        inputMode: inputModeFor(p.acceptedAnswers),
-      };
-    default:
-      return {};
-  }
-}
-
-export type AnswerInputMode = "numeric" | "decimal" | "text";
-
-/** Entier (« 18 », « -3 »), décimal (« 2,5 », « 3.75 ») ou texte : le clavier suit. */
-export function inputModeFor(acceptedAnswers: unknown): AnswerInputMode {
-  const answers = Array.isArray(acceptedAnswers)
-    ? acceptedAnswers.filter((a): a is string => typeof a === "string").map((a) => a.trim())
-    : [];
-  if (answers.length === 0) return "text";
-  if (answers.every((a) => /^-?\d+$/.test(a))) return "numeric";
-  if (answers.every((a) => /^-?\d+([.,]\d+)?$/.test(a))) return "decimal";
-  return "text";
-}
-
-/**
- * Deterministic Fisher-Yates with a string-seeded PRNG (mulberry32 + FNV-1a).
- * Pure, no crypto imports. Decision 75.
- */
-export function shuffleDeterministic<T>(arr: T[], seed: string): T[] {
-  const rng = mulberry32(fnv1a(seed));
-  const out = [...arr];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-function fnv1a(s: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
-  }
-  return h >>> 0;
-}
-
-function mulberry32(seed: number): () => number {
-  let t = seed >>> 0;
-  return () => {
-    t = (t + 0x6d2b79f5) >>> 0;
-    let r = t;
-    r = Math.imul(r ^ (r >>> 15), r | 1);
-    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
-    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-  };
-}
+// Le payload sans sa réponse, le clavier d'une réponse courte et le mélange
+// reproductible vivent dans `exerciseRules.ts` : l'application qui joue un
+// palier sans réseau montre l'exercice exactement comme ici.
+export { inputModeFor, shuffleDeterministic, type AnswerInputMode };
 
 // ===========================================================================
 // MUTATIONS — palier row + exercises persistence
@@ -507,6 +412,7 @@ export const replaceFailedWithVariations = internalMutation({
   },
   handler: async (ctx, args) => {
     const ids: Id<"exercises">[] = [];
+    const replacement = new Map<string, Id<"exercises">>();
     for (const v of args.variations) {
       const id = await ctx.db.insert("exercises", {
         topicId: args.topicId,
@@ -529,6 +435,19 @@ export const replaceFailedWithVariations = internalMutation({
         needsManualReview: v.needsManualReview === true,
       });
       ids.push(id);
+      replacement.set(v.originalExerciseId as string, id);
+    }
+    // UNE SÉANCE JOUÉE SUR L'APPAREIL porte la liste de ses exercices
+    // (`playedExerciseIds`) : chaque variation y prend la place de
+    // l'exercice qu'elle remplace, sans quoi la note suivante ignorerait
+    // les variations.
+    const attempt = await ctx.db.get(args.palierAttemptId);
+    if (attempt?.playedExerciseIds) {
+      await ctx.db.patch(attempt._id, {
+        playedExerciseIds: attempt.playedExerciseIds.map(
+          (id) => replacement.get(id as string) ?? id,
+        ),
+      });
     }
     return ids;
   },

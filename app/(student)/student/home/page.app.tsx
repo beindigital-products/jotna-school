@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
-import { api } from "@/convex/_generated/api";
 import { getModule } from "@/convex/moduleCatalog";
+import {
+  useNextStep,
+  useStudentModules,
+  useStudentStats,
+  useWorldMap,
+} from "@/hooks/use-student-data";
 import Link from "next/link";
 import { Play, Map as MapIcon, Flame, Compass } from "lucide-react";
 import { Pio, type PioState } from "@/components/student/pio";
@@ -42,9 +46,11 @@ const SECRET_TAPS = 5;
 const TAP_POSES: PioState[] = ["hello", "cheer", "amazed", "encourage"];
 
 export default function StudentHomePage() {
-  const stats = useQuery(api.students.getMyStats);
-  const zones = useQuery(api.students.getMyWorldMap);
-  const next = useQuery(api.students.getMyNextStep);
+  // Tout se lit sur l'appareil (`hooks/use-student-data.ts`) : le camp
+  // s'ouvre, et le bouton mène quelque part, avec ou sans réseau.
+  const stats = useStudentStats();
+  const zones = useWorldMap();
+  const next = useNextStep();
 
   const loading = stats === undefined || zones === undefined || next === undefined;
 
@@ -288,7 +294,7 @@ export default function StudentHomePage() {
  * `app/(student)/layout.app.tsx`) : ce médaillon est la porte d'entrée.
  */
 function SideModules() {
-  const modules = useQuery(api.modules.getMine);
+  const modules = useStudentModules();
   const open = (modules ?? []).filter((module_) => module_.enabled);
   if (open.length === 0) return null;
 

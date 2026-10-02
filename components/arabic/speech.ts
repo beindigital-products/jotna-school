@@ -6,8 +6,9 @@
  * UN ENFANT QUI NE SAIT PAS LIRE ÉCOUTE TOUT. Une consigne se dit donc en
  * plusieurs morceaux enchaînés : « Touche la lettre… » (français, voix des
  * consignes) puis « بَاء » (arabe, voix du parcours). `useSpeech().say()`
- * prend la liste, demande les URL en parallèle (`arabic.voice.speak`, mises
- * en cache côté serveur ET ici), puis joue les morceaux l'un après l'autre.
+ * prend la liste, cherche les sons en parallèle (dans le téléphone d'abord,
+ * `components/offline/clip-source.app.ts`, et en cache ici), puis joue les
+ * morceaux l'un après l'autre.
  *
  * UN SEUL SON À LA FOIS, DANS TOUT LE MODULE. Toucher une lettre pendant que
  * Pio parle coupe Pio : deux voix superposées, c'est du bruit pour un enfant.
@@ -18,14 +19,14 @@
  * consigne de l'étape d'avant se tait — mais un composant n'arrête jamais le
  * son d'un autre : chaque lecture porte le jeton de celui qui l'a lancée.
  *
- * IL NE LÈVE JAMAIS. Sans clé, sans réseau, la suite s'arrête en silence et
- * `say` rend la raison : l'écran reste utilisable, l'adulte lit la bulle.
+ * IL NE LÈVE JAMAIS. Sans clé, ou sans réseau pour un son jamais téléchargé,
+ * la suite s'arrête en silence et `say` rend la raison : l'écran reste
+ * utilisable, l'adulte lit la bulle.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import type { ConsigneKey } from "@/convex/arabic/consignes";
+import { useClipSource } from "@/components/offline/clip-source";
 import { newVoiceOwner, playUrl, stopPlaying } from "@/lib/voice-player";
 
 export type SpeechRef =
@@ -58,12 +59,11 @@ export type SayOutcome =
 /** URL par référence, pour la durée de la page. */
 const urlCache = new Map<string, string>();
 
-type SpeakResult =
-  | { status: "ready"; url: string; cached: boolean }
-  | { status: "unavailable"; reason: string };
-
 export function useSpeech() {
-  const speak = useAction(api.arabic.voice.speak);
+  // Le téléphone d'abord : les sons du module sont téléchargés à l'avance
+  // (`lib/offline/sync.ts`) et se jouent sans réseau. Un son qui manque se
+  // demande au serveur s'il est joignable (`components/offline/clip-source.ts`).
+  const findClip = useClipSource();
   const [speaking, setSpeaking] = useState(false);
   // L'identifiant de CE composant, tiré une fois : c'est lui qui dit à qui
   // appartient le son en cours.
@@ -75,18 +75,11 @@ export function useSpeech() {
       const key = JSON.stringify(ref);
       const cached = urlCache.get(key);
       if (cached) return cached;
-      try {
-        const result = (await speak({ ref })) as SpeakResult;
-        if (result.status === "ready") {
-          urlCache.set(key, result.url);
-          return result.url;
-        }
-        return result.reason === "not_configured" ? "not_configured" : null;
-      } catch {
-        return null;
-      }
+      const url = await findClip({ kind: "arabic", ref });
+      if (url && url !== "not_configured") urlCache.set(key, url);
+      return url;
     },
-    [speak],
+    [findClip],
   );
 
   const say = useCallback(

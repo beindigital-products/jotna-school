@@ -27,6 +27,11 @@
  *
  * PENDANT QUE LE MICRO ÉCOUTE, PIO SE TAIT (consigne vide) : sa voix serait
  * enregistrée avec celle de l'enfant.
+ *
+ * SANS INTERNET, PIO NE PEUT PAS ÉCOUTER (la transcription vit chez
+ * ElevenLabs). L'enfant s'enregistre quand même, réécoute sa voix, puis
+ * celle de Pio, et continue : aucune note, aucun « faux »
+ * (`record-button.tsx`, `docs/hors-ligne.md`).
  */
 
 import { useState } from "react";
@@ -63,6 +68,7 @@ export function PronounceCoach({
   const [verdict, setVerdict] = useState<PronunciationVerdict | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [heard, setHeard] = useState<string | null>(null);
+  const [practiced, setPracticed] = useState(false);
 
   const ok = verdict === "ok";
   const missed = verdict !== null && !ok;
@@ -74,6 +80,9 @@ export function PronounceCoach({
   const { line, words } = ((): { line: string; words: SpeechRef[] } => {
     if (phase === "recording") return { line: "Je t'écoute…", words: [] };
     if (phase === "sending") return { line: arabicCopy.record.checking.pronounce, words: [] };
+    if (practiced) {
+      return { line: CONSIGNES.listen_compare, words: [speech.consigne("listen_compare"), name] };
+    }
     if (ok) {
       const key = bravo(attempts);
       return { line: CONSIGNES[key], words: [speech.consigne(key)] };
@@ -98,7 +107,13 @@ export function PronounceCoach({
     return { line: CONSIGNES.repeat, words: [name, speech.consigne("repeat")] };
   })();
 
-  const pose: PioState = listening ? "listen" : ok ? "bravo" : missed ? "encourage" : "recite";
+  const pose: PioState = listening
+    ? "listen"
+    : ok
+      ? "bravo"
+      : missed || practiced
+        ? "encourage"
+        : "recite";
   const showTip = missed && (attempts >= 2 || verdict === "close");
 
   return (
@@ -137,6 +152,10 @@ export function PronounceCoach({
         attemptIndex={attempts}
         coached
         onPhaseChange={setPhase}
+        onPracticed={() => {
+          setPracticed(true);
+          onOutcome();
+        }}
         onOutcome={(outcome) => {
           setAttempts((n) => n + 1);
           setVerdict(outcome.verdict);
@@ -177,7 +196,7 @@ export function PronounceCoach({
         </p>
       )}
 
-      {(ok || exhausted) && (
+      {(ok || exhausted || practiced) && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <GameButton
             onClick={onNext}

@@ -14,18 +14,20 @@
  * redit autant de fois que l'enfant veut. Elle se tait dès que l'enfant a
  * répondu (`silenced`), et quand l'exercice s'en va.
  *
- * LA VOIX EST CELLE DE PIO (`convex/voice/exercisePrompt.ts`), mise en cache
- * côté serveur ET ici : l'écran n'envoie qu'une référence, le serveur lit le
- * texte dans l'exercice. La lecture automatique marche dans l'application
- * (la vue web de Capacitor joue un son sans geste préalable, voir
- * `components/arabic/coach.tsx`).
+ * LA VOIX EST CELLE DE PIO, ET ELLE EST DANS LE TÉLÉPHONE. L'application
+ * télécharge à l'avance la consigne de chaque exercice de la classe
+ * (`lib/offline/sync.ts`) : elle se dit sans réseau. Un son qui manque se
+ * demande au serveur quand il est joignable (`components/offline/clip-source.ts`),
+ * qui ne reçoit qu'une référence et lit lui-même le texte dans l'exercice. La
+ * lecture automatique marche dans l'application (la vue web de Capacitor joue
+ * un son sans geste préalable, voir `components/arabic/coach.tsx`).
  *
  * IL IGNORE LE RÉGLAGE « SONS », comme `components/arabic/listen-button.tsx` :
  * ce réglage coupe les bruitages de récompense ; ici, la voix EST la
  * consigne.
  *
- * IL NE LÈVE JAMAIS. Sans clé, sans réseau, le bouton passe en « muet » et
- * l'exercice reste jouable ; un toucher réessaie.
+ * IL NE LÈVE JAMAIS. Sans clé, ou sans réseau pour un son jamais téléchargé,
+ * le bouton passe en « muet » et l'exercice reste jouable ; un toucher réessaie.
  */
 
 import {
@@ -38,10 +40,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useAction } from "convex/react";
 import { Volume2, VolumeX } from "lucide-react";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useClipSource } from "@/components/offline/clip-source";
 import { newVoiceOwner, playUrl, stopPlaying } from "@/lib/voice-player";
 
 type ReaderStatus = "idle" | "loading" | "playing" | "unavailable";
@@ -59,10 +60,6 @@ export function usePromptReader(): PromptReader | null {
   return useContext(PromptReaderContext);
 }
 
-type SpeakResult =
-  | { status: "ready"; url: string; cached: boolean }
-  | { status: "unavailable"; reason: string };
-
 /**
  * L'URL de chaque consigne, obtenue ou en cours, pour la durée de la page.
  * Garder la PROMESSE évite deux appels quand l'écran demande deux fois de
@@ -72,17 +69,15 @@ const urlByExercise = new Map<string, Promise<string | null>>();
 
 export function PromptReaderProvider({
   exerciseId,
-  palierAttemptId,
   silenced = false,
   children,
 }: {
-  exerciseId: Id<"exercises">;
-  palierAttemptId: Id<"palierAttempts">;
+  exerciseId: string;
   /** Vrai quand la consigne doit se taire : l'enfant a répondu, une fenêtre est ouverte. */
   silenced?: boolean;
   children: ReactNode;
 }) {
-  const speak = useAction(api.voice.exercisePrompt.speak);
+  const findClip = useClipSource();
   const [status, setStatus] = useState<ReaderStatus>("idle");
   // L'identifiant de CE lecteur : c'est lui qui dit à qui appartient le son.
   const [owner] = useState(newVoiceOwner);
@@ -91,18 +86,15 @@ export function PromptReaderProvider({
   const urlFor = useCallback((): Promise<string | null> => {
     const cached = urlByExercise.get(exerciseId);
     if (cached) return cached;
-    const pending = speak({ exerciseId, palierAttemptId })
-      .then((result) => {
-        const outcome = result as SpeakResult;
-        return outcome.status === "ready" ? outcome.url : null;
-      })
+    const pending = findClip({ kind: "prompt", exerciseId: exerciseId as Id<"exercises"> })
+      .then((url) => (url && url !== "not_configured" ? url : null))
       .catch(() => null);
     urlByExercise.set(exerciseId, pending);
     void pending.then((url) => {
       if (!url) urlByExercise.delete(exerciseId);
     });
     return pending;
-  }, [exerciseId, palierAttemptId, speak]);
+  }, [exerciseId, findClip]);
 
   // Le silence demandé, lu par une lecture qui attendait son URL.
   const silencedRef = useRef(silenced);

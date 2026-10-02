@@ -380,10 +380,27 @@ export default defineSchema({
     hintsUsed: v.optional(v.number()),
     starsTotal: v.optional(v.number()),
     timeSpentMs: v.optional(v.number()),
+    // UNE SÉANCE JOUÉE SUR L'APPAREIL (`docs/hors-ligne.md`). L'application
+    // joue le palier sans attendre le réseau, puis l'envoie à la
+    // synchronisation (`offline/sync.ts`) : `clientSessionId` est l'identifiant
+    // que l'appareil lui a donné, et rend l'envoi rejouable sans doublon.
+    // `playedExerciseIds` dit QUELS exercices l'enfant a joués, dans l'ordre :
+    // un palier peut avoir été régénéré entre la séance et son envoi, et ses
+    // exercices du moment ne sont plus ceux-là. Absents sur une séance
+    // jouée en ligne d'ancienne manière.
+    clientSessionId: v.optional(v.string()),
+    playedExerciseIds: v.optional(v.array(v.id("exercises"))),
+    /**
+     * Combien d'entrées du journal de la séance (réponses, indices) sont déjà
+     * écrites. Le journal ne fait que grandir : le renvoyer n'écrit que ce
+     * qui dépasse ce nombre.
+     */
+    syncedLogLength: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_user_palier", ["userId", "palierId"])
-    .index("by_palier", ["palierId"]),
+    .index("by_palier", ["palierId"])
+    .index("by_user_clientSession", ["userId", "clientSessionId"]),
 
   // ---------------------------------------------------------------------------
   // palierAttemptHistory
@@ -1133,9 +1150,15 @@ export default defineSchema({
     ),
     source: v.union(v.literal("device"), v.literal("server")),
     at: v.number(),
+    /**
+     * L'identifiant que l'appareil a donné à une tentative faite sans réseau
+     * (`offline/sync.ts`) : la renvoyer ne l'écrit pas deux fois.
+     */
+    clientEventId: v.optional(v.string()),
   })
     .index("by_student_lesson", ["studentId", "lessonKey"])
-    .index("by_student_at", ["studentId", "at"]),
+    .index("by_student_at", ["studentId", "at"])
+    .index("by_student_clientEvent", ["studentId", "clientEventId"]),
 
   // Ce que l'élève a consommé de voix aujourd'hui — le garde-fou de dépense.
   //
@@ -1269,4 +1292,26 @@ export default defineSchema({
     bonusStars: v.number(),
     createdAt: v.number(),
   }).index("by_student_day", ["studentId", "dayKey"]),
+
+  // ---------------------------------------------------------------------------
+  // offlineReceipts — ce que la synchronisation a déjà appliqué.
+  //
+  // L'application joue sans réseau et range ce que l'enfant fait dans un
+  // journal (`lib/offline/`), envoyé quand le réseau revient
+  // (`offline/sync.ts`). Un envoi peut se rejouer : réponse perdue en route,
+  // application fermée avant l'accusé de réception. Les séances de palier et
+  // les tentatives d'arabe portent leur identifiant d'appareil sur leur propre
+  // ligne ; les autres évènements qui ne doivent compter qu'une fois (la fin
+  // d'une leçon d'arabe, qui fait bouger la mémorisation) laissent ici leur
+  // reçu. Purgés après trente jours (`crons.ts`) : un évènement accusé n'est
+  // plus renvoyé, et un renvoi arrive dans la minute.
+  // ---------------------------------------------------------------------------
+  offlineReceipts: defineTable({
+    studentId: v.id("profiles"),
+    eventId: v.string(),
+    kind: v.string(),
+    appliedAt: v.number(),
+  })
+    .index("by_student_event", ["studentId", "eventId"])
+    .index("by_appliedAt", ["appliedAt"]),
 });

@@ -19,6 +19,13 @@ const nextConfig: NextConfig = {
     target === "app"
       ? ["app.tsx", "app.ts", "tsx", "ts", "jsx", "js"]
       : ["tsx", "ts", "jsx", "js"],
+  // Meme regle pour les modules : dans l'application, `x.app.tsx` remplace
+  // `x.tsx` a l'import. Le hors-ligne s'en sert (`docs/hors-ligne.md`) : le
+  // site importe une version vide, et n'embarque pas le moteur.
+  turbopack:
+    target === "app"
+      ? { resolveExtensions: [".app.tsx", ".app.ts", ".tsx", ".ts", ".jsx", ".js", ".mjs", ".json"] }
+      : undefined,
   env: { NEXT_PUBLIC_JOTNA_TARGET: target },
 };
 

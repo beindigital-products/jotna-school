@@ -10,6 +10,9 @@ import { Pio } from "@/components/student/pio";
 import { GameButton } from "@/components/student/game/game-button";
 import { useLogout } from "@/hooks/use-logout";
 import { classLongName, schoolClassDisplay } from "@/lib/classLabels";
+import { useStudentActions, useStudentStats } from "@/hooks/use-student-data";
+import { useOffline, useOfflineModel } from "@/components/offline/context";
+import { kidMessages } from "@/lib/kidCopy";
 
 /**
  * Réduit la photo choisie à un carré de 512 px, en JPEG : l'avatar s'affiche
@@ -50,12 +53,17 @@ async function fileToSquareBlob(file: File, size = 512): Promise<Blob> {
  *
  * L'avatar reste une image posée par l'école (ou les initiales) : sans
  * téléversement dans l'application, il n'y a rien à y changer ici.
+ *
+ * SANS RÉSEAU, la page s'ouvre et le son se règle (il part au serveur au
+ * retour du réseau). Le prénom et la photo, eux, se changent en ligne : le
+ * serveur peut refuser un prénom, et la photo doit être téléversée.
  */
 export default function StudentProfileEditPage() {
-  const stats = useQuery(api.students.getMyStats);
+  const stats = useStudentStats();
+  const { connected } = useOffline();
+  const { setSoundEnabled } = useStudentActions();
   const currentProfile = useQuery(api.profiles.getCurrentProfile);
   const updateProfile = useMutation(api.profiles.updateProfile);
-  const setSoundEnabledMut = useMutation(api.streak.setSoundEnabled);
   const generateAvatarUploadUrl = useMutation(api.profiles.generateAvatarUploadUrl);
   const setMyAvatarMut = useMutation(api.profiles.setMyAvatar);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,15 +78,11 @@ export default function StudentProfileEditPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleToggleSound = async () => {
+  const handleToggleSound = () => {
     if (!stats) return;
     const next = !stats.soundEnabled;
     setSoundEnabledLocal(next);
-    try {
-      await setSoundEnabledMut({ enabled: next });
-    } catch {
-      // La mutation se rejoue hors ligne ; l'écran suit l'état optimiste.
-    }
+    setSoundEnabled(next);
   };
 
   const handlePickPhoto = () => fileInputRef.current?.click();
@@ -146,7 +150,7 @@ export default function StudentProfileEditPage() {
 
   const trimmed = name.trim();
   const dirty = draft !== null && trimmed !== serverName;
-  const canSave = dirty && trimmed.length > 0 && !saving;
+  const canSave = dirty && trimmed.length > 0 && !saving && connected;
 
   const handleSaveName = async () => {
     if (!canSave) return;
@@ -176,7 +180,7 @@ export default function StudentProfileEditPage() {
         <button
           type="button"
           onClick={handlePickPhoto}
-          disabled={uploading}
+          disabled={uploading || !connected}
           aria-label="Changer ma photo"
           className="relative h-24 w-24 rounded-full shadow-lg outline-none focus-visible:ring-4 focus-visible:ring-orange-300 disabled:opacity-80"
         >
@@ -212,11 +216,14 @@ export default function StudentProfileEditPage() {
         <button
           type="button"
           onClick={handlePickPhoto}
-          disabled={uploading}
+          disabled={uploading || !connected}
           className="font-display text-sm font-extrabold text-orange-600 underline-offset-2 hover:underline disabled:opacity-60"
         >
           {uploading ? "Je change la photo…" : "Changer ma photo"}
         </button>
+        {!connected && (
+          <p className="text-center text-xs font-bold text-sky-700">{kidMessages.offline.profileOnline}</p>
+        )}
         {avatarError && <p className="text-sm font-bold text-red-600">{avatarError}</p>}
         <h1 className="mt-1 font-display text-2xl font-extrabold text-amber-950">Mon profil</h1>
       </div>
@@ -356,6 +363,11 @@ function LogoutCard() {
   const logout = useLogout();
   const [confirming, setConfirming] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  // Ce que le serveur n'a pas encore reçu : on le dit avant de partir, il
+  // partira à la prochaine connexion de l'enfant.
+  const { engine } = useOffline();
+  useOfflineModel();
+  const pending = engine?.pendingCount() ?? 0;
 
   const handleLogout = async () => {
     setLeaving(true);
@@ -394,6 +406,11 @@ function LogoutCard() {
       <p className="mt-1 text-sm font-semibold text-amber-900/70">
         Ton profil t&apos;attendra ici, avec toutes tes étoiles.
       </p>
+      {pending > 0 && (
+        <p className="mt-2 rounded-2xl bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800">
+          {kidMessages.offline.logoutPending}
+        </p>
+      )}
       <div className="mt-5 flex w-full flex-col gap-4 sm:flex-row">
         <GameButton tone="green" onClick={() => setConfirming(false)} disabled={leaving} className="w-full sm:flex-1">
           Je reste

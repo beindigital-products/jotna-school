@@ -1,22 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { BookOpen, Star, Flag, Compass, Check, ScrollText } from "lucide-react";
 import { motion } from "framer-motion";
 import { pioSays } from "@/lib/pioCopy";
+import { useDailyQuests } from "@/hooks/use-student-data";
 
 /**
  * LE PANNEAU DES MISSIONS — trois missions du jour, sur une planche de bois.
  *
- * Il se crée lui-même : au montage, si le serveur dit `pending`, il demande
- * `ensureDaily` une fois, et la souscription se remplit. Rien à orchestrer
- * depuis le camp.
+ * LES MISSIONS SE TIRENT SUR L'APPAREIL (`hooks/use-student-data.ts`) : le
+ * tirage est déterministe (élève, jour), donc le téléphone tire les mêmes
+ * que le serveur, et elles avancent sans réseau à chaque fin de palier. Le
+ * serveur crée sa ligne du jour à la synchronisation de la première séance.
  *
- * `null` du serveur = missions coupées par un parent, ou pas d'accès : le
- * panneau n'existe pas, sans message. Un enfant n'a pas à savoir qu'une
- * option a été refusée pour lui.
+ * `null` = missions coupées par un parent, ou pas d'accès : le panneau
+ * n'existe pas, sans message. Un enfant n'a pas à savoir qu'une option a été
+ * refusée pour lui.
  */
 const ICONS = {
   do_exercises: BookOpen,
@@ -26,13 +25,7 @@ const ICONS = {
 } as const;
 
 export function QuestBoard({ className = "" }: { className?: string }) {
-  const daily = useQuery(api.quests.getMyDaily);
-  const ensureDaily = useMutation(api.quests.ensureDaily);
-
-  const pending = daily?.pending === true;
-  useEffect(() => {
-    if (pending) void ensureDaily({});
-  }, [pending, ensureDaily]);
+  const daily = useDailyQuests();
 
   if (daily === null) return null;
 
@@ -63,7 +56,7 @@ export function QuestBoard({ className = "" }: { className?: string }) {
         )}
       </div>
 
-      {daily === undefined || pending ? (
+      {daily === undefined ? (
         <div className="relative space-y-2">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-2xl bg-white/25" />
@@ -118,7 +111,7 @@ export function QuestBoard({ className = "" }: { className?: string }) {
         </ul>
       )}
 
-      {daily && !pending && daily.allDone && (
+      {daily && daily.allDone && (
         <motion.p
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}

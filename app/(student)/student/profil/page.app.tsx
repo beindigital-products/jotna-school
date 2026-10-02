@@ -15,8 +15,7 @@ import {
   LogOut,
   Pencil,
 } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useStudentActions, useStudentStats } from "@/hooks/use-student-data";
 import { setSoundEnabledLocal } from "@/lib/sounds";
 import { Pio } from "@/components/student/pio";
 import { GameButton } from "@/components/student/game/game-button";
@@ -51,18 +50,16 @@ function formatDuration(ms: number): string {
 }
 
 export default function StudentProfilePage() {
-  const stats = useQuery(api.students.getMyStats);
-  const setSoundEnabledMut = useMutation(api.streak.setSoundEnabled);
+  // Le carnet se lit sur l'appareil, et le réglage du son s'y écrit : il
+  // part au serveur quand le réseau est là (`hooks/use-student-data.ts`).
+  const stats = useStudentStats();
+  const { setSoundEnabled } = useStudentActions();
 
-  const handleToggleSound = async () => {
+  const handleToggleSound = () => {
     if (!stats) return;
     const next = !stats.soundEnabled;
     setSoundEnabledLocal(next);
-    try {
-      await setSoundEnabledMut({ enabled: next });
-    } catch {
-      // Mutation queues offline; UI reflects optimistic state via memo + Convex.
-    }
+    setSoundEnabled(next);
   };
 
   if (stats === undefined) {

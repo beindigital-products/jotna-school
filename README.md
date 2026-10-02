@@ -39,11 +39,13 @@ pnpm dev
 | Commande | Cible | Espace élève |
 | --- | --- | --- |
 | `pnpm dev`, `pnpm build` | site web | absent : un élève connecté est envoyé vers l'application |
-| `pnpm dev:app`, `pnpm build:app` | application | présent |
+| `pnpm build:app` | application | présent, ne s'ouvre que dans la coque native |
 | `pnpm ios:sync`, `pnpm android:sync`, `pnpm android:run` | application, puis Capacitor | présent |
 
 Les fichiers de route de l'espace élève portent l'extension `.app.tsx` et ne
-sont compilés qu'avec `JOTNA_TARGET=app`. Détails dans `docs/capacitor-ios.md`.
+sont compilés qu'avec `JOTNA_TARGET=app`. L'espace élève ne s'ouvre dans aucun
+navigateur : il se teste sur le simulateur iOS, l'émulateur Android ou un
+téléphone. Détails dans `docs/capacitor-ios.md`.
 
 ## Vérifier
 

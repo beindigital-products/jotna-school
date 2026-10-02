@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Poppins, Geist_Mono, Fredoka, Amiri } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
+import { OfflineProvider } from "@/components/offline/offline-provider";
 
 const poppins = Poppins({
   variable: "--font-geist-sans",
@@ -72,7 +73,11 @@ export default function RootLayout({
       style={{ colorScheme: "light" }}
     >
       <body className="min-h-full flex flex-col bg-white text-gray-900">
-        <ConvexClientProvider>{children}</ConvexClientProvider>
+        <ConvexClientProvider>
+          {/* L'espace élève se joue d'abord sur l'appareil (`docs/hors-ligne.md`).
+              Sur le site web, ce fournisseur ne fait rien. */}
+          <OfflineProvider>{children}</OfflineProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );
