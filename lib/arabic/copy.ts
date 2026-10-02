@@ -73,6 +73,13 @@ export const arabicCopy = {
       "Tu as beaucoup répété aujourd'hui, bravo 🌙 Le micro revient demain — continue à lire et à écrire !",
     unavailable:
       "Je n'ai pas réussi à t'écouter cette fois. On passe à la suite, ce n'est rien.",
+    /**
+     * Sans internet, la voix de l'enfant ne part pas en transcription : il
+     * s'écoute, puis écoute Pio, et compare lui-même. Rien n'est noté, rien
+     * n'est gardé (`docs/hors-ligne.md`).
+     */
+    offlinePractice: "Sans internet, je ne peux pas t'écouter. Écoute ta voix, puis la mienne !",
+    playMine: "Ma voix",
   },
 
   write: {

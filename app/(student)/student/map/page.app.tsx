@@ -2,8 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useWorldMap } from "@/hooks/use-student-data";
 import { Pio } from "@/components/student/pio";
 import { BiomeMedallion } from "@/components/student/world/biome-medallion";
 import { GameMap, type MapNodeContext } from "@/components/student/world/game-map";
@@ -55,7 +54,8 @@ const GREETING_MS = 420;
 const MEDALLION = 128;
 
 export default function WorldMapPage() {
-  const zones = useQuery(api.students.getMyWorldMap);
+  // Calculée sur l'appareil : la carte s'ouvre et avance sans réseau.
+  const zones = useWorldMap();
   const router = useRouter();
   const [remembered] = useState(rememberedIndex);
 

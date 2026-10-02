@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { HAS_STUDENT_SPACE } from "@/lib/build-target";
+import { useBrowserOnline } from "@/components/offline/use-browser-online";
+import { useIsNativeApp } from "@/hooks/use-native-app";
+import { kidMessages } from "@/lib/kidCopy";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
@@ -15,6 +18,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Se connecter demande le réseau, même dans l'application qui joue sans :
+  // c'est la seule étape qui ne peut pas se faire hors ligne.
+  const online = useBrowserOnline();
+  // L'espace élève n'existe que dans l'application iOS/Android, jamais dans
+  // un navigateur, même construit pour l'application (`lib/build-target.ts`).
+  const native = useIsNativeApp();
+  const studentSpaceHere = HAS_STUDENT_SPACE && native;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,6 +54,13 @@ export default function LoginPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">
           {error}
+        </div>
+      )}
+
+      {studentSpaceHere && !online && (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-800">
+          <p className="font-semibold">{kidMessages.offline.firstConnectionTitle}</p>
+          <p>{kidMessages.offline.firstConnectionBody}</p>
         </div>
       )}
 
@@ -77,8 +94,7 @@ export default function LoginPage() {
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          {/* Sur le site web, l'espace élève n'existe pas (`lib/build-target.ts`). */}
-          {HAS_STUDENT_SPACE
+          {studentSpaceHere
             ? "Élève : saisissez le code de votre billet, comme mot de passe aussi."
             : "Élève : ton espace est dans l'application Jotna School, sur tablette ou téléphone."}
         </p>

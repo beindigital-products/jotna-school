@@ -4,7 +4,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { checkAccess, requireAccess } from "./access";
 import { isHiddenClass } from "./curriculum";
-import { todayYmd } from "./streak";
+import { timestampToYmd, todayYmd } from "./streakRules";
 import { readStudentPreferences, type StudentPreferences } from "./students";
 import {
   QUEST_BONUS_CAP,
@@ -53,7 +53,7 @@ async function missionsEnabledFor(ctx: QueryCtx | MutationCtx, studentId: Id<"pr
 }
 
 /** Les matières jouables : au moins une étape visible pour ce niveau. */
-async function playableSubjects(ctx: QueryCtx | MutationCtx) {
+export async function playableSubjects(ctx: QueryCtx | MutationCtx) {
   const subjects = (await ctx.db.query("subjects").take(50)).sort((a, b) => a.order - b.order);
   const out: { id: string; name: string }[] = [];
   for (const subject of subjects) {
@@ -168,47 +168,84 @@ export const recordActivity = internalMutation({
     stars: v.number(),
     palierValidated: v.boolean(),
     subjectId: v.optional(v.id("subjects")),
+    /** Le moment de la fin de palier : maintenant, ou celui d'un palier joué sans réseau. */
+    at: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const profile = await ctx.db.get(args.studentId);
-    if (!profile || profile.role !== "student") return;
-    if (!(await missionsEnabledFor(ctx, args.studentId))) return;
-
-    const dayKey = todayYmd();
-    const row = await ensureRow(ctx, args.studentId, dayKey);
-    const before = row.quests.map(fromStored);
-    const { quests, newlyCompleted } = applyActivity(
-      before,
+    return await recordQuestActivity(
+      ctx,
+      args.studentId,
       {
         exercises: args.exercises,
         stars: args.stars,
         palierValidated: args.palierValidated,
-        subjectId: args.subjectId as string | undefined,
+        subjectId: args.subjectId,
       },
-      Date.now(),
+      args.at ?? Date.now(),
     );
-
-    // Rien n'a bougé : pas d'écriture, pas de réveil des abonnés.
-    const changed = quests.some((q, i) => q.progress !== before[i].progress || q.completedAt !== before[i].completedAt);
-    if (!changed) return;
-
-    const owed = bonusStarsFor(completedCount(quests), quests.length);
-    const gained = Math.max(0, owed - row.bonusStars);
-
-    await ctx.db.patch(row._id, {
-      quests: quests.map(toStored),
-      bonusStars: owed,
-    });
-
-    if (gained > 0) {
-      const prefs = readStudentPreferences(profile);
-      const next: StudentPreferences = {
-        ...prefs,
-        questBonusStars: Math.min(QUEST_BONUS_CAP, (prefs.questBonusStars ?? 0) + gained),
-      };
-      await ctx.db.patch(profile._id, { preferences: next });
-    }
-
-    return { newlyCompleted: newlyCompleted.map((q) => q.key), gained };
   },
 });
+
+/**
+ * Fait avancer les missions du jour de `at` — fonction ordinaire, appelée dans
+ * la transaction qui termine le palier. Un palier joué sans réseau un mardi
+ * avance les missions du mardi, même rejoué le jeudi : la ligne de ce jour-là
+ * naît au besoin, avec les missions que le camp aurait tirées ce jour-là (même
+ * graine).
+ */
+export async function recordQuestActivity(
+  ctx: MutationCtx,
+  studentId: Id<"profiles">,
+  activity: {
+    exercises: number;
+    stars: number;
+    palierValidated: boolean;
+    subjectId?: Id<"subjects">;
+  },
+  at: number,
+) {
+  const profile = await ctx.db.get(studentId);
+  if (!profile || profile.role !== "student") return;
+  if (!(await missionsEnabledFor(ctx, studentId))) return;
+
+  // Jamais dans le futur : une horloge de téléphone en avance ne crée pas de
+  // journée de missions.
+  const when = Math.min(at, Date.now());
+  const dayKey = timestampToYmd(when);
+  const row = await ensureRow(ctx, studentId, dayKey);
+  const before = row.quests.map(fromStored);
+  const { quests, newlyCompleted } = applyActivity(
+    before,
+    {
+      exercises: activity.exercises,
+      stars: activity.stars,
+      palierValidated: activity.palierValidated,
+      subjectId: activity.subjectId as string | undefined,
+    },
+    when,
+  );
+
+  // Rien n'a bougé : pas d'écriture, pas de réveil des abonnés.
+  const changed = quests.some((q, i) => q.progress !== before[i].progress || q.completedAt !== before[i].completedAt);
+  if (!changed) return;
+
+  const owed = bonusStarsFor(completedCount(quests), quests.length);
+  const gained = Math.max(0, owed - row.bonusStars);
+
+  await ctx.db.patch(row._id, {
+    quests: quests.map(toStored),
+    bonusStars: owed,
+  });
+
+  if (gained > 0) {
+    const fresh = (await ctx.db.get(studentId)) ?? profile;
+    const prefs = readStudentPreferences(fresh);
+    const next: StudentPreferences = {
+      ...prefs,
+      questBonusStars: Math.min(QUEST_BONUS_CAP, (prefs.questBonusStars ?? 0) + gained),
+    };
+    await ctx.db.patch(studentId, { preferences: next });
+  }
+
+  return { newlyCompleted: newlyCompleted.map((q) => q.key), gained };
+}

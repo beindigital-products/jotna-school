@@ -25,6 +25,14 @@
  * RIEN N'EST CONSERVÉ. Le `Blob` vit le temps de l'envoi ; aucune trace n'est
  * écrite ni côté navigateur ni côté serveur (voir `convex/arabic/voice.ts`).
  *
+ * SANS INTERNET, PAS DE VERDICT (`docs/hors-ligne.md`). La transcription
+ * vit chez ElevenLabs : sans réseau, l'enregistrement ne part nulle part.
+ * L'enfant réécoute sa voix (un bouton « Ma voix »), puis celle de Pio, et
+ * compare lui-même — l'exercice du laboratoire de langues. Rien n'est noté,
+ * et la voix reste en mémoire le temps de l'écran, jamais écrite : la
+ * promesse de `convex/arabic/voice.ts` tient sans réseau aussi. L'appelant
+ * l'apprend par `onPracticed`, et laisse l'enfant continuer.
+ *
  * L'APPELANT DOIT LUI DONNER UNE `key` QUI CHANGE AVEC L'ITEM. Le verdict de
  * la lettre précédente ne doit pas rester affiché sous la suivante, et c'est
  * React qui remet l'état à neuf en remontant le composant — pas un effet qui
@@ -34,10 +42,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAction } from "convex/react";
-import { Loader2, Mic, Square } from "lucide-react";
+import { Loader2, Mic, Play, Square } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { arabicCopy, verdictMessage } from "@/lib/arabic/copy";
 import type { PronunciationVerdict } from "@/convex/arabic/matching";
+import { useOffline } from "@/components/offline/context";
+import { newVoiceOwner, playUrl } from "@/lib/voice-player";
 
 /** Huit secondes : très au-delà d'une syllabe, très en deçà d'une discussion. */
 const MAX_MS = 8000;
@@ -92,6 +102,7 @@ export function RecordButton({
   onOutcome,
   attemptIndex,
   onPhaseChange,
+  onPracticed,
   coached = false,
 }: {
   lessonKey: string;
@@ -102,6 +113,8 @@ export function RecordButton({
   attemptIndex: number;
   /** Prévient l'appelant à chaque changement de phase (Pio écoute, réfléchit…). */
   onPhaseChange?: (phase: RecordPhase) => void;
+  /** Sans internet : l'enfant s'est enregistré et peut se réécouter (pas de verdict). */
+  onPracticed?: () => void;
   /**
    * `true` : le verdict d'un essai JUGÉ n'est pas affiché ici, c'est le coach
    * (`pronounce-coach.tsx`) qui le dit, avec son aide. Les messages de
@@ -110,6 +123,24 @@ export function RecordButton({
   coached?: boolean;
 }) {
   const verify = useAction(api.arabic.voice.verifyPronunciation);
+  const { enabled: offlineAware, connected } = useOffline();
+  const offlineMode = offlineAware && !connected;
+  // L'enregistrement de l'enfant, sans réseau : en mémoire, le temps de l'écran.
+  const [practiceUrl, setPracticeUrl] = useState<string | null>(null);
+  const [voiceOwner] = useState(newVoiceOwner);
+  useEffect(
+    () => () => {
+      if (practiceUrl) URL.revokeObjectURL(practiceUrl);
+    },
+    [practiceUrl],
+  );
+  // Lus par `recorder.onstop`, qui vit plus longtemps que le rendu qui l'a armé.
+  const offlineModeRef = useRef(offlineMode);
+  const onPracticedRef = useRef(onPracticed);
+  useEffect(() => {
+    offlineModeRef.current = offlineMode;
+    onPracticedRef.current = onPracticed;
+  }, [offlineMode, onPracticed]);
   const [phase, setPhase] = useState<Phase>("idle");
   /** 0..1 : la force de la voix pendant l'enregistrement, pour la jauge. */
   const [level, setLevel] = useState(0);
@@ -279,6 +310,7 @@ export function RecordButton({
   const start = useCallback(async () => {
     setMessage(null);
     setHeard(null);
+    setPracticeUrl(null);
 
     if (
       typeof navigator === "undefined" ||
@@ -350,6 +382,14 @@ export function RecordButton({
         setMessage(arabicCopy.record.silent);
         return;
       }
+      if (offlineModeRef.current) {
+        // Sans réseau : rien ne part, l'enfant se réécoute.
+        setPracticeUrl(URL.createObjectURL(blob));
+        setPhase("done");
+        setMessage(arabicCopy.record.offlinePractice);
+        onPracticedRef.current?.();
+        return;
+      }
       void send(blob, mimeType, meterLiveRef.current ? peak : undefined);
     };
 
@@ -363,6 +403,7 @@ export function RecordButton({
   }, [releaseMic, send, startMeter]);
 
   const busy = phase === "sending";
+  const showPractice = practiceUrl !== null && phase === "done";
 
   return (
     <div className="space-y-3">
@@ -395,7 +436,23 @@ export function RecordButton({
         {phase === "recording" && <VoiceLevel level={level} />}
       </button>
 
-      {message && (phase === "blocked" || !coached) && (
+      {showPractice && (
+        <div className="flex flex-col items-center gap-2 rounded-2xl bg-sky-50 px-4 py-3 text-center">
+          <p role="status" className="text-base font-semibold text-sky-900">
+            {arabicCopy.record.offlinePractice}
+          </p>
+          <button
+            type="button"
+            onClick={() => practiceUrl && void playUrl(practiceUrl, voiceOwner, 1)}
+            className="inline-flex min-h-12 items-center gap-2 rounded-2xl border-2 border-sky-300 bg-white px-4 py-2 font-bold text-sky-800"
+          >
+            <Play className="h-5 w-5" aria-hidden />
+            {arabicCopy.record.playMine}
+          </button>
+        </div>
+      )}
+
+      {message && !showPractice && (phase === "blocked" || !coached) && (
         <p
           role="status"
           className="rounded-2xl bg-white px-4 py-3 text-center text-base font-semibold text-gray-800 shadow-sm"

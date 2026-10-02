@@ -9,7 +9,7 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import {
@@ -20,55 +20,19 @@ import {
   PALIER_VALIDATION_THRESHOLD,
   scoreExerciseFromAttempts,
 } from "./paliers/scoring";
-import { numericallyEqual } from "./paliers/mathRepair";
-import { verifyDragDrop, verifyMatch } from "./paliers/answerCheck";
-import { shuffleDeterministic } from "./paliers";
+import { shuffleDeterministic, verifyAnswer } from "./paliers/exerciseRules";
 import { internal } from "./_generated/api";
 import { checkAccess, requireAccess } from "./access";
-import { loadFinalExercisesForAttempt, summaryPatch, syncTopicProgress } from "./progression";
+import { finalExerciseIdsForAttempt, summaryPatch, syncTopicProgress } from "./progression";
 import { summarizePalier } from "./progressionRules";
+import { recordStreakActivity } from "./streak";
+import { recordQuestActivity } from "./quests";
 
 // ===========================================================================
-// Verification helpers — server-side only, never expose correctAnswer.
+// Verification — la règle vit dans `paliers/exerciseRules.ts`, partagée avec
+// l'application qui joue un palier sans réseau. Jamais de bonne réponse
+// rendue au client par ces mutations (Décision 61).
 // ===========================================================================
-
-function verifyQcm(submitted: string, payload: { correctIndex: number }): boolean {
-  return parseInt(submitted, 10) === payload.correctIndex;
-}
-
-function verifyOrder(submitted: string, payload: { correctSequence: string[] }): boolean {
-  try {
-    const arr: string[] = JSON.parse(submitted);
-    if (arr.length !== payload.correctSequence.length) return false;
-    return arr.every((it, i) => it === payload.correctSequence[i]);
-  } catch {
-    return false;
-  }
-}
-
-function verifyShortAnswer(
-  submitted: string,
-  payload: { acceptedAnswers: string[] },
-): boolean {
-  // « 2,5 » et « 2.5 », « 1 000 » et « 1000 » : la même réponse. On compare
-  // des formes canoniques, sans exiger du modèle toutes les variantes. Et
-  // « 18 m » vaut « 18 », « 60% » vaut « 0,6 » : deux formes numériques qui
-  // disent le même nombre (`numericallyEqual`). Une fraction, elle, se
-  // compare à l'identique : « 1/2 » n'accepte pas « 0,5 ».
-  const norm = canonicalAnswer(submitted);
-  return payload.acceptedAnswers.some(
-    (a) => canonicalAnswer(a) === norm || numericallyEqual(a, submitted),
-  );
-}
-
-function canonicalAnswer(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/(\d)[\s\u00a0\u202f]+(?=\d)/g, "$1")
-    .replace(/(\d),(\d)/g, "$1.$2")
-    .replace(/\s+/g, " ");
-}
 
 // ===========================================================================
 // MUTATIONS
@@ -213,140 +177,186 @@ export const submitPalier = mutation({
     if (!palierAttempt) throw new Error("Tentative introuvable");
     if (palierAttempt.userId !== profile._id) throw new Error("Accès refusé");
 
-    const finalExos = await loadFinalExercisesForAttempt(ctx, palierAttempt);
-
-    if (finalExos.length === 0) {
-      throw new Error("Palier vide");
-    }
-
-    // Compute per-exo scores from attempts attached to this palierAttempt.
-    const exerciseIds: string[] = [];
-    const scores: number[] = [];
-    const rowsPerExercise: Doc<"attempts">[][] = [];
-    for (const ex of finalExos) {
-      const attempts = await ctx.db
-        .query("attempts")
-        .withIndex("by_palierAttempt_exercise", (q) =>
-          q
-            .eq("palierAttemptId", args.palierAttemptId)
-            .eq("exerciseId", ex._id),
-        )
-        .take(100);
-      rowsPerExercise.push(attempts);
-      const realAttempts = attempts.filter((a) => a.attemptNumber > 0);
-      const totalHints = attempts.reduce((acc, a) => acc + a.hintsUsedCount, 0);
-      const { score } = scoreExerciseFromAttempts(
-        realAttempts.map((a) => ({
-          attemptNumber: a.attemptNumber,
-          isCorrect: a.isCorrect,
-          // We bake the *total* hints into the first attempt so
-          // `scoreExerciseFromAttempts` accounts for them. Other rows = 0.
-          hintsUsedCount: a === realAttempts[0] ? totalHints : 0,
-        })),
-      );
-      exerciseIds.push(ex._id);
-      scores.push(score);
-    }
-
-    const result = computePalierScore({
-      exerciseScores: scores,
-      exerciseIds,
+    return await finishPalierAttempt(ctx, profile, palierAttempt, {
+      at: Date.now(),
+      scheduleBadges: true,
     });
+  },
+});
 
-    const failedIds = (result.failedExerciseIds ?? []) as Id<"exercises">[];
-    const isValidated = result.status === "validated";
+export type PalierFinishResult = {
+  status: "validated" | "failed";
+  average: number;
+  starsTotal: number;
+  threshold: number;
+  exerciseCount: number;
+  failedCount: number;
+  canRegen: boolean;
+  cumulativeRegens: number;
+};
 
-    // Cumulative regen check (Decision 60) — UI uses canRegen flag.
-    const history = await ctx.db
-      .query("palierAttemptHistory")
-      .withIndex("by_user_palier", (q) =>
-        q.eq("userId", profile._id).eq("palierId", palierAttempt.palierId),
+/**
+ * NOTER UNE TENTATIVE DE PALIER ET EN TIRER TOUT CE QUI EN DÉCOULE : le
+ * résumé, la progression de la thématique, le bulletin, les trophées, la série
+ * et les missions du jour.
+ *
+ * Fonction ordinaire, partagée par `submitPalier` (une séance jouée en ligne
+ * d'ancienne manière) et la synchronisation (`offline/sync.ts`, une séance
+ * jouée sur l'appareil, avec ou sans réseau). `at` est le moment où l'enfant a
+ * fini : maintenant, ou le jour où il a joué sans réseau. La série et les
+ * missions comptent ce jour-là.
+ *
+ * `scheduleBadges` : la synchronisation rejoue souvent plusieurs paliers d'un
+ * coup et réexamine les trophées une seule fois, à la fin.
+ */
+export async function finishPalierAttempt(
+  ctx: MutationCtx,
+  profile: Doc<"profiles">,
+  palierAttempt: Doc<"palierAttempts">,
+  options: { at: number; scheduleBadges: boolean },
+): Promise<PalierFinishResult> {
+  const finalExerciseIds = await finalExerciseIdsForAttempt(ctx, palierAttempt);
+
+  if (finalExerciseIds.length === 0) {
+    throw new Error("Palier vide");
+  }
+
+  // Compute per-exo scores from attempts attached to this palierAttempt.
+  const exerciseIds: string[] = [];
+  const scores: number[] = [];
+  const rowsPerExercise: Doc<"attempts">[][] = [];
+  for (const exerciseId of finalExerciseIds) {
+    const attempts = await ctx.db
+      .query("attempts")
+      .withIndex("by_palierAttempt_exercise", (q) =>
+        q
+          .eq("palierAttemptId", palierAttempt._id)
+          .eq("exerciseId", exerciseId),
       )
-      .unique();
-    const cumulativeRegens =
-      history && Date.now() - history.lastRegenAt < 7 * 24 * 60 * 60 * 1000
-        ? history.regenCount
-        : 0;
+      .take(100);
+    rowsPerExercise.push(attempts);
+    const realAttempts = attempts.filter((a) => a.attemptNumber > 0);
+    const totalHints = attempts.reduce((acc, a) => acc + a.hintsUsedCount, 0);
+    const { score } = scoreExerciseFromAttempts(
+      realAttempts.map((a) => ({
+        attemptNumber: a.attemptNumber,
+        isCorrect: a.isCorrect,
+        // We bake the *total* hints into the first attempt so
+        // `scoreExerciseFromAttempts` accounts for them. Other rows = 0.
+        hintsUsedCount: a === realAttempts[0] ? totalHints : 0,
+      })),
+    );
+    exerciseIds.push(exerciseId);
+    scores.push(score);
+  }
 
-    const response = {
-      status: isValidated ? "validated" : "failed",
-      average: result.average,
-      starsTotal: result.starsTotal,
-      threshold: PALIER_VALIDATION_THRESHOLD,
-      // Un palier n'a pas toujours dix exercices (le modèle en rend parfois
-      // neuf de valides) : l'écran de fin compte ses étoiles sur ce nombre.
-      exerciseCount: exerciseIds.length,
-      failedCount: failedIds.length,
-      canRegen: !isValidated && cumulativeRegens < 3,
-      cumulativeRegens,
-    };
+  const result = computePalierScore({
+    exerciseScores: scores,
+    exerciseIds,
+  });
 
-    // UNE TENTATIVE SE TERMINE UNE FOIS. Un second envoi (double appui,
-    // réseau qui rejoue, retour arrière) trouve la tentative déjà notée : il
-    // rend le même résultat sans rien réécrire, sinon la série et les
-    // missions avanceraient une seconde fois. Après une nouvelle chance,
-    // `regenerateFailedExercises` remet la tentative `in_progress`, et elle se
-    // note de nouveau. `verifyAttempt` refuse toute réponse entre les deux :
-    // le recalcul ci-dessus rend donc ce qui a été rangé.
-    if (palierAttempt.status !== "in_progress") return response;
+  const failedIds = (result.failedExerciseIds ?? []) as Id<"exercises">[];
+  const isValidated = result.status === "validated";
 
-    // LE RÉSUMÉ DE LA TENTATIVE (`progressionRules.summarizePalier`) : ce
-    // que la jauge de niveau, les étoiles du camp et les trophées liront.
-    const summary = summarizePalier(rowsPerExercise);
-    await ctx.db.patch(args.palierAttemptId, {
-      status: isValidated ? "validated" : "failed",
-      averageScore: result.average,
-      failedExerciseIds: failedIds,
-      completedAt: Date.now(),
-      ...summaryPatch(summary),
-    });
+  // Cumulative regen check (Decision 60) — UI uses canRegen flag.
+  const history = await ctx.db
+    .query("palierAttemptHistory")
+    .withIndex("by_user_palier", (q) =>
+      q.eq("userId", profile._id).eq("palierId", palierAttempt.palierId),
+    )
+    .unique();
+  const cumulativeRegens =
+    history && Date.now() - history.lastRegenAt < 7 * 24 * 60 * 60 * 1000
+      ? history.regenCount
+      : 0;
 
-    // LA PROGRESSION DE LA THÉMATIQUE se recalcule depuis toutes les
-    // tentatives finies de l'élève dessus (exercices faits et résolus,
-    // indices, maîtrise), et la thématique est franchie quand son dernier
-    // palier l'est. C'est ici, seul endroit où un palier se termine, que
-    // `studentTopicProgress` s'écrit ; la carte, le camp, les bulletins et la
-    // jauge de niveau le lisent.
-    const palierDoc = await ctx.db.get(palierAttempt.palierId);
-    if (palierDoc) {
-      const { newlyCompleted } = await syncTopicProgress(ctx, profile._id, palierDoc.topicId);
-      // LE BULLETIN naît quand la thématique est franchie, une fois
-      // (`reports.generate`) ; il part aux tuteurs qui le veulent.
-      if (newlyCompleted) {
-        await ctx.scheduler.runAfter(0, internal.reports.generate, {
-          studentId: profile._id,
-          topicId: palierDoc.topicId,
-        });
-      }
+  const response: PalierFinishResult = {
+    status: isValidated ? "validated" : "failed",
+    average: result.average,
+    starsTotal: result.starsTotal,
+    threshold: PALIER_VALIDATION_THRESHOLD,
+    // Un palier n'a pas toujours dix exercices (le modèle en rend parfois
+    // neuf de valides) : l'écran de fin compte ses étoiles sur ce nombre.
+    exerciseCount: exerciseIds.length,
+    failedCount: failedIds.length,
+    canRegen: !isValidated && cumulativeRegens < 3,
+    cumulativeRegens,
+  };
+
+  // UNE TENTATIVE SE TERMINE UNE FOIS. Un second envoi (double appui,
+  // réseau qui rejoue, retour arrière) trouve la tentative déjà notée : il
+  // rend le même résultat sans rien réécrire, sinon la série et les
+  // missions avanceraient une seconde fois. Après une nouvelle chance,
+  // `regenerateFailedExercises` remet la tentative `in_progress`, et elle se
+  // note de nouveau. `verifyAttempt` refuse toute réponse entre les deux :
+  // le recalcul ci-dessus rend donc ce qui a été rangé.
+  if (palierAttempt.status !== "in_progress") return response;
+
+  // LE RÉSUMÉ DE LA TENTATIVE (`progressionRules.summarizePalier`) : ce
+  // que la jauge de niveau, les étoiles du camp et les trophées liront.
+  const summary = summarizePalier(rowsPerExercise);
+  await ctx.db.patch(palierAttempt._id, {
+    status: isValidated ? "validated" : "failed",
+    averageScore: result.average,
+    failedExerciseIds: failedIds,
+    completedAt: options.at,
+    ...summaryPatch(summary),
+  });
+
+  // LA PROGRESSION DE LA THÉMATIQUE se recalcule depuis toutes les
+  // tentatives finies de l'élève dessus (exercices faits et résolus,
+  // indices, maîtrise), et la thématique est franchie quand son dernier
+  // palier l'est. C'est ici, seul endroit où un palier se termine, que
+  // `studentTopicProgress` s'écrit ; la carte, le camp, les bulletins et la
+  // jauge de niveau le lisent.
+  const palierDoc = await ctx.db.get(palierAttempt.palierId);
+  if (palierDoc) {
+    const { newlyCompleted } = await syncTopicProgress(
+      ctx,
+      profile._id,
+      palierDoc.topicId,
+      options.at,
+    );
+    // LE BULLETIN naît quand la thématique est franchie, une fois
+    // (`reports.generate`) ; il part aux tuteurs qui le veulent.
+    if (newlyCompleted) {
+      await ctx.scheduler.runAfter(0, internal.reports.generate, {
+        studentId: profile._id,
+        topicId: palierDoc.topicId,
+      });
     }
+  }
 
-    // LES TROPHÉES sont réexaminés après coup (`badges.checkAndAward`) :
-    // l'écran de fin, abonné aux statistiques, les voit arriver.
+  // LES TROPHÉES sont réexaminés après coup (`badges.checkAndAward`) :
+  // l'écran de fin, abonné aux statistiques, les voit arriver.
+  if (options.scheduleBadges) {
     await ctx.scheduler.runAfter(0, internal.badges.checkAndAward, {
       studentId: profile._id,
     });
+  }
 
-    // D7 — record daily activity for streak (no-op if streaks disabled).
-    await ctx.runMutation(internal.streak.recordKidActivity, {
-      studentId: profile._id,
-    });
+  // D7 — la série du jour où l'enfant a joué (no-op si les séries sont
+  // coupées par un parent).
+  await recordStreakActivity(ctx, profile._id, options.at);
 
-    // Missions du jour (quests.ts) — même point d'accroche que la série :
-    // une fin de palier fait avancer les missions. La matière vient du
-    // palier ; sans elle, seules les missions sans matière avancent.
-    const questPalier = await ctx.db.get(palierAttempt.palierId);
-    const questTopic = questPalier ? await ctx.db.get(questPalier.topicId) : null;
-    await ctx.runMutation(internal.quests.recordActivity, {
-      studentId: profile._id,
+  // Missions du jour (quests.ts) — même point d'accroche que la série :
+  // une fin de palier fait avancer les missions. La matière vient du
+  // palier ; sans elle, seules les missions sans matière avancent.
+  const questTopic = palierDoc ? await ctx.db.get(palierDoc.topicId) : null;
+  await recordQuestActivity(
+    ctx,
+    profile._id,
+    {
       exercises: exerciseIds.length,
       stars: result.starsTotal,
       palierValidated: isValidated,
       subjectId: questTopic?.subjectId,
-    });
+    },
+    options.at,
+  );
 
-    return response;
-  },
-});
+  return response;
+}
 
 // ===========================================================================
 // QUERIES
@@ -394,7 +404,7 @@ export const getProgressForPalierAttempt = query({
     if (!palierAttempt) return null;
     if (palierAttempt.userId !== profile._id) return null;
 
-    const finalExos = await loadFinalExercisesForAttempt(ctx, palierAttempt);
+    const finalExos = await finalExerciseIdsForAttempt(ctx, palierAttempt);
     if (finalExos.length === 0) {
       return {
         currentIndex: 0,
@@ -410,14 +420,14 @@ export const getProgressForPalierAttempt = query({
     const attemptsByExercise = new Map<string, Doc<"attempts">[]>();
 
     for (let i = 0; i < finalExos.length; i++) {
-      const ex = finalExos[i];
+      const exerciseId = finalExos[i];
       const rows = await ctx.db
         .query("attempts")
         .withIndex("by_palierAttempt_exercise", (q) =>
-          q.eq("palierAttemptId", args.palierAttemptId).eq("exerciseId", ex._id),
+          q.eq("palierAttemptId", args.palierAttemptId).eq("exerciseId", exerciseId),
         )
         .take(100);
-      attemptsByExercise.set(String(ex._id), rows);
+      attemptsByExercise.set(String(exerciseId), rows);
 
       const realAttempts = rows.filter((a) => a.attemptNumber > 0);
       const isCompleted =
@@ -432,7 +442,7 @@ export const getProgressForPalierAttempt = query({
     }
 
     const currentExercise = finalExos[currentIndex];
-    const currentRows = attemptsByExercise.get(String(currentExercise._id)) ?? [];
+    const currentRows = attemptsByExercise.get(String(currentExercise)) ?? [];
     const currentRealAttempts = currentRows.filter((a) => a.attemptNumber > 0);
 
     return {
@@ -478,23 +488,7 @@ export const listMyAttempts = query({
 export { verifyByType };
 
 function verifyByType(exercise: Doc<"exercises">, submitted: string): boolean {
-  switch (exercise.type) {
-    case "qcm":
-      return verifyQcm(submitted, exercise.payload as { correctIndex: number });
-    case "match":
-      return verifyMatch(submitted, exercise.payload as { pairs: { left: string; right: string }[] });
-    case "order":
-      return verifyOrder(submitted, exercise.payload as { correctSequence: string[] });
-    case "drag-drop":
-      return verifyDragDrop(
-        submitted,
-        exercise.payload as { items: { text: string; correctZone: string }[] },
-      );
-    case "short-answer":
-      return verifyShortAnswer(submitted, exercise.payload as { acceptedAnswers: string[] });
-    default:
-      return false;
-  }
+  return verifyAnswer(exercise, submitted);
 }
 
 // Re-export for tests / settings-driven shuffle preview

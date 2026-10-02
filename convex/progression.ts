@@ -57,18 +57,37 @@ export async function loadFinalExercisesForAttempt(
   return finalExos;
 }
 
+/**
+ * Les exercices NOTÉS d'une tentative, par identifiant et dans l'ordre.
+ *
+ * Une séance jouée sur l'appareil porte la liste de ce que l'enfant a joué
+ * (`playedExerciseIds`) : c'est elle qu'on note, même si le palier a été
+ * régénéré depuis et que ces exercices ont quitté la base — leurs lignes
+ * d'essai, elles, sont restées. Sinon, la liste se déduit du palier
+ * (`loadFinalExercisesForAttempt`).
+ */
+export async function finalExerciseIdsForAttempt(
+  ctx: QueryCtx | MutationCtx,
+  palierAttempt: Doc<"palierAttempts">,
+): Promise<Id<"exercises">[]> {
+  if (palierAttempt.playedExerciseIds && palierAttempt.playedExerciseIds.length > 0) {
+    return palierAttempt.playedExerciseIds;
+  }
+  return (await loadFinalExercisesForAttempt(ctx, palierAttempt)).map((ex) => ex._id);
+}
+
 /** Le résumé d'une tentative, depuis ses lignes d'essai. */
 export async function summarizeAttempt(
   ctx: QueryCtx | MutationCtx,
   attempt: Doc<"palierAttempts">,
 ): Promise<PalierSummary> {
-  const exercises = await loadFinalExercisesForAttempt(ctx, attempt);
+  const exerciseIds = await finalExerciseIdsForAttempt(ctx, attempt);
   const rowsPerExercise = [];
-  for (const ex of exercises) {
+  for (const exerciseId of exerciseIds) {
     const rows = await ctx.db
       .query("attempts")
       .withIndex("by_palierAttempt_exercise", (q) =>
-        q.eq("palierAttemptId", attempt._id).eq("exerciseId", ex._id),
+        q.eq("palierAttemptId", attempt._id).eq("exerciseId", exerciseId),
       )
       .take(100);
     rowsPerExercise.push(rows);
@@ -91,6 +110,8 @@ export async function syncTopicProgress(
   ctx: MutationCtx,
   studentId: Id<"profiles">,
   topicId: Id<"topics">,
+  /** Le moment de la fin du palier qui déclenche ce calcul (un palier joué sans réseau date d'avant). */
+  at: number = Date.now(),
 ): Promise<{ newlyCompleted: boolean }> {
   const topic = await ctx.db.get(topicId);
   if (!topic) return { newlyCompleted: false };
@@ -131,7 +152,7 @@ export async function syncTopicProgress(
     .query("studentTopicProgress")
     .withIndex("by_studentId_topicId", (q) => q.eq("studentId", studentId).eq("topicId", topicId))
     .unique();
-  const now = Date.now();
+  const now = Math.min(at, Date.now());
   if (existing) {
     // Une thématique déjà franchie garde sa date.
     const completedAt = existing.completedAt ?? (complete ? now : undefined);

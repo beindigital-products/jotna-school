@@ -3,12 +3,6 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { isHiddenClass } from "./curriculum";
-import {
-  effectivePalierCount,
-  isTopicComplete,
-  nextPalierIndex,
-  resolvePalierStatuses,
-} from "./palierRules";
 import type { QueryCtx } from "./_generated/server";
 import { normalizeRarity } from "./badges";
 import { conditionText } from "./badgeRules";
@@ -16,8 +10,15 @@ import {
   EXOS_PER_LEVEL,
   computeLevel,
   exosToNextLevel,
-  palierStarRating,
 } from "./progressionRules";
+import {
+  buildNextStep,
+  buildSubjectMap,
+  buildWorldZone,
+  palierProgressByTopic,
+  type PalierProgressByTopic,
+  type WorldPalierAttempt,
+} from "./worldRules";
 import {
   callerIsAdmin,
   callerMayReadStudent,
@@ -25,22 +26,16 @@ import {
   requireAccess,
 } from "./access";
 
-// ---------------------------------------------------------------------------
-// LA NOTE D'UN PALIER VALIDÉ SANS RÉSUMÉ. Une tentative notée depuis la
-// remise en place de la progression porte ses étoiles exactes
-// (`palierAttempts.starsTotal`), et sa note de une à trois étoiles est celle
-// de l'écran de fin (`progressionRules.palierStarRating`). Une tentative
-// d'avant, que `progression:rebuild` n'a pas encore résumée, n'a que sa
-// moyenne : on en tire la note, comme avant.
-//   - average >= 9 → 3 stars
-//   - average >= 7 → 2 stars (PALIER_VALIDATION_THRESHOLD)
-//   - average  < 7 → 1 star (only when defensively included)
-// ---------------------------------------------------------------------------
-export function approxStarsForValidatedPalier(averageScore: number): number {
-  if (averageScore >= 9) return 3;
-  if (averageScore >= 7) return 2;
-  return 1;
-}
+// La note d'un palier validé sans résumé, l'état des thématiques et des
+// paliers d'un sentier, la carte et « où reprendre » sont des règles pures,
+// dans `worldRules.ts` : l'application qui joue sans réseau les applique aux
+// mêmes données. Réexportées ici pour les lecteurs historiques et les tests.
+export {
+  approxStarsForValidatedPalier,
+  resolveTopicStatuses,
+  type TopicInput,
+  type TopicStatus,
+} from "./worldRules";
 
 // ---------------------------------------------------------------------------
 // Le niveau (Decision D3b) vit dans `progressionRules.ts` ; réexporté ici
@@ -51,12 +46,10 @@ export { EXOS_PER_LEVEL, computeLevel, exosToNextLevel };
 // ---------------------------------------------------------------------------
 // Student preferences shape (stored under profiles.preferences, v.any()).
 // ---------------------------------------------------------------------------
-export type StudentStreakState = {
-  current: number;
-  longest: number;
-  lastActivityYmd?: string;
-  freezeAvailableUntilYmd?: string;
-};
+// La série et ses règles vivent dans `streakRules.ts` (pur, partagé avec
+// l'application qui joue sans réseau).
+export type { StudentStreakState } from "./streakRules";
+import type { StudentStreakState } from "./streakRules";
 export type StudentPreferences = {
   soundEnabled?: boolean;
   streak?: StudentStreakState;
@@ -79,54 +72,6 @@ export function readStudentPreferences(
 }
 
 // ---------------------------------------------------------------------------
-// Topic status resolution (D4 — linear unlock chain).
-// Extracted as a pure function so the logic is unit-testable.
-// ---------------------------------------------------------------------------
-export type TopicInput = {
-  id: string;
-  order: number;
-  isCompleted: boolean;
-  validatedPaliers: number;
-  hasInProgress: boolean;
-  completedExercises: number;
-};
-
-export type TopicStatus = "locked" | "available" | "in_progress" | "completed";
-
-export function resolveTopicStatuses(
-  topics: TopicInput[],
-): TopicStatus[] {
-  const sorted = [...topics].sort((a, b) => a.order - b.order);
-  const statuses: TopicStatus[] = [];
-  let prevPassedForUnlock = true;
-
-  for (const topic of sorted) {
-    const passedForUnlock =
-      topic.isCompleted || topic.validatedPaliers >= 1;
-
-    let status: TopicStatus;
-    if (!prevPassedForUnlock) {
-      status = "locked";
-    } else if (topic.isCompleted) {
-      status = "completed";
-    } else if (
-      topic.hasInProgress ||
-      topic.validatedPaliers > 0 ||
-      topic.completedExercises > 0
-    ) {
-      status = "in_progress";
-    } else {
-      status = "available";
-    }
-
-    statuses.push(status);
-    prevPassedForUnlock = passedForUnlock;
-  }
-
-  return statuses;
-}
-
-// ---------------------------------------------------------------------------
 // CE QUE L'ÉLÈVE VOIT, ET OÙ IL EN EST — partagé par la carte, le sentier,
 // le camp.
 //
@@ -142,8 +87,6 @@ export function resolveTopicStatuses(
 // par `palierAttempts.submitPalier`, et le calcul depuis les tentatives la
 // double pour les données d'avant.
 // ---------------------------------------------------------------------------
-const EMPTY_SET: ReadonlySet<number> = new Set();
-
 export async function topicsForStudent(
   ctx: QueryCtx,
   subjectId: Id<"subjects">,
@@ -175,29 +118,15 @@ async function loadTopicProgress(
   return new Map(rows.map((p) => [p.topicId as string, p] as const));
 }
 
-type PalierProgress = {
-  /** Les index de paliers validés au moins une fois. */
-  validated: Set<number>;
-  /** Les index avec une tentative ouverte. */
-  inProgress: Set<number>;
-  /** La meilleure note (une à trois étoiles) par palier validé, celle de l'écran de fin. */
-  bestRating: Map<number, number>;
-};
-
-type PalierProgressByTopic = {
-  byTopic: Map<string, PalierProgress>;
-  /** Le palier en cours le plus récent, pour « reprendre l'aventure ». */
-  latestInProgress: { topicId: Id<"topics">; palierIndex: number } | null;
-};
-
 /**
- * Les tentatives de palier de l'élève, regroupées par thématique. Une lecture
- * bornée : au plus 500 tentatives, et une résolution par palier distinct.
+ * Les tentatives de palier de l'élève, regroupées par thématique
+ * (`worldRules.palierProgressByTopic`). Une lecture bornée : au plus 500
+ * tentatives, et une résolution par palier distinct.
  */
 async function loadPalierProgress(
   ctx: QueryCtx,
   studentId: Id<"profiles">,
-): Promise<PalierProgressByTopic> {
+): Promise<PalierProgressByTopic<Id<"topics">>> {
   const attempts = await ctx.db
     .query("palierAttempts")
     .withIndex("by_user", (q) => q.eq("userId", studentId))
@@ -215,58 +144,20 @@ async function loadPalierProgress(
     }),
   );
 
-  const byTopic = new Map<string, PalierProgress>();
-  let latestInProgress: PalierProgressByTopic["latestInProgress"] = null;
+  const located: WorldPalierAttempt<Id<"topics">>[] = [];
   for (const attempt of attempts) {
     const palier = palierById.get(attempt.palierId as string);
     if (!palier) continue;
-    const key = palier.topicId as string;
-    const entry = byTopic.get(key) ?? {
-      validated: new Set<number>(),
-      inProgress: new Set<number>(),
-      bestRating: new Map<number, number>(),
-    };
-    if (attempt.status === "validated") {
-      entry.validated.add(palier.palierIndex);
-      const rating =
-        attempt.starsTotal !== undefined && attempt.exerciseCount !== undefined
-          ? palierStarRating(attempt.starsTotal, attempt.exerciseCount)
-          : approxStarsForValidatedPalier(attempt.averageScore ?? 0);
-      if (rating > (entry.bestRating.get(palier.palierIndex) ?? 0)) {
-        entry.bestRating.set(palier.palierIndex, rating);
-      }
-    } else if (attempt.status === "in_progress") {
-      entry.inProgress.add(palier.palierIndex);
-      if (latestInProgress === null) {
-        latestInProgress = { topicId: palier.topicId, palierIndex: palier.palierIndex };
-      }
-    }
-    byTopic.set(key, entry);
+    located.push({
+      topicId: palier.topicId,
+      palierIndex: palier.palierIndex,
+      status: attempt.status,
+      averageScore: attempt.averageScore,
+      starsTotal: attempt.starsTotal,
+      exerciseCount: attempt.exerciseCount,
+    });
   }
-  return { byTopic, latestInProgress };
-}
-
-function countValidatedWithin(validated: ReadonlySet<number>, palierCount: number): number {
-  let n = 0;
-  for (let i = 1; i <= palierCount; i++) if (validated.has(i)) n += 1;
-  return n;
-}
-
-function topicInputFor(
-  topic: Doc<"topics">,
-  progress: Doc<"studentTopicProgress"> | undefined,
-  paliers: PalierProgress | undefined,
-): TopicInput {
-  const palierCount = effectivePalierCount(topic);
-  const validated = paliers?.validated ?? EMPTY_SET;
-  return {
-    id: topic._id as string,
-    order: topic.order,
-    isCompleted: progress?.completedAt != null || isTopicComplete(validated, palierCount),
-    validatedPaliers: countValidatedWithin(validated, palierCount),
-    hasInProgress: (paliers?.inProgress.size ?? 0) > 0,
-    completedExercises: progress?.completedExercises ?? 0,
-  };
+  return palierProgressByTopic(located);
 }
 
 // ---------------------------------------------------------------------------
@@ -890,74 +781,12 @@ export const getStudentSubjectMap = query({
     const progressByTopicId = await loadTopicProgress(ctx, studentId);
     const { byTopic } = await loadPalierProgress(ctx, studentId);
 
-    const topicInputs: TopicInput[] = topics.map((topic) =>
-      topicInputFor(
-        topic,
-        progressByTopicId.get(topic._id as string),
-        byTopic.get(topic._id as string),
-      ),
-    );
-    const statuses = resolveTopicStatuses(topicInputs);
-
-    const orderedTopics = topics.map((topic, i) => {
-      const paliersDone = byTopic.get(topic._id as string);
-      const validated = paliersDone?.validated ?? EMPTY_SET;
-      const inProgress = paliersDone?.inProgress ?? EMPTY_SET;
-      const progress = progressByTopicId.get(topic._id as string);
-      const palierCount = effectivePalierCount(topic);
-      const status = statuses[i];
-
-      // Chaque palier est une étape du sentier, avec son état et ses étoiles.
-      const paliers = resolvePalierStatuses({
-        topicLocked: status === "locked",
-        palierCount,
-        validated,
-        inProgress,
-      }).map((palierStatus, idx) => {
-        const index = idx + 1;
-        const stars =
-          palierStatus === "completed" ? (paliersDone?.bestRating.get(index) ?? 0) : 0;
-        return { index, status: palierStatus, stars };
-      });
-
-      return {
-        _id: topic._id,
-        name: topic.name,
-        description: topic.description,
-        order: topic.order,
-        class: topic.class ?? null,
-        status,
-        palierCount,
-        validatedPaliers: countValidatedWithin(validated, palierCount),
-        nextPalierIndex: nextPalierIndex(validated, palierCount),
-        starsEarned: progress?.starsEarned ?? 0,
-        completedExercises: progress?.completedExercises ?? 0,
-        correctExercises: progress?.correctExercises ?? 0,
-        paliers,
-      };
+    return buildSubjectMap({
+      subject,
+      topics,
+      progressByTopicId,
+      byTopic,
     });
-
-    // Les étoiles gagnées sur la matière, dans l'unité du carnet (trois par
-    // exercice) ; chaque étape garde sa note de une à trois étoiles.
-    const totalStars = orderedTopics.reduce((acc, t) => acc + t.starsEarned, 0);
-    const totalPaliers = orderedTopics.reduce((acc, t) => acc + t.palierCount, 0);
-    const completedPaliers = orderedTopics.reduce(
-      (acc, t) => acc + t.paliers.filter((p) => p.status === "completed").length,
-      0,
-    );
-
-    return {
-      subject: {
-        _id: subject._id,
-        name: subject.name,
-        icon: subject.icon,
-        color: subject.color,
-      },
-      topics: orderedTopics,
-      totalStars,
-      totalPaliers,
-      completedPaliers,
-    };
   },
 });
 
@@ -1002,34 +831,7 @@ export const getMyWorldMap = query({
     for (const subject of subjects) {
       const topics = await topicsForStudent(ctx, subject._id, profile);
       if (topics.length === 0) continue;
-
-      let completedTopics = 0;
-      let startedTopics = 0;
-      let totalPaliers = 0;
-      let completedPaliers = 0;
-      for (const t of topics) {
-        const palierCount = effectivePalierCount(t);
-        const validated = byTopic.get(t._id as string)?.validated ?? EMPTY_SET;
-        const p = progressByTopic.get(t._id as string);
-        const done = p?.completedAt != null || isTopicComplete(validated, palierCount);
-        totalPaliers += palierCount;
-        completedPaliers += done ? palierCount : countValidatedWithin(validated, palierCount);
-        if (done) completedTopics += 1;
-        else if (validated.size > 0 || (p?.completedExercises ?? 0) > 0) startedTopics += 1;
-      }
-
-      zones.push({
-        _id: subject._id,
-        name: subject.name,
-        color: subject.color,
-        icon: subject.icon,
-        order: subject.order,
-        totalTopics: topics.length,
-        completedTopics,
-        startedTopics,
-        totalPaliers,
-        completedPaliers,
-      });
+      zones.push(buildWorldZone({ subject, topics, progressByTopic, byTopic }));
     }
     return zones;
   },
@@ -1062,69 +864,17 @@ export const getMyNextStep = query({
     const studentId = profile._id;
 
     const { byTopic, latestInProgress } = await loadPalierProgress(ctx, studentId);
-    const studentClass =
-      profile.class && !isHiddenClass(profile.class) ? profile.class : null;
-
-    // 1. Le palier en cours le plus récent, s'il est encore dans le catalogue
-    //    de l'élève.
-    if (latestInProgress) {
-      const topic = await ctx.db.get(latestInProgress.topicId);
-      if (
-        topic &&
-        !isHiddenClass(topic.class) &&
-        studentClass !== null &&
-        topic.class === studentClass &&
-        latestInProgress.palierIndex <= effectivePalierCount(topic)
-      ) {
-        const subject = await ctx.db.get(topic.subjectId);
-        if (subject) {
-          return {
-            kind: "continue" as const,
-            topicId: topic._id,
-            topicName: topic.name,
-            palierIndex: latestInProgress.palierIndex,
-            subjectId: subject._id,
-            subjectName: subject.name,
-            subjectColor: subject.color,
-          };
-        }
-      }
-    }
-
-    // 2. La première étape ouverte, mondes dans l'ordre.
     const progressByTopic = await loadTopicProgress(ctx, studentId);
     const subjects = (await ctx.db.query("subjects").take(50)).sort(
       (a, b) => a.order - b.order,
     );
-    let anySubject = false;
+    // Les mondes dans l'ordre, chacun avec SES thématiques pour le niveau de
+    // l'élève (`topicsForStudent`) : un palier en cours hors de ce catalogue
+    // (niveau changé, thématique masquée) n'est pas suivi.
+    const worlds = [];
     for (const subject of subjects) {
-      const topics = await topicsForStudent(ctx, subject._id, profile);
-      if (topics.length === 0) continue;
-      anySubject = true;
-
-      const inputs: TopicInput[] = topics.map((t) =>
-        topicInputFor(t, progressByTopic.get(t._id as string), byTopic.get(t._id as string)),
-      );
-      const statuses = resolveTopicStatuses(inputs);
-      const idx = statuses.findIndex(
-        (st) => st === "in_progress" || st === "available",
-      );
-      if (idx === -1) continue;
-
-      const topic = topics[idx];
-      const validated = byTopic.get(topic._id as string)?.validated ?? EMPTY_SET;
-      return {
-        kind: "start" as const,
-        topicId: topic._id,
-        topicName: topic.name,
-        palierIndex: nextPalierIndex(validated, effectivePalierCount(topic)),
-        subjectId: subject._id,
-        subjectName: subject.name,
-        subjectColor: subject.color,
-      };
+      worlds.push({ subject, topics: await topicsForStudent(ctx, subject._id, profile) });
     }
-
-    // 3. Rien d'ouvert : tout est franchi, ou il n'y a rien à jouer.
-    return { kind: anySubject ? ("explore" as const) : ("empty" as const) };
+    return buildNextStep({ subjects: worlds, latestInProgress, progressByTopic, byTopic });
   },
 });

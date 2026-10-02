@@ -1,8 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Lock, Sparkles, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -23,6 +21,7 @@ import {
 import { BadgeShield } from "@/components/student/badge-icon";
 import { Pio } from "@/components/student/pio";
 import { pioSays } from "@/lib/pioCopy";
+import { useBadgeShowcase } from "@/hooks/use-student-data";
 
 /**
  * LA SALLE DES TROPHÉES — les badges, rangés sur des étagères par rareté.
@@ -68,13 +67,18 @@ const SHELF_TONE: Record<RarityTier, string> = {
 };
 
 export default function StudentBadgesPage() {
-  const profile = useQuery(api.profiles.getCurrentProfile);
-  const allBadges = useQuery(api.badges.list);
-  // L'élève est dérivé de la session côté serveur : plus d'argument, donc
-  // plus de "skip" en attente du profil.
-  const earned = useQuery(api.badges.listMyEarned);
-  // Où en est l'enfant sur ce qu'il n'a pas encore : la barre sous chaque trophée fermé.
-  const progress = useQuery(api.badges.getMyBadgeProgress);
+  // LA VITRINE SE LIT SUR L'APPAREIL (`hooks/use-student-data.ts`) : le
+  // catalogue vient du paquet, et un trophée mérité sans réseau y entre tout
+  // de suite — le serveur l'attribue pour de bon à la synchronisation.
+  // `progress` : où en est l'enfant sur ce qu'il n'a pas encore, la barre
+  // sous chaque trophée fermé.
+  const showcase = useBadgeShowcase();
+  const allBadges = showcase === undefined ? undefined : (showcase?.catalog ?? []);
+  const earned = useMemo(
+    () => (showcase === undefined ? undefined : (showcase?.earned ?? [])),
+    [showcase],
+  );
+  const progress = showcase?.progress;
 
   const [tab, setTab] = useState<Tab>("all");
   const [detailBadge, setDetailBadge] = useState<{
@@ -99,7 +103,7 @@ export default function StudentBadgesPage() {
     return map;
   }, [progress]);
 
-  if (allBadges === undefined || profile === undefined || earned === undefined) {
+  if (allBadges === undefined || earned === undefined) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3">
         <Pio state="think" size={150} />

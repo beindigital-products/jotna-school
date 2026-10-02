@@ -31,12 +31,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, BookOpenCheck, Lock, Play, Repeat, RotateCcw, Star, Volume2 } from "lucide-react";
 import type { ConsigneKey } from "@/convex/arabic/consignes";
 import { speech, useSpeech } from "@/components/arabic/speech";
-import { api } from "@/convex/_generated/api";
+import { useArabicPath, useHifzState } from "@/hooks/use-student-data";
 import {
   ARABIC_LESSONS,
   TOTAL_LESSONS,
@@ -80,8 +79,9 @@ type HifzState = {
 const WELCOME_KEY = "jotna.coran.welcome";
 
 export default function ArabePathPage() {
-  const path = useQuery(api.arabic.lessons.getPath);
-  const hifz = useQuery(api.arabic.memorization.getState);
+  // Lus sur l'appareil : le chemin s'ouvre et avance sans réseau.
+  const path = useArabicPath();
+  const hifz = useHifzState();
   const tier = useDeviceTier();
   const { say } = useSpeech();
 
@@ -126,7 +126,7 @@ export default function ArabePathPage() {
 
   if (path === undefined) return <QuranLoader />;
 
-  if (!path.enabled) {
+  if (!path || !path.enabled) {
     return (
       <div className="mx-4 max-w-md rounded-3xl border-2 border-amber-200 bg-white p-8 text-center shadow-sm sm:mx-auto">
         <Pio state="idle" outfit="boubou" size={120} className="mx-auto" />

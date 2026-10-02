@@ -11,8 +11,8 @@ import {
   isSupportedCondition,
   type StudentSnapshot,
 } from "./badgeRules";
-import { isFinished, isFlawless } from "./progressionRules";
-import { effectivePalierCount, isTopicComplete } from "./palierRules";
+import { isFinished } from "./progressionRules";
+import { badgeSnapshotInput } from "./badgeSnapshotRules";
 import { assertTargetedDeployment } from "./testSeedsSchool";
 import {
   catalogReadable,
@@ -406,61 +406,34 @@ export async function buildStudentSnapshot(
     .order("desc")
     .take(500);
 
-  const validatedPaliers = new Set<string>();
-  const finishedPaliers = new Set<string>();
-  for (const a of palierAttempts) {
-    if (a.status === "validated") validatedPaliers.add(a.palierId as string);
-    if (isFinished(a)) finishedPaliers.add(a.palierId as string);
-  }
-  const startedTopics = new Set<string>();
+  // La place de chaque palier FINI (thématique, rang) : de quoi savoir quelles
+  // thématiques sont commencées et lesquelles sont sans faute.
   const palierById = new Map<string, Doc<"paliers">>();
-  for (const palierId of finishedPaliers) {
-    const palier = await ctx.db.get(palierId as Id<"paliers">);
-    if (!palier) continue;
-    palierById.set(palierId, palier);
-    startedTopics.add(palier.topicId as string);
-  }
-
-  // UNE THÉMATIQUE SANS FAUTE : chacun de ses paliers a été validé au moins
-  // une fois sans erreur, chaque exercice réussi à la première réponse. Les
-  // compteurs de la thématique n'y suffisent pas : ils disent « résolu »,
-  // même au cinquième essai.
-  const flawlessByTopic = new Map<string, Set<number>>();
   for (const a of palierAttempts) {
-    if (a.status !== "validated" || !isFlawless(a)) continue;
-    const palier = palierById.get(a.palierId as string);
-    if (!palier) continue;
-    const indices = flawlessByTopic.get(palier.topicId as string) ?? new Set<number>();
-    indices.add(palier.palierIndex);
-    flawlessByTopic.set(palier.topicId as string, indices);
+    const key = a.palierId as string;
+    if (!isFinished(a) || palierById.has(key)) continue;
+    const palier = await ctx.db.get(a.palierId);
+    if (palier) palierById.set(key, palier);
   }
 
   const progressRows = await ctx.db
     .query("studentTopicProgress")
     .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
     .take(500);
-  const progressByTopic = new Map(progressRows.map((p) => [p.topicId as string, p] as const));
 
-  const subjects = (await ctx.db.query("subjects").take(50)).sort((a, b) => a.order - b.order);
-  const topicRows: Parameters<typeof buildSnapshot>[0]["topics"][number][] = [];
-  const subjectRows: Parameters<typeof buildSnapshot>[0]["subjects"][number][] = [];
-  for (const subject of subjects) {
+  const subjectDocs = (await ctx.db.query("subjects").take(50)).sort((a, b) => a.order - b.order);
+  const subjects = [];
+  for (const subject of subjectDocs) {
     const topics = await topicsForStudent(ctx, subject._id, profile);
-    subjectRows.push({ subjectId: subject._id as string, name: subject.name, topicCount: topics.length });
-    for (const topic of topics) {
-      const p = progressByTopic.get(topic._id as string);
-      const completed = p?.completedAt != null;
-      topicRows.push({
-        topicId: topic._id as string,
-        subjectId: subject._id as string,
-        completed,
-        perfect:
-          completed &&
-          isTopicComplete(flawlessByTopic.get(topic._id as string) ?? new Set<number>(), effectivePalierCount(topic)),
-        started: startedTopics.has(topic._id as string) || (p?.completedExercises ?? 0) > 0,
-        masteryLevel: p?.masteryLevel ?? 0,
-      });
-    }
+    subjects.push({
+      subjectId: subject._id as string,
+      name: subject.name,
+      topics: topics.map((t) => ({
+        topicId: t._id as string,
+        palierCount: t.palierCount ?? null,
+        class: t.class ?? null,
+      })),
+    });
   }
 
   const missions = await ctx.db
@@ -476,26 +449,43 @@ export async function buildStudentSnapshot(
   }
 
   const prefs = readStudentPreferences(profile);
-  return buildSnapshot({
-    attempts: attempts.map((a) => ({
-      palierAttemptId: a.palierAttemptId as string | undefined,
-      exerciseId: a.exerciseId as string,
-      attemptNumber: a.attemptNumber,
-      isCorrect: a.isCorrect,
-      hintsUsedCount: a.hintsUsedCount,
-      timeSpentMs: a.timeSpentMs,
-      submittedAt: a.submittedAt,
-    })),
-    paliersValidated: validatedPaliers.size,
-    topics: topicRows,
-    subjects: subjectRows,
-    streakCurrent: prefs.streak?.current ?? 0,
-    streakLongest: prefs.streak?.longest ?? 0,
-    questsCompletedTotal,
-    perfectQuestDays,
-    // Le Sénégal vit à l'heure UTC : les trophées du matin et du soir aussi.
-    utcOffsetHours: 0,
-  });
+  // Le calcul est pur (`badgeSnapshotRules.ts`) : l'application qui joue sans
+  // réseau juge les trophées avec les mêmes règles.
+  return buildSnapshot(
+    badgeSnapshotInput({
+      attempts: attempts.map((a) => ({
+        palierAttemptId: a.palierAttemptId as string | undefined,
+        exerciseId: a.exerciseId as string,
+        attemptNumber: a.attemptNumber,
+        isCorrect: a.isCorrect,
+        hintsUsedCount: a.hintsUsedCount,
+        timeSpentMs: a.timeSpentMs,
+        submittedAt: a.submittedAt,
+      })),
+      palierAttempts: palierAttempts.map((a) => {
+        const palier = palierById.get(a.palierId as string);
+        return {
+          palierId: a.palierId as string,
+          status: a.status,
+          exerciseCount: a.exerciseCount,
+          firstTryCount: a.firstTryCount,
+          topicId: palier ? (palier.topicId as string) : null,
+          palierIndex: palier ? palier.palierIndex : null,
+        };
+      }),
+      topicProgress: progressRows.map((p) => ({
+        topicId: p.topicId as string,
+        completedAt: p.completedAt ?? null,
+        completedExercises: p.completedExercises,
+        masteryLevel: p.masteryLevel,
+      })),
+      subjects,
+      streakCurrent: prefs.streak?.current ?? 0,
+      streakLongest: prefs.streak?.longest ?? 0,
+      questsCompletedTotal,
+      perfectQuestDays,
+    }),
+  );
 }
 
 export const checkAndAward = internalMutation({

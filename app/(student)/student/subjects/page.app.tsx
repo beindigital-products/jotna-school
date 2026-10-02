@@ -2,12 +2,9 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { ArrowLeft, Play, RotateCcw, Star, Lock, Trophy } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { Id } from "@/convex/_generated/dataModel";
 import { difficultyStage } from "@/convex/palierRules";
 import { Pio } from "@/components/student/pio";
 import { GameButton } from "@/components/student/game/game-button";
@@ -17,6 +14,7 @@ import { TrailNode, type TrailNodeStatus } from "@/components/student/world/trai
 import { SUBJECT_TRAIL, trailNodePoint } from "@/components/student/world/trail-geometry";
 import { subjectEmoji } from "@/lib/subjectIcons";
 import { pioSays } from "@/lib/pioCopy";
+import { useSubjectMap } from "@/hooks/use-student-data";
 
 /**
  * LE SENTIER D'UN MONDE — les étapes d'une matière, façon niveaux de jeu,
@@ -61,9 +59,8 @@ const SHAKE_MS = 480;
 function SubjectTrailPageInner() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
-  const map = useQuery(api.students.getStudentSubjectMap, {
-    subjectId: id as Id<"subjects">,
-  });
+  // Calculé sur l'appareil : une étape validée sans réseau s'allume aussitôt.
+  const map = useSubjectMap(id);
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [shakingKey, setShakingKey] = useState<string | null>(null);

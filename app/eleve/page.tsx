@@ -8,22 +8,27 @@
  * connecte arrive ici (`roleHomePath`) au lieu d'une page vide : on lui dit
  * où aller, et on lui laisse de quoi rendre l'ordinateur à un adulte.
  *
- * Dans l'application, son espace existe : la page le renvoie à son camp.
+ * Dans l'application iOS/Android, son espace existe : la page le renvoie à
+ * son camp. Hors de la coque native, même construite pour l'application
+ * (un navigateur de développement), elle reste : l'espace élève y renvoie
+ * ici (`components/offline/student-gate.tsx`).
  */
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Pio } from "@/components/student/pio";
 import { useLogout } from "@/hooks/use-logout";
+import { useIsNativeApp } from "@/hooks/use-native-app";
 import { HAS_STUDENT_SPACE } from "@/lib/build-target";
 
 export default function StudentAppOnlyPage() {
   const router = useRouter();
   const logout = useLogout();
+  const native = useIsNativeApp();
 
   useEffect(() => {
-    if (HAS_STUDENT_SPACE) router.replace("/student/home");
-  }, [router]);
+    if (HAS_STUDENT_SPACE && native) router.replace("/student/home");
+  }, [native, router]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#bfe6fb_0%,#f9efd2_45%,#f6dfa4_100%)] px-4 py-10">

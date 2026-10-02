@@ -22,3 +22,17 @@ export function useIsNativeApp(): boolean {
     () => false,
   );
 }
+
+/**
+ * Comme `useIsNativeApp`, mais `null` tant que la plateforme n'est pas lue
+ * (pré-rendu, hydratation). Pour une décision qui ne doit pas se prendre sur
+ * la valeur provisoire : renvoyer un élève hors de son espace parce que le
+ * HTML pré-rendu dit « web » le chasserait aussi de l'application.
+ */
+export function useNativeAppOrUnknown(): boolean | null {
+  return useSyncExternalStore(
+    noSubscribe,
+    () => Capacitor.isNativePlatform(),
+    () => null,
+  );
+}

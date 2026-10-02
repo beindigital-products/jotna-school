@@ -28,9 +28,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // La cible `app` : elle contient les tableaux de bord ET l'espace élève,
-    // que plusieurs parcours testent (`lib/build-target.ts`).
-    command: "pnpm dev:app",
+    // Le site web : école, professeurs, parents. L'espace élève n'existe que
+    // dans l'application iOS/Android et ne s'ouvre dans aucun navigateur
+    // (`lib/build-target.ts`) : il se teste sur simulateur ou téléphone.
+    command: "pnpm dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

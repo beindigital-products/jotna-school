@@ -3,8 +3,8 @@
 L'application web tourne aussi comme application iOS native. Le principe est
 simple : `JOTNA_TARGET=app next build` produit un site statique dans `out/`,
 et Capacitor embarque ce dossier dans un projet Xcode. Aucun serveur Next ne tourne sur le
-téléphone. Le seul réseau utilisé est la connexion Convex, exactement comme
-dans le navigateur.
+téléphone. L'espace élève y joue sans réseau ; la connexion Convex sert à
+remplir l'appareil et à envoyer le travail de l'enfant (`docs/hors-ligne.md`).
 
 ## Rebâtir et lancer
 
@@ -28,13 +28,23 @@ code, les pages élève ne sont pas supprimées : elles portent l'extension
 | Commande | Cible | Espace élève |
 | --- | --- | --- |
 | `pnpm dev`, `pnpm build` | site web | absent : un élève connecté arrive sur `/eleve`, qui l'envoie vers l'application |
-| `pnpm dev:app`, `pnpm build:app`, `pnpm ios:sync`, `pnpm android:sync` | application | présent |
+| `pnpm build:app`, `pnpm ios:sync`, `pnpm android:sync` | application | présent, dans la coque native seulement |
 
 `next.config.ts` choisit `pageExtensions` d'après `JOTNA_TARGET` et pose
-`NEXT_PUBLIC_JOTNA_TARGET`, que lit `lib/build-target.ts`. Pour travailler sur
-l'espace élève dans un navigateur, lancez `pnpm dev:app` : avec `pnpm dev`,
-`/student/home` répond 404. La CI construit les deux cibles et échoue si le
-site contient une page élève.
+`NEXT_PUBLIC_JOTNA_TARGET`, que lit `lib/build-target.ts`. La CI construit les
+deux cibles et échoue si le site contient une page élève.
+
+L'espace élève ne s'ouvre dans aucun navigateur. Sur le site, `/student/home`
+répond 404. Une construction de l'application ouverte hors de la coque native
+le garde fermé : `StudentGate` (`components/offline/student-gate.tsx`)
+renvoie vers `/eleve`. Le propriétaire l'a décidé le 2 octobre 2026 : les
+élèves n'apprennent que dans l'application, et c'est là qu'on la teste (plus
+bas, « Travailler sur l'espace élève »).
+
+Le hors-ligne suit la même règle. Dans l'application, un module `x.app.tsx`
+remplace `x.tsx` à l'import (`next.config.ts`) : le site importe une version
+vide du fournisseur hors ligne et n'embarque pas le moteur. La CI échoue si
+le JavaScript du site contient `jotna-offline`.
 
 **Ne synchronisez jamais un `out/` construit par `pnpm build`** : l'application
 perdrait l'espace élève. Les scripts `ios:sync` et `android:sync` s'en
@@ -190,15 +200,39 @@ Pour regarder l'export statique dans un navigateur sans l'application :
 pnpm preview:export
 ```
 
-Il sert le dernier `out/` construit : `pnpm build:app` d'abord pour y voir
-l'espace élève.
+Il sert le dernier `out/` construit. L'espace élève n'y apparaît pas, même
+après `pnpm build:app` : il ne s'ouvre que dans la coque native.
+
+## Travailler sur l'espace élève
+
+On le regarde sur le simulateur iOS, l'émulateur Android ou un téléphone.
+Après un changement de code web seulement, inutile de recompiler dans Xcode :
+on reconstruit l'export, on le recopie dans l'application déjà installée sur
+le simulateur, puis on la relance.
+
+```bash
+pnpm build:app
+rsync -a out/ "$(xcrun simctl get_app_container booted com.jotna.school app)/public/"
+xcrun simctl terminate booted com.jotna.school
+xcrun simctl launch booted com.jotna.school
+```
+
+Ne passez pas `--delete` à `rsync` : le dossier `public/` de l'application
+contient `cordova.js` et `cordova_plugins.js`, qui ne sont pas dans `out/`.
+Après un changement natif (plugin, `Info.plist`), lancez `pnpm ios:sync` puis
+reconstruisez dans Xcode. Sur Android, `pnpm android:run` reconstruit et
+relance l'application.
 
 ## Ce qui n'est pas couvert
 
-Il n'y a pas de plugin natif installé : ni notifications, ni caméra, ni
-stockage hors ligne. L'application est le code du site dans une coque native,
-espace élève compris. Le micro passe par la vue web (`getUserMedia`), pas par
-un plugin ; son autorisation est déclarée dans `Info.plist`.
+Un seul plugin natif est installé : `@capacitor/filesystem`, qui garde sur
+l'appareil ce que l'élève joue hors ligne (`docs/hors-ligne.md`). Ni
+notifications, ni caméra. `cap sync` inscrit un plugin dans
+`ios/App/CapApp-SPM/Package.swift` et dans les fichiers Gradle d'Android :
+une application construite avant son ajout ne l'a pas, il faut la
+reconstruire dans Xcode ou Android Studio. Le micro passe par la vue web
+(`getUserMedia`), pas par un plugin ; son autorisation est déclarée dans
+`Info.plist`.
 
 La publication sur l'App Store demande un compte Apple Developer payant et un
 identifiant d'application enregistré sous ce compte. L'icône et l'écran de

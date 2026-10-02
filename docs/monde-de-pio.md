@@ -11,8 +11,9 @@ casser ce qui tient.
 
 Depuis le 29 septembre 2026, cet espace n'existe que dans l'application iOS
 et Android ; le site web ne sert plus que l'école, les professeurs et les
-parents (`docs/capacitor-ios.md`, « Deux cibles »). Pour le voir dans un
-navigateur en local, lancez `pnpm dev:app`.
+parents (`docs/capacitor-ios.md`, « Deux cibles »). Il se regarde sur le
+simulateur iOS, l'émulateur Android ou un téléphone, jamais dans un navigateur
+(`docs/capacitor-ios.md`, « Travailler sur l'espace élève »).
 
 ## D'où vient la conception
 
