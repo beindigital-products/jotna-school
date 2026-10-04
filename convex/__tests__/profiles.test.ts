@@ -5,8 +5,13 @@ import { describe, it, expect, vi } from "vitest";
 // On simule le contexte Convex avec un mock DB.
 // -----------------------------------------------------------------------
 
-function createMockCtx(data: Record<string, any[]> = {}) {
-  const tables: Record<string, any[]> = { ...data };
+/** Une ligne d'une table simulée. */
+type Row = Record<string, unknown>;
+/** Le `q` de `withIndex`, comme dans Convex : `q.eq(champ, valeur)`. */
+type IndexQuery = { eq: (field: string, value: unknown) => IndexQuery };
+
+function createMockCtx(data: Record<string, Row[]> = {}) {
+  const tables: Record<string, Row[]> = { ...data };
 
   return {
     db: {
@@ -14,10 +19,10 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         const rows = tables[table] ?? [];
         return {
           collect: async () => [...rows],
-          withIndex: (_name: string, filter: (q: any) => any) => {
-            let filters: Array<{ field: string; value: any }> = [];
+          withIndex: (_name: string, filter: (q: IndexQuery) => unknown) => {
+            const filters: Array<{ field: string; value: unknown }> = [];
             const q = {
-              eq: (field: string, value: any) => {
+              eq: (field: string, value: unknown) => {
                 filters.push({ field, value });
                 return q;
               },
@@ -40,14 +45,14 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         }
         return null;
       },
-      insert: vi.fn(async (table: string, doc: any) => {
+      insert: vi.fn(async (table: string, doc: Row) => {
         const id = `${table}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const row = { _id: id, _creationTime: Date.now(), ...doc };
         if (!tables[table]) tables[table] = [];
         tables[table].push(row);
         return id;
       }),
-      patch: vi.fn(async (id: string, updates: any) => {
+      patch: vi.fn(async (id: string, updates: Row) => {
         for (const table of Object.values(tables)) {
           const idx = table.findIndex((row) => row._id === id);
           if (idx !== -1) {
@@ -109,7 +114,7 @@ describe("profiles", () => {
       // Simulate getChildren handler
       const links = await ctx.db
         .query("studentGuardians")
-        .withIndex("by_guardianId", (q: any) =>
+        .withIndex("by_guardianId", (q) =>
           q.eq("guardianId", "p_parent"),
         )
         .collect();
@@ -117,9 +122,9 @@ describe("profiles", () => {
       expect(links).toHaveLength(2);
 
       const children = await Promise.all(
-        links.map(async (link: any) => {
-          const profile = await ctx.db.get(link.studentId);
-          return profile ? { ...profile, relation: link.relation } : null;
+        links.map(async (link) => {
+          const profile = await ctx.db.get(link.studentId as string);
+          return profile ? ({ ...profile, relation: link.relation } as Row) : null;
         }),
       );
 
@@ -146,7 +151,7 @@ describe("profiles", () => {
 
       const links = await ctx.db
         .query("studentGuardians")
-        .withIndex("by_guardianId", (q: any) =>
+        .withIndex("by_guardianId", (q) =>
           q.eq("guardianId", "p_parent"),
         )
         .collect();
@@ -188,7 +193,7 @@ describe("profiles", () => {
 
       const links = await ctx.db
         .query("studentGuardians")
-        .withIndex("by_guardianId", (q: any) =>
+        .withIndex("by_guardianId", (q) =>
           q.eq("guardianId", "p_parent1"),
         )
         .collect();
@@ -236,7 +241,7 @@ describe("profiles", () => {
       // Verify the link exists
       const links = await ctx.db
         .query("studentGuardians")
-        .withIndex("by_guardianId", (q: any) =>
+        .withIndex("by_guardianId", (q) =>
           q.eq("guardianId", "p_parent"),
         )
         .collect();

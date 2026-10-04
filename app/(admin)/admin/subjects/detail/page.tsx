@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { refusalMessage } from "@/lib/refusalMessage";
 import type { VisibleClassName } from "@/convex/curriculum";
@@ -22,9 +23,9 @@ import {
 function SubjectDetailPageInner() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
-  const subject = useQuery(api.subjects.getById, { id: id as any });
+  const subject = useQuery(api.subjects.getById, { id: id as Id<"subjects"> });
   const topics = useQuery(api.topics.listBySubject, {
-    subjectId: id as any,
+    subjectId: id as Id<"subjects">,
   });
   const updateSubject = useMutation(api.subjects.update);
   const createTopic = useMutation(api.topics.create);
@@ -62,7 +63,7 @@ function SubjectDetailPageInner() {
     setError(null);
     try {
       await updateSubject({
-        id: id as any,
+        id: id as Id<"subjects">,
         name: subjectName,
         icon: subjectIcon,
         color: subjectColor,
@@ -84,7 +85,7 @@ function SubjectDetailPageInner() {
     setError(null);
     try {
       await createTopic({
-        subjectId: id as any,
+        subjectId: id as Id<"subjects">,
         name: topicName,
         description: topicDescription,
         order: topicOrder,
@@ -109,7 +110,7 @@ function SubjectDetailPageInner() {
   const handleDeleteTopic = async (topicId: string) => {
     setError(null);
     try {
-      await removeTopic({ id: topicId as any });
+      await removeTopic({ id: topicId as Id<"topics"> });
       setDeleteConfirm(null);
     } catch (err) {
       setError(

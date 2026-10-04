@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { BookOpen, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 import { refusalMessage } from "@/lib/refusalMessage";
@@ -42,7 +43,7 @@ export default function SubjectsPage() {
   const handleDelete = async (id: string) => {
     setError(null);
     try {
-      await removeSubject({ id: id as any });
+      await removeSubject({ id: id as Id<"subjects"> });
       setDeleteConfirm(null);
     } catch (err) {
       setError(refusalMessage(err, "Erreur lors de la suppression"));
@@ -213,7 +214,7 @@ function SubjectCard({
   onDelete: (id: string) => void;
 }) {
   const topics = useQuery(api.topics.listBySubject, {
-    subjectId: subject._id as any,
+    subjectId: subject._id as Id<"subjects">,
   });
   const topicCount = topics?.length ?? 0;
 

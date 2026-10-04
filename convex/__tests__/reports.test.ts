@@ -5,9 +5,14 @@ import { describe, it, expect, vi } from "vitest";
 // On simule le contexte Convex avec un mock DB.
 // -----------------------------------------------------------------------
 
-function createMockCtx(data: Record<string, any[]> = {}) {
-  const tables: Record<string, any[]> = { ...data };
-  const scheduledJobs: Array<{ fn: any; args: any }> = [];
+/** Une ligne d'une table simulée. */
+type Row = Record<string, unknown>;
+/** Le `q` de `withIndex`, comme dans Convex : `q.eq(champ, valeur)`. */
+type IndexQuery = { eq: (field: string, value: unknown) => IndexQuery };
+
+function createMockCtx(data: Record<string, Row[]> = {}) {
+  const tables: Record<string, Row[]> = { ...data };
+  const scheduledJobs: Array<{ fn: unknown; args: Row }> = [];
 
   return {
     db: {
@@ -15,10 +20,10 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         const rows = tables[table] ?? [];
         return {
           collect: async () => [...rows],
-          withIndex: (_name: string, filter: (q: any) => any) => {
-            let filters: Array<{ field: string; value: any }> = [];
+          withIndex: (_name: string, filter: (q: IndexQuery) => unknown) => {
+            const filters: Array<{ field: string; value: unknown }> = [];
             const q = {
-              eq: (field: string, value: any) => {
+              eq: (field: string, value: unknown) => {
                 filters.push({ field, value });
                 return q;
               },
@@ -32,7 +37,7 @@ function createMockCtx(data: Record<string, any[]> = {}) {
               collect: async () => filtered,
             };
           },
-          filter: (fn: any) => {
+          filter: (_fn: unknown) => {
             return {
               first: async () => rows[0] ?? null,
               collect: async () => [...rows],
@@ -47,14 +52,14 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         }
         return null;
       },
-      insert: vi.fn(async (table: string, doc: any) => {
+      insert: vi.fn(async (table: string, doc: Row) => {
         const id = `${table}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const row = { _id: id, _creationTime: Date.now(), ...doc };
         if (!tables[table]) tables[table] = [];
         tables[table].push(row);
         return id;
       }),
-      patch: vi.fn(async (id: string, updates: any) => {
+      patch: vi.fn(async (id: string, updates: Row) => {
         for (const table of Object.values(tables)) {
           const idx = table.findIndex((row) => row._id === id);
           if (idx !== -1) {
@@ -65,7 +70,7 @@ function createMockCtx(data: Record<string, any[]> = {}) {
       }),
     },
     scheduler: {
-      runAfter: vi.fn(async (_delay: number, fn: any, args: any) => {
+      runAfter: vi.fn(async (_delay: number, fn: unknown, args: Row) => {
         scheduledJobs.push({ fn, args });
       }),
     },
@@ -323,7 +328,7 @@ describe("reports", () => {
       // Simulate the generate handler logic
       const exercises = await ctx.db
         .query("exercises")
-        .withIndex("by_topicId", (q: any) => q.eq("topicId", "t1"))
+        .withIndex("by_topicId", (q) => q.eq("topicId", "t1"))
         .collect();
 
       expect(exercises.length).toBe(1);

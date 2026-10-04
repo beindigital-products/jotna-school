@@ -5,8 +5,13 @@ import { describe, it, expect, vi } from "vitest";
 // by mocking the Convex database context.
 // -----------------------------------------------------------------------
 
-function createMockCtx(data: Record<string, any[]> = {}) {
-  const tables: Record<string, any[]> = { ...data };
+/** Une ligne d'une table simulée. */
+type Row = Record<string, unknown>;
+/** Le `q` de `withIndex`, comme dans Convex : `q.eq(champ, valeur)`. */
+type IndexQuery = { eq: (field: string, value: unknown) => IndexQuery };
+
+function createMockCtx(data: Record<string, Row[]> = {}) {
+  const tables: Record<string, Row[]> = { ...data };
 
   return {
     db: {
@@ -14,11 +19,11 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         const rows = tables[table] ?? [];
         return {
           collect: async () => [...rows],
-          withIndex: (_name: string, filter: (q: any) => any) => {
+          withIndex: (_name: string, filter: (q: IndexQuery) => unknown) => {
             let filterField: string | null = null;
-            let filterValue: any = null;
+            let filterValue: unknown = null;
             const q = {
-              eq: (field: string, value: any) => {
+              eq: (field: string, value: unknown) => {
                 filterField = field;
                 filterValue = value;
                 return q;
@@ -42,14 +47,14 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         }
         return null;
       },
-      insert: vi.fn(async (table: string, doc: any) => {
+      insert: vi.fn(async (table: string, doc: Row) => {
         const id = `${table}_${Date.now()}_${Math.random()}`;
         const row = { _id: id, ...doc };
         if (!tables[table]) tables[table] = [];
         tables[table].push(row);
         return id;
       }),
-      patch: vi.fn(async (id: string, updates: any) => {
+      patch: vi.fn(async (id: string, updates: Row) => {
         for (const table of Object.values(tables)) {
           const idx = table.findIndex((row) => row._id === id);
           if (idx !== -1) {
@@ -103,11 +108,11 @@ describe("topics", () => {
       // Simulate listBySubject handler
       const result = await ctx.db
         .query("topics")
-        .withIndex("by_subjectId", (q: any) => q.eq("subjectId", "s1"))
+        .withIndex("by_subjectId", (q) => q.eq("subjectId", "s1"))
         .collect();
 
       const sorted = result.sort(
-        (a: { order: number }, b: { order: number }) => a.order - b.order,
+        (a, b) => (a.order as number) - (b.order as number),
       );
 
       expect(sorted).toHaveLength(2);
@@ -120,7 +125,7 @@ describe("topics", () => {
 
       const result = await ctx.db
         .query("topics")
-        .withIndex("by_subjectId", (q: any) => q.eq("subjectId", "s1"))
+        .withIndex("by_subjectId", (q) => q.eq("subjectId", "s1"))
         .collect();
 
       expect(result).toHaveLength(0);
@@ -222,7 +227,7 @@ describe("topics", () => {
 
       const exerciseRef = await ctx.db
         .query("exercises")
-        .withIndex("by_topicId", (q: any) => q.eq("topicId", "t1"))
+        .withIndex("by_topicId", (q) => q.eq("topicId", "t1"))
         .first();
 
       expect(exerciseRef).toBeNull();
@@ -261,7 +266,7 @@ describe("topics", () => {
 
       const exerciseRef = await ctx.db
         .query("exercises")
-        .withIndex("by_topicId", (q: any) => q.eq("topicId", "t1"))
+        .withIndex("by_topicId", (q) => q.eq("topicId", "t1"))
         .first();
 
       expect(exerciseRef).not.toBeNull();
