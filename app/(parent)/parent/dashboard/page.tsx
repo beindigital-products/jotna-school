@@ -138,6 +138,7 @@ function ChildCard({
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md">
       <div className="flex items-center gap-3">
         {avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element -- avatar ; `next/image` n'apporte rien sous export statique
           <img
             src={avatar}
             alt={name}
