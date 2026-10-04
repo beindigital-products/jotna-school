@@ -62,9 +62,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # `android/capacitor-cordova-android-plugins/` n'est pas versionné :
-      # `cap update` le recrée, sans avoir besoin du build web.
+      # `cap update` le recrée. Il exige pourtant `out/index.html` et le dossier
+      # `android/app/src/main/assets/`, absents d'un checkout neuf (ignorés par
+      # git). Gradle n'a besoin ni de l'un ni de l'autre pour résoudre les
+      # dépendances : une page vide évite de construire le site.
       - name: Capacitor update
-        run: pnpm exec cap update android
+        run: |
+          mkdir -p out android/app/src/main/assets
+          test -f out/index.html || printf '<!doctype html>\n' > out/index.html
+          pnpm exec cap update android
 
       - name: Setup Java
         uses: actions/setup-java@v6
