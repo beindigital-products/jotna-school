@@ -21,6 +21,8 @@ on:
     branches: [main]
     paths:
       - "android/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
       - ".github/workflows/android-dependencies.yml"
   workflow_dispatch:
 

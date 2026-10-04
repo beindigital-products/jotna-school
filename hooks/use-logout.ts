@@ -25,9 +25,9 @@ export function useLogout(): () => Promise<void> {
   return useCallback(async () => {
     await logout(signOut);
     clearConvexAuthTokens();
-    // Rechargement complet voulu (voir plus haut) : la règle de Next propose
-    // `router.push`, qui garderait l'état en mémoire de l'utilisateur sortant.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    // La règle de Next propose `router.push`, qui garderait l'état en mémoire
+    // de l'utilisateur sortant.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- rechargement complet voulu, voir plus haut
     window.location.href = "/login";
   }, [signOut]);
 }
