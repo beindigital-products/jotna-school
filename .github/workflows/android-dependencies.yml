@@ -1,0 +1,75 @@
+name: Dépendances Android
+
+# Dependabot ne lit pas Gradle : sans ce graphe, les bibliothèques embarquées
+# dans l'APK (androidx, Kotlin, Cordova, capacitor-android) n'ont jamais
+# d'alerte de sécurité. Ce workflow résout les dépendances de l'application
+# Android et les envoie au graphe de dépendances de GitHub.
+#
+# Seul `releaseRuntimeClasspath` est envoyé : c'est ce que contient l'APK
+# publié. Le classpath de build (plugin Android, Gradle) ajouterait des
+# dizaines d'alertes sur des outils qui ne partent jamais chez l'utilisateur.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/android-dependencies.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-dependencies.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  gradle:
+    name: Graphe des dépendances Gradle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # `android/capacitor.settings.gradle` pointe vers `@capacitor/android`
+      # dans `node_modules`.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # `android/capacitor-cordova-android-plugins/` n'est pas versionné :
+      # `cap update` le recrée, sans avoir besoin du build web.
+      - name: Capacitor update
+        run: pnpm exec cap update android
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Submit dependency graph
+        uses: gradle/actions/dependency-submission@v6
+        with:
+          build-root-directory: android
+          dependency-graph-include-configurations: releaseRuntimeClasspath
