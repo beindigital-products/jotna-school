@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ComponentProps,
+} from "react";
 import { useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -79,11 +85,15 @@ export default function ExercisePlayer({
   const [aiExplanationLoading, setAiExplanationLoading] = useState(false);
   const [accessBlocked, setAccessBlocked] = useState(false);
 
-  // Timer
-  const exerciseStartTime = useRef<number>(Date.now());
+  // Timer. Set by the effect that runs on each exercise change, mount
+  // included: `Date.now()` must not run during render.
+  const exerciseStartTime = useRef<number>(0);
 
-  // Session-wide stats
-  const [sessionCorrectCount, setSessionCorrectCount] = useState(0);
+  // Session-wide stats. A resumed student starts with the exercises already
+  // done counted as correct, so the end screen doesn't show 0/N.
+  const [sessionCorrectCount, setSessionCorrectCount] = useState(() =>
+    initialIndex && initialIndex > 0 ? initialIndex : 0,
+  );
   const [sessionTotalTime, setSessionTotalTime] = useState(0);
   const [sessionTotalHints, setSessionTotalHints] = useState(0);
 
@@ -100,10 +110,6 @@ export default function ExercisePlayer({
       })),
       initialIndex,
     );
-    // Update the sessionCorrectCount so resumed students don't see 0/N at end
-    if (initialIndex && initialIndex > 0) {
-      setSessionCorrectCount(initialIndex);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -113,12 +119,6 @@ export default function ExercisePlayer({
   }, [currentExerciseIndex]);
 
   const currentExercise = exercises[currentExerciseIndex];
-  if (!currentExercise) return null;
-
-  const availableHints = currentExercise.hints.slice(
-    0,
-    Math.min(MAX_HINTS, currentExercise.hints.length),
-  );
 
   const handleAdvance = useCallback(() => {
     if (currentExerciseIndex < exercises.length - 1) {
@@ -155,6 +155,17 @@ export default function ExercisePlayer({
     sessionTotalTime,
     sessionTotalHints,
   ]);
+
+  // After every hook: on the first render the store's index can point past
+  // this topic's exercises, before `startSession` resets it. A `return`
+  // placed before `useCallback` changed the number of hooks between two
+  // renders, which React rejects.
+  if (!currentExercise) return null;
+
+  const availableHints = currentExercise.hints.slice(
+    0,
+    Math.min(MAX_HINTS, currentExercise.hints.length),
+  );
 
   const handleSubmit = async (answer: string) => {
     if (isSubmitting || isCorrect === true) return;
@@ -317,7 +328,7 @@ export default function ExercisePlayer({
           <QcmExercise
             key={currentExercise._id}
             prompt={currentExercise.prompt}
-            payload={currentExercise.payload as any}
+            payload={currentExercise.payload as ComponentProps<typeof QcmExercise>["payload"]}
             onSubmit={handleSubmit}
             onSkip={handleAdvance}
             disabled={exerciseDisabled}
@@ -328,7 +339,7 @@ export default function ExercisePlayer({
           <MatchExercise
             key={currentExercise._id}
             prompt={currentExercise.prompt}
-            payload={currentExercise.payload as any}
+            payload={currentExercise.payload as ComponentProps<typeof MatchExercise>["payload"]}
             onSubmit={handleSubmit}
             onSkip={handleAdvance}
             disabled={exerciseDisabled}
@@ -339,7 +350,7 @@ export default function ExercisePlayer({
           <OrderExercise
             key={currentExercise._id}
             prompt={currentExercise.prompt}
-            payload={currentExercise.payload as any}
+            payload={currentExercise.payload as ComponentProps<typeof OrderExercise>["payload"]}
             onSubmit={handleSubmit}
             onSkip={handleAdvance}
             disabled={exerciseDisabled}
@@ -350,7 +361,7 @@ export default function ExercisePlayer({
           <DragDropExercise
             key={currentExercise._id}
             prompt={currentExercise.prompt}
-            payload={currentExercise.payload as any}
+            payload={currentExercise.payload as ComponentProps<typeof DragDropExercise>["payload"]}
             onSubmit={handleSubmit}
             onSkip={handleAdvance}
             disabled={exerciseDisabled}
@@ -361,7 +372,7 @@ export default function ExercisePlayer({
           <ShortAnswerExercise
             key={currentExercise._id}
             prompt={currentExercise.prompt}
-            payload={currentExercise.payload as any}
+            payload={currentExercise.payload as ComponentProps<typeof ShortAnswerExercise>["payload"]}
             onSubmit={handleSubmit}
             disabled={exerciseDisabled}
             isCorrect={isCorrect}
