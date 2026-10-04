@@ -1,9 +1,17 @@
+# Scripts d'installation non lancés, par choix : esbuild et unrs-resolver ne
+# font que vérifier un binaire que pnpm installe déjà (paquet optionnel de la
+# plateforme), msw copierait un worker vers un `msw.workerDirectory` que nous
+# n'avons pas, et sharp 0.35 n'a plus de script. `allowBuilds` vaut pour pnpm 12
+# (une valeur non booléenne y fait échouer l'installation en
+# ERR_PNPM_IGNORED_BUILDS), `ignoredBuiltDependencies` pour pnpm 10 en CI.
 allowBuilds:
-  esbuild: set this to true or false
-  msw: set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+  esbuild: false
+  msw: false
+  sharp: false
+  unrs-resolver: false
 ignoredBuiltDependencies:
+  - esbuild
+  - msw
   - sharp
   - unrs-resolver
 # convex 1.35 pins ws 8.18.0 (GHSA-96hv-2xvq-fx4p, GHSA-58qx-3vcg-4xpx);
