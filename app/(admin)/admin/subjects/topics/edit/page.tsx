@@ -1,22 +1,24 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { refusalMessage } from "@/lib/refusalMessage";
 import type { VisibleClassName } from "@/convex/curriculum";
 import { TopicLevelFields } from "@/components/admin/topic-level-fields";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
 
 function TopicEditPageInner() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
   const topicId = searchParams.get("topicId") ?? "";
   const router = useRouter();
-  const topic = useQuery(api.topics.getById, { id: topicId as any });
-  const subject = useQuery(api.subjects.getById, { id: id as any });
+  const topic = useQuery(api.topics.getById, { id: topicId as Id<"topics"> });
+  const subject = useQuery(api.subjects.getById, { id: id as Id<"subjects"> });
   const updateTopic = useMutation(api.topics.update);
 
   const [name, setName] = useState("");
@@ -26,18 +28,20 @@ function TopicEditPageInner() {
   const [palierCount, setPalierCount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
 
-  useEffect(() => {
-    if (topic && !initialized) {
-      setName(topic.name);
-      setDescription(topic.description);
-      setOrder(topic.order);
-      setKlass(topic.class ?? "");
-      setPalierCount(topic.palierCount === undefined ? "" : String(topic.palierCount));
-      setInitialized(true);
-    }
-  }, [topic, initialized]);
+  // Rempli quand le thème arrive, puis de nouveau seulement si la page passe à un
+  // autre document : les modifications en cours ne sont jamais écrasées.
+  useServerFormSync(
+    topic,
+    (t) => t._id,
+    (t) => {
+      setName(t.name);
+      setDescription(t.description);
+      setOrder(t.order);
+      setKlass(t.class ?? "");
+      setPalierCount(t.palierCount === undefined ? "" : String(t.palierCount));
+    },
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +49,7 @@ function TopicEditPageInner() {
     setError(null);
     try {
       await updateTopic({
-        id: topicId as any,
+        id: topicId as Id<"topics">,
         name,
         description,
         order,

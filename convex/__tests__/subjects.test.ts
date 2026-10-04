@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
+import type { IndexQuery, Row } from "./fakeDb.types";
 
 // -----------------------------------------------------------------------
 // These tests validate the logic/constraints of the subjects mutations
 // by mocking the Convex database context.
 // -----------------------------------------------------------------------
 
-function createMockCtx(data: Record<string, any[]> = {}) {
-  const tables: Record<string, any[]> = { ...data };
+function createMockCtx(data: Record<string, Row[]> = {}) {
+  const tables: Record<string, Row[]> = { ...data };
 
   return {
     db: {
@@ -14,12 +15,12 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         const rows = tables[table] ?? [];
         return {
           collect: async () => [...rows],
-          withIndex: (_name: string, filter: (q: any) => any) => {
+          withIndex: (_name: string, filter: (q: IndexQuery) => unknown) => {
             // Simple index simulation: extract the eq value
             let filterField: string | null = null;
-            let filterValue: any = null;
+            let filterValue: unknown = null;
             const q = {
-              eq: (field: string, value: any) => {
+              eq: (field: string, value: unknown) => {
                 filterField = field;
                 filterValue = value;
                 return q;
@@ -43,14 +44,14 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         }
         return null;
       },
-      insert: vi.fn(async (table: string, doc: any) => {
+      insert: vi.fn(async (table: string, doc: Row) => {
         const id = `${table}_${Date.now()}_${Math.random()}`;
         const row = { _id: id, ...doc };
         if (!tables[table]) tables[table] = [];
         tables[table].push(row);
         return id;
       }),
-      patch: vi.fn(async (id: string, updates: any) => {
+      patch: vi.fn(async (id: string, updates: Row) => {
         for (const table of Object.values(tables)) {
           const idx = table.findIndex((row) => row._id === id);
           if (idx !== -1) {
@@ -168,7 +169,7 @@ describe("subjects", () => {
       // Simulate: check for topics referencing this subject
       const topicsResult = await ctx.db
         .query("topics")
-        .withIndex("by_subjectId", (q: any) => q.eq("subjectId", "s1"))
+        .withIndex("by_subjectId", (q) => q.eq("subjectId", "s1"))
         .first();
 
       expect(topicsResult).toBeNull();
@@ -201,7 +202,7 @@ describe("subjects", () => {
 
       const topicsResult = await ctx.db
         .query("topics")
-        .withIndex("by_subjectId", (q: any) => q.eq("subjectId", "s1"))
+        .withIndex("by_subjectId", (q) => q.eq("subjectId", "s1"))
         .first();
 
       expect(topicsResult).not.toBeNull();

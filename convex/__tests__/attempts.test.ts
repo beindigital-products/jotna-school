@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { verifyDragDrop, verifyMatch } from "../paliers/answerCheck";
+import type { IndexQuery, Row } from "./fakeDb.types";
 
 // ---------------------------------------------------------------------------
 // These tests validate the answer verification logic for each exercise type
@@ -43,8 +44,8 @@ function verifyShortAnswer(
 
 // ---- Mock Convex context ----
 
-function createMockCtx(data: Record<string, any[]> = {}) {
-  const tables: Record<string, any[]> = { ...data };
+function createMockCtx(data: Record<string, Row[]> = {}) {
+  const tables: Record<string, Row[]> = { ...data };
 
   return {
     db: {
@@ -52,10 +53,10 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         const rows = tables[table] ?? [];
         return {
           collect: async () => [...rows],
-          withIndex: (_name: string, filter: (q: any) => any) => {
-            let filters: Record<string, any> = {};
+          withIndex: (_name: string, filter: (q: IndexQuery) => unknown) => {
+            const filters: Record<string, unknown> = {};
             const q = {
-              eq: (field: string, value: any) => {
+              eq: (field: string, value: unknown) => {
                 filters[field] = value;
                 return q;
               },
@@ -71,7 +72,7 @@ function createMockCtx(data: Record<string, any[]> = {}) {
               collect: async () => filtered,
             };
           },
-          filter: (_fn: any) => ({
+          filter: (_fn: unknown) => ({
             first: async () => null,
             collect: async () => [],
           }),
@@ -84,14 +85,14 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         }
         return null;
       },
-      insert: vi.fn(async (table: string, doc: any) => {
+      insert: vi.fn(async (table: string, doc: Row) => {
         const id = `${table}_${Date.now()}_${Math.random()}`;
         const row = { _id: id, ...doc };
         if (!tables[table]) tables[table] = [];
         tables[table].push(row);
         return id;
       }),
-      patch: vi.fn(async (id: string, updates: any) => {
+      patch: vi.fn(async (id: string, updates: Row) => {
         for (const table of Object.values(tables)) {
           const idx = table.findIndex((row) => row._id === id);
           if (idx !== -1) {
@@ -300,7 +301,7 @@ describe("Progress update on correct answer", () => {
     // Simulate: check for existing progress
     const progress = await ctx.db
       .query("studentTopicProgress")
-      .withIndex("by_studentId_topicId", (q: any) =>
+      .withIndex("by_studentId_topicId", (q) =>
         q.eq("studentId", "student1").eq("topicId", "topic1"),
       )
       .first();
@@ -353,7 +354,7 @@ describe("Progress update on correct answer", () => {
 
     const progress = await ctx.db
       .query("studentTopicProgress")
-      .withIndex("by_studentId_topicId", (q: any) =>
+      .withIndex("by_studentId_topicId", (q) =>
         q.eq("studentId", "student1").eq("topicId", "topic1"),
       )
       .first();
@@ -361,10 +362,16 @@ describe("Progress update on correct answer", () => {
     expect(progress).not.toBeNull();
 
     // Patch existing progress
-    await ctx.db.patch(progress!._id, {
-      completedExercises: progress!.completedExercises + 1,
-      correctExercises: progress!.correctExercises + 1,
-      totalHintsUsed: progress!.totalHintsUsed + 2,
+    const existing = progress as {
+      _id: string;
+      completedExercises: number;
+      correctExercises: number;
+      totalHintsUsed: number;
+    };
+    await ctx.db.patch(existing._id, {
+      completedExercises: existing.completedExercises + 1,
+      correctExercises: existing.correctExercises + 1,
+      totalHintsUsed: existing.totalHintsUsed + 2,
     });
 
     const updated = await ctx.db.get("prog1");

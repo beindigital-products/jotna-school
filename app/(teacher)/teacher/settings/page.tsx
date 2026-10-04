@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { Settings, Save, User, UserCircle } from "lucide-react";
 import { refusalMessage } from "@/lib/refusalMessage";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
 
 export default function TeacherSettingsPage() {
   const profile = useQuery(api.profiles.getCurrentProfile);
@@ -16,11 +17,12 @@ export default function TeacherSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (profile) {
-      setName(profile.name);
-    }
-  }, [profile]);
+  // Le formulaire reprend le nom du serveur quand il change.
+  useServerFormSync(
+    profile,
+    (p) => p.name,
+    (p) => setName(p.name),
+  );
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
