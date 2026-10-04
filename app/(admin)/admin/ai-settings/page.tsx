@@ -21,6 +21,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { refusalMessage } from "@/lib/refusalMessage";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
 
 /**
  * Admin AI Settings (Decisions 4, 45, 56, 69, 70, 76, 95).
@@ -45,29 +46,20 @@ export default function AdminAiSettingsPage() {
   const [mau, setMau] = useState(100);
   const [engagement, setEngagement] = useState(70);
 
-  // Le formulaire reprend les valeurs du serveur quand elles changent :
-  // chargement, sauvegarde, modification par un autre admin. Ajusté pendant le
-  // rendu plutôt que dans un effet, qui afficherait un rendu de trop avec les
-  // champs vides. La comparaison porte sur les valeurs, pas sur l'objet : une
-  // nouvelle référence aux mêmes valeurs ne doit ni relancer un rendu en
-  // boucle ni écraser une saisie en cours. `syncedValues` part de `undefined`
-  // pour que des réglages déjà en cache remplissent aussi le formulaire.
-  const serverValues = settings
-    ? JSON.stringify([
-        settings.aiMonthlyBudgetUsd,
-        settings.economyMode,
-        settings.dailyMoreLimitPerKid,
-      ])
-    : undefined;
-  const [syncedValues, setSyncedValues] = useState<string | undefined>(undefined);
-  if (settings && serverValues !== syncedValues) {
-    setSyncedValues(serverValues);
-    setBudget(settings.aiMonthlyBudgetUsd);
-    setEconomy(settings.economyMode);
-    setDailyMore(settings.dailyMoreLimitPerKid);
-  }
+  // Le formulaire reprend les réglages du serveur quand leurs valeurs changent
+  // (chargement, sauvegarde, modification par un autre admin).
+  useServerFormSync(
+    settings,
+    (s) =>
+      JSON.stringify([s.aiMonthlyBudgetUsd, s.economyMode, s.dailyMoreLimitPerKid]),
+    (s) => {
+      setBudget(s.aiMonthlyBudgetUsd);
+      setEconomy(s.economyMode);
+      setDailyMore(s.dailyMoreLimitPerKid);
+    },
+  );
 
-  // Cost projection calculator (Decision 70).
+  // Calculateur de projection des coûts (Decision 70).
   // Calculé avant les `return` anticipés : un hook placé après eux n'est pas
   // appelé tant que les requêtes chargent, et React plante (« Rendered more
   // hooks than during the previous render ») dès que les données arrivent.

@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { refusalMessage } from "@/lib/refusalMessage";
 import type { VisibleClassName } from "@/convex/curriculum";
 import { TopicLevelFields } from "@/components/admin/topic-level-fields";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
 
 function TopicEditPageInner() {
   const searchParams = useSearchParams();
@@ -27,18 +28,20 @@ function TopicEditPageInner() {
   const [palierCount, setPalierCount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
 
-  // Rempli une seule fois, pendant le rendu, dès que le thème arrive : un effet
-  // aurait affiché un rendu de trop avec le formulaire vide.
-  if (topic && !initialized) {
-    setName(topic.name);
-    setDescription(topic.description);
-    setOrder(topic.order);
-    setKlass(topic.class ?? "");
-    setPalierCount(topic.palierCount === undefined ? "" : String(topic.palierCount));
-    setInitialized(true);
-  }
+  // Rempli quand le thème arrive, puis de nouveau seulement si la page passe à un
+  // autre document : les modifications en cours ne sont jamais écrasées.
+  useServerFormSync(
+    topic,
+    (t) => t._id,
+    (t) => {
+      setName(t.name);
+      setDescription(t.description);
+      setOrder(t.order);
+      setKlass(t.class ?? "");
+      setPalierCount(t.palierCount === undefined ? "" : String(t.palierCount));
+    },
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -7,6 +7,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Save, ArrowLeft, Loader2, Plus, X } from "lucide-react";
 import { refusalMessage } from "@/lib/refusalMessage";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
 
 // Minimal teacher-facing editor: name/prompt/hints/type only.
 // For richer payload editing, teachers can use the admin editor if granted access.
@@ -35,16 +36,18 @@ function TeacherExerciseEditPageInner() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [initialized, setInitialized] = useState(false);
 
-  // Rempli une seule fois, pendant le rendu, dès que l'exercice arrive : un effet
-  // aurait affiché un rendu de trop avec le formulaire vide.
-  if (exercise && !initialized) {
-    setType(exercise.type);
-    setPrompt(exercise.prompt);
-    setHints(exercise.hints);
-    setInitialized(true);
-  }
+  // Rempli quand l'exercice arrive, puis de nouveau seulement si la page passe à un
+  // autre document : les modifications en cours ne sont jamais écrasées.
+  useServerFormSync(
+    exercise,
+    (e) => e._id,
+    (e) => {
+      setType(e.type);
+      setPrompt(e.prompt);
+      setHints(e.hints);
+    },
+  );
 
   async function handleSave() {
     setSaving(true);

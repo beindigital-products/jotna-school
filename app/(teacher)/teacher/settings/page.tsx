@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { Settings, Save, User, UserCircle } from "lucide-react";
 import { refusalMessage } from "@/lib/refusalMessage";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
 
 export default function TeacherSettingsPage() {
   const profile = useQuery(api.profiles.getCurrentProfile);
@@ -16,17 +17,12 @@ export default function TeacherSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Le formulaire reprend le profil du serveur quand ses valeurs changent,
-  // pendant le rendu plutôt que dans un effet. La comparaison porte sur les
-  // valeurs, pas sur l'objet : une nouvelle référence aux mêmes valeurs ne doit
-  // ni relancer un rendu en boucle ni écraser une saisie en cours.
-  // `syncedName` part de `undefined` pour qu'un profil déjà en cache remplisse
-  // aussi le formulaire.
-  const [syncedName, setSyncedName] = useState<string | undefined>(undefined);
-  if (profile && profile.name !== syncedName) {
-    setSyncedName(profile.name);
-    setName(profile.name);
-  }
+  // Le formulaire reprend le nom du serveur quand il change.
+  useServerFormSync(
+    profile,
+    (p) => p.name,
+    (p) => setName(p.name),
+  );
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();

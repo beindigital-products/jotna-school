@@ -6,6 +6,13 @@ import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { Settings, Save, User, UserCircle } from "lucide-react";
 import { refusalMessage } from "@/lib/refusalMessage";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
+
+/** Préférence d'envoi des bulletins, vraie tant que le parent ne l'a pas coupée. */
+function receiveReportsOf(profile: { preferences?: unknown }): boolean {
+  const prefs = profile.preferences as { receiveReports?: boolean } | undefined;
+  return prefs?.receiveReports ?? true;
+}
 
 export default function ParentSettingsPage() {
   const profile = useQuery(api.profiles.getCurrentProfile);
@@ -18,24 +25,15 @@ export default function ParentSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Le formulaire reprend le profil du serveur quand ses valeurs changent,
-  // pendant le rendu plutôt que dans un effet. La comparaison porte sur les
-  // valeurs, pas sur l'objet : une nouvelle référence aux mêmes valeurs ne doit
-  // ni relancer un rendu en boucle ni écraser une saisie en cours.
-  // `syncedValues` part de `undefined` pour qu'un profil déjà en cache
-  // remplisse aussi le formulaire.
-  const serverReceiveReports =
-    (profile?.preferences as { receiveReports?: boolean } | undefined)
-      ?.receiveReports ?? true;
-  const serverValues = profile
-    ? JSON.stringify([profile.name, serverReceiveReports])
-    : undefined;
-  const [syncedValues, setSyncedValues] = useState<string | undefined>(undefined);
-  if (profile && serverValues !== syncedValues) {
-    setSyncedValues(serverValues);
-    setName(profile.name);
-    setReceiveReports(serverReceiveReports);
-  }
+  // Le formulaire reprend le profil du serveur quand ses valeurs changent.
+  useServerFormSync(
+    profile,
+    (p) => JSON.stringify([p.name, receiveReportsOf(p)]),
+    (p) => {
+      setName(p.name);
+      setReceiveReports(receiveReportsOf(p));
+    },
+  );
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
