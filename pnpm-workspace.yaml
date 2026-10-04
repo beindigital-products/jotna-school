@@ -6,3 +6,7 @@ allowBuilds:
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+# convex 1.35 pins ws 8.18.0 (GHSA-96hv-2xvq-fx4p, GHSA-58qx-3vcg-4xpx);
+# convex 1.42+ pins 8.21.0 itself, after which this entry can go.
+overrides:
+  'ws@>=8.0.0 <8.21.0': 8.21.0
