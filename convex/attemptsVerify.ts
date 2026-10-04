@@ -45,7 +45,9 @@ function readVerdict(raw: unknown): { correct: boolean; reason: string } {
  * second avis, qui peut faire PASSER une réponse jugée fausse mais jamais
  * l'inverse. Un refus budgétaire laisse donc le verdict littéral en place —
  * exactement ce qui se passe déjà aujourd'hui quand l'appel OpenAI échoue,
- * cas explicitement assumé côté client (`ExercisePlayer.handleSubmit`).
+ * cas qu'assumait explicitement le seul client de l'action,
+ * `ExercisePlayer.handleSubmit`, supprimé le 5 octobre 2026 : plus rien
+ * dans le dépôt n'appelle cette action.
  *
  * Et le refus est rare : l'usage `verify_short_answer` n'est ni « kid
  * initiated » ni génératif au sens de `budget.ts`, donc seul le palier
