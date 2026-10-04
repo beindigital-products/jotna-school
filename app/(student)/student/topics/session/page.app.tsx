@@ -1,6 +1,13 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import {
+  Suspense,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ComponentProps,
+} from "react";
 import { useQuery, useMutation, useAction, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -982,8 +989,7 @@ function ExerciseRenderer({
       return (
         <QcmExercise
           prompt={exo.prompt}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          payload={exo.payload as any}
+          payload={exo.payload as ComponentProps<typeof QcmExercise>["payload"]}
           disabled={disabled}
           isCorrect={isCorrect}
           onSubmit={onSubmit}
@@ -994,8 +1000,7 @@ function ExerciseRenderer({
       return (
         <ShortAnswerExercise
           prompt={exo.prompt}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          payload={exo.payload as any}
+          payload={exo.payload as ComponentProps<typeof ShortAnswerExercise>["payload"]}
           disabled={disabled}
           isCorrect={isCorrect}
           onSubmit={onSubmit}
@@ -1005,8 +1010,7 @@ function ExerciseRenderer({
       return (
         <MatchExercise
           prompt={exo.prompt}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          payload={exo.payload as any}
+          payload={exo.payload as ComponentProps<typeof MatchExercise>["payload"]}
           disabled={disabled}
           isCorrect={isCorrect}
           onSubmit={onSubmit}
@@ -1017,8 +1021,7 @@ function ExerciseRenderer({
       return (
         <OrderExercise
           prompt={exo.prompt}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          payload={exo.payload as any}
+          payload={exo.payload as ComponentProps<typeof OrderExercise>["payload"]}
           disabled={disabled}
           isCorrect={isCorrect}
           onSubmit={onSubmit}
@@ -1029,8 +1032,7 @@ function ExerciseRenderer({
       return (
         <DragDropExercise
           prompt={exo.prompt}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          payload={exo.payload as any}
+          payload={exo.payload as ComponentProps<typeof DragDropExercise>["payload"]}
           disabled={disabled}
           isCorrect={isCorrect}
           onSubmit={onSubmit}

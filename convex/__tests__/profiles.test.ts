@@ -1,14 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
+import type { IndexQuery, Row } from "./fakeDb.types";
 
 // -----------------------------------------------------------------------
 // Tests pour la logique des profils et des liens parent-enfant.
 // On simule le contexte Convex avec un mock DB.
 // -----------------------------------------------------------------------
-
-/** Une ligne d'une table simulée. */
-type Row = Record<string, unknown>;
-/** Le `q` de `withIndex`, comme dans Convex : `q.eq(champ, valeur)`. */
-type IndexQuery = { eq: (field: string, value: unknown) => IndexQuery };
 
 function createMockCtx(data: Record<string, Row[]> = {}) {
   const tables: Record<string, Row[]> = { ...data };

@@ -19,7 +19,7 @@ export default function SubjectsPage() {
   const [color, setColor] = useState("#6366f1");
   const [order, setOrder] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Id<"subjects"> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -40,10 +40,10 @@ export default function SubjectsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: Id<"subjects">) => {
     setError(null);
     try {
-      await removeSubject({ id: id as Id<"subjects"> });
+      await removeSubject({ id });
       setDeleteConfirm(null);
     } catch (err) {
       setError(refusalMessage(err, "Erreur lors de la suppression"));
@@ -203,18 +203,18 @@ function SubjectCard({
   onDelete,
 }: {
   subject: {
-    _id: string;
+    _id: Id<"subjects">;
     name: string;
     icon: string;
     color: string;
     order: number;
   };
-  deleteConfirm: string | null;
-  setDeleteConfirm: (id: string | null) => void;
-  onDelete: (id: string) => void;
+  deleteConfirm: Id<"subjects"> | null;
+  setDeleteConfirm: (id: Id<"subjects"> | null) => void;
+  onDelete: (id: Id<"subjects">) => void;
 }) {
   const topics = useQuery(api.topics.listBySubject, {
-    subjectId: subject._id as Id<"subjects">,
+    subjectId: subject._id,
   });
   const topicCount = topics?.length ?? 0;
 

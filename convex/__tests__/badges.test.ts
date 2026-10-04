@@ -1,14 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
+import type { IndexQuery, Row } from "./fakeDb.types";
 
 // -----------------------------------------------------------------------
 // These tests validate the logic/constraints of the badges mutations
 // by mocking the Convex database context.
 // -----------------------------------------------------------------------
 
-/** Une ligne d'une table simulée. */
-type Row = Record<string, unknown>;
-/** Le `q` de `withIndex`, comme dans Convex : `q.eq(champ, valeur)`. */
-type IndexQuery = { eq: (field: string, value: unknown) => IndexQuery };
 /** Ce que rendent `q.field(nom)` et `q.eq(a, b)` dans le `filter` simulé. */
 type FieldRef = { __field: string };
 type EqCondition = { __eq: true; a: unknown; b: unknown };

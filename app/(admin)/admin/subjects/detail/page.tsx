@@ -22,10 +22,11 @@ import {
 
 function SubjectDetailPageInner() {
   const searchParams = useSearchParams();
-  const id = searchParams.get("id") ?? "";
-  const subject = useQuery(api.subjects.getById, { id: id as Id<"subjects"> });
+  // Typé une fois ici : l'URL ne porte qu'une chaîne.
+  const id = (searchParams.get("id") ?? "") as Id<"subjects">;
+  const subject = useQuery(api.subjects.getById, { id });
   const topics = useQuery(api.topics.listBySubject, {
-    subjectId: id as Id<"subjects">,
+    subjectId: id,
   });
   const updateSubject = useMutation(api.subjects.update);
   const createTopic = useMutation(api.topics.create);
@@ -45,7 +46,7 @@ function SubjectDetailPageInner() {
   const [topicPalierCount, setTopicPalierCount] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Id<"topics"> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const startEditSubject = () => {
@@ -63,7 +64,7 @@ function SubjectDetailPageInner() {
     setError(null);
     try {
       await updateSubject({
-        id: id as Id<"subjects">,
+        id,
         name: subjectName,
         icon: subjectIcon,
         color: subjectColor,
@@ -85,7 +86,7 @@ function SubjectDetailPageInner() {
     setError(null);
     try {
       await createTopic({
-        subjectId: id as Id<"subjects">,
+        subjectId: id,
         name: topicName,
         description: topicDescription,
         order: topicOrder,
@@ -107,10 +108,10 @@ function SubjectDetailPageInner() {
     }
   };
 
-  const handleDeleteTopic = async (topicId: string) => {
+  const handleDeleteTopic = async (topicId: Id<"topics">) => {
     setError(null);
     try {
-      await removeTopic({ id: topicId as Id<"topics"> });
+      await removeTopic({ id: topicId });
       setDeleteConfirm(null);
     } catch (err) {
       setError(
