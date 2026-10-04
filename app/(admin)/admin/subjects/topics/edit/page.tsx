@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,8 +16,8 @@ function TopicEditPageInner() {
   const id = searchParams.get("id") ?? "";
   const topicId = searchParams.get("topicId") ?? "";
   const router = useRouter();
-  const topic = useQuery(api.topics.getById, { id: topicId as any });
-  const subject = useQuery(api.subjects.getById, { id: id as any });
+  const topic = useQuery(api.topics.getById, { id: topicId as Id<"topics"> });
+  const subject = useQuery(api.subjects.getById, { id: id as Id<"subjects"> });
   const updateTopic = useMutation(api.topics.update);
 
   const [name, setName] = useState("");
@@ -28,16 +29,16 @@ function TopicEditPageInner() {
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
-  useEffect(() => {
-    if (topic && !initialized) {
-      setName(topic.name);
-      setDescription(topic.description);
-      setOrder(topic.order);
-      setKlass(topic.class ?? "");
-      setPalierCount(topic.palierCount === undefined ? "" : String(topic.palierCount));
-      setInitialized(true);
-    }
-  }, [topic, initialized]);
+  // Rempli une seule fois, pendant le rendu, dès que le thème arrive : un effet
+  // aurait affiché un rendu de trop avec le formulaire vide.
+  if (topic && !initialized) {
+    setName(topic.name);
+    setDescription(topic.description);
+    setOrder(topic.order);
+    setKlass(topic.class ?? "");
+    setPalierCount(topic.palierCount === undefined ? "" : String(topic.palierCount));
+    setInitialized(true);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +46,7 @@ function TopicEditPageInner() {
     setError(null);
     try {
       await updateTopic({
-        id: topicId as any,
+        id: topicId as Id<"topics">,
         name,
         description,
         order,

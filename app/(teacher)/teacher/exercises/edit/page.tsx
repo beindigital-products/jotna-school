@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -37,14 +37,14 @@ function TeacherExerciseEditPageInner() {
   const [saved, setSaved] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  useEffect(() => {
-    if (exercise && !initialized) {
-      setType(exercise.type);
-      setPrompt(exercise.prompt);
-      setHints(exercise.hints);
-      setInitialized(true);
-    }
-  }, [exercise, initialized]);
+  // Rempli une seule fois, pendant le rendu, dès que l'exercice arrive : un effet
+  // aurait affiché un rendu de trop avec le formulaire vide.
+  if (exercise && !initialized) {
+    setType(exercise.type);
+    setPrompt(exercise.prompt);
+    setHints(exercise.hints);
+    setInitialized(true);
+  }
 
   async function handleSave() {
     setSaving(true);
