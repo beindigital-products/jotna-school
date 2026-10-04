@@ -18,3 +18,7 @@ ignoredBuiltDependencies:
 # convex 1.42+ pins 8.21.0 itself, after which this entry can go.
 overrides:
   'ws@>=8.0.0 <8.21.0': 8.21.0
+  # GHSA-w5hq-g745-h8pq : corrigé en 11.1.1 seulement. svix (via resend) demande
+  # uuid ^10 et xcode (via la CLI Capacitor) ^7 ; tous deux n'appellent que
+  # `uuid.v4()`, que la 11 garde à l'identique, en CommonJS comme en ESM.
+  'uuid@<11.1.1': 11.1.1
