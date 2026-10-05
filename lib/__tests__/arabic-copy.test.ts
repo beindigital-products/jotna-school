@@ -27,6 +27,9 @@ describe("spokenConsigne", () => {
     expect(spokenConsigne("bravo_2")).toBe("مَا شَاءَ اللَّه, c'est ça !");
     expect(spokenConsigne("bravo_5")).toBe("تَبَارَكَ اللَّه ! Continue comme ça.");
     expect(spokenConsigne("bravo_6")).toBe("بَارَكَ اللَّهُ فِيك, c'est parfait !");
+    expect(spokenConsigne("map_welcome")).toBe(
+      "سَلَام ! Voici le chemin du Coran. Touche le bouton vert pour commencer ta leçon.",
+    );
   });
 
   it("laisse la bulle en lettres latines, pour l'adulte qui lit", () => {

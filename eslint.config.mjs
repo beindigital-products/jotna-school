@@ -35,6 +35,8 @@ const eslintConfig = defineConfig([
     "ios/**",
     // Code engendré par `npx convex dev`, réécrit à chaque génération.
     "convex/_generated/**",
+    // Projet vidéo Remotion autonome, avec ses propres dépendances.
+    "motion/**",
   ]),
 ]);
 
