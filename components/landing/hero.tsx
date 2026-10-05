@@ -2,15 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowRight,
-  Calculator,
-  CheckCircle2,
-  Flame,
-  Trophy,
-} from "lucide-react";
+import { ArrowRight, Calculator, CheckCircle2 } from "lucide-react";
 
 import { ElegantShape } from "./elegant-shape";
+import { StreakFlameIcon, TrophyRibbonIcon } from "./landing-icons";
 
 export function Hero() {
   return (
@@ -266,8 +261,8 @@ function HeroVisual() {
         transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.8 }}
         className="absolute -right-2 -top-4 flex items-center gap-2 rounded-2xl border border-amber-200 bg-white px-3 py-2 shadow-lg sm:-right-4 sm:-top-6"
       >
-        <span className="flex size-8 items-center justify-center rounded-lg bg-amber-100">
-          <Trophy className="size-4 text-amber-600" aria-hidden />
+        <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-amber-600 text-white shadow-[0_6px_14px_-6px_rgba(249,115,22,0.6)]">
+          <TrophyRibbonIcon className="size-4" />
         </span>
         <div className="pr-1">
           <p className="text-[10px] font-medium text-gray-500">
@@ -283,11 +278,8 @@ function HeroVisual() {
         transition={{ duration: 0.5, delay: 1 }}
         className="absolute -bottom-5 left-2 flex items-center gap-2 rounded-2xl border border-gray-100 bg-white px-3 py-2 shadow-lg sm:-left-6"
       >
-        <span
-          aria-hidden
-          className="flex size-8 items-center justify-center rounded-lg bg-orange-100 text-orange-600"
-        >
-          <Flame className="size-4" />
+        <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-[0_6px_14px_-6px_rgba(244,63,94,0.55)]">
+          <StreakFlameIcon className="size-4" />
         </span>
         <div className="pr-1">
           <p className="text-[10px] font-medium text-gray-500">Série</p>

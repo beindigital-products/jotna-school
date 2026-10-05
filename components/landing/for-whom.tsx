@@ -1,18 +1,14 @@
-import {
-  BookOpen,
-  GraduationCap,
-  Heart,
-  Sparkles,
-  type LucideIcon,
-} from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
 
+import { KidIcon, ParentHeartIcon, TeacherIcon } from "./landing-icons";
 import { Section } from "./section";
 
 type Persona = {
-  icon: LucideIcon;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
   title: string;
   tagline: string;
-  color: string;
+  gradient: string;
+  iconShadow: string;
   bulletColor: string;
   points: string[];
   featured?: boolean;
@@ -20,10 +16,11 @@ type Persona = {
 
 const PERSONAS: Persona[] = [
   {
-    icon: BookOpen,
+    icon: KidIcon,
     title: "Pour les enfants",
     tagline: "Apprendre en s'amusant",
-    color: "bg-amber-500",
+    gradient: "bg-gradient-to-br from-amber-400 to-orange-500",
+    iconShadow: "shadow-[0_10px_24px_-8px_rgba(245,158,11,0.55)]",
     bulletColor: "bg-amber-400",
     points: [
       "Des exercices courts et variés",
@@ -32,10 +29,11 @@ const PERSONAS: Persona[] = [
     ],
   },
   {
-    icon: Heart,
+    icon: ParentHeartIcon,
     title: "Pour les parents",
     tagline: "Suivre sans surveiller",
-    color: "bg-lime-600",
+    gradient: "bg-gradient-to-br from-lime-500 to-emerald-600",
+    iconShadow: "shadow-[0_10px_24px_-8px_rgba(101,163,13,0.55)]",
     bulletColor: "bg-lime-500",
     featured: true,
     points: [
@@ -46,10 +44,11 @@ const PERSONAS: Persona[] = [
     ],
   },
   {
-    icon: GraduationCap,
+    icon: TeacherIcon,
     title: "Pour les professeurs",
     tagline: "Guider collectivement",
-    color: "bg-orange-500",
+    gradient: "bg-gradient-to-br from-orange-400 to-amber-600",
+    iconShadow: "shadow-[0_10px_24px_-8px_rgba(249,115,22,0.55)]",
     bulletColor: "bg-orange-400",
     points: [
       "Suivi individuel des élèves",
@@ -82,15 +81,14 @@ export function ForWhom() {
               }
             >
               {isFeatured && (
-                <span className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full bg-lime-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                  <Sparkles className="size-3" aria-hidden />
+                <span className="absolute right-5 top-5 inline-flex items-center rounded-full bg-lime-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
                   Le + utilisé
                 </span>
               )}
 
               <div className="flex items-center">
                 <span
-                  className={`flex size-12 items-center justify-center rounded-2xl ${p.color} text-white shadow-sm ${
+                  className={`flex size-12 items-center justify-center rounded-2xl text-white ${p.gradient} ${p.iconShadow} ${
                     isFeatured ? "ring-4 ring-lime-200" : ""
                   }`}
                 >
