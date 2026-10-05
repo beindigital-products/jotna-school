@@ -159,11 +159,12 @@ Optionnelles, avec leurs valeurs par défaut :
 
 | Variable | Défaut | À quoi elle sert |
 | --- | --- | --- |
-| `ELEVENLABS_VOICE_ID` | `vY0W52tbYe3pDfogQWP7` (Omar) | La voix qui lit tout le parcours. Voir plus bas pourquoi celle-ci. |
-| `ELEVENLABS_MODEL_ID` | `eleven_multilingual_v2` | Le modèle de synthèse. Il doit lire l'arabe **vocalisé** : un modèle qui ignore les voyelles brèves prononcerait بَ et بِ de la même façon, et le niveau 2 du parcours n'aurait plus d'objet. |
+| `ELEVENLABS_VOICE_ID` | `jfEwztGDkpbpy89xeku6` (Steve) | La voix qui lit tout le parcours, en français comme en arabe. Voir plus bas pourquoi celle-ci. |
+| `ELEVENLABS_MODEL_ID` | `eleven_multilingual_v2` | Le modèle de synthèse de l'arabe. Il doit lire l'arabe **vocalisé** : un modèle qui ignore les voyelles brèves prononcerait بَ et بِ de la même façon, et le niveau 2 du parcours n'aurait plus d'objet. |
+| `ELEVENLABS_FR_MODEL_ID` | `eleven_v4` | Le modèle des phrases en français : consignes du module et lecteur de consignes des exercices. Plus expressif, il fait monter et descendre la phrase. |
 | `ELEVENLABS_STT_MODEL_ID` | `scribe_v2` | Le modèle de transcription qui écoute l'enfant. `scribe_v1`, déprécié par ElevenLabs, transcrivait nos essais de la même façon. |
 | `ELEVENLABS_STT_LANGUAGE` | `ara` | Code ISO-639-3. `ar` fonctionne aussi. |
-| `ELEVENLABS_SPEED` | — | Vitesse de diction, entre `0.7` et `1.2`. Une valeur hors de cet intervalle est ignorée. Ralentir aide les débutants. |
+| `ELEVENLABS_SPEED` | — | Vitesse de diction, entre `0.7` et `1.2`. Une valeur hors de cet intervalle est ignorée. Ralentir aide les débutants. `eleven_v4` n'en tient pas compte. |
 | `ELEVENLABS_FR_VOICE_ID` | la voix du parcours | Donne aux **consignes** françaises une voix à part. Sans elle, Pio n'a qu'une voix, en français comme en arabe (voir plus bas). `npx convex run arabic/voice:listVoices` liste les voix du compte. |
 
 **Les deux voix ont changé le 28 septembre 2026, à la demande du
@@ -213,6 +214,32 @@ français, les 38 consignes rendent leur texte sans une faute. Plus de ralenti
 non plus : Omar parle déjà posément (18 caractères par seconde en français,
 contre 19 à 22 pour Alexandre ralenti à 0,92). `ELEVENLABS_FR_VOICE_ID`
 permet encore de séparer les deux voix.
+
+**Le 5 octobre 2026, Steve remplace Omar.** Le propriétaire trouvait les
+consignes « trop robotiques » et voulait une voix « rassurante, douce,
+naturelle ». Le modèle comptait autant que la voix. Sur
+`eleven_multilingual_v2`, les mêmes voix ne varient que de 4 à 7 demi-tons sur
+une consigne ; sur `eleven_v4`, de 10,5 à 12. Les phrases françaises passent
+donc sur `eleven_v4`. L'arabe reste sur `eleven_multilingual_v2`, parce que
+`eleven_v4` sépare moins les voyelles brèves (3,5 Bark au plus proche contre
+4,3, même voix) et qu'une des voix essayées y disait جِيم avec un g dur.
+
+Dix voix d'homme françaises de la bibliothèque ont lu la même consigne, puis
+quatre finalistes l'arabe du module. Steve (« Soft and Calm »,
+`jfEwztGDkpbpy89xeku6`) l'emporte sur le volume : son français et son arabe
+sortent tous deux autour de −22 LUFS. Chez Théo, l'autre voix douce, l'arabe
+sortait 6 dB plus bas, et « بِ » à −31 LUFS. Les voyelles de Steve, بَ بِ بُ,
+restent à 4,3 Bark l'une de l'autre au plus proche, et `scribe_v2` rend 26 des
+28 versets à la lettre ; les deux autres ne diffèrent que par la longueur d'une
+voyelle. « Salam » se dit désormais en arabe (سَلَام), comme les autres
+formules : écrit en lettres latines, `eleven_v4` le prononçait « Salem » deux
+fois sur trois.
+
+Les variables d'environnement passent avant ces valeurs par défaut. Le
+déploiement de dev et la production portent encore `ELEVENLABS_VOICE_ID` sur
+Omar : il faut la retirer (`npx convex env remove ELEVENLABS_VOICE_ID`) pour
+entendre Steve. Pour garder Omar sur l'arabe seul, laissez-le dans
+`ELEVENLABS_VOICE_ID` et posez Steve dans `ELEVENLABS_FR_VOICE_ID`.
 
 ### Ce que ça coûte, et pourquoi c'est borné
 
