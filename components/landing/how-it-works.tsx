@@ -20,9 +20,9 @@ const STEPS: Step[] = [
     number: "01",
     icon: UserRound,
     iconColor: "bg-amber-100 text-amber-700",
-    title: "Crée ton profil",
+    title: "Connecte-toi avec ton code",
     description:
-      "Les enfants créent leur avatar. Les parents gèrent plusieurs profils depuis un seul compte.",
+      "L'école remet à chaque élève son code de connexion. Un seul compte parent suffit pour suivre plusieurs enfants.",
     accent: "bg-amber-50 text-amber-800 ring-amber-200",
   },
   {
@@ -51,7 +51,7 @@ export function HowItWorks() {
       id="comment"
       eyebrow="Comment ça marche"
       title="Trois étapes, zéro friction."
-      description="Pas d'installation, pas de configuration compliquée. On se connecte, on apprend."
+      description="L'élève apprend dans l'application Jotna School, sur tablette ou téléphone. Parents et professeurs suivent ses progrès depuis le site web."
     >
       <div className="relative">
         <svg

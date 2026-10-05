@@ -16,7 +16,7 @@ const ITEMS = [
   },
   {
     q: "Mon enfant a besoin d'une adresse email ?",
-    a: "Non. Un parent peut créer un compte unique et ajouter plusieurs profils enfants, chacun avec son avatar.",
+    a: "Non. Son école lui remet un billet avec un code personnel, et ce code suffit pour se connecter à l'application.",
   },
   {
     q: "Comment sont conçus les exercices ?",
@@ -28,7 +28,7 @@ const ITEMS = [
   },
   {
     q: "Peut-on utiliser Jotna sur tablette ou mobile ?",
-    a: "Oui. Jotna fonctionne dans le navigateur, sur ordinateur, tablette et mobile — sans installation.",
+    a: "Oui, et c'est même là que l'élève apprend : dans l'application Jotna School, sur tablette ou téléphone, iOS comme Android. Le site web, lui, sert aux parents et aux professeurs, qui y suivent ses progrès.",
   },
 ];
 
