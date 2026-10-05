@@ -1,5 +1,4 @@
 import type { ComponentType, SVGProps } from "react";
-import { Sparkles } from "lucide-react";
 
 import { KidIcon, ParentHeartIcon, TeacherIcon } from "./landing-icons";
 import { Section } from "./section";
@@ -82,8 +81,7 @@ export function ForWhom() {
               }
             >
               {isFeatured && (
-                <span className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full bg-lime-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                  <Sparkles className="size-3" aria-hidden />
+                <span className="absolute right-5 top-5 inline-flex items-center rounded-full bg-lime-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
                   Le + utilisé
                 </span>
               )}

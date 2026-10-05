@@ -73,7 +73,7 @@ export function Navbar() {
       >
         <Brand size="lg" priority className="h-20 w-auto" />
 
-        <ul className="hidden items-center gap-8 text-base font-medium md:flex">
+        <ul className="hidden items-center gap-6 text-base font-medium lg:flex">
           {LINKS.map((link) => {
             const isActive = active === link.id;
             return (
@@ -81,7 +81,7 @@ export function Navbar() {
                 <a
                   href={link.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`relative inline-block py-1.5 transition-colors ${
+                  className={`relative inline-block whitespace-nowrap py-1.5 transition-colors ${
                     isActive
                       ? "text-gray-900"
                       : "text-gray-600 hover:text-gray-900"
@@ -109,13 +109,13 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className="hidden rounded-full px-5 py-2.5 text-base font-semibold text-gray-700 transition-colors hover:bg-gray-100 sm:inline-flex"
+            className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-base font-semibold text-gray-700 transition-colors hover:bg-gray-100 lg:inline-flex"
           >
             Se connecter
           </Link>
           <a
             href="#liste-attente"
-            className="group hidden items-center gap-2 rounded-full bg-gray-900 px-5 py-2.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] sm:inline-flex"
+            className="group hidden items-center gap-2 whitespace-nowrap rounded-full bg-gray-900 px-5 py-2.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] lg:inline-flex"
           >
             Liste d&apos;attente
             <ArrowRight
@@ -128,7 +128,7 @@ export function Navbar() {
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger
               render={
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon" className="lg:hidden">
                   <Menu className="h-6 w-6" />
                   <span className="sr-only">Ouvrir le menu</span>
                 </Button>
