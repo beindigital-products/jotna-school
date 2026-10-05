@@ -46,7 +46,6 @@ import {
   AlertTriangle,
   Unlock,
   CreditCard,
-  ExternalLink,
   BookOpenText,
 } from "lucide-react";
 
@@ -1405,37 +1404,24 @@ const PAYMENT_STATUS_LABEL: Record<PaymentRow["status"], string> = {
 };
 
 /**
- * L'échéancier, et le paiement d'une tranche.
+ * L'échéancier, et le constat d'un règlement reçu hors ligne.
  *
- * LE MONTANT N'EST PAS UN ARGUMENT. Le bouton n'envoie que l'identifiant de la
- * tranche : le serveur relit le montant dû et l'envoie lui-même à PayDunya. Une
- * facture dont le prix viendrait du navigateur serait une facture que n'importe
- * qui pourrait ramener à cent francs — c'est la même règle que pour le prix
- * d'un contrat, et elle pèse plus lourd ici, la somme partant chez un tiers.
+ * AUCUN PAIEMENT EN LIGNE ICI, jusqu'à l'ouverture des ventes à la rentrée
+ * 2027-2028 : le bouton « Payer », qui ouvrait une page Bictorys ou PayDunya,
+ * a été retiré du site. `billing.openPayment` reste déployé, mais aucun écran
+ * ne l'appelle ; le rétablir, c'est remettre ce bouton (voir
+ * docs/encaissement-mise-en-service.md).
  *
- * L'URL S'AFFICHE, ELLE NE S'OUVRE PAS TOUTE SEULE. Une fenêtre ouverte depuis
- * une réponse asynchrone est bloquée par la plupart des navigateurs, et le
- * directeur croirait que le bouton ne marche pas. Un lien qu'il clique lui-même
- * s'ouvre toujours — et il voit le montant avant de quitter la page.
- *
- * ELLE NE DIT JAMAIS « c'est payé » d'elle-même : l'accès s'ouvre par le
- * webhook, pas par le retour du navigateur. La liste est réactive, donc la
- * tranche passe à « Réglée » quand PayDunya nous l'a confirmé, et pas avant.
+ * RESTE LE CONSTAT, qui n'encaisse rien : il enregistre un virement, un chèque
+ * ou des espèces déjà reçus. La liste est réactive, donc la tranche passe à
+ * « Réglée » dès que le constat est confirmé.
  */
 function BillingSection({ schoolId }: { schoolId: Doc<"schools">["_id"] }) {
   const schedule = useQuery(api.billing.getSchedule, { schoolId });
-  // Une seule fonction, quel que soit le prestataire : c'est le déploiement qui
-  // choisit (`billing.openPayment`), pas l'écran. Basculer de PayDunya à
-  // Bictorys ne touche donc pas une ligne d'interface.
-  const openInvoice = useAction(api.billing.openPayment);
   const settleOffline = useMutation(api.billing.settleInstallmentOffline);
 
   const [pendingId, setPendingId] = useState<Id<"installments"> | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [invoice, setInvoice] = useState<{
-    installmentId: Id<"installments">;
-    url: string;
-  } | null>(null);
   // La tranche dont le règlement hors ligne attend confirmation. Constater est
   // SANS RETOUR — rien ne défait un règlement déclaré à tort — donc le geste ne
   // tient pas en un seul clic.
@@ -1447,22 +1433,6 @@ function BillingSection({ schoolId }: { schoolId: Doc<"schools">["_id"] }) {
   // Le second cas n'a rien à dire : la section du dessus annonce déjà qu'il n'y
   // a pas de contrat, et un second encart vide ne ferait que répéter.
   if (schedule === undefined || schedule === null) return null;
-
-  const handlePay = async (installmentId: Id<"installments">) => {
-    setPendingId(installmentId);
-    setError(null);
-    setInvoice(null);
-    try {
-      const { paymentUrl } = await openInvoice({ installmentId });
-      setInvoice({ installmentId, url: paymentUrl });
-    } catch (err) {
-      setError(
-        refusalMessage(err, "Erreur lors de l'ouverture de la facture"),
-      );
-    } finally {
-      setPendingId(null);
-    }
-  };
 
   const handleSettle = async (installmentId: Id<"installments">) => {
     setPendingId(installmentId);
@@ -1554,22 +1524,6 @@ function BillingSection({ schoolId }: { schoolId: Doc<"schools">["_id"] }) {
                   {INSTALLMENT_STATUS_LABEL[row.status]}
                 </span>
 
-                {row.status !== "paid" && (
-                  <button
-                    type="button"
-                    onClick={() => handlePay(row.installmentId)}
-                    disabled={pendingId !== null}
-                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                  >
-                    {pendingId === row.installmentId ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <CreditCard className="h-3.5 w-3.5" />
-                    )}
-                    Payer
-                  </button>
-                )}
-
                 {row.status !== "paid" &&
                   (confirmingId === row.installmentId ? (
                     <span className="inline-flex items-center gap-2">
@@ -1608,18 +1562,6 @@ function BillingSection({ schoolId }: { schoolId: Doc<"schools">["_id"] }) {
                   des élèves peut s&apos;en trouver ouvert, et rien ne défait ce
                   constat.
                 </p>
-              )}
-
-              {invoice && invoice.installmentId === row.installmentId && (
-                <a
-                  href={invoice.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex w-full items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Ouvrir la page de paiement — {formatFcfa(row.amountFcfa)}
-                </a>
               )}
             </li>
           ))}
@@ -1661,10 +1603,10 @@ function BillingSection({ schoolId }: { schoolId: Doc<"schools">["_id"] }) {
       )}
 
       <p className="mt-3 text-xs text-gray-400">
-        L&apos;accès des élèves s&apos;ouvre quand le prestataire nous confirme
-        le règlement, pas au retour du navigateur : une facture réglée dont
-        l&apos;onglet est fermé est encaissée quand même. Une tranche oubliée
-        laisse vingt et un jours avant que l&apos;accès ne se referme.
+        Le paiement en ligne ouvrira avec les ventes, à la rentrée 2027-2028.
+        D&apos;ici là, un règlement reçu par virement, chèque ou espèces se
+        constate ici. Une tranche oubliée laisse vingt et un jours avant que
+        l&apos;accès ne se referme.
       </p>
     </div>
   );

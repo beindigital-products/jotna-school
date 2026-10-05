@@ -99,6 +99,8 @@ import type * as topics from "../topics.js";
 import type * as voice_elevenlabs from "../voice/elevenlabs.js";
 import type * as voice_exercisePrompt from "../voice/exercisePrompt.js";
 import type * as voice_speakable from "../voice/speakable.js";
+import type * as waitlist from "../waitlist.js";
+import type * as waitlistRules from "../waitlistRules.js";
 
 import type {
   ApiFromModules,
@@ -198,6 +200,8 @@ declare const fullApi: ApiFromModules<{
   "voice/elevenlabs": typeof voice_elevenlabs;
   "voice/exercisePrompt": typeof voice_exercisePrompt;
   "voice/speakable": typeof voice_speakable;
+  waitlist: typeof waitlist;
+  waitlistRules: typeof waitlistRules;
 }>;
 
 /**
