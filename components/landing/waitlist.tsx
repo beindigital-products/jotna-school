@@ -1,12 +1,28 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 
-export function CallToAction() {
+import { api } from "@/convex/_generated/api";
+import type { WaitlistAudience } from "@/convex/waitlistRules";
+import { refusalMessage } from "@/lib/refusalMessage";
+
+/**
+ * La liste d'attente, à la place de l'ancien appel à créer un compte.
+ *
+ * Jotna School ouvre à la vente à la rentrée 2027-2028. D'ici là, la vitrine
+ * ne vend rien : elle recueille l'adresse de qui veut être prévenu de
+ * l'ouverture (`waitlist.join`). Le héros et la barre de navigation renvoient
+ * ici par l'ancre `#liste-attente`.
+ */
+export function Waitlist() {
   return (
-    <section className="px-5 py-20 sm:px-8 sm:py-24">
+    <section
+      id="liste-attente"
+      className="scroll-mt-10 px-5 py-20 sm:px-8 sm:py-24"
+    >
       <div className="relative mx-auto w-full max-w-5xl overflow-hidden rounded-[32px] bg-[#fdfbf0] shadow-[0_20px_60px_-30px_rgba(60,50,20,0.25)] ring-1 ring-amber-200/50">
         <NotebookLines />
         <MarginLines />
@@ -18,11 +34,11 @@ export function CallToAction() {
               <PostItBadge />
             </div>
 
-            <div className="flex h-20 items-end">
+            <div className="flex min-h-20 items-end">
               <h2 className="relative inline-block font-sans text-3xl font-extrabold leading-none tracking-tight text-gray-900 sm:text-5xl">
-                Lance la première{" "}
+                Rendez-vous à la{" "}
                 <span className="relative inline-block whitespace-nowrap">
-                  <span className="relative z-10">session</span>
+                  <span className="relative z-10">rentrée 2027</span>
                   <Highlight />
                 </span>
                 .
@@ -30,25 +46,155 @@ export function CallToAction() {
             </div>
 
             <p className="mx-auto max-w-xl text-base leading-10 text-gray-600 sm:text-lg">
-              Créer un compte, choisir une matière, et c&apos;est parti. Aucune
-              carte bancaire, aucun téléchargement.
+              Jotna School sera officiellement disponible à la vente pour
+              l&apos;année scolaire{" "}
+              <span className="whitespace-nowrap">2027-2028</span>. Laissez
+              votre adresse : nous vous écrirons dès l&apos;ouverture.
             </p>
 
             <div className="h-10" />
 
-            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <PrimaryCTA />
-              <Link
-                href="/login"
-                className="inline-flex w-full items-center justify-center rounded-full border border-gray-300 bg-white px-6 py-3.5 text-base font-semibold text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50 sm:w-auto"
-              >
-                J&apos;ai déjà un compte
-              </Link>
-            </div>
+            <WaitlistForm />
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+const AUDIENCES: Array<{ value: WaitlistAudience; label: string }> = [
+  { value: "ecole", label: "Une école" },
+  { value: "parent", label: "Un parent" },
+  { value: "professeur", label: "Un professeur" },
+];
+
+/**
+ * Le formulaire, puis la confirmation qui le remplace.
+ *
+ * LE PROFIL N'A PAS DE VALEUR PAR DÉFAUT : une case cochée d'avance remplirait
+ * la liste de réponses que personne n'a données. Le navigateur vérifie la forme
+ * de l'adresse (`type="email"`) ; le serveur la vérifie de nouveau, et c'est sa
+ * réponse qui fait foi.
+ */
+function WaitlistForm() {
+  const join = useMutation(api.waitlist.join);
+  const [email, setEmail] = useState("");
+  const [audience, setAudience] = useState<WaitlistAudience | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDone, setIsDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (isDone) return <WaitlistDone />;
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (audience === null) {
+      setError(
+        "Indiquez d'abord si vous êtes une école, un parent ou un professeur.",
+      );
+      return;
+    }
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await join({ email, audience });
+      setIsDone(true);
+    } catch (err) {
+      setError(
+        refusalMessage(
+          err,
+          "L'inscription n'a pas abouti. Réessayez dans un instant.",
+        ),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full max-w-lg">
+      <fieldset>
+        <legend className="mx-auto text-sm font-semibold text-gray-700">
+          Vous êtes
+        </legend>
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          {AUDIENCES.map((option) => (
+            <label key={option.value} className="cursor-pointer">
+              <input
+                type="radio"
+                name="audience"
+                value={option.value}
+                checked={audience === option.value}
+                onChange={() => {
+                  setAudience(option.value);
+                  setError(null);
+                }}
+                className="peer sr-only"
+              />
+              <span className="inline-flex h-10 items-center rounded-full border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 peer-checked:border-gray-900 peer-checked:bg-gray-900 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-amber-400 peer-focus-visible:ring-offset-2">
+                {option.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <label htmlFor="waitlist-email" className="sr-only">
+          Adresse e-mail
+        </label>
+        <input
+          id="waitlist-email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="vous@exemple.com"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          className="h-14 w-full min-w-0 rounded-full border border-gray-300 bg-white px-6 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-300 sm:flex-1"
+        />
+        <SubmitButton isSubmitting={isSubmitting} />
+      </div>
+
+      {error && (
+        <p role="alert" className="mt-4 text-sm font-medium text-red-600">
+          {error}
+        </p>
+      )}
+
+      <p className="mt-4 text-sm text-gray-500">
+        Votre adresse ne sert qu&apos;à vous prévenir de l&apos;ouverture.
+      </p>
+    </form>
+  );
+}
+
+/**
+ * La confirmation. Elle prend le focus : le bouton qui l'avait sur le
+ * formulaire vient de disparaître, et un lecteur d'écran doit entendre que
+ * l'inscription est faite.
+ */
+function WaitlistDone() {
+  const titleRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    titleRef.current?.focus();
+  }, []);
+
+  return (
+    <div role="status" className="flex flex-col items-center gap-2">
+      <CheckCircle2 className="size-8 text-emerald-500" aria-hidden />
+      <p
+        ref={titleRef}
+        tabIndex={-1}
+        className="text-lg font-semibold text-gray-900 outline-none"
+      >
+        C&apos;est noté !
+      </p>
+      <p className="max-w-md text-base text-gray-600">
+        Nous vous écrirons dès l&apos;ouverture des ventes, à la rentrée 2027.
+      </p>
+    </div>
   );
 }
 
@@ -84,7 +230,7 @@ function PostItBadge() {
       className="inline-flex items-center gap-2 rounded-md bg-amber-200/90 px-3 py-1 text-xs font-semibold text-amber-900 shadow-[2px_3px_0_rgba(180,140,30,0.25)]"
     >
       <span className="size-1.5 rounded-full bg-emerald-500" />
-      Prêt en 30 secondes
+      Liste d&apos;attente
     </motion.span>
   );
 }
@@ -213,7 +359,7 @@ function Doodles() {
   );
 }
 
-function PrimaryCTA() {
+function SubmitButton({ isSubmitting }: { isSubmitting: boolean }) {
   return (
     <motion.div
       animate={{ y: [0, -2, 0] }}
@@ -234,16 +380,21 @@ function PrimaryCTA() {
         }}
         className="absolute inset-0 rounded-full bg-amber-300/50 blur-xl"
       />
-      <Link
-        href="/login"
-        className="group relative inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3.5 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(30,30,30,0.6)] transition-transform hover:-translate-y-0.5 active:scale-[0.98] sm:w-auto"
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="group relative inline-flex h-14 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gray-900 px-6 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(30,30,30,0.6)] transition-transform hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 sm:w-auto"
       >
-        Se connecter
-        <ArrowRight
-          className="size-4 transition-transform group-hover:translate-x-0.5"
-          aria-hidden
-        />
-      </Link>
+        Prévenez-moi
+        {isSubmitting ? (
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+        ) : (
+          <ArrowRight
+            className="size-4 transition-transform group-hover:translate-x-0.5"
+            aria-hidden
+          />
+        )}
+      </button>
     </motion.div>
   );
 }

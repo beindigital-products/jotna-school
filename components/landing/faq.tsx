@@ -7,8 +7,8 @@ import { Section } from "./section";
 
 const ITEMS = [
   {
-    q: "L'application est-elle vraiment gratuite ?",
-    a: "Oui, l'accès à Jotna est 100 % gratuit. Aucune publicité, aucun abonnement caché.",
+    q: "Quand l'application sera-t-elle disponible ?",
+    a: "Jotna School sera officiellement disponible à la vente à la rentrée 2027-2028. Inscrivez-vous sur la liste d'attente en bas de cette page : nous vous écrirons dès l'ouverture.",
   },
   {
     q: "À quel âge s'adresse Jotna ?",

@@ -16,6 +16,7 @@ const COLUMNS: FooterColumn[] = [
       { label: "Exercices", href: "/#exercices" },
       { label: "Gamification", href: "/#gamification" },
       { label: "FAQ", href: "/#faq" },
+      { label: "Liste d'attente", href: "/#liste-attente" },
     ],
   },
   {
@@ -48,8 +49,8 @@ export function Footer() {
           <div className="flex flex-col gap-4">
             <Brand size="md" className="h-20 w-auto" />
             <p className="max-w-xs text-sm leading-6 text-gray-600">
-              Apprendre en s&apos;amusant, du CP au CM2. Gratuit, sans pub,
-              données protégées.
+              Apprendre en s&apos;amusant, du CP au CM2. Sans pub, données
+              protégées.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
