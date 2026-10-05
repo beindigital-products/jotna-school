@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
@@ -33,7 +32,7 @@ export function Hero() {
               aria-hidden
               className="size-1.5 rounded-full bg-emerald-500"
             />
-            100 % gratuit · Sans pub
+            Disponible à la rentrée 2027-2028
           </motion.span>
 
           <motion.h1
@@ -62,16 +61,16 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start"
           >
-            <Link
-              href="/login"
+            <a
+              href="#liste-attente"
               className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] sm:w-auto"
             >
-              Se connecter
+              Rejoindre la liste d&apos;attente
               <ArrowRight
                 className="size-4 transition-transform group-hover:translate-x-0.5"
                 aria-hidden
               />
-            </Link>
+            </a>
             <a
               href="#comment"
               className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 bg-white px-6 py-3.5 text-base font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 sm:w-auto"

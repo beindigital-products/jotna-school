@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { classEnum, visibleClassValidator } from "./curriculum";
 import { moduleKeyValidator } from "./moduleCatalog";
 import { placementLevelValidator } from "./arabic/progressRules";
+import { waitlistAudienceValidator } from "./waitlistRules";
 
 // ---------------------------------------------------------------------------
 // AI gateway purposes — mirrors aiGateway/registry.ts. Listed here as
@@ -1269,4 +1270,18 @@ export default defineSchema({
     bonusStars: v.number(),
     createdAt: v.number(),
   }).index("by_student_day", ["studentId", "dayKey"]),
+
+  // ---------------------------------------------------------------------------
+  // waitlistEntries — la liste d'attente de la vitrine.
+  //
+  // Le site ne vend rien avant la rentrée 2027-2028 : il recueille les
+  // adresses à prévenir (`waitlist.join`). UNE LIGNE PAR ADRESSE, normalisée
+  // par `waitlistRules.normalizeWaitlistEmail` : la mutation relit `by_email`
+  // avant d'écrire, donc une seconde inscription n'ajoute rien.
+  // ---------------------------------------------------------------------------
+  waitlistEntries: defineTable({
+    email: v.string(),
+    audience: waitlistAudienceValidator,
+    createdAt: v.number(),
+  }).index("by_email", ["email"]),
 });
