@@ -22,7 +22,7 @@
 export const API_BASE = "https://api.elevenlabs.io/v1";
 
 /**
- * Le modèle de synthèse par défaut.
+ * Le modèle de synthèse de l'arabe.
  *
  * `eleven_multilingual_v2` lit l'arabe vocalisé et respecte les voyelles
  * brèves — c'est ce qui compte ici : un modèle qui les ignore prononcerait
@@ -30,6 +30,27 @@ export const API_BASE = "https://api.elevenlabs.io/v1";
  * d'objet. Surchargeable par `ELEVENLABS_MODEL_ID`.
  */
 const DEFAULT_TTS_MODEL = "eleven_multilingual_v2";
+
+/**
+ * Le modèle des phrases en français : `eleven_v4`.
+ *
+ * LE 5 OCTOBRE 2026, LE PROPRIÉTAIRE A TROUVÉ LA VOIX DES CONSIGNES « trop
+ * robotique, très IA ». Le modèle y est pour beaucoup : sur la même consigne,
+ * les mêmes voix ne varient que de 4 à 7 demi-tons avec
+ * `eleven_multilingual_v2`, et de 10,5 à 12 avec `eleven_v4`, le modèle le
+ * plus expressif d'ElevenLabs.
+ *
+ * L'ARABE RESTE SUR `DEFAULT_TTS_MODEL`. `eleven_v4` garde trois voyelles
+ * distinctes, mais moins séparées : 3,5 Bark entre les deux plus proches de
+ * بَ بِ بُ pour la voix retenue, contre 4,3 avec l'ancien modèle (formants F1
+ * et F2 mesurés). Et une des voix essayées y disait جِيم avec un g dur
+ * (« Game » pour `scribe_v2`, quatre prises sur quatre). L'enfant copie ce
+ * qu'il entend : l'arabe garde le modèle qui a fait ses preuves, et seul le
+ * français (consignes du module, lecteur de consignes des exercices) passe
+ * sur `eleven_v4`. Une voix, deux modèles (`voiceFor`). Surchargeable par
+ * `ELEVENLABS_FR_MODEL_ID`.
+ */
+const DEFAULT_FR_TTS_MODEL = "eleven_v4";
 
 /**
  * Le modèle de transcription par défaut.
@@ -43,50 +64,51 @@ const DEFAULT_TTS_MODEL = "eleven_multilingual_v2";
 const DEFAULT_STT_MODEL = "scribe_v2";
 
 /**
- * La voix par défaut : Omar (« Best Arab Narrator »), une voix d'homme en
- * arabe standard, grave et chaude. C'est AUSSI la voix des consignes en
- * français : Pio n'a qu'une voix (`voiceConfig`).
+ * La voix par défaut : Steve (« Steve – Soft and Calm »), une voix d'homme
+ * française, jeune, douce et posée. Elle dit TOUT, les consignes en français
+ * comme l'arabe du parcours : Pio n'a qu'une voix (`voiceConfig`).
  *
- * UNE VOIX D'HOMME, DEMANDÉE PAR LE PROPRIÉTAIRE le 28 septembre 2026 :
- * « agréable, douce, mais une voix d'homme ». Elle remplace Ekram, une voix de
- * femme. Treize voix d'homme ont lu les mêmes textes, et celle d'Omar a été
- * retenue sur trois mesures :
- * - ses syllabes بَ بِ بُ portent trois voyelles bien distinctes (4,8 Bark au
- *   plus proche, contre 4,5 pour Ekram ; seul Tariq, une voix bien plus dure,
- *   fait mieux), condition du niveau 2 ;
- * - les 27 versets du module, transcrits par `scribe_v2`, rendent exactement
- *   leur texte (Ekram, au même essai, avait ajouté des mots avant un verset) ;
- * - son volume rejoint celui de la voix des consignes (−20 LUFS pour les
- *   deux), l'enfant n'entend donc pas de saut entre le français et l'arabe.
+ * ELLE REMPLACE OMAR LE 5 OCTOBRE 2026. Le propriétaire trouvait les
+ * consignes « trop robotiques » et voulait une voix « rassurante, douce,
+ * naturelle » ; le 28 septembre, il avait demandé une voix d'homme
+ * (« agréable, douce, mais une voix d'homme »). Dix voix d'homme françaises
+ * de la bibliothèque, et Omar, ont lu la même consigne sur `eleven_v4`, puis
+ * quatre finalistes ont lu l'arabe du module. Steve a été retenu sur quatre
+ * mesures :
+ * - l'intonation : 10,6 demi-tons d'étendue sur la consigne, contre 6,9 pour
+ *   la même voix sur l'ancien modèle ;
+ * - le volume : son français (`eleven_v4`) et son arabe
+ *   (`eleven_multilingual_v2`) sortent tous deux autour de −22 LUFS. Chez
+ *   Théo, autre finaliste, l'arabe sortait 6 dB plus bas que le français, et
+ *   « بِ » à −31 LUFS : l'enfant aurait entendu la lettre plus faible que la
+ *   consigne ;
+ * - les voyelles : بَ بِ بُ à 4,3 Bark l'une de l'autre au plus proche
+ *   (formants F1 et F2) ;
+ * - la fidélité : `scribe_v2` rend 26 des 28 versets du module à la lettre ;
+ *   les deux autres ne diffèrent que par la longueur d'une voyelle
+ *   (« فصلي » pour « فَصَلِّ »), sans mot ajouté.
  * Une mesure ne remplace pas l'oreille : c'est l'écoute du propriétaire qui
- * la confirme. Anas (`R6nda3uM038xEEKi7GFl`), plus douce encore mais aux
- * voyelles moins séparées, est la voix de rechange.
+ * la confirme. Pour garder Omar (`vY0W52tbYe3pDfogQWP7`) sur l'arabe seul :
+ * Omar dans `ELEVENLABS_VOICE_ID`, Steve dans `ELEVENLABS_FR_VOICE_ID`.
  *
  * `ELEVENLABS_VOICE_ID` la remplace. L'identifiant vient de la bibliothèque
  * du compte ElevenLabs qui porte la clé : sur un autre compte, vérifier que la
  * voix y est disponible, sinon l'API répond `voice_not_found`, l'action rend
  * `provider_error` et l'écran continue sans le son.
  */
-const DEFAULT_VOICE_ID = "vY0W52tbYe3pDfogQWP7";
+const DEFAULT_VOICE_ID = "jfEwztGDkpbpy89xeku6";
 
 /*
  * UNE SEULE VOIX POUR PIO, EN FRANÇAIS COMME EN ARABE. Le 29 septembre 2026,
  * le propriétaire a entendu deux voix dans une même consigne (« Touche la
- * lettre… » par la voix française, puis « بَاء » par Omar) et a demandé une
- * seule voix, ou une voix moins robotique. La voix française d'alors,
- * « Alexandre FR » (`EGS8Z4YTFhSL6Mm6LpoK`), était la plus monotone des
- * voix mesurées : sa hauteur ne variait que sur 4 à 5 demi-tons, contre 8 à
- * 11 pour Omar. Omar lit les consignes françaises sans une erreur de
- * transcription (`scribe_v2` en français) et dit les formules arabes
- * (« مَا شَاءَ اللَّه ») au milieu d'une phrase française.
+ * lettre… » par une voix française, puis « بَاء » par la voix arabe) et a
+ * demandé une seule voix, ou une voix moins robotique. Les consignes prennent
+ * donc la voix du parcours. `ELEVENLABS_FR_VOICE_ID` leur redonne une voix à
+ * part ; `npx convex run arabic/voice:listVoices` liste les voix du compte.
  *
- * Les consignes prennent donc la voix du parcours. `ELEVENLABS_FR_VOICE_ID`
- * leur redonne une voix à part ; `npx convex run arabic/voice:listVoices`
- * liste les voix du compte.
- *
- * PLUS DE RALENTI SUR LES CONSIGNES : Omar parle posément de lui-même (18
- * caractères par seconde en français, contre 19 à 22 pour Alexandre ralenti
- * à 0,92), et le ralenti de la synthèse ajoutait de l'artifice.
+ * PAS DE RALENTI SUR LES CONSIGNES : le ralenti de la synthèse ajoutait de
+ * l'artifice, et `eleven_v4` n'en tient pas compte (à 0,9, la même consigne
+ * dure autant qu'à 1).
  */
 
 /** ISO-639-3. Leur API accepte aussi « ar » ; on fixe le plus explicite. */
@@ -97,7 +119,10 @@ export interface VoiceConfig {
   voiceId: string;
   /** La voix des consignes en français : celle du parcours, sauf réglage. */
   frVoiceId: string;
+  /** Le modèle de l'arabe du parcours, qui garde les voyelles brèves. */
   ttsModel: string;
+  /** Le modèle des phrases en français, plus naturel. */
+  frTtsModel: string;
   sttModel: string;
   sttLanguage: string;
   /** 0,7 à 1,2 chez ElevenLabs. Absent = vitesse naturelle du modèle. */
@@ -125,6 +150,7 @@ export function voiceConfig(): VoiceConfig | null {
     voiceId,
     frVoiceId: process.env.ELEVENLABS_FR_VOICE_ID ?? voiceId,
     ttsModel: process.env.ELEVENLABS_MODEL_ID ?? DEFAULT_TTS_MODEL,
+    frTtsModel: process.env.ELEVENLABS_FR_MODEL_ID ?? DEFAULT_FR_TTS_MODEL,
     sttModel: process.env.ELEVENLABS_STT_MODEL_ID ?? DEFAULT_STT_MODEL,
     sttLanguage: process.env.ELEVENLABS_STT_LANGUAGE ?? DEFAULT_STT_LANGUAGE,
     speed:
@@ -147,15 +173,50 @@ export function clipCacheKey(voiceId: string, modelId: string, text: string): st
   return `${voiceId}|${modelId}|${text}`;
 }
 
+/** Les deux langues de Pio : le français des consignes, l'arabe du parcours. */
+export type SpeechLang = "fr" | "ar";
+
+/** Qui dit une phrase, et avec quel modèle. */
+export interface Voice {
+  lang: SpeechLang;
+  voiceId: string;
+  modelId: string;
+}
+
+/**
+ * La voix et le modèle d'une langue. Une seule voix par défaut, deux
+ * modèles : `frTtsModel` pour le français, `ttsModel` pour l'arabe. Toute
+ * synthèse et toute clé de cache passent par ici, pour qu'une même phrase
+ * garde toujours la même clé.
+ */
+export function voiceFor(config: VoiceConfig, lang: SpeechLang): Voice {
+  return lang === "fr"
+    ? { lang, voiceId: config.frVoiceId, modelId: config.frTtsModel }
+    : { lang, voiceId: config.voiceId, modelId: config.ttsModel };
+}
+
+/**
+ * Les réglages de diction, par langue.
+ *
+ * L'arabe se dit POSÉ : on privilégie la stabilité sur l'expressivité, parce
+ * qu'un enfant copie ce qu'il entend et qu'une lecture théâtrale déforme les
+ * voyelles brèves. Le français se dit NATUREL : une stabilité moyenne laisse
+ * la phrase monter et descendre. `eleven_v4` n'a pas de réglage de style.
+ */
+const VOICE_SETTINGS: Record<SpeechLang, Record<string, number | boolean>> = {
+  ar: { stability: 0.6, similarity_boost: 0.8, style: 0, use_speaker_boost: true },
+  fr: { stability: 0.5, similarity_boost: 0.75 },
+};
+
 /** Appelle la synthèse et rend le mp3. Lève si le fournisseur refuse. */
 export async function synthesize(
   text: string,
   config: VoiceConfig,
-  voiceId: string,
+  voice: Voice,
 ): Promise<Blob> {
   const speed = config.speed;
   const response = await fetch(
-    `${API_BASE}/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
+    `${API_BASE}/text-to-speech/${encodeURIComponent(voice.voiceId)}?output_format=mp3_44100_128`,
     {
       method: "POST",
       headers: {
@@ -165,15 +226,9 @@ export async function synthesize(
       },
       body: JSON.stringify({
         text,
-        model_id: config.ttsModel,
+        model_id: voice.modelId,
         voice_settings: {
-          // Une diction POSÉE : on privilégie la stabilité sur l'expressivité,
-          // parce qu'un enfant copie ce qu'il entend et qu'une lecture
-          // théâtrale déforme les voyelles brèves.
-          stability: 0.6,
-          similarity_boost: 0.8,
-          style: 0,
-          use_speaker_boost: true,
+          ...VOICE_SETTINGS[voice.lang],
           ...(speed !== null ? { speed } : {}),
         },
       }),
