@@ -5,7 +5,7 @@
 - [ ] 1.2 Schema Convex complet (schema.ts avec toutes les tables et validateurs types)
 - [ ] 1.3 Convex Auth (email/mot de passe, config, middleware Next.js)
 - [ ] 1.4 Layout global + layouts par espace (admin, student, parent, auth)
-- [ ] 1.5 Zustand stores (auth store, exercise session store)
+- [ ] 1.5 Zustand stores (auth store, ~~exercise session store~~ supprime, voir 3.4)
 - [ ] 1.6 Tests unitaires Phase 1 (schema, auth, stores)
 
 ## Phase 2 : Espace Admin - Contenu
@@ -24,7 +24,11 @@
 - [ ] 3.1 Page accueil gamifiee (cartes matieres, progression, dernier badge)
 - [ ] 3.2 Page matiere (liste thematiques + progression)
 - [ ] 3.3 Page thematique (exercices verrouilles/debloques)
-- [ ] 3.4 ExercisePlayer (orchestrateur de session)
+- [x] ~~3.4 ExercisePlayer (orchestrateur de session)~~ abandonne : plus monte
+  depuis la PR #8 (29 avril 2026), qui l'a remplace par la session de palier
+  (aujourd'hui `app/(student)/student/topics/session/page.app.tsx`). Supprime
+  le 5 octobre 2026 avec son store. Details dans
+  `docs/progression-niveau-etoiles-trophees.md`, section "Ce qui reste".
 - [ ] 3.5 QcmExercise (composant QCM interactif)
 - [ ] 3.6 DragDropExercise (composant glisser-deposer)
 - [ ] 3.7 MatchExercise (composant relier)
