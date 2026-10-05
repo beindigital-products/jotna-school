@@ -1,15 +1,21 @@
 "use client";
 
+import type { ComponentType, SVGProps } from "react";
 import { motion } from "framer-motion";
-import { Target, Trophy, UserRound, type LucideIcon } from "lucide-react";
 
+import {
+  LoginTicketIcon,
+  SubjectsIcon,
+  TrophyRibbonIcon,
+} from "./landing-icons";
 import { Section } from "./section";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion-wrapper";
 
 type Step = {
   number: string;
-  icon: LucideIcon;
-  iconColor: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  iconGradient: string;
+  iconShadow: string;
   title: string;
   description: string;
   accent: string;
@@ -18,8 +24,9 @@ type Step = {
 const STEPS: Step[] = [
   {
     number: "01",
-    icon: UserRound,
-    iconColor: "bg-amber-100 text-amber-700",
+    icon: LoginTicketIcon,
+    iconGradient: "bg-gradient-to-br from-amber-400 to-orange-500",
+    iconShadow: "shadow-[0_8px_20px_-8px_rgba(245,158,11,0.55)]",
     title: "Connecte-toi avec ton code",
     description:
       "L'école remet à chaque élève son code de connexion. Un seul compte parent suffit pour suivre plusieurs enfants.",
@@ -27,8 +34,9 @@ const STEPS: Step[] = [
   },
   {
     number: "02",
-    icon: Target,
-    iconColor: "bg-lime-100 text-lime-700",
+    icon: SubjectsIcon,
+    iconGradient: "bg-gradient-to-br from-lime-500 to-emerald-600",
+    iconShadow: "shadow-[0_8px_20px_-8px_rgba(101,163,13,0.55)]",
     title: "Choisis une matière",
     description:
       "Maths, français, sciences… chaque matière contient des chapitres adaptés au niveau scolaire.",
@@ -36,8 +44,9 @@ const STEPS: Step[] = [
   },
   {
     number: "03",
-    icon: Trophy,
-    iconColor: "bg-orange-100 text-orange-700",
+    icon: TrophyRibbonIcon,
+    iconGradient: "bg-gradient-to-br from-orange-400 to-amber-600",
+    iconShadow: "shadow-[0_8px_20px_-8px_rgba(249,115,22,0.55)]",
     title: "Progresse et gagne des badges",
     description:
       "Chaque exercice réussi fait grimper la jauge de maîtrise et débloque des récompenses.",
@@ -89,7 +98,7 @@ export function HowItWorks() {
                 </span>
                 <span
                   aria-hidden
-                  className={`flex size-11 items-center justify-center rounded-2xl ${step.iconColor}`}
+                  className={`flex size-11 items-center justify-center rounded-2xl text-white ${step.iconGradient} ${step.iconShadow}`}
                 >
                   <Icon className="size-5" />
                 </span>
