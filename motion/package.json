@@ -1,0 +1,30 @@
+{
+  "name": "jotna-motion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Motion design de présentation de Jotna School (Remotion)",
+  "scripts": {
+    "sync-assets": "node scripts/sync-assets.mjs",
+    "prestudio": "npm run sync-assets",
+    "studio": "remotion studio src/index.ts",
+    "prerender": "npm run sync-assets",
+    "render": "remotion render src/index.ts JotnaPresentation out/jotna-school-presentation.mp4 --codec=h264 --crf=17",
+    "still": "remotion still src/index.ts JotnaPresentation out/still.png",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.532",
+    "@remotion/google-fonts": "4.0.532",
+    "@remotion/transitions": "4.0.532",
+    "@remotion/paths": "4.0.532",
+    "@remotion/shapes": "4.0.532",
+    "lucide-react": "^1.8.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "remotion": "4.0.532"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}
