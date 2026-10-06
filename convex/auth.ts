@@ -2,50 +2,55 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import { ResendOTPPasswordReset } from "./ResendOTPPasswordReset";
 import { decideProvisionedRole } from "./roleRules";
+import { decideSelfSignupRole } from "./openAccessRules";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({
       profile(params) {
-        // L'INSCRIPTION LIBRE N'EXISTE PLUS — Jotna est vendu aux écoles.
+        // INSCRIPTION LIBRE POUR LES ADULTES — écoles, professeurs, parents.
+        // Les règles du modèle vivent dans `convex/openAccessRules.ts`.
         //
-        // Un compte se pose désormais par PROVISIONNEMENT, jamais par
-        // formulaire ouvert : l'école importe ses élèves
-        // (`studentImportRun`), un administrateur crée le personnel
-        // (`schools.provisionStaffAccount`), et un parent n'entre qu'avec un
-        // code émis par l'école pour SON enfant
-        // (`parentLink.signUpWithCode`). Ces trois chemins appellent
-        // `createAccount` côté serveur, après leur propre contrôle.
-        //
-        // POURQUOI LE REFUS EST ICI ET PAS DANS `createOrUpdateUser`. Ce
-        // callback-là est commun : `createAccount` le traverse aussi, donc y
-        // refuser toute création fermerait les trois chemins légitimes en
-        // même temps que celui-ci. `profile()` en revanche n'est appelé que
-        // par les flux du fournisseur `Password` lui-même — vérifié dans
+        // `profile()` n'est appelé que par les flux du fournisseur `Password`
+        // lui-même — vérifié dans
         // `node_modules/@convex-dev/auth/dist/providers/Password.js`, qui
         // fait `config.profile?.(params, ctx)` avant d'aiguiller sur `flow`.
-        // Le provisionnement passe `profile` directement à `createAccount`
-        // et ne vient donc jamais ici.
+        // Les comptes créés côté serveur (`createAccount` : import d'école,
+        // comptes élèves créés par un parent ou un professeur, personnel
+        // créé par un admin) ne passent jamais ici. Le contrôle du rôle d'un
+        // formulaire public se fait donc ICI, et seulement pour `signUp`.
         //
-        // ON LIT `params.flow` PLUTÔT QUE DE TOUT REFUSER, parce que la même
-        // fonction sert `signIn`, `reset` et `reset-verification` : lever
-        // sans condition verrouillerait dehors les comptes existants, y
-        // compris leur récupération de mot de passe.
+        // LE RÔLE EST FILTRÉ, PAS RECOPIÉ. Le client poste le rôle qu'il veut ;
+        // seuls `parent`, `professeur` et `directeur` passent. Un compte
+        // `student` ne naît jamais d'un formulaire public : un enfant n'a pas
+        // d'adresse, et son compte appartient à l'adulte qui l'a créé. Un
+        // compte `admin` non plus, jamais.
+        //
+        // UN PROFESSEUR OU UN DIRECTEUR AUTO-INSCRIT N'A ACCÈS QU'À CE QU'IL
+        // CRÉE. `callerIsStaff` le reconnaît comme personnel, ce qui ouvre la
+        // lecture du curriculum (déjà ouvert à tout élève) ; tout ce qui touche
+        // un élève passe par une garde de LIEN (`callerMayReadStudent`,
+        // `classrooms.ts`) : sa classe, son école.
+        let role = (params.role as string) ?? "student";
         if (params.flow === "signUp") {
-          throw new Error(
-            "La création de compte est réservée aux écoles. " +
-              "Demandez vos identifiants à votre établissement.",
-          );
+          const decided = decideSelfSignupRole(params.role);
+          if (decided === null) {
+            throw new Error(
+              "Choisissez un type de compte : école, professeur ou parent. " +
+                "Les comptes élèves sont créés par un parent ou un professeur.",
+            );
+          }
+          role = decided;
         }
 
         const rawEmail = (params.email as string) ?? "";
         return {
           email: rawEmail.trim().toLowerCase(),
-          name: (params.name as string) ?? "",
+          name: ((params.name as string) ?? "").trim(),
           // Pass role through so createOrUpdateUser can read it.
           // This field is NOT stored on the users table -- we strip it
           // out in createOrUpdateUser and store it on the profiles table.
-          role: (params.role as string) ?? "student",
+          role,
         };
       },
       validatePasswordRequirements(password: string) {

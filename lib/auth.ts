@@ -10,7 +10,7 @@
  *   import { register, login, logout } from "@/lib/auth";
  *
  *   const { signIn, signOut } = useAuthActions();
- *   await register(signIn, { email, password, name, role: "student" });
+ *   await register(signIn, { email, password, name, role: "parent" });
  *   await login(signIn, { email, password });
  *   await logout(signOut);
  */
@@ -30,7 +30,9 @@ export interface RegisterParams {
   email: string;
   password: string;
   name: string;
-  role: "parent" | "student" | "professeur";
+  // Les seuls rôles qu'un formulaire public crée (`convex/openAccessRules.ts`).
+  // Un compte élève est créé par un parent ou un professeur.
+  role: "parent" | "professeur" | "directeur";
 }
 
 /**
@@ -99,7 +101,7 @@ export function clearConvexAuthTokens(): void {
 
 // ── Role-based home path ────────────────────────────────────────────────────
 
-export type Role = "admin" | "parent" | "student" | "professeur";
+export type Role = "admin" | "parent" | "student" | "professeur" | "directeur";
 
 /**
  * Returns the default landing path for a given profile role.
@@ -113,6 +115,8 @@ export function roleHomePath(role: Role | null | undefined): string {
       return "/parent/dashboard";
     case "professeur":
       return "/teacher/dashboard";
+    case "directeur":
+      return "/school/dashboard";
     case "student":
       // Sur le site web, l'espace élève n'existe pas (`lib/build-target.ts`).
       return HAS_STUDENT_SPACE ? "/student/home" : STUDENT_APP_ONLY_PATH;

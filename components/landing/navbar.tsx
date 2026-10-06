@@ -113,16 +113,16 @@ export function Navbar() {
           >
             Se connecter
           </Link>
-          <a
-            href="#liste-attente"
+          <Link
+            href="/register"
             className="group hidden items-center gap-2 whitespace-nowrap rounded-full bg-gray-900 px-5 py-2.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] lg:inline-flex"
           >
-            Liste d&apos;attente
+            Créer un compte
             <ArrowRight
               className="size-4 transition-transform group-hover:translate-x-0.5"
               aria-hidden
             />
-          </a>
+          </Link>
 
           {/* Mobile Menu */}
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
@@ -173,17 +173,17 @@ export function Navbar() {
                   >
                     Se connecter
                   </Link>
-                  <a
-                    href="#liste-attente"
+                  <Link
+                    href="/register"
                     onClick={closeMenu}
                     className="group flex h-12 items-center justify-center gap-2 rounded-xl bg-gray-900 text-base font-semibold text-white shadow-sm transition-transform active:scale-[0.98]"
                   >
-                    Rejoindre la liste d&apos;attente
+                    Créer un compte gratuit
                     <ArrowRight
                       className="size-4 transition-transform group-hover:translate-x-0.5"
                       aria-hidden
                     />
-                  </a>
+                  </Link>
                 </div>
               </div>
             </SheetContent>

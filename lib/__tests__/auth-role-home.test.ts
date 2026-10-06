@@ -17,9 +17,10 @@ describe("roleHomePath selon la cible de construction", () => {
     expect(roleHomePath("student")).toBe("/eleve");
   });
 
-  it("sur le site web, garde les trois tableaux de bord", async () => {
+  it("sur le site web, garde les quatre tableaux de bord", async () => {
     const roleHomePath = await loadRoleHomePath("web");
     expect(roleHomePath("admin")).toBe("/admin/dashboard");
+    expect(roleHomePath("directeur")).toBe("/school/dashboard");
     expect(roleHomePath("professeur")).toBe("/teacher/dashboard");
     expect(roleHomePath("parent")).toBe("/parent/dashboard");
   });

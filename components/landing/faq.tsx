@@ -7,8 +7,16 @@ import { Section } from "./section";
 
 const ITEMS = [
   {
-    q: "Quand l'application sera-t-elle disponible ?",
-    a: "Jotna School sera officiellement disponible à la vente à la rentrée 2027-2028. Inscrivez-vous sur la liste d'attente en bas de cette page : nous vous écrirons dès l'ouverture.",
+    q: "Combien coûte Jotna ?",
+    a: "Rien pour le moment. Écoles, professeurs et parents créent leur compte librement, et les élèves accèdent à tous les exercices de leur classe.",
+  },
+  {
+    q: "Qui crée le compte de l'enfant ?",
+    a: "Son parent, depuis son espace parent, ou son professeur, depuis l'une de ses classes. L'enfant reçoit un code de connexion qu'il tape dans l'application.",
+  },
+  {
+    q: "Comment mon enfant rejoint-il la classe de son professeur ?",
+    a: "Dans votre espace parent, chaque enfant a un code élève (il commence par ELV-). Donnez-le au professeur : il le saisit, et votre enfant apparaît dans sa classe. Vous gardez l'accès à son suivi.",
   },
   {
     q: "À quel âge s'adresse Jotna ?",
@@ -16,7 +24,7 @@ const ITEMS = [
   },
   {
     q: "Mon enfant a besoin d'une adresse email ?",
-    a: "Non. Son école lui remet un billet avec un code personnel, et ce code suffit pour se connecter à l'application.",
+    a: "Non. L'adulte qui crée son compte reçoit un code de connexion personnel, et ce code suffit pour se connecter à l'application.",
   },
   {
     q: "Comment sont conçus les exercices ?",

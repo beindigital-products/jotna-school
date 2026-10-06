@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
-import { Users, BookOpen, Trophy, ArrowRight, UserCircle, LinkIcon, Plus } from "lucide-react";
+import { Users, BookOpen, Trophy, ArrowRight, UserCircle, Plus } from "lucide-react";
 import type { Id } from "@/convex/_generated/dataModel";
 
 export default function ParentDashboardPage() {
@@ -59,42 +59,30 @@ export default function ParentDashboardPage() {
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Mes enfants</h2>
-          <div className="flex gap-3">
-            <Link
-              href="/parent/children/link"
-              className="text-sm font-medium text-teal-600 hover:text-teal-700"
-            >
-              Lier un enfant existant
-            </Link>
-            <Link
-              href="/parent/children/code"
-              className="text-sm font-medium text-teal-600 hover:text-teal-700"
-            >
-              Saisir un code ecole
-            </Link>
-          </div>
+          <Link
+            href="/parent/children"
+            className="text-sm font-medium text-teal-600 hover:text-teal-700"
+          >
+            Gérer mes enfants
+          </Link>
         </div>
 
         {!children || children.length === 0 ? (
           <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
             <Users className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-500">
-              Aucun enfant ajouté pour le moment.
+            <p className="mt-2 font-medium text-gray-700">
+              Première étape : créez le compte de votre enfant.
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              Il recevra un code pour se connecter dans l&apos;application.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               <Link
-                href="/parent/children/link"
-                className="inline-flex items-center gap-2 rounded-lg border border-teal-600 px-4 py-2 text-sm font-medium text-teal-600 hover:bg-teal-50"
-              >
-                <LinkIcon className="h-4 w-4" />
-                Lier un enfant existant
-              </Link>
-              <Link
-                href="/parent/children/code"
+                href="/parent/children"
                 className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
               >
                 <Plus className="h-4 w-4" />
-                Saisir un code ecole
+                Ajouter un enfant
               </Link>
             </div>
           </div>

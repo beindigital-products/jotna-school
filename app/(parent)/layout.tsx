@@ -53,6 +53,8 @@ export default function ParentLayout({
     if (profile === undefined || profile === null) return;
     if (profile.role === "professeur") {
       router.replace("/teacher/dashboard");
+    } else if (profile.role === "directeur") {
+      router.replace(roleHomePath("directeur"));
     } else if (profile.role === "admin") {
       router.replace("/admin/dashboard");
     } else if (profile.role === "student") {

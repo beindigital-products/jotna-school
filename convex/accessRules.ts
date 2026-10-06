@@ -11,6 +11,24 @@
 /** Délai de grâce sur tranche échue : 21 jours (spec §8.5). */
 export const PAST_DUE_GRACE_MS = 21 * 24 * 60 * 60 * 1000;
 
+/**
+ * ACCÈS LIBRE — l'interrupteur du paywall.
+ *
+ * `true` : tout élève qui a une classe (niveau) entre, avec ou sans école, avec
+ * ou sans abonnement. C'est le mode de lancement : écoles, professeurs et
+ * parents s'inscrivent seuls et créent les comptes des enfants
+ * (`convex/openAccessRules.ts`).
+ *
+ * `false` : retour au paywall des écoles, branche par branche, tel qu'il est
+ * écrit plus bas et testé. Rien d'autre n'est à changer pour le rallumer, mais
+ * les enfants créés par un parent seul (sans école) seront alors refusés
+ * `no_school` : il faudra leur ouvrir une voie payante avant de basculer.
+ */
+export const FREE_ACCESS = true;
+
+/** Fin de droit affichée en accès libre : jamais atteinte. */
+export const FREE_ACCESS_ENDS_AT = Number.MAX_SAFE_INTEGER;
+
 export type AccessReason =
   | "not_authenticated"
   | "not_student"
@@ -24,7 +42,9 @@ export type AccessReason =
   | "cancelled";
 
 export type AccessState =
-  | { ok: true; schoolId: string; endsAt: number }
+  // `schoolId` est `null` en accès libre pour un enfant qu'aucune classe
+  // d'école n'a encore accueilli (créé par un parent, par exemple).
+  | { ok: true; schoolId: string | null; endsAt: number }
   | { ok: false; reason: AccessReason };
 
 export type SubscriptionStatus =
@@ -52,6 +72,12 @@ export interface AccessInput {
   subscription: { status: SubscriptionStatus; endsAt: number } | null;
   /** `dueAt` de la tranche échue la plus ancienne. Lu seulement si past_due. */
   oldestOverdueDueAt: number | null;
+  /**
+   * Vrai quand `FREE_ACCESS` est allumé. Passé en entrée plutôt que lu ici
+   * pour que les tests du paywall restent ceux du paywall. En accès libre,
+   * `hasClass` est lu même sans inscription.
+   */
+  freeAccess?: boolean;
 }
 
 export function decideAccess(input: AccessInput): AccessState {
@@ -60,6 +86,19 @@ export function decideAccess(input: AccessInput): AccessState {
   }
   if (input.role !== "student") {
     return { ok: false, reason: "not_student" };
+  }
+
+  // ACCÈS LIBRE : seule la classe compte. Sans elle, on ne sait pas quels
+  // exercices servir (même raison que le refus `no_class` plus bas). Le
+  // parent la choisit à la création du compte, le professeur la pose en
+  // ajoutant l'enfant à sa classe.
+  if (input.freeAccess) {
+    if (!input.hasClass) return { ok: false, reason: "no_class" };
+    return {
+      ok: true,
+      schoolId: input.activeMembership?.schoolId ?? null,
+      endsAt: FREE_ACCESS_ENDS_AT,
+    };
   }
 
   if (input.activeMembership === null) {
