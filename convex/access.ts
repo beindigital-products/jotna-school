@@ -12,6 +12,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 // masquait une divergence éventuelle au lieu de la faire échouer.
 import {
   decideAccess,
+  FREE_ACCESS,
   topicOpenTo,
   type AccessInput,
   type AccessState,
@@ -194,6 +195,27 @@ export async function loadAccessInput(
 
   if (!profile) return empty;
   if (profile.role !== "student") return { ...empty, role: profile.role };
+
+  // ACCÈS LIBRE (`accessRules.FREE_ACCESS`) : ni abonnement ni tranche à
+  // lire. L'inscription active n'est lue que pour rendre l'école à qui en a
+  // une (modules activés par l'école, `modules.ts`).
+  if (FREE_ACCESS) {
+    const activeMembership = await ctx.db
+      .query("schoolMemberships")
+      .withIndex("by_student_status", (q) =>
+        q.eq("studentId", profile._id).eq("status", "active"),
+      )
+      .first();
+    return {
+      ...empty,
+      role: "student",
+      freeAccess: true,
+      hasClass: !!profile.class && !isHiddenClass(profile.class),
+      activeMembership: activeMembership
+        ? { schoolId: activeMembership.schoolId as string }
+        : null,
+    };
+  }
 
   const active = await ctx.db
     .query("schoolMemberships")
@@ -685,7 +707,7 @@ export async function callerMayReadStudent(
 export async function requireAccess(
   ctx: QueryCtx | MutationCtx,
   profile: Doc<"profiles"> | null,
-): Promise<{ schoolId: string; endsAt: number }> {
+): Promise<{ schoolId: string | null; endsAt: number }> {
   const state = await checkAccess(ctx, profile);
   if (!state.ok) {
     throw new ConvexError({ code: "ACCESS_DENIED", reason: state.reason });

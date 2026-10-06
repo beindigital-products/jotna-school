@@ -37,6 +37,7 @@ const PERSONAS: Persona[] = [
     bulletColor: "bg-lime-500",
     featured: true,
     points: [
+      "Créez le compte de chaque enfant en un instant",
       "Tableau de bord pour plusieurs enfants",
       "Rapports clairs par chapitre",
       "Notifications quand un badge est gagné",
@@ -51,6 +52,8 @@ const PERSONAS: Persona[] = [
     iconShadow: "shadow-[0_10px_24px_-8px_rgba(249,115,22,0.55)]",
     bulletColor: "bg-orange-400",
     points: [
+      "Vos classes créées en quelques clics",
+      "Un élève ajouté avec son code élève",
       "Suivi individuel des élèves",
       "Détection des difficultés récurrentes",
       "Contenus validés avant publication",

@@ -117,6 +117,8 @@ export async function moduleAccessForProfile(
 
   const access = await checkAccess(ctx, profile);
   if (!access.ok) return { enabled: false, reason: "no_access" };
+  // Accès libre : un enfant sans école n'a aucun module allumé par une école.
+  if (access.schoolId === null) return { enabled: false, reason: "not_enabled" };
 
   const enabled = await schoolModuleEnabled(
     ctx,

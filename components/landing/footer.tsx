@@ -16,14 +16,15 @@ const COLUMNS: FooterColumn[] = [
       { label: "Exercices", href: "/#exercices" },
       { label: "Gamification", href: "/#gamification" },
       { label: "FAQ", href: "/#faq" },
-      { label: "Liste d'attente", href: "/#liste-attente" },
+      { label: "Commencer", href: "/#commencer" },
     ],
   },
   {
     title: "Compte",
     links: [
       { label: "Se connecter", href: "/login" },
-      { label: "Activer un code école", href: "/register" },
+      { label: "Créer un compte", href: "/register" },
+      { label: "J'ai un code d'école", href: "/register/code" },
       { label: "Espace parent", href: "/parent/dashboard" },
       { label: "Espace professeur", href: "/teacher/dashboard" },
     ],

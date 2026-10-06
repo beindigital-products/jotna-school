@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   decideAccess,
+  FREE_ACCESS_ENDS_AT,
   PAST_DUE_GRACE_MS,
   topicOpenTo,
   type AccessInput,
@@ -228,5 +229,37 @@ describe("topicOpenTo — la classe de l'élève", () => {
     for (const role of ["professeur", "admin"]) {
       expect(topicOpenTo({ role, studentClass: null }, "CE2")).toBe(true);
     }
+  });
+});
+
+describe("decideAccess — accès libre", () => {
+  const free = (overrides: Partial<AccessInput> = {}) =>
+    base({ freeAccess: true, subscription: null, ...overrides });
+
+  it("ouvre l'accès sans école ni abonnement quand l'élève a une classe", () => {
+    expect(decideAccess(free({ activeMembership: null }))).toEqual({
+      ok: true,
+      schoolId: null,
+      endsAt: FREE_ACCESS_ENDS_AT,
+    });
+  });
+
+  it("rend l'école de l'inscription active", () => {
+    const state = decideAccess(free());
+    expect(state.ok && state.schoolId).toBe("school_1");
+  });
+
+  it("refuse toujours un élève sans classe", () => {
+    expect(decideAccess(free({ hasClass: false }))).toEqual({
+      ok: false,
+      reason: "no_class",
+    });
+  });
+
+  it("refuse toujours un non-élève", () => {
+    expect(decideAccess(free({ role: "parent" }))).toEqual({
+      ok: false,
+      reason: "not_student",
+    });
   });
 });

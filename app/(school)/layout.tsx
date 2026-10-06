@@ -5,13 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import {
-  LayoutDashboard,
-  School,
-  Users,
-  FileBarChart,
-  Settings,
-} from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 
 import { Brand } from "@/components/landing/brand";
 import {
@@ -30,21 +24,17 @@ import {
 } from "@/components/ui/sidebar";
 import { UserMenu } from "@/components/ui/user-menu";
 import { RoleGate } from "@/components/RoleGate";
-import { roleHomePath } from "@/lib/auth";
+import { roleHomePath, type Role } from "@/lib/auth";
 
 const sidebarLinks = [
-  {
-    href: "/teacher/dashboard",
-    label: "Tableau de bord",
-    icon: LayoutDashboard,
-  },
-  { href: "/teacher/classes", label: "Mes classes", icon: School },
-  { href: "/teacher/students", label: "Mes élèves", icon: Users },
-  { href: "/teacher/reports", label: "Rapports", icon: FileBarChart },
-  { href: "/teacher/settings", label: "Paramètres", icon: Settings },
+  { href: "/school/dashboard", label: "Mon école", icon: LayoutDashboard },
 ];
 
-export default function TeacherLayout({
+/**
+ * L'ESPACE ÉCOLE — le compte `directeur` (accès libre). Une seule page
+ * principale : le code école, les professeurs, les classes.
+ */
+export default function SchoolLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -53,34 +43,22 @@ export default function TeacherLayout({
   const router = useRouter();
   const profile = useQuery(api.profiles.getCurrentProfile);
 
-  // Role guard: redirect non-teacher users away
   useEffect(() => {
-    if (profile === undefined) return;
-    if (profile === null) return;
-    if (profile.role !== "professeur" && profile.role !== "admin") {
-      if (profile.role === "parent") {
-        router.replace("/parent/dashboard");
-      } else if (profile.role === "directeur") {
-        router.replace(roleHomePath("directeur"));
-      } else if (profile.role === "student") {
-        router.replace(roleHomePath("student"));
-      } else {
-        router.replace("/login");
-      }
+    if (!profile) return;
+    if (profile.role !== "directeur" && profile.role !== "admin") {
+      router.replace(roleHomePath(profile.role as Role));
     }
   }, [profile, router]);
 
-  // L'espace professeur, qu'un `admin` traverse pour dépanner — comme partout
-  // ailleurs dans ce dépôt.
   return (
-    <RoleGate allow={["professeur", "admin"]}>
+    <RoleGate allow={["directeur", "admin"]}>
       <SidebarProvider>
         <Sidebar>
           <SidebarHeader>
             <div className="flex items-center gap-2 px-2 py-2">
               <Brand size="sm" />
-              <span className="ml-auto rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                Professeur
+              <span className="ml-auto rounded bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
+                École
               </span>
             </div>
           </SidebarHeader>
@@ -92,16 +70,16 @@ export default function TeacherLayout({
                   {sidebarLinks.map((link) => {
                     const isActive =
                       pathname === link.href ||
-                      pathname.startsWith(`${link.href}/`);
+                      pathname.startsWith("/school/");
                     const Icon = link.icon;
                     return (
                       <SidebarMenuItem key={link.href}>
                         <SidebarMenuButton
                           isActive={isActive}
                           render={<Link href={link.href} />}
-                          className={isActive ? "bg-amber-50 text-amber-800 font-semibold border-r-2 border-amber-600 rounded-none transition-all duration-200" : ""}
+                          className={isActive ? "bg-sky-50 text-sky-800 font-semibold border-r-2 border-sky-600 rounded-none transition-all duration-200" : ""}
                         >
-                          <Icon className={isActive ? "text-amber-600" : ""} />
+                          <Icon className={isActive ? "text-sky-600" : ""} />
                           <span>{link.label}</span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -114,9 +92,9 @@ export default function TeacherLayout({
 
           <SidebarFooter>
             <UserMenu
-              profileHref="/teacher/settings"
-              settingsHref="/teacher/settings"
-              fallbackLabel="Professeur"
+              profileHref="/school/dashboard"
+              settingsHref="/school/dashboard"
+              fallbackLabel="École"
             />
           </SidebarFooter>
         </Sidebar>
@@ -124,9 +102,7 @@ export default function TeacherLayout({
         <SidebarInset>
           <header className="flex h-16 items-center gap-2 border-b bg-background px-4">
             <SidebarTrigger />
-            <div className="text-sm font-medium text-gray-500">
-              Espace professeur
-            </div>
+            <div className="text-sm font-medium text-gray-500">Espace école</div>
           </header>
           <main className="flex-1 p-4 lg:p-8">{children}</main>
         </SidebarInset>

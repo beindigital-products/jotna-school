@@ -21,7 +21,20 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await signIn("password", { email, password, flow: "signIn" });
+      // UN CODE DE CONNEXION SE TAPE EN MINUSCULES AUSSI. L'identifiant est
+      // mis en minuscules par le serveur, mais le mot de passe d'un élève est
+      // le code tel qu'imprimé, en MAJUSCULES (`studentAccounts.createStudent`,
+      // `studentImportRun`). Un enfant qui tape « awa-4821 » deux fois doit
+      // entrer : quand l'identifiant n'est pas une adresse et que le mot de
+      // passe est le même code, on l'envoie en majuscules.
+      const isCode = !email.includes("@");
+      const samePassword =
+        isCode && password.trim().toUpperCase() === email.trim().toUpperCase();
+      await signIn("password", {
+        email,
+        password: samePassword ? password.trim().toUpperCase() : password,
+        flow: "signIn",
+      });
   // `router.replace` ET NON `window.location.href` : dans l'application
   // Capacitor, une navigation de DOCUMENT recharge toujours la racine
   // `index.html`, quel que soit le chemin demandé
@@ -122,14 +135,10 @@ export default function LoginPage() {
       </button>
 
       <p className="text-center text-sm text-gray-600">
-        Parent avec un code de l&apos;école ?{" "}
+        Pas encore de compte ?{" "}
         <Link href="/register" className="font-medium text-amber-700 hover:underline">
-          Activer votre espace
+          Créer un compte gratuit
         </Link>
-      </p>
-      <p className="text-center text-xs text-gray-500">
-        Élèves et personnel : vos identifiants vous sont remis par votre
-        établissement.
       </p>
     </form>
   );
