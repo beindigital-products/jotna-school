@@ -38,7 +38,7 @@ import { isReadingLearnerClass } from "../curriculum";
 import { moduleAccessForProfile } from "../modules";
 import { resolveSpeech } from "../arabic/speechText";
 import { speakablePrompt } from "../voice/speakable";
-import { clipCacheKey, synthesize, voiceConfig } from "../voice/elevenlabs";
+import { clipCacheKey, synthesize, voiceConfig, voiceFor } from "../voice/elevenlabs";
 import { clipRequestKey, clipRequestValidator, type ClipResult } from "./contract";
 
 /** Une synthèse prend une à deux secondes : douze tiennent largement dans un appel. */
@@ -165,10 +165,13 @@ export const prepareClips = action({
       }));
     }
 
-    const voiceFor = (lang: "fr" | "ar") => (lang === "fr" ? config.frVoiceId : config.voiceId);
-    const cacheKeys = planned.clips.map((clip) =>
-      clip.ok ? clipCacheKey(voiceFor(clip.lang), config.ttsModel, clip.text) : null,
-    );
+    // Même voix, même modèle et donc même clé que le lecteur en ligne
+    // (`voice/exercisePrompt.ts`, `arabic/voice.ts`) : le cache est partagé.
+    const cacheKeys = planned.clips.map((clip) => {
+      if (!clip.ok) return null;
+      const voice = voiceFor(config, clip.lang);
+      return clipCacheKey(voice.voiceId, voice.modelId, clip.text);
+    });
     const found: Record<string, { storageId: Id<"_storage">; url: string }> = await ctx.runQuery(
       internal.offline.voice.findMany,
       { cacheKeys: cacheKeys.filter((k): k is string => k !== null) },
@@ -195,10 +198,10 @@ export const prepareClips = action({
       }
 
       synthesized += 1;
-      const voiceId = voiceFor(clip.lang);
+      const voice = voiceFor(config, clip.lang);
       let audio: Blob;
       try {
-        audio = await synthesize(clip.text, config, voiceId);
+        audio = await synthesize(clip.text, config, voice);
       } catch (error) {
         console.error("[hors-ligne] synthèse vocale en échec", error);
         results.push({ key: clip.key, status: "pending", reason: "provider_error" });
@@ -208,8 +211,8 @@ export const prepareClips = action({
       const saved: { storageId: Id<"_storage"> } = await ctx.runMutation(internal.arabic.db.saveClip, {
         cacheKey,
         text: clip.text,
-        voiceId,
-        modelId: config.ttsModel,
+        voiceId: voice.voiceId,
+        modelId: voice.modelId,
         storageId,
         bytes: audio.size,
       });
