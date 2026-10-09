@@ -14,6 +14,7 @@ const COLUMNS: FooterColumn[] = [
     links: [
       { label: "Comment ça marche", href: "/#comment" },
       { label: "Exercices", href: "/#exercices" },
+      { label: "Matières", href: "/#matieres" },
       { label: "Gamification", href: "/#gamification" },
       { label: "FAQ", href: "/#faq" },
       { label: "Commencer", href: "/#commencer" },

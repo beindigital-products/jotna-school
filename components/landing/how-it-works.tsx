@@ -20,7 +20,7 @@ type Step = {
   description: string;
   accent: string;
   audience: string;
-  where: string;
+  note?: string;
 };
 
 const STEPS: Step[] = [
@@ -29,24 +29,22 @@ const STEPS: Step[] = [
     icon: ParentHeartIcon,
     iconGradient: "bg-gradient-to-br from-amber-400 to-orange-500",
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(245,158,11,0.55)]",
-    title: "Créez votre compte sur le site",
+    title: "Créez votre compte",
     description:
-      "Inscrivez-vous gratuitement sur le site web, en tant que parent ou professeur. Un seul compte parent suffit pour suivre plusieurs enfants.",
+      "L'inscription est gratuite. Une école inscrit son établissement et partage son code école avec ses professeurs. Un professeur crée ses classes. Un parent crée son espace : un seul compte suffit pour plusieurs enfants.",
     accent: "bg-amber-50 text-amber-800 ring-amber-200",
-    audience: "Parent ou professeur",
-    where: "Sur le site web",
+    audience: "École, professeur ou parent",
   },
   {
     number: "02",
     icon: LoginTicketIcon,
     iconGradient: "bg-gradient-to-br from-lime-500 to-emerald-600",
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(101,163,13,0.55)]",
-    title: "Créez le compte de l'enfant",
+    title: "Créez le compte de l'élève",
     description:
-      "Depuis votre espace, indiquez le nom et la classe de l'enfant. Jotna School génère son code de connexion : donnez-le-lui.",
+      "Indiquez son nom et sa classe : Jotna School génère son code de connexion, à lui remettre. Dans une école, le directeur confie chaque classe à un professeur.",
     accent: "bg-lime-50 text-lime-800 ring-lime-200",
-    audience: "Parent ou professeur",
-    where: "Sur le site web",
+    audience: "Professeur ou parent",
   },
   {
     number: "03",
@@ -55,10 +53,10 @@ const STEPS: Step[] = [
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(249,115,22,0.55)]",
     title: "Connecte-toi et apprends",
     description:
-      "Ouvre l'application Jotna School, saisis ton code et fais les exercices de ta classe. Chaque réussite fait grimper ta jauge et débloque des badges.",
+      "Rends-toi sur le site Jotna School, saisis ton code et fais les exercices de ta classe. Chaque réussite fait grimper ta jauge et débloque des badges.",
     accent: "bg-orange-50 text-orange-800 ring-orange-200",
     audience: "Élève",
-    where: "Dans l'application",
+    note: "Application iOS et Android : à venir.",
   },
 ];
 
@@ -68,7 +66,7 @@ export function HowItWorks() {
       id="comment"
       eyebrow="Comment ça marche"
       title="Démarrer en 3 étapes."
-      description="Les étapes 1 et 2 sont pour le parent ou le professeur, sur le site web. L'étape 3 est pour l'élève, dans l'application sur tablette ou téléphone."
+      description="Les étapes 1 et 2 s'adressent aux adultes : école, professeur ou parent. L'étape 3 s'adresse à l'élève. Tout se fait sur le site web, depuis un ordinateur, une tablette ou un téléphone."
     >
       <div className="relative">
         <svg
@@ -113,8 +111,6 @@ export function HowItWorks() {
               </div>
               <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Pour : <span className="text-gray-900">{step.audience}</span>
-                <span aria-hidden> · </span>
-                {step.where}
               </p>
               <h3 className="mt-2 text-xl font-extrabold text-gray-900">
                 {step.title}
@@ -122,13 +118,18 @@ export function HowItWorks() {
               <p className="mt-2 text-sm leading-6 text-gray-600">
                 {step.description}
               </p>
+              {step.note ? (
+                <p className="mt-3 text-xs font-medium text-gray-500">
+                  {step.note}
+                </p>
+              ) : null}
             </StaggerItem>
           );
         })}
         </StaggerContainer>
         <p className="relative z-10 mt-6 text-center text-sm text-gray-600">
-          Ensuite, le parent ou le professeur suit les progrès de l'élève
-          depuis le site web.
+          Ensuite, l&apos;école, le professeur et le parent suivent les progrès de
+          l&apos;élève depuis leur espace.
         </p>
       </div>
     </Section>
