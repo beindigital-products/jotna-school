@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useReducedMotion } from "framer-motion";
 import { useEffect, useRef } from "react";
-import { useIsNativeApp } from "@/hooks/use-native-app";
 
 /**
  * Pio — LA mascotte de Jotna : le lionceau explorateur à la loupe.
@@ -12,9 +11,9 @@ import { useIsNativeApp } from "@/hooks/use-native-app";
  * sur la branche de juillet, détouré en huit poses dans
  * `public/images/pio/*.png`.
  *
- * DEPUIS SEPTEMBRE 2026, PIO EST UNE VIDÉO DANS L'APPLICATION MOBILE. Sur
- * iOS et Android (Capacitor), chaque pose est un clip en boucle
- * de cinq secondes, généré sur OpenArt (Kling 3 Omni, image vers vidéo, la
+ * DEPUIS SEPTEMBRE 2026, PIO EST UNE VIDÉO, dans l'application comme sur le
+ * web (depuis le 9 octobre 2026, l'espace élève est le même partout). Chaque
+ * pose est un clip en boucle de cinq secondes, généré sur OpenArt (Kling 3 Omni, image vers vidéo, la
  * pose en première et en dernière image pour que la boucle soit invisible)
  * à partir de la pose PNG posée sur un fond bleu uni, puis détouré et encodé
  * avec canal alpha par `scripts/pio-encode.sh` :
@@ -26,10 +25,7 @@ import { useIsNativeApp } from "@/hooks/use-native-app";
  * Le webview prend la première source qu'il sait lire ; le PNG de la pose
  * reste l'affiche (`poster`) le temps du chargement.
  *
- * SUR LE WEB, PIO EST L'IMAGE FIXE DE LA POSE. Le propriétaire a tranché :
- * les animations sont pour l'application mobile, le site n'en a pas besoin,
- * et 17 Mo de clips n'ont rien à faire dans une page web. L'image fixe sert
- * aussi de repli dans l'application quand l'enfant a demandé moins de
+ * L'IMAGE FIXE DE LA POSE sert de repli quand l'enfant a demandé moins de
  * mouvement (`prefers-reduced-motion`) ou quand l'appelant passe
  * `animated={false}` (les dialogs, pour ne pas rivaliser avec leur propre
  * entrée).
@@ -229,9 +225,8 @@ export function Pio({
   priority = false,
 }: PioProps) {
   const reducedMotion = useReducedMotion();
-  const isNativeApp = useIsNativeApp();
   const width = Math.round(size * ASPECT);
-  const playing = isNativeApp && animated && !reducedMotion;
+  const playing = animated && !reducedMotion;
   const pose = resolvePose(outfit, state);
 
   return (

@@ -26,7 +26,7 @@
 - [ ] 3.3 Page thematique (exercices verrouilles/debloques)
 - [x] ~~3.4 ExercisePlayer (orchestrateur de session)~~ abandonne : plus monte
   depuis la PR #8 (29 avril 2026), qui l'a remplace par la session de palier
-  (aujourd'hui `app/(student)/student/topics/session/page.app.tsx`). Supprime
+  (aujourd'hui `app/(student)/student/topics/session/page.tsx`). Supprime
   le 5 octobre 2026 avec son store. Details dans
   `docs/progression-niveau-etoiles-trophees.md`, section "Ce qui reste".
 - [ ] 3.5 QcmExercise (composant QCM interactif)

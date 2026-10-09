@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, LocateFixed, Maximize2, Minus, Plus } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { pioWalkFacing, type PioOutfit, type PioState } from "@/components/student/pio";
 import { useDeviceTier, type DeviceTier } from "@/hooks/use-device-tier";
 import { MapViewport, type CameraHandle } from "./map-viewport";
@@ -268,6 +268,12 @@ function ZoomControls({
 /** Le mode d'emploi, quelques secondes à l'arrivée, puis il s'efface. */
 function GestureHint() {
   const [visible, setVisible] = useState(true);
+  // Doigt sur téléphone et tablette, souris et molette sur ordinateur.
+  const touch = useSyncExternalStore(
+    () => () => {},
+    () => window.matchMedia("(pointer: coarse)").matches,
+    () => true,
+  );
   useEffect(() => {
     const timer = window.setTimeout(() => setVisible(false), 4500);
     return () => window.clearTimeout(timer);
@@ -283,7 +289,7 @@ function GestureHint() {
           transition={{ delay: 1.1, duration: 0.3 }}
           className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-950/80 px-4 py-2 font-display text-sm font-bold text-white shadow-lg"
         >
-          Pince pour zoomer, glisse pour bouger
+          {touch ? "Pince pour zoomer, glisse pour bouger" : "Molette pour zoomer, glisse pour bouger"}
         </motion.p>
       )}
     </AnimatePresence>

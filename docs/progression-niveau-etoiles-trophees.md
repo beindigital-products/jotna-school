@@ -210,7 +210,7 @@ tourné sur le déploiement de développement le 29 septembre 2026.
 - L'ancien flux d'exercices n'a plus de client. Son lecteur,
   `components/exercises/ExercisePlayer.tsx`, n'était plus monté depuis la
   PR #8 (29 avril 2026), qui l'a remplacé par la session de palier
-  (aujourd'hui `app/(student)/student/topics/session/page.app.tsx`). Il a été
+  (aujourd'hui `app/(student)/student/topics/session/page.tsx`). Il a été
   supprimé le 5 octobre 2026, avec `stores/exercise-session-store.ts`,
   `stores/gamification-store.ts` et `components/BadgeUnlockModal.tsx` : ces
   deux stores ne servaient qu'au lecteur et à cette modale, qu'aucun fichier

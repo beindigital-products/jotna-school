@@ -4,13 +4,11 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Deux cibles de build : le site web et l'application
+# Un seul build : site web et application
 
-Le site web ne sert que l'école, les professeurs et les parents. L'espace élève
-n'existe que dans l'application iOS/Android (Capacitor, même code). Ses fichiers
-de route portent l'extension `.app.tsx` et ne sont compilés qu'avec
-`JOTNA_TARGET=app` : `pnpm dev:app` pour le voir en local (`pnpm dev` répond 404
-sur `/student/*`). Détails : `docs/capacitor-ios.md`, `lib/build-target.ts`.
+L'espace élève (`app/(student)/**`) est servi sur le web, sur tablette et sur
+smartphone comme dans l'application iOS/Android (Capacitor, même code, même
+export statique). `pnpm dev` suffit pour le voir. Détails : `docs/capacitor-ios.md`.
 
 <!-- convex-ai-start -->
 This project uses [Convex](https://convex.dev) as its backend.

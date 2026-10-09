@@ -26,6 +26,24 @@ function LoadingScreen() {
   );
 }
 
+/**
+ * Une session vient d'être ouverte : Convex Auth a écrit le jeton, mais le
+ * serveur ne l'a pas encore confirmé. Pendant ces quelques centaines de
+ * millisecondes, `isAuthenticated` vaut `false` alors que `isLoading` aussi :
+ * sans cette garde, l'écran renvoyait l'élève sur `/login` juste après une
+ * connexion réussie (observé sur le web, plus lent que le webview natif).
+ */
+function hasStoredSession(): boolean {
+  try {
+    return Object.keys(localStorage).some((k) => k.startsWith("__convexAuthJWT_"));
+  } catch {
+    return false;
+  }
+}
+
+/** Au plus cette durée d'attente de la confirmation du serveur. */
+const CONFIRM_TIMEOUT_MS = 8000;
+
 export default function PostAuthPage() {
   const router = useRouter();
   const { isLoading, isAuthenticated } = useConvexAuth();
@@ -46,8 +64,12 @@ export default function PostAuthPage() {
     if (isLoading) return;
 
     if (!isAuthenticated) {
-      router.replace("/login");
-      return;
+      if (!hasStoredSession()) {
+        router.replace("/login");
+        return;
+      }
+      const timer = setTimeout(() => router.replace("/login"), CONFIRM_TIMEOUT_MS);
+      return () => clearTimeout(timer);
     }
 
     if (profile === undefined) return;
