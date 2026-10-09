@@ -16,7 +16,8 @@
  * retéléchargent, ils n'ont rien à faire dans une sauvegarde.
  *
  * Ce module ne tourne que dans la coque native (iOS, Android) : hors d'elle,
- * le hors-ligne reste éteint (`components/offline/offline-provider.app.tsx`).
+ * le hors-ligne reste éteint et le moteur ne se charge pas
+ * (`components/offline/offline-provider.tsx`).
  *
  * UNE ÉCRITURE NE LAISSE JAMAIS UN FICHIER À MOITIÉ ÉCRIT. On écrit à côté
  * (`.tmp`), puis on remplace ; une lecture qui trouve le fichier absent ou
@@ -25,8 +26,6 @@
 import { Capacitor } from "@capacitor/core";
 import type { Directory as DirectoryType } from "@capacitor/filesystem";
 
-// La CI cherche ce nom dans le JavaScript construit : présent dans
-// l'application, absent du site (`.github/workflows/ci.yml`).
 const ROOT = "jotna-offline";
 
 type FilesystemModule = typeof import("@capacitor/filesystem");

@@ -3,10 +3,10 @@
 /**
  * CE QUE LES ÉCRANS SAVENT DU HORS-LIGNE : le contexte, sans le moteur.
  *
- * Le fournisseur qui le remplit n'existe que dans l'application
- * (`offline-provider.app.tsx`) ; sur le site web, personne ne le remplit et
+ * Le fournisseur qui le remplit ne se charge que dans l'application
+ * (`native-offline-provider.tsx`) ; sur le web, personne ne le remplit et
  * `useOffline()` rend la valeur par défaut, éteinte. Ce fichier n'importe du
- * moteur que des TYPES : le site peut le lire sans embarquer le moteur.
+ * moteur que des TYPES : le web peut le lire sans télécharger le moteur.
  */
 
 import { createContext, useContext, useMemo, useSyncExternalStore } from "react";
@@ -17,7 +17,7 @@ import type { OfflineModel } from "@/lib/offline/model";
 export type OfflineStatus = "booting" | "none" | "ready";
 
 export type OfflineContextValue = {
-  /** Faux sur le site web : pas d'espace élève, donc pas de hors-ligne. */
+  /** Faux sur le web : l'espace élève y lit Convex, sans hors-ligne. */
   enabled: boolean;
   /** `booting` : l'appareil se relit ; `none` : personne à ouvrir ; `ready` : l'élève est là. */
   status: OfflineStatus;
@@ -39,19 +39,30 @@ export type OfflineContextValue = {
 
 export const OfflineContext = createContext<OfflineContextValue | null>(null);
 
-/** Le hors-ligne éteint : sur le site, et hors de la coque native. */
+/**
+ * Le hors-ligne éteint : sur le web. `connected` y reste vrai, car le web n'a
+ * pas de mode sans réseau : ses écrans se comportent comme en ligne.
+ */
 export const OFFLINE_OFF: OfflineContextValue = {
   enabled: false,
   status: "none",
   engine: null,
   sync: null,
-  connected: false,
+  connected: true,
   confirmed: false,
   signedOut: false,
   preparing: false,
   clips: null,
   requestSync: () => {},
   forgetCurrent: async () => {},
+};
+
+/** Dans l'application, le temps que le moteur se télécharge : on attend. */
+export const OFFLINE_BOOTING: OfflineContextValue = {
+  ...OFFLINE_OFF,
+  enabled: true,
+  status: "booting",
+  connected: false,
 };
 
 export function useOffline(): OfflineContextValue {

@@ -15,16 +15,12 @@
  * Dès que le serveur répond, c'est lui qui dit qui est connecté : un autre
  * élève prend la place, un adulte n'ouvre pas l'espace élève.
  *
- * CE FICHIER N'EXISTE QUE DANS L'APPLICATION. L'extension `.app.tsx` le
- * réserve à la construction `JOTNA_TARGET=app` (`next.config.ts`) ; le site
- * web lit à sa place `offline-provider.tsx`, qui ne fait rien. Le moteur, sa
- * synchronisation et le stockage de l'appareil ne partent donc jamais dans le
- * site. Les écrans lisent le contexte par `./context`.
- *
- * ET IL NE S'ALLUME QUE DANS LA COQUE NATIVE (iOS, Android). Ouverte dans un
- * navigateur, la même construction garde le hors-ligne éteint : rien ne se
- * télécharge, rien ne s'écrit, et l'espace élève renvoie vers `/eleve`
- * (`./student-gate.tsx`).
+ * CE FOURNISSEUR NE SE CHARGE QUE DANS LA COQUE NATIVE (iOS, Android) :
+ * `offline-provider.tsx` l'importe à la demande, quand `useNativeAppOrUnknown`
+ * reconnaît l'application. Sur le web, ni lui ni le moteur, sa
+ * synchronisation et le stockage de l'appareil ne se téléchargent : rien ne
+ * s'écrit, et les pages élève lisent Convex (`hooks/use-student-data.ts`).
+ * Les écrans lisent le contexte par `./context`.
  *
  * Le mode d'emploi complet : `docs/hors-ligne.md`.
  */
@@ -63,8 +59,9 @@ function useConvexConnected(): boolean {
   return useSyncExternalStore(subscribe, read, () => false);
 }
 
-export function OfflineProvider({ children }: { children: ReactNode }) {
-  // Faux pendant l'hydratation, puis vrai dans la coque native : tout attend.
+export function NativeOfflineProvider({ children }: { children: ReactNode }) {
+  // Monté après l'hydratation, dans la coque native seulement : toujours vrai
+  // ici. La garde reste au cas où un écran le monterait ailleurs.
   const native = useIsNativeApp();
   const convex = useConvex();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();

@@ -37,7 +37,6 @@ import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Map as MapIcon, SkipForward, Star, X } from "lucide-react";
 import { useArabicPath, useHifzState, useStudentActions } from "@/hooks/use-student-data";
-import { useOffline } from "@/components/offline/context";
 import { getLetter, type ArabicLetterKey } from "@/convex/arabic/alphabet";
 import { ARABIC_LESSONS, getLesson, type DrillKind } from "@/convex/arabic/curriculum";
 import { bravo, CONSIGNES } from "@/convex/arabic/consignes";
@@ -81,7 +80,6 @@ function ArabicLessonPageInner() {
   // leçons (un hook conditionnel n'existe pas).
   const hifz = useHifzState();
   const { recordArabicAttempt, completeArabicLesson } = useStudentActions();
-  const { engine } = useOffline();
 
   const versesMemorized = useMemo(() => {
     if (!lesson?.surahKey || !hifz) return 0;
@@ -103,17 +101,13 @@ function ArabicLessonPageInner() {
 
   // La clôture part d'elle-même à la dernière étape : demander un clic de plus
   // à un enfant qui vient de finir, c'est risquer qu'il parte sans ses étoiles.
-  // Les étoiles se calculent sur l'appareil, avec la règle du serveur
-  // (`progressRules.lessonScore`), qui les recalcule à la synchronisation.
+  // Les étoiles viennent du serveur sur le web, de l'appareil dans
+  // l'application (`useStudentActions().completeArabicLesson`).
   useEffect(() => {
     if (!atEnd || completing.current || !lesson) return;
     completing.current = true;
-    completeArabicLesson(lessonKey);
-    void Promise.resolve().then(() => {
-      const state = engine?.model().arabic?.lessonState(lessonKey);
-      setResult({ stars: Math.max(1, state?.stars ?? 1), score: state?.bestScore ?? 0 });
-    });
-  }, [atEnd, completeArabicLesson, lesson, lessonKey, engine]);
+    void completeArabicLesson(lessonKey).then(setResult);
+  }, [atEnd, completeArabicLesson, lesson, lessonKey]);
 
   const advance = useCallback(() => {
     setStepDone(false);

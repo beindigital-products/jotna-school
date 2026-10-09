@@ -6,9 +6,9 @@
  * UN ENFANT QUI NE SAIT PAS LIRE ÉCOUTE TOUT. Une consigne se dit donc en
  * plusieurs morceaux enchaînés : « Touche la lettre… » (français, voix des
  * consignes) puis « بَاء » (arabe, voix du parcours). `useSpeech().say()`
- * prend la liste, cherche les sons en parallèle (dans le téléphone d'abord,
- * `components/offline/clip-source.app.ts`, et en cache ici), puis joue les
- * morceaux l'un après l'autre.
+ * prend la liste, cherche les sons en parallèle (dans le téléphone d'abord
+ * pour l'application, en ligne sur le web : `components/offline/clip-source.ts`,
+ * et en cache ici), puis joue les morceaux l'un après l'autre.
  *
  * UN SEUL SON À LA FOIS, DANS TOUT LE MODULE. Toucher une lettre pendant que
  * Pio parle coupe Pio : deux voix superposées, c'est du bruit pour un enfant.

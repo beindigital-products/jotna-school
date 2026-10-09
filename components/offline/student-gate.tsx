@@ -3,12 +3,12 @@
 /**
  * QUI PEUT ENTRER DANS L'ESPACE ÉLÈVE, AVEC OU SANS RÉSEAU.
  *
- * Remplace `AccessGate` pour l'espace élève : la question n'est plus posée au
- * serveur à chaque écran, elle se lit sur l'appareil (`lib/offline/`).
+ * Sur le web, l'espace élève lit Convex : sa garde est `AccessGate`, comme
+ * pour le reste du site. Dans l'application iOS/Android, la question n'est
+ * plus posée au serveur à chaque écran, elle se lit sur l'appareil
+ * (`lib/offline/`) :
  *
- *   - Hors de l'application iOS/Android, l'espace élève n'existe pas : un
- *     navigateur, même en développement, part sur `/eleve`, qui renvoie vers
- *     l'application. Les élèves n'apprennent que dans l'application.
+ *   - Tant que la plateforme n'est pas lue (hydratation), on attend.
  *   - L'appareil se relit : on attend.
  *   - Personne à rouvrir : sans réseau, on explique qu'il faut une première
  *     connexion ; avec le réseau mais sans session, on renvoie à la connexion.
@@ -27,28 +27,32 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldAlert, Sprout, WifiOff } from "lucide-react";
+import { AccessGate } from "@/components/AccessGate";
 import { useOffline, useOfflineModel } from "@/components/offline/context";
 import { JotnaLoader } from "@/components/jotna-loader";
 import { Pio } from "@/components/student/pio";
 import { useNativeAppOrUnknown } from "@/hooks/use-native-app";
-import { STUDENT_APP_ONLY_PATH } from "@/lib/build-target";
 import { kidMessages } from "@/lib/kidCopy";
 import { accessMessageForAdult } from "@/lib/accessCopy";
 
 export function StudentGate({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const native = useNativeAppOrUnknown();
+  if (native === null) return <JotnaLoader className="min-h-[60vh]" />;
+  if (!native) return <AccessGate>{children}</AccessGate>;
+  return <NativeStudentGate>{children}</NativeStudentGate>;
+}
+
+function NativeStudentGate({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const { status, connected, signedOut, confirmed } = useOffline();
   const model = useOfflineModel();
 
-  const outsideApp = native === false;
-  const mustLogIn = !outsideApp && status === "none" && connected && signedOut;
+  const mustLogIn = status === "none" && connected && signedOut;
   useEffect(() => {
-    if (outsideApp) router.replace(STUDENT_APP_ONLY_PATH);
-    else if (mustLogIn) router.replace("/login");
-  }, [outsideApp, mustLogIn, router]);
+    if (mustLogIn) router.replace("/login");
+  }, [mustLogIn, router]);
 
-  if (native !== true || status === "booting" || mustLogIn) {
+  if (status === "booting" || mustLogIn) {
     return <JotnaLoader className="min-h-[60vh]" />;
   }
 
