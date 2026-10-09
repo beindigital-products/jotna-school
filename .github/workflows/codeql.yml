@@ -2,11 +2,10 @@ name: CodeQL
 
 # Analyse de sécurité du code. Ce fichier remplace la configuration CodeQL
 # « par défaut » de GitHub, qui ne sait pas construire l'application iOS : ses
-# plugins Capacitor sont des paquets Swift rangés dans node_modules
-# (ios/App/CapApp-SPM/Package.swift), et ses ressources (public/,
-# capacitor.config.json, config.xml) sortent de `cap sync`, hors de git. Ici,
-# le job Swift installe les dépendances et prépare le projet avant de
-# compiler, comme `pnpm ios:sync` sur un poste.
+# ressources (public/, capacitor.config.json, config.xml) sortent de
+# `cap sync`, hors de git, et les plugins Capacitor sont des paquets Swift
+# rangés dans node_modules (ios/App/CapApp-SPM/Package.swift). Ici, le job
+# Swift installe les dépendances et lance `cap sync ios` avant de compiler.
 #
 # La configuration par défaut doit rester coupée dans les réglages du dépôt
 # (Settings > Advanced Security, ligne « CodeQL analysis ») : tant qu'elle est
@@ -55,32 +54,35 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
         if: matrix.language == 'swift'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
 
+      # La CLI Capacitor 8 exige Node 22 ou plus.
       - name: Setup Node.js
         if: matrix.language == 'swift'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
         if: matrix.language == 'swift'
         run: pnpm install --frozen-lockfile
 
-      # Le contenu des pages ne compte pas pour l'analyse : une adresse Convex
-      # factice suffit à construire.
+      # Le contenu des pages ne compte pas pour l'analyse : une page vide
+      # suffit à `cap sync`, sans construire le site (même méthode que
+      # android-dependencies.yml).
       - name: Prepare (application iOS)
         if: matrix.language == 'swift'
-        env:
-          NEXT_PUBLIC_CONVEX_URL: https://placeholder.convex.cloud
-        run: pnpm ios:sync
+        run: |
+          mkdir -p out
+          test -f out/index.html || printf '<!doctype html>\n' > out/index.html
+          pnpm exec cap sync ios
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -88,13 +90,13 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
-      # Le schéma App (Xcode le crée seul, il n'est pas dans git) construit aussi
-      # les plugins. Avec `-target App`, comme la construction automatique de
-      # CodeQL, Xcode ne trouve pas IONFilesystemLib, dont dépend le plugin
-      # Filesystem. Une seule architecture, et sans signature : pas besoin de
-      # compte développeur Apple. Les trois derniers réglages sont ceux que la
-      # construction automatique de CodeQL passe à Xcode, pour que son traceur
-      # voie chaque compilation Swift.
+      # Le schéma App (Xcode le crée seul, il n'est pas dans git) construit
+      # aussi les plugins. Avec `-target App`, comme la construction
+      # automatique de CodeQL, Xcode ne trouve pas leurs dépendances
+      # (IONFilesystemLib pour le plugin Filesystem). Une seule architecture,
+      # et sans signature : pas besoin de compte développeur Apple. Les trois
+      # derniers réglages sont ceux que la construction automatique de CodeQL
+      # passe à Xcode, pour que son traceur voie chaque compilation Swift.
       - name: Build (application iOS)
         if: matrix.build-mode == 'manual'
         run: >-
