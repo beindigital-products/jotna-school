@@ -260,6 +260,20 @@ entendre Steve. Pour garder Omar sur l'arabe seul, laissez-le dans
   (`aiGateway/budget.ts`). C'est délibéré : réviser l'alphabet en classe ne doit
   pas pouvoir fermer la génération d'exercices de mathématiques.
 
+### Sans réseau, dans l'application
+
+L'application télécharge tous les sons du module dès que l'école l'a allumé,
+puis les joue depuis l'appareil (`docs/hors-ligne.md`). Les leçons,
+l'alphabet et les exercices de reconnaissance se font donc sans réseau, voix
+comprise, et leurs résultats partent au serveur au retour du réseau.
+
+Se faire écouter demande le réseau, puisque la transcription se fait chez
+ElevenLabs. Sans réseau, « je répète » devient un entraînement : l'enfant
+s'enregistre, réécoute sa voix (« Ma voix »), puis écoute Pio. Rien n'est
+noté ni envoyé, et l'enregistrement disparaît avec l'écran. Garder la voix
+pour la juger plus tard romprait la règle qui suit. La mémorisation des
+sourates, qui avance sur ce verdict, n'avance donc qu'en ligne.
+
 ### La voix de l'enfant n'est conservée nulle part
 
 Les octets arrivent en argument de l'action, partent en transcription, et

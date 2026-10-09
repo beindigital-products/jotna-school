@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Tent, Map as MapIcon, Trophy, NotebookPen } from "lucide-react";
 import { Brand } from "@/components/landing/brand";
-import { AccessGate } from "@/components/AccessGate";
+import { StudentGate } from "@/components/offline/student-gate";
+import { OfflineBadge } from "@/components/offline/offline-badge";
+import { useStudentStats } from "@/hooks/use-student-data";
 import { MotionConfig } from "framer-motion";
 
 /**
@@ -29,6 +29,11 @@ import { MotionConfig } from "framer-motion";
  * de fin, ni HUD ni navigation. La pédagogie prime ; le jeu motive ENTRE les
  * exercices, pas pendant. Une leçon du module « Arabe & Coran » y entre aussi :
  * elle fait écouter, parler et écrire au doigt.
+ *
+ * SANS RÉSEAU, TOUT RESTE OUVERT (`docs/hors-ligne.md`). Les écrans lisent
+ * l'appareil (`hooks/use-student-data.ts`), et la garde (`StudentGate`) laisse
+ * entrer un enfant déjà connecté une fois, même en mode avion. La pastille du
+ * réseau (`OfflineBadge`) dit « Sans internet » sans jamais parler d'erreur.
  *
  * QUATRE LIEUX, PAS CINQ. Le module optionnel « Arabe & Coran » n'ajoute PAS
  * d'onglet : la barre du bas donne 4,5 rem à chaque lieu, un cinquième
@@ -112,6 +117,8 @@ export default function StudentLayout({
                 })}
                 </nav>
 
+                <OfflineBadge />
+
                 <LevelPill />
 
                 <ProfileAvatarLink className="hidden sm:flex" />
@@ -147,7 +154,7 @@ export default function StudentLayout({
               : "px-0 pb-32 sm:px-4 sm:pb-8"
           }`}
         >
-          <AccessGate>{children}</AccessGate>
+          <StudentGate>{children}</StudentGate>
         </main>
 
         {!focusMode && <BottomNav pathname={pathname} />}
@@ -159,12 +166,12 @@ export default function StudentLayout({
 /**
  * L'avatar de l'en-tête. Il ne déroule plus un menu : il mène droit à la page
  * « Modifier mon profil » (`/student/profil/edit`), où l'enfant change son nom
- * et le son, et se déconnecte. Nom et avatar viennent de `getMyStats`, déjà lu
- * par le HUD : Convex partage la souscription, aucune lecture de plus. Son
- * allure ne change pas — c'est le geste, plus le clic, qui change.
+ * et le son, et se déconnecte. Nom et avatar viennent du carnet, calculé sur
+ * l'appareil (`useStudentStats`) comme le HUD. Son allure ne change pas —
+ * c'est le geste, plus le clic, qui change.
  */
 function ProfileAvatarLink({ className = "" }: { className?: string }) {
-  const stats = useQuery(api.students.getMyStats);
+  const stats = useStudentStats();
   const name = stats?.student.name ?? "";
   const avatar = stats?.student.avatar ?? null;
   const initials =
@@ -197,11 +204,11 @@ function ProfileAvatarLink({ className = "" }: { className?: string }) {
  * LE NIVEAU DU JOUEUR, à droite de l'en-tête (le logo est à gauche). Les
  * étoiles ne sont plus dans l'en-tête ; leur total vit dans le carnet.
  *
- * `getMyStats` est déjà lu par l'accueil et le carnet : Convex partage une même
- * souscription, cette pièce ne coûte aucune lecture de plus.
+ * Le niveau se lit sur l'appareil (`useStudentStats`), comme l'accueil et le
+ * carnet : il monte dès la fin d'un palier, réseau ou pas.
  */
 function LevelPill() {
-  const stats = useQuery(api.students.getMyStats);
+  const stats = useStudentStats();
   if (!stats) return null;
 
   const level = stats.level ?? 1;

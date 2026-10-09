@@ -6,6 +6,8 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { roleHomePath, type Role } from "@/lib/auth";
 import { Pio } from "@/components/student/pio";
+import { useOffline } from "@/components/offline/context";
+import { useBrowserOnline } from "@/components/offline/use-browser-online";
 
 /**
  * LE CHARGEMENT DU JEU. C'est le premier écran de l'application native après
@@ -51,6 +53,8 @@ export default function PostAuthPage() {
     api.profiles.getCurrentProfile,
     isAuthenticated ? {} : "skip",
   );
+  const offline = useOffline();
+  const online = useBrowserOnline();
 
   // `router.replace` ET NON `window.location.href`, SUR LES DEUX BRANCHES.
   // Dans l'application Capacitor, une navigation de DOCUMENT recharge
@@ -60,7 +64,26 @@ export default function PostAuthPage() {
   // accueil, et la connexion paraissait avoir échoué alors qu'elle avait
   // réussi. Une navigation interne de Next ne traverse pas ce routeur, et se
   // comporte à l'identique sur le web.
+  //
+  // L'APPAREIL CONNAÎT DÉJÀ UN ÉLÈVE (`docs/hors-ligne.md`) : il retrouve son
+  // camp tout de suite, sans attendre que Convex confirme la session — ce
+  // qu'il ne peut pas faire sans réseau. Si le serveur nomme ensuite quelqu'un
+  // d'autre, l'espace élève suit (`components/offline/offline-provider.tsx`).
   useEffect(() => {
+    if (offline.enabled) {
+      if (offline.status === "booting") return;
+      if (offline.status === "ready") {
+        router.replace("/student/home");
+        return;
+      }
+      // Personne à rouvrir, et pas de réseau pour vérifier la session :
+      // l'écran de connexion le dit.
+      if (isLoading && !online) {
+        router.replace("/login");
+        return;
+      }
+    }
+
     if (isLoading) return;
 
     if (!isAuthenticated) {
@@ -75,7 +98,7 @@ export default function PostAuthPage() {
     if (profile === undefined) return;
 
     router.replace(roleHomePath((profile?.role as Role) ?? null));
-  }, [isLoading, isAuthenticated, profile, router]);
+  }, [isLoading, isAuthenticated, profile, router, offline.enabled, offline.status, online]);
 
   return <LoadingScreen />;
 }

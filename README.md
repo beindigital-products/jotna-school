@@ -39,7 +39,8 @@ pnpm dev
 Le même code sert le site web (école, professeurs, parents, élèves) et
 l'application iOS/Android. `pnpm dev` et `pnpm build` suffisent ; `pnpm
 ios:sync` et `pnpm android:sync` rebâtissent puis synchronisent Capacitor.
-Détails dans `docs/capacitor-ios.md`.
+Détails dans `docs/capacitor-ios.md`. Seule l'application joue sans réseau
+(`docs/hors-ligne.md`).
 
 ## Vérifier
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
-import { useMutation, useQuery } from "convex/react";
 import { animate, motion, useMotionValue, useScroll, useTransform } from "framer-motion";
 import {
   Check,
@@ -15,8 +14,7 @@ import {
   Star,
   Trophy,
 } from "lucide-react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+import { useDailyQuests, useStudentActions, useStudentStats } from "@/hooks/use-student-data";
 import { difficultyStage } from "@/convex/palierRules";
 import { PALIER_SIZE } from "@/convex/paliers/scoring";
 import { EXOS_PER_LEVEL, STARS_PER_EXERCISE, palierStarRating } from "@/convex/progressionRules";
@@ -71,7 +69,7 @@ export type PalierResultView = {
 };
 
 type UnseenBadge = {
-  badgeId: Id<"badges">;
+  badgeId: string;
   badge: {
     name: string;
     description: string;
@@ -615,7 +613,7 @@ function useVictoryConfetti(enabled: boolean) {
  * s'accrochent dans `submitPalier`), donc la fête tombe pile au bon moment.
  */
 function QuestsDoneCard() {
-  const daily = useQuery(api.quests.getMyDaily);
+  const daily = useDailyQuests();
   // Le jour déjà fêté, capturé une seule fois au montage (avant toute écriture).
   const [celebratedAtMount] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
@@ -676,9 +674,11 @@ function QuestsDoneCard() {
  * (D25, D2b) : marquer « vu » côté serveur ne fait pas disparaître la carte.
  */
 function useVictoryExtras(enabled: boolean) {
-  const myStats = useQuery(api.students.getMyStats, enabled ? {} : "skip");
-  const markBadgesSeen = useMutation(api.badges.markBadgesSeen);
-  const markLevelSeen = useMutation(api.students.markLevelSeen);
+  // Le carnet se calcule sur l'appareil : le trophée mérité et le niveau
+  // gagné sans réseau se fêtent ici, tout de suite. « Vu » s'écrit au journal.
+  const stats = useStudentStats();
+  const myStats = enabled ? stats : undefined;
+  const { markBadgesSeen, markLevelSeen } = useStudentActions();
   const [badges, setBadges] = useState<UnseenBadge[] | null>(null);
   const [levelUp, setLevelUp] = useState<number | null>(null);
   const [levelUpOpen, setLevelUpOpen] = useState(false);
@@ -699,7 +699,7 @@ function useVictoryExtras(enabled: boolean) {
     const unseen = myStats.unseenBadges as UnseenBadge[];
     // eslint-disable-next-line react-hooks/set-state-in-effect -- instantané pris une fois à l'arrivée (D25)
     setBadges(unseen);
-    void markBadgesSeen({ badgeIds: unseen.map((b) => b.badgeId) });
+    markBadgesSeen(unseen.map((b) => b.badgeId));
   }, [myStats, badges, markBadgesSeen]);
 
   useEffect(() => {
@@ -724,7 +724,7 @@ function useVictoryExtras(enabled: boolean) {
 
   const dismissLevelUp = useCallback(() => {
     setLevelUpOpen(false);
-    if (levelUp !== null) void markLevelSeen({ level: levelUp });
+    if (levelUp !== null) markLevelSeen(levelUp);
   }, [levelUp, markLevelSeen]);
 
   useEffect(() => {

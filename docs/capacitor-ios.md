@@ -3,8 +3,8 @@
 L'application web tourne aussi comme application iOS native. Le principe est
 simple : `next build` produit un site statique dans `out/`,
 et Capacitor embarque ce dossier dans un projet Xcode. Aucun serveur Next ne tourne sur le
-téléphone. Le seul réseau utilisé est la connexion Convex, exactement comme
-dans le navigateur.
+téléphone. L'espace élève y joue sans réseau ; la connexion Convex sert à
+remplir l'appareil et à envoyer le travail de l'enfant (`docs/hors-ligne.md`).
 
 ## Rebâtir et lancer
 
@@ -24,7 +24,8 @@ Coran) est servi sur le web comme dans l'application. Il n'y a plus de cible
 `app` : `next build` produit un seul export, que le site publie et que
 Capacitor embarque. Le seul code propre à l'application est testé par
 `useIsNativeApp` (`hooks/use-native-app.ts`) : l'application ouvre sur la
-connexion au lieu de la vitrine, et Pio s'y anime en vidéo.
+connexion au lieu de la vitrine, Pio s'y anime en vidéo, et elle seule joue
+sans réseau (`docs/hors-ligne.md`).
 
 Ensuite, ouvrez le projet dans Xcode :
 
@@ -177,14 +178,39 @@ pnpm preview:export
 ```
 
 Il sert le dernier `out/` construit : `pnpm build` d'abord pour y voir
-l'espace élève.
+l'espace élève. Le hors-ligne, lui, reste éteint dans un navigateur.
+
+## Tester sur le simulateur
+
+Le hors-ligne et le reste du code propre à l'application se regardent sur le
+simulateur iOS, l'émulateur Android ou un téléphone. Après un changement de
+code web seulement, inutile de recompiler dans Xcode : on reconstruit
+l'export, on le recopie dans l'application déjà installée sur le simulateur,
+puis on la relance.
+
+```bash
+pnpm build
+rsync -a out/ "$(xcrun simctl get_app_container booted com.jotna.school app)/public/"
+xcrun simctl terminate booted com.jotna.school
+xcrun simctl launch booted com.jotna.school
+```
+
+Ne passez pas `--delete` à `rsync` : le dossier `public/` de l'application
+contient `cordova.js` et `cordova_plugins.js`, qui ne sont pas dans `out/`.
+Après un changement natif (plugin, `Info.plist`), lancez `pnpm ios:sync` puis
+reconstruisez dans Xcode. Sur Android, `pnpm android:run` reconstruit et
+relance l'application.
 
 ## Ce qui n'est pas couvert
 
-Il n'y a pas de plugin natif installé : ni notifications, ni caméra, ni
-stockage hors ligne. L'application est le code du site dans une coque native,
-espace élève compris. Le micro passe par la vue web (`getUserMedia`), pas par
-un plugin ; son autorisation est déclarée dans `Info.plist`.
+Un seul plugin natif est installé : `@capacitor/filesystem`, qui garde sur
+l'appareil ce que l'élève joue hors ligne (`docs/hors-ligne.md`). Ni
+notifications, ni caméra. `cap sync` inscrit un plugin dans
+`ios/App/CapApp-SPM/Package.swift` et dans les fichiers Gradle d'Android :
+une application construite avant son ajout ne l'a pas, il faut la
+reconstruire dans Xcode ou Android Studio. Le micro passe par la vue web
+(`getUserMedia`), pas par un plugin ; son autorisation est déclarée dans
+`Info.plist`.
 
 La publication sur l'App Store demande un compte Apple Developer payant et un
 identifiant d'application enregistré sous ce compte. L'icône et l'écran de

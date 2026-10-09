@@ -46,9 +46,12 @@ l'inscription en classe). Sans niveau sur le profil, il voit tout
 l'élémentaire, comme avant. Une thématique sans niveau n'est montrée à aucun
 élève qui en a un : la séance la refuserait de toute façon.
 
-Une thématique est franchie quand tous ses paliers le sont.
-`palierAttempts.submitPalier` pose alors `studentTopicProgress.completedAt`,
-que la carte, le camp et les bulletins lisent. Les requêtes recalculent aussi
+Une thématique est franchie quand tous ses paliers le sont. La fin d'un
+palier passe par `finishPalierAttempt` (`convex/palierAttempts.ts`), que la
+séance arrive de l'appareil (`offline/sync:apply`, voir `docs/hors-ligne.md`)
+ou de `submitPalier`, que les versions précédentes de l'application appellent
+encore. Elle pose alors `studentTopicProgress.completedAt`, que la carte, le
+camp et les bulletins lisent. Les requêtes recalculent aussi
 ce franchissement depuis les tentatives, pour les données d'avant.
 
 ## Des tuiles qui portent le même texte
@@ -83,15 +86,18 @@ Les classes concernées sont dans `READING_LEARNER_CLASSES`
 
 La voix est celle du module d'arabe (`convex/voice/elevenlabs.ts`), avec le
 même cache : une consigne n'est synthétisée qu'une fois pour tous les
-enfants, et ses caractères comptent dans `arabicVoiceUsage`. L'écran n'envoie
-qu'une référence à `voice/exercisePrompt:speak`, l'exercice et la tentative
-de palier. Le serveur vérifie que l'élève joue ce palier et lit lui-même le
-texte dans l'exercice. Avant la synthèse, `convex/voice/speakable.ts` retire
-les émojis, fait d'un trou (« ma_an », « 3 + ? = 7 ») une pause et dit les
-signes de calcul en français.
+enfants, et ses caractères comptent dans `arabicVoiceUsage`. L'application
+télécharge à l'avance la consigne de chaque exercice de la classe, et la dit
+ensuite sans réseau (`docs/hors-ligne.md`). Elle n'envoie que des références
+d'exercices à `offline/voice:prepareClips`. Le serveur vérifie que
+l'exercice appartient à un palier de la classe de l'élève, ou à une
+variation de sa tentative, et lit lui-même le texte. `voice/exercisePrompt:speak`
+reste en place pour les versions précédentes de l'application. Avant la
+synthèse, `convex/voice/speakable.ts` retire les émojis, fait d'un trou
+(« ma_an », « 3 + ? = 7 ») une pause et dit les signes de calcul en français.
 
-Sans `ELEVENLABS_API_KEY`, le bouton devient gris et l'exercice se joue sans
-le son. Le lecteur ignore le réglage « sons » de l'élève : ce réglage coupe
+Sans `ELEVENLABS_API_KEY`, ou sans réseau pour une consigne jamais
+téléchargée, le bouton devient gris et l'exercice se joue sans le son. Le lecteur ignore le réglage « sons » de l'élève : ce réglage coupe
 les bruitages de récompense, alors que la voix est la consigne elle-même.
 
 ## Changer le nombre de paliers d'une thématique
@@ -264,6 +270,10 @@ lignes numérotées, et c'est ce que lisent le numéro du prochain essai, les
 essais restants annoncés à l'enfant et la reprise d'une séance. Avant cette
 règle, un indice faisait passer l'enfant de « encore 4 essais » à
 « encore 2 », et gonflait le numéro d'essai que la grille de score punit.
+
+La séance se joue sur l'appareil : `lib/offline/session-rules.ts` y applique
+les mêmes règles (cinq essais, indice sentinelle, même note), et le serveur
+les réapplique quand la séance lui arrive.
 
 ## Ce que la base de développement contient
 

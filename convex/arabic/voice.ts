@@ -53,9 +53,8 @@ import { internal } from "../_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "../_generated/dataModel";
 import { getLetter } from "./alphabet";
-import { isConsigneKey, spokenConsigne } from "./consignes";
 import { getLesson } from "./curriculum";
-import { letterWord } from "./letterWords";
+import { resolveSpeech, type SpeechRef } from "./speechText";
 import {
   acceptedFormsForLetter,
   judgePronunciation,
@@ -125,47 +124,9 @@ const refValidator = v.union(
   }),
 );
 
-type SpeechRef =
-  | { kind: "letterName"; letterKey: string }
-  | { kind: "letterSyllable"; letterKey: string; haraka: "fatha" | "kasra" | "damma" }
-  | { kind: "lessonItem"; lessonKey: string; itemKey: string }
-  | { kind: "instruction"; key: string }
-  | { kind: "letterWord"; letterKey: string };
-
-/** Ce qu'il faut dire, et dans quelle langue — donc avec quelle voix. */
-type Speech = { text: string; lang: "ar" | "fr" };
-
-/** Le texte désigné par une référence, ou `null` si elle ne désigne rien. */
-function resolveSpeech(ref: SpeechRef): Speech | null {
-  const ar = (text: string | null | undefined): Speech | null =>
-    text ? { text, lang: "ar" } : null;
-
-  if (ref.kind === "instruction") {
-    return isConsigneKey(ref.key) ? { text: spokenConsigne(ref.key), lang: "fr" } : null;
-  }
-  if (ref.kind === "letterWord") {
-    return ar(letterWord(ref.letterKey)?.ar);
-  }
-  if (ref.kind === "letterName") {
-    return ar(getLetter(ref.letterKey)?.nameAr);
-  }
-  if (ref.kind === "letterSyllable") {
-    const letter = getLetter(ref.letterKey);
-    return ar(letter ? letter.syllables[ref.haraka] : null);
-  }
-  const lesson = getLesson(ref.lessonKey);
-  if (!lesson) return null;
-
-  const item = lesson.items.find((candidate) => candidate.key === ref.itemKey);
-  if (item) return ar(item.ar);
-
-  // Une leçon d'alphabet n'a pas d'items : ses « items » sont ses lettres, et
-  // l'écran demande le NOM quand il désigne une lettre.
-  if ((lesson.letters as readonly string[]).includes(ref.itemKey)) {
-    return ar(getLetter(ref.itemKey)?.nameAr);
-  }
-  return null;
-}
+// Ce qu'une référence fait dire, et dans quelle langue : `speechText.ts`, pur,
+// partagé avec le téléchargement des sons pour le hors-ligne
+// (`offline/voice.ts`).
 
 // ---------------------------------------------------------------------------
 // Action 1 — faire entendre

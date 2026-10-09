@@ -49,6 +49,9 @@ export const CONSIGNES = {
   retry_1: "Je n'ai pas bien entendu. Parle un peu plus fort, près du micro.",
   retry_2: "On essaie ensemble ? Écoute doucement, puis répète.",
   keep_going: "Tu progresses ! On la redira plus tard. On continue !",
+  // Sans internet, Pio ne peut pas écouter : l'enfant compare lui-même
+  // (`components/arabic/record-button.tsx`, `docs/hors-ligne.md`).
+  listen_compare: "Bravo, tu as répété ! Écoute ta voix, puis écoute-moi encore.",
   tip_gorge: "Ce son vient du fond de ta gorge.",
   tip_langue: "Mets le bout de ta langue derrière tes dents du haut.",
   tip_dents: "Ta langue touche le bord de tes dents.",

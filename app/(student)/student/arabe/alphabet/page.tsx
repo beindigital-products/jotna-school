@@ -20,9 +20,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "convex/react";
 import { ArrowLeft, Star } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { useArabicPath } from "@/hooks/use-student-data";
 import { ARABIC_LETTERS, getLetter, type ArabicLetterKey } from "@/convex/arabic/alphabet";
 import { ARABIC_LESSONS } from "@/convex/arabic/curriculum";
 import { CONSIGNES } from "@/convex/arabic/consignes";
@@ -36,7 +35,8 @@ import { arabicCopy } from "@/lib/arabic/copy";
 import { QuranLoader } from "@/components/arabic/quran-loader";
 
 export default function ArabicAlphabetPage() {
-  const path = useQuery(api.arabic.lessons.getPath);
+  // Lu sur l'appareil : l'album s'ouvre sans réseau.
+  const path = useArabicPath();
   const { say } = useSpeech();
   const [selected, setSelected] = useState<ArabicLetterKey>("alif");
 
@@ -53,7 +53,7 @@ export default function ArabicAlphabetPage() {
 
   if (path === undefined) return <QuranLoader message={arabicCopy.loading.album} />;
 
-  if (!path.enabled) {
+  if (!path || !path.enabled) {
     return (
       <div className="mx-4 max-w-md rounded-3xl border-2 border-amber-200 bg-white p-8 text-center shadow-sm sm:mx-auto">
         <h1 className="font-display text-xl font-extrabold text-gray-900">{arabicCopy.notEnabled.title}</h1>

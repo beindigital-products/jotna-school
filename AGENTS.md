@@ -10,6 +10,11 @@ L'espace élève (`app/(student)/**`) est servi sur le web, sur tablette et sur
 smartphone comme dans l'application iOS/Android (Capacitor, même code, même
 export statique). `pnpm dev` suffit pour le voir. Détails : `docs/capacitor-ios.md`.
 
+Le hors-ligne n'existe que dans l'application : son moteur (`lib/offline/`)
+ne s'allume que dans la coque native, et le web lit Convex. Les pages élève
+passent par `hooks/use-student-data.ts`, qui choisit la source. Détails :
+`docs/hors-ligne.md`.
+
 <!-- convex-ai-start -->
 This project uses [Convex](https://convex.dev) as its backend.
 

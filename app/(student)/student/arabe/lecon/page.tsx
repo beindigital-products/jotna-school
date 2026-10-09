@@ -34,10 +34,9 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Map as MapIcon, SkipForward, Star, X } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { useArabicPath, useHifzState, useStudentActions } from "@/hooks/use-student-data";
 import { getLetter, type ArabicLetterKey } from "@/convex/arabic/alphabet";
 import { ARABIC_LESSONS, getLesson, type DrillKind } from "@/convex/arabic/curriculum";
 import { bravo, CONSIGNES } from "@/convex/arabic/consignes";
@@ -72,13 +71,15 @@ function ArabicLessonPageInner() {
   const lessonKey = searchParams.get("key") ?? "";
   const lesson = getLesson(lessonKey);
 
-  const path = useQuery(api.arabic.lessons.getPath);
+  // LE PARCOURS SE LIT SUR L'APPAREIL (`hooks/use-student-data.ts`), et les
+  // tentatives comme la fin de la leçon s'écrivent à son journal : la leçon
+  // se joue sans réseau, et part au serveur au retour du réseau.
+  const path = useArabicPath();
   // LA SÉANCE DE MÉMORISATION REPREND OÙ L'ENFANT S'EST ARRÊTÉ : c'est la
-  // seule qui dépende d'un état serveur. La requête est posée pour toutes les
+  // seule qui dépende d'un état serveur. La lecture est posée pour toutes les
   // leçons (un hook conditionnel n'existe pas).
-  const hifz = useQuery(api.arabic.memorization.getState);
-  const recordAttempt = useMutation(api.arabic.lessons.recordAttempt);
-  const completeLesson = useMutation(api.arabic.lessons.completeLesson);
+  const hifz = useHifzState();
+  const { recordArabicAttempt, completeArabicLesson } = useStudentActions();
 
   const versesMemorized = useMemo(() => {
     if (!lesson?.surahKey || !hifz) return 0;
@@ -100,13 +101,13 @@ function ArabicLessonPageInner() {
 
   // La clôture part d'elle-même à la dernière étape : demander un clic de plus
   // à un enfant qui vient de finir, c'est risquer qu'il parte sans ses étoiles.
+  // Les étoiles viennent du serveur sur le web, de l'appareil dans
+  // l'application (`useStudentActions().completeArabicLesson`).
   useEffect(() => {
     if (!atEnd || completing.current || !lesson) return;
     completing.current = true;
-    void completeLesson({ lessonKey })
-      .then((outcome) => setResult(outcome))
-      .catch(() => setResult({ stars: 1, score: 0 }));
-  }, [atEnd, completeLesson, lesson, lessonKey]);
+    void completeArabicLesson(lessonKey).then(setResult);
+  }, [atEnd, completeArabicLesson, lesson, lessonKey]);
 
   const advance = useCallback(() => {
     setStepDone(false);
@@ -118,18 +119,16 @@ function ArabicLessonPageInner() {
 
   const record: RecordAttempt = useCallback(
     (drill, itemKey, correct, score, verdict) => {
-      void recordAttempt({
+      recordArabicAttempt({
         lessonKey,
         drill,
         itemKey,
         correct,
         ...(score !== undefined ? { score } : {}),
         ...(verdict !== undefined ? { verdict } : {}),
-      }).catch(() => {
-        // Une tentative perdue coûte une fraction d'étoile, pas la séance.
       });
     },
-    [lessonKey, recordAttempt],
+    [lessonKey, recordArabicAttempt],
   );
 
   if (!lesson) return <NotFound />;
@@ -138,7 +137,7 @@ function ArabicLessonPageInner() {
     return <QuranLoader message={arabicCopy.loading.lesson} />;
   }
 
-  if (!path.enabled) {
+  if (!path || !path.enabled) {
     return <Centered title={arabicCopy.notEnabled.title}>{arabicCopy.notEnabled.body}</Centered>;
   }
 
@@ -496,6 +495,8 @@ function ReadingStep({
               if (outcome.verdict === "ok") void say([speech.consigne(bravo(tries))]);
               onVoiceOutcome();
             }}
+            // Sans internet : l'enfant s'est réécouté, il peut continuer.
+            onPracticed={onVoiceOutcome}
           />
         </>
       )}
@@ -533,6 +534,7 @@ function ReciteStep({
           if (outcome.verdict === "ok") void say([speech.consigne(bravo(tries))]);
           onVoiceOutcome();
         }}
+        onPracticed={onVoiceOutcome}
       />
     </div>
   );

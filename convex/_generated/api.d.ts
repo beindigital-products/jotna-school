@@ -31,12 +31,14 @@ import type * as arabic_placement from "../arabic/placement.js";
 import type * as arabic_placementRules from "../arabic/placementRules.js";
 import type * as arabic_progressRules from "../arabic/progressRules.js";
 import type * as arabic_quran from "../arabic/quran.js";
+import type * as arabic_speechText from "../arabic/speechText.js";
 import type * as arabic_voice from "../arabic/voice.js";
 import type * as attempts from "../attempts.js";
 import type * as attemptsExplain from "../attemptsExplain.js";
 import type * as attemptsVerify from "../attemptsVerify.js";
 import type * as auth from "../auth.js";
 import type * as badgeRules from "../badgeRules.js";
+import type * as badgeSnapshotRules from "../badgeSnapshotRules.js";
 import type * as badges from "../badges.js";
 import type * as billing from "../billing.js";
 import type * as billingBictorys from "../billingBictorys.js";
@@ -58,11 +60,17 @@ import type * as linkRules from "../linkRules.js";
 import type * as migrations from "../migrations.js";
 import type * as moduleCatalog from "../moduleCatalog.js";
 import type * as modules from "../modules.js";
+import type * as offline_contract from "../offline/contract.js";
+import type * as offline_pack from "../offline/pack.js";
+import type * as offline_prefetch from "../offline/prefetch.js";
+import type * as offline_sync from "../offline/sync.js";
+import type * as offline_voice from "../offline/voice.js";
 import type * as openAccessRules from "../openAccessRules.js";
 import type * as palierAttempts from "../palierAttempts.js";
 import type * as palierRules from "../palierRules.js";
 import type * as paliers_answerCheck from "../paliers/answerCheck.js";
 import type * as paliers_dragDropRepair from "../paliers/dragDropRepair.js";
+import type * as paliers_exerciseRules from "../paliers/exerciseRules.js";
 import type * as paliers_index from "../paliers/index.js";
 import type * as paliers_mathRepair from "../paliers/mathRepair.js";
 import type * as paliers_pregen from "../paliers/pregen.js";
@@ -92,6 +100,7 @@ import type * as secureRandom from "../secureRandom.js";
 import type * as settings_index from "../settings/index.js";
 import type * as staffAccounts from "../staffAccounts.js";
 import type * as streak from "../streak.js";
+import type * as streakRules from "../streakRules.js";
 import type * as studentAccounts from "../studentAccounts.js";
 import type * as studentCredentials from "../studentCredentials.js";
 import type * as studentImport from "../studentImport.js";
@@ -107,6 +116,7 @@ import type * as voice_exercisePrompt from "../voice/exercisePrompt.js";
 import type * as voice_speakable from "../voice/speakable.js";
 import type * as waitlist from "../waitlist.js";
 import type * as waitlistRules from "../waitlistRules.js";
+import type * as worldRules from "../worldRules.js";
 
 import type {
   ApiFromModules,
@@ -138,12 +148,14 @@ declare const fullApi: ApiFromModules<{
   "arabic/placementRules": typeof arabic_placementRules;
   "arabic/progressRules": typeof arabic_progressRules;
   "arabic/quran": typeof arabic_quran;
+  "arabic/speechText": typeof arabic_speechText;
   "arabic/voice": typeof arabic_voice;
   attempts: typeof attempts;
   attemptsExplain: typeof attemptsExplain;
   attemptsVerify: typeof attemptsVerify;
   auth: typeof auth;
   badgeRules: typeof badgeRules;
+  badgeSnapshotRules: typeof badgeSnapshotRules;
   badges: typeof badges;
   billing: typeof billing;
   billingBictorys: typeof billingBictorys;
@@ -165,11 +177,17 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   moduleCatalog: typeof moduleCatalog;
   modules: typeof modules;
+  "offline/contract": typeof offline_contract;
+  "offline/pack": typeof offline_pack;
+  "offline/prefetch": typeof offline_prefetch;
+  "offline/sync": typeof offline_sync;
+  "offline/voice": typeof offline_voice;
   openAccessRules: typeof openAccessRules;
   palierAttempts: typeof palierAttempts;
   palierRules: typeof palierRules;
   "paliers/answerCheck": typeof paliers_answerCheck;
   "paliers/dragDropRepair": typeof paliers_dragDropRepair;
+  "paliers/exerciseRules": typeof paliers_exerciseRules;
   "paliers/index": typeof paliers_index;
   "paliers/mathRepair": typeof paliers_mathRepair;
   "paliers/pregen": typeof paliers_pregen;
@@ -199,6 +217,7 @@ declare const fullApi: ApiFromModules<{
   "settings/index": typeof settings_index;
   staffAccounts: typeof staffAccounts;
   streak: typeof streak;
+  streakRules: typeof streakRules;
   studentAccounts: typeof studentAccounts;
   studentCredentials: typeof studentCredentials;
   studentImport: typeof studentImport;
@@ -214,6 +233,7 @@ declare const fullApi: ApiFromModules<{
   "voice/speakable": typeof voice_speakable;
   waitlist: typeof waitlist;
   waitlistRules: typeof waitlistRules;
+  worldRules: typeof worldRules;
 }>;
 
 /**

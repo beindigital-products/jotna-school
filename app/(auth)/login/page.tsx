@@ -5,6 +5,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { useBrowserOnline } from "@/components/offline/use-browser-online";
+import { useIsNativeApp } from "@/hooks/use-native-app";
+import { kidMessages } from "@/lib/kidCopy";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
@@ -14,6 +17,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Se connecter demande le réseau, même dans l'application qui joue sans :
+  // c'est la seule étape qui ne peut pas se faire hors ligne. Le hors-ligne
+  // n'existe que dans l'application iOS/Android (`docs/hors-ligne.md`).
+  const online = useBrowserOnline();
+  const native = useIsNativeApp();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +64,13 @@ export default function LoginPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">
           {error}
+        </div>
+      )}
+
+      {native && !online && (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-800">
+          <p className="font-semibold">{kidMessages.offline.firstConnectionTitle}</p>
+          <p>{kidMessages.offline.firstConnectionBody}</p>
         </div>
       )}
 
