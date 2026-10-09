@@ -5,8 +5,9 @@ import MatchPreview from "./MatchPreview";
 import OrderPreview from "./OrderPreview";
 import DragDropPreview from "./DragDropPreview";
 import ShortAnswerPreview from "./ShortAnswerPreview";
-
-type ExerciseType = "qcm" | "drag-drop" | "match" | "order" | "short-answer";
+import GamePreview from "./GamePreview";
+import { isGameScreenType } from "./GameExercise";
+import type { ExerciseType } from "@/convex/exerciseTypes";
 
 interface ExercisePreviewProps {
   type: ExerciseType;
@@ -40,6 +41,9 @@ export default function ExercisePreview({
     case "short-answer":
       return <ShortAnswerPreview prompt={prompt} payload={payload} />;
     default:
+      if (isGameScreenType(type)) {
+        return <GamePreview type={type} prompt={prompt} payload={payload} />;
+      }
       return (
         <div className="text-sm text-gray-400">
           Type d&apos;exercice non reconnu

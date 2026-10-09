@@ -30,6 +30,18 @@ export interface PalierBasePromptInput {
    * Absent, dix — l'ancienne grille.
    */
   palierCount?: number;
+  /**
+   * Le contenu officiel visé par la thématique (`topics.description`, écrit
+   * d'après le programme pour les thématiques chargées par `programme/seed`).
+   * Le modèle n'en savait rien : il ne lisait que le nom, et « Les rois et
+   * leurs titres » laissait tout inventer.
+   */
+  topicDescription?: string;
+  /**
+   * Combien d'exercices le modèle doit écrire. Dix d'ordinaire ; moins quand
+   * des jeux fabriqués par le code complètent le palier (`paliers/games`).
+   */
+  exerciseCount?: number;
 }
 
 export interface PersonalizedPromptInput extends PalierBasePromptInput {
@@ -57,7 +69,18 @@ const SENEGAL_ANCHOR = `\nANCRAGE CULTUREL OBLIGATOIRE (impératif) :
 - Mode de vie : famille élargie, école sénégalaise, marché, cour de récréation locale.
 - Pas de neige, pas de châteaux européens, pas de dollars.`;
 
-const TYPES_LIST = `qcm, drag-drop, match, order, short-answer`;
+const TYPES_LIST = `qcm, drag-drop, match, order, short-answer, fill-blank`;
+
+/**
+ * En mathématiques, pas de phrase à trous : un calcul à trou s'écrit en
+ * réponse courte, que `mathRepair` vérifie par le calcul. Une phrase à trous
+ * échapperait à cette vérification.
+ */
+const MATH_TYPES_LIST = `qcm, drag-drop, match, order, short-answer`;
+
+function typesFor(subject: string): string {
+  return isMathSubject(subject) ? MATH_TYPES_LIST : TYPES_LIST;
+}
 
 const HINTS_RULE = `
 - 3 indices progressifs : le 1er = relire l'énoncé / observer ;
@@ -134,7 +157,7 @@ const JSON_SHAPE = `
 {
   "exercises": [
     {
-      "type": "qcm" | "drag-drop" | "match" | "order" | "short-answer",
+      "type": "qcm" | "drag-drop" | "match" | "order" | "short-answer" | "fill-blank",
       "statement": "énoncé clair, court, kid-friendly",
       "payload": { ... shape selon le type ... },
       "correctAnswer": "réponse canonique sous forme texte",
@@ -152,15 +175,126 @@ Schémas de payload :
   order      -> { "correctSequence": string[] }
   drag-drop  -> { "zones": string[], "items": [ { "text": string, "correctZone": string } ] }
   short-answer -> { "acceptedAnswers": string[], "tolerance"?: string }
+  fill-blank -> { "text": "phrase où chaque trou s'écrit ___", "blanks": [ { "options": string[], "answer": string } ] }
 
 Règles du drag-drop (l'enfant doit comprendre où poser chaque étiquette) :
   - Chaque zone porte sa VRAIE étiquette, lisible par l'enfant : le résultat
     ("12"), la catégorie ("Fruits"), le mot ("Le"). JAMAIS "Zone A", "Zone 1",
     "A", "B" : l'enfant ne peut pas savoir ce que c'est.
   - Une étiquette n'est jamais identique à sa zone ("a" à poser sur "a") : pour
-    choisir un mot dans une phrase, utilise un qcm dont les options sont les mots.
+    choisir un mot dans une phrase, utilise un fill-blank.
   - Pour remettre des mots, des syllabes ou des étapes dans l'ordre, utilise order.
-  - Chaque "correctZone" est exactement l'une des "zones".`;
+  - Chaque "correctZone" est exactement l'une des "zones".
+  - Pour trier des affirmations vraies et fausses, deux zones : "Vrai" et "Faux".
+
+Règles du fill-blank (la phrase à trous) :
+  - De 1 à 3 trous, chacun écrit ___ (trois tirets bas) dans "text", autant de
+    trous que d'éléments dans "blanks", dans le même ordre.
+  - Chaque trou propose 2 à 4 mots ; "answer" est EXACTEMENT l'un d'eux.
+  - Idéal pour la conjugaison, les accords, les homophones (a/à, et/est, son/sont),
+    les déterminants, et pour compléter une phrase de sciences ou d'histoire.
+  - "correctAnswer" est la phrase complète, trous remplis.`;
+
+/**
+ * LES RÈGLES PROPRES À CHAQUE MATIÈRE. Le modèle écrivait un exercice
+ * d'histoire comme un exercice de calcul : rien ne lui disait qu'une date
+ * inventée s'apprend aussi bien qu'une vraie.
+ */
+const FACTS_RULE = `
+[Exactitude — matière de connaissances]
+- N'invente AUCUN fait, aucune date, aucun nom de personne ou de lieu : utilise
+  ceux du « contenu officiel » ci-dessous, ou des faits très connus et sûrs.
+- En cas de doute sur un fait, pose plutôt une question sur une notion sûre.
+- Les distracteurs d'un QCM sont plausibles mais clairement faux pour qui sait.`;
+
+const SUBJECT_RULES: { match: RegExp; rules: string }[] = [
+  {
+    match: /fran[cç]ais|langue/i,
+    rules: `
+[Français]
+- Orthographe, accords et conjugaisons IRRÉPROCHABLES dans l'énoncé comme dans
+  les options : un enfant apprend aussi ce qu'il lit.
+- Une seule bonne réponse par question ; pas d'option « presque juste ».
+- Varie : fill-blank pour la conjugaison et les accords, order pour remettre une
+  phrase ou une histoire dans l'ordre, match pour associer, qcm pour comprendre.
+- Les textes à lire sont courts et écrits pour l'exercice (jamais une citation
+  attribuée à un auteur).`,
+  },
+  {
+    match: /histoire/i,
+    rules: `${FACTS_RULE}
+[Histoire]
+- order pour remettre des événements dans l'ordre chronologique ; match pour
+  associer un personnage et ce qu'il a fait, un royaume et le titre de son roi.`,
+  },
+  {
+    match: /g[ée]ograph/i,
+    rules: `${FACTS_RULE}
+[Géographie]
+- Le Sénégal de l'enfant d'abord : sa région, ses fleuves, ses saisons, ses villes.
+- drag-drop pour classer (régions, activités, saisons), match pour associer une
+  ville et sa région, qcm pour se repérer.`,
+  },
+  {
+    match: /scien|[ée]veil|ist\b/i,
+    rules: `${FACTS_RULE}
+[Éveil scientifique]
+- Des faits scientifiques exacts, observables dans la vie de l'enfant.
+- La santé (paludisme, hygiène, eau potable) se traite avec bienveillance, sans
+  faire peur ; ce que l'enfant peut faire lui-même.
+- drag-drop pour classer (animaux, aliments, états de la matière), order pour les
+  étapes d'un cycle de vie ou d'une expérience.`,
+  },
+  {
+    match: /civi|emc|vivre ensemble/i,
+    rules: `${FACTS_RULE}
+[Instruction civique]
+- Des situations de la vie de l'enfant (la classe, la rue, le quartier) où il
+  choisit le bon comportement ; jamais de morale culpabilisante.
+- Les symboles et les institutions de la République sont exacts.`,
+  },
+  {
+    match: /artisti|arts|musi|dessin/i,
+    rules: `${FACTS_RULE}
+[Éducation artistique]
+- Les jeux de couleurs, de dessin et d'écoute sont fabriqués à part : écris des
+  questions de connaissance et de sensibilité (le matériel, les instruments et la
+  façon d'en jouer, les étapes d'une technique, les émotions d'un personnage).
+- Les émojis aident beaucoup (🥁 🎨 😢 😀) ; les paroles d'une chanson ou de
+  l'hymne ne se citent jamais.`,
+  },
+];
+
+/** Les règles de la matière, ou une chaîne vide (les mathématiques ont les leurs). */
+export function subjectRules(subject: string): string {
+  if (isMathSubject(subject)) return "";
+  return SUBJECT_RULES.find((entry) => entry.match.test(subject))?.rules ?? "";
+}
+
+/** Au CI et au CP, l'enfant ne lit pas encore : seule la consigne lui est lue. */
+function readingLearnerRules(cls: ClassLevel): string {
+  if (cls !== "CI" && cls !== "CP") return "";
+  return `
+[Enfant qui apprend à lire — ${cls}]
+- La consigne ("statement") est lue à voix haute par l'application : elle peut
+  être une vraie phrase, mais courte.
+- Les options, les étiquettes et les mots à relier, l'enfant doit les reconnaître
+  SANS lire de phrase : un émoji, un nombre, une syllabe, un mot très court.
+- Pas de short-answer au CI : l'enfant ne sait pas encore écrire au clavier.`;
+}
+
+function topicBlock(description: string | undefined): string {
+  const text = description?.trim();
+  if (!text) return "";
+  return `
+[Contenu officiel visé par la thématique — ne sors pas de ce cadre]
+${text}
+`;
+}
+
+function shapeFor(count: number): string {
+  return JSON_SHAPE.replace("// ... 10 items au total", `// ... ${count} items au total`);
+}
 
 export function buildPalierBaseSystemPrompt(input: PalierBasePromptInput): string {
   const age = ageForClass(input.class);
@@ -176,18 +310,20 @@ ${SENEGAL_ANCHOR}
 - Pas de question à pièges méchants ; bienveillance toujours.
 - Au moins 3 types d'exos différents dans le palier (Decision 63).
 ${HINTS_RULE}
-${isMaths ? MATH_MIX_RULES + MATH_OUTPUT_RULES : ""}`;
+${readingLearnerRules(input.class)}
+${isMaths ? MATH_MIX_RULES + MATH_OUTPUT_RULES : subjectRules(input.subject)}`;
 }
 
 export function buildPalierBasePrompt(input: PalierBasePromptInput): string {
+  const count = input.exerciseCount ?? 10;
   return `[Tâche]
-Génère 10 exercices pour la matière "${input.subject}", thème "${input.topic}",
+Génère ${count} exercices pour la matière "${input.subject}", thème "${input.topic}",
 palier ${input.palierIndex}/${countOf(input)}, classe ${input.class}.
-
-Types autorisés : ${TYPES_LIST}.
+${topicBlock(input.topicDescription)}
+Types autorisés : ${typesFor(input.subject)}.
 ${DIFFICULTY_NOTE(input.palierIndex, countOf(input))}
 
-${JSON_SHAPE}`;
+${shapeFor(count)}`;
 }
 
 export function buildPersonalizedSystemPrompt(input: PersonalizedPromptInput): string {
@@ -209,7 +345,7 @@ Cet enfant veut faire 10 exercices supplémentaires sur le thème "${input.topic
 Cible spécifiquement ce qui pose problème à cet enfant — il a déjà fait le palier de base.
 ${weaknessesBlock}${mistakesBlock}
 
-Types autorisés : ${TYPES_LIST}.
+Types autorisés : ${typesFor(input.subject)}.
 ${DIFFICULTY_NOTE(input.palierIndex, countOf(input))}
 
 ${JSON_SHAPE}`;
@@ -228,7 +364,8 @@ ${SENEGAL_ANCHOR}
 - Reste au même niveau de difficulté.
 - Évite spécifiquement le piège qui a fait rater l'enfant — voir ses erreurs.
 ${HINTS_RULE}
-${isMathSubject(input.subject) ? MATH_MIX_RULES + MATH_OUTPUT_RULES : ""}`;
+${readingLearnerRules(input.class)}
+${isMathSubject(input.subject) ? MATH_MIX_RULES + MATH_OUTPUT_RULES : subjectRules(input.subject)}`;
 }
 
 export function buildVariationPrompt(input: VariationPromptInput): string {
@@ -245,7 +382,7 @@ Pour chacun, génère UNE VARIATION qui force la même technique mais change le 
 [Exercices ratés]
 ${failedBlock}
 
-Types autorisés : ${TYPES_LIST}.
+Types autorisés : ${typesFor(input.subject)}.
 
 ${JSON_SHAPE.replace(
   "// ... 10 items au total",

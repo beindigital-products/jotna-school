@@ -8,18 +8,24 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Save, ArrowLeft, Loader2, Plus, X } from "lucide-react";
 import { refusalMessage } from "@/lib/refusalMessage";
 import { useServerFormSync } from "@/hooks/use-server-form-sync";
+import type { ExerciseType } from "@/convex/exerciseTypes";
 
 // Minimal teacher-facing editor: name/prompt/hints/type only.
 // For richer payload editing, teachers can use the admin editor if granted access.
 
-type ExerciseType = "qcm" | "drag-drop" | "match" | "order" | "short-answer";
-
+// Un exercice fabriqué par le code (frise, dessin, écoute, couleurs) garde
+// son type : il apparaît dans la liste pour que le choix affiché soit juste.
 const TYPE_OPTIONS: { value: ExerciseType; label: string }[] = [
   { value: "qcm", label: "QCM" },
   { value: "drag-drop", label: "Glisser-déposer" },
   { value: "match", label: "Associer" },
   { value: "order", label: "Ordonner" },
   { value: "short-answer", label: "Réponse courte" },
+  { value: "fill-blank", label: "Phrase à trous" },
+  { value: "pattern", label: "Frise (jeu)" },
+  { value: "pixel-art", label: "Dessin sur quadrillage (jeu)" },
+  { value: "listen", label: "Écoute (jeu)" },
+  { value: "color-mix", label: "Atelier des couleurs (jeu)" },
 ];
 
 function TeacherExerciseEditPageInner() {

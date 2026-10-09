@@ -1,11 +1,24 @@
 import type { ComponentType, SVGProps } from "react";
-import { BookOpen, Calculator, Languages, Sparkles } from "lucide-react";
+import {
+  BookOpen,
+  Calculator,
+  FlaskConical,
+  HeartHandshake,
+  Landmark,
+  Languages,
+  MapPinned,
+  Palette,
+  Sparkles,
+} from "lucide-react";
 
 import { Section } from "./section";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion-wrapper";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 
+// Les sept matières du programme officiel (`convex/programme`), résumées pour
+// la vitrine : la liste complète des thématiques, classe par classe, est dans
+// `docs/programme-et-jeux.md`.
 const SUBJECTS: {
   icon: Icon;
   title: string;
@@ -13,18 +26,46 @@ const SUBJECTS: {
   gradient: string;
 }[] = [
   {
+    icon: BookOpen,
+    title: "Français",
+    description: "Des premiers sons du CI aux textes du CM2 : lire, écrire, conjuguer, accorder.",
+    gradient: "bg-gradient-to-br from-pink-500 to-rose-600",
+  },
+  {
     icon: Calculator,
     title: "Mathématiques",
-    description:
-      "Nombres, opérations, fractions : des chapitres adaptés à chaque niveau, du CI au CM2.",
+    description: "Nombres, calcul, géométrie, mesures et problèmes, du CI au CM2.",
     gradient: "bg-gradient-to-br from-indigo-500 to-indigo-700",
   },
   {
-    icon: BookOpen,
-    title: "Français",
-    description:
-      "Vocabulaire, grammaire, lecture : des chapitres adaptés à chaque niveau, du CI au CM2.",
-    gradient: "bg-gradient-to-br from-pink-500 to-rose-600",
+    icon: FlaskConical,
+    title: "Éveil scientifique",
+    description: "Le corps, les plantes, les animaux, l'eau, l'électricité, la santé et l'environnement.",
+    gradient: "bg-gradient-to-br from-emerald-500 to-teal-600",
+  },
+  {
+    icon: Landmark,
+    title: "Histoire",
+    description: "Du temps qui passe aux royaumes du Sénégal, aux grands empires et à l'indépendance.",
+    gradient: "bg-gradient-to-br from-amber-500 to-orange-700",
+  },
+  {
+    icon: MapPinned,
+    title: "Géographie",
+    description: "Se repérer, lire une carte, découvrir les régions, les saisons et les ressources du Sénégal.",
+    gradient: "bg-gradient-to-br from-sky-500 to-cyan-600",
+  },
+  {
+    icon: HeartHandshake,
+    title: "Instruction civique",
+    description: "Vivre ensemble : politesse, code de la route, symboles de la Nation, institutions.",
+    gradient: "bg-gradient-to-br from-violet-500 to-indigo-600",
+  },
+  {
+    icon: Palette,
+    title: "Éducation artistique",
+    description: "Couleurs, dessin, symétrie, sons et rythmes : des jeux pour s'exercer chaque jour.",
+    gradient: "bg-gradient-to-br from-fuchsia-500 to-pink-600",
   },
 ];
 
@@ -45,12 +86,12 @@ export function Subjects() {
       id="matieres"
       eyebrow="Matières et modules"
       title="Ce que l'élève peut apprendre."
-      description="Les matières du programme sont accessibles à tous les élèves. Les modules sont des enseignements en plus, que l'école active selon ses besoins."
+      description="Les sept matières du programme officiel sénégalais, du CI au CM2, sont accessibles à tous les élèves. Les modules sont des enseignements en plus, que l'école active selon ses besoins."
     >
       <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-gray-500">
         Les matières du programme
       </h3>
-      <StaggerContainer className="mt-4 grid gap-4 sm:grid-cols-2">
+      <StaggerContainer className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {SUBJECTS.map(({ icon: Icon, title, description, gradient }) => (
           <StaggerItem
             key={title}
