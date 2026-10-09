@@ -15,7 +15,6 @@
  *   await logout(signOut);
  */
 
-import { HAS_STUDENT_SPACE, STUDENT_APP_ONLY_PATH } from "./build-target";
 
 type SignIn = (
   provider: string,
@@ -118,8 +117,7 @@ export function roleHomePath(role: Role | null | undefined): string {
     case "directeur":
       return "/school/dashboard";
     case "student":
-      // Sur le site web, l'espace élève n'existe pas (`lib/build-target.ts`).
-      return HAS_STUDENT_SPACE ? "/student/home" : STUDENT_APP_ONLY_PATH;
+      return "/student/home";
     default:
       return "/login";
   }

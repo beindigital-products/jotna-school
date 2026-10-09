@@ -812,7 +812,7 @@ const Twinkle: React.FC<{ x: number; y: number; i: number }> = ({ x, y, i }) => 
   return <div style={{ position: "absolute", left: x, top: y, width: 4, height: 4, borderRadius: 2, background: "#fff", opacity: o, boxShadow: "0 0 6px #fff" }} />;
 };
 
-/** La carte de la leçon choisie sur le chemin (app/(student)/student/arabe/page.app.tsx, LessonCard). */
+/** La carte de la leçon choisie sur le chemin (app/(student)/student/arabe/page.tsx, LessonCard). */
 const LessonCard: React.FC<{ at: number; tapAt: number }> = ({ at, tapAt }) => {
   const frame = useCurrentFrame();
   const p = progress(frame, at, 8, OUT);

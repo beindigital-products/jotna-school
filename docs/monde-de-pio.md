@@ -9,10 +9,9 @@ Le jeu motive entre les exercices, jamais pendant.
 Ce document dit ce qui a été construit, pourquoi, et comment l'étendre sans
 casser ce qui tient.
 
-Depuis le 29 septembre 2026, cet espace n'existe que dans l'application iOS
-et Android ; le site web ne sert plus que l'école, les professeurs et les
-parents (`docs/capacitor-ios.md`, « Deux cibles »). Pour le voir dans un
-navigateur en local, lancez `pnpm dev:app`.
+Cet espace est servi sur le web (ordinateur, tablette, smartphone) comme dans
+l'application iOS et Android : même code, même export statique. `pnpm dev`
+suffit pour le voir en local.
 
 ## D'où vient la conception
 

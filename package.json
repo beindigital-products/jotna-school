@@ -4,19 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:app": "JOTNA_TARGET=app next dev",
     "build": "next build",
-    "build:app": "JOTNA_TARGET=app next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
     "test:e2e": "playwright test",
-    "ios:sync": "JOTNA_TARGET=app next build && cap sync ios",
+    "ios:sync": "next build && cap sync ios",
     "ios:open": "cap open ios",
     "ios:brand": "bash scripts/ios-brand-assets.sh",
-    "android:sync": "JOTNA_TARGET=app next build && cap sync android",
+    "android:sync": "next build && cap sync android",
     "android:open": "cap open android",
-    "android:run": "JOTNA_TARGET=app next build && cap run android",
+    "android:run": "next build && cap run android",
     "preview:export": "node scripts/serve-export.mjs 4173 out"
   },
   "dependencies": {
