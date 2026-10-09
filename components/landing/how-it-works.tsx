@@ -19,6 +19,8 @@ type Step = {
   title: string;
   description: string;
   accent: string;
+  audience: string;
+  where: string;
 };
 
 const STEPS: Step[] = [
@@ -27,30 +29,36 @@ const STEPS: Step[] = [
     icon: ParentHeartIcon,
     iconGradient: "bg-gradient-to-br from-amber-400 to-orange-500",
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(245,158,11,0.55)]",
-    title: "Un adulte crée son compte",
+    title: "Créez votre compte sur le site",
     description:
-      "École, professeur ou parent : l'inscription est libre et gratuite. Un seul compte parent suffit pour plusieurs enfants.",
+      "Inscrivez-vous gratuitement sur le site web, en tant que parent ou professeur. Un seul compte parent suffit pour suivre plusieurs enfants.",
     accent: "bg-amber-50 text-amber-800 ring-amber-200",
+    audience: "Parent ou professeur",
+    where: "Sur le site web",
   },
   {
     number: "02",
     icon: LoginTicketIcon,
     iconGradient: "bg-gradient-to-br from-lime-500 to-emerald-600",
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(101,163,13,0.55)]",
-    title: "Il crée le compte de l'enfant",
+    title: "Créez le compte de l'enfant",
     description:
-      "Le parent ou le professeur crée le compte en deux champs : nom et classe. L'enfant reçoit son code de connexion.",
+      "Depuis votre espace, indiquez le nom et la classe de l'enfant. Jotna School génère son code de connexion : donnez-le-lui.",
     accent: "bg-lime-50 text-lime-800 ring-lime-200",
+    audience: "Parent ou professeur",
+    where: "Sur le site web",
   },
   {
     number: "03",
     icon: TrophyRibbonIcon,
     iconGradient: "bg-gradient-to-br from-orange-400 to-amber-600",
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(249,115,22,0.55)]",
-    title: "L'enfant apprend et progresse",
+    title: "Connecte-toi et apprends",
     description:
-      "Il tape son code dans l'application et joue aux exercices de sa classe. Chaque réussite fait grimper sa jauge et débloque des badges.",
+      "Ouvre l'application Jotna School, saisis ton code et fais les exercices de ta classe. Chaque réussite fait grimper ta jauge et débloque des badges.",
     accent: "bg-orange-50 text-orange-800 ring-orange-200",
+    audience: "Élève",
+    where: "Dans l'application",
   },
 ];
 
@@ -59,8 +67,8 @@ export function HowItWorks() {
     <Section
       id="comment"
       eyebrow="Comment ça marche"
-      title="Trois étapes pour démarrer."
-      description="L'élève apprend dans l'application Jotna School, sur tablette ou téléphone. Parents et professeurs suivent ses progrès depuis le site web."
+      title="Démarrer en 3 étapes."
+      description="Les étapes 1 et 2 sont pour le parent ou le professeur, sur le site web. L'étape 3 est pour l'élève, dans l'application sur tablette ou téléphone."
     >
       <div className="relative">
         <svg
@@ -103,7 +111,12 @@ export function HowItWorks() {
                   <Icon className="size-5" />
                 </span>
               </div>
-              <h3 className="mt-5 text-xl font-extrabold text-gray-900">
+              <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Pour : <span className="text-gray-900">{step.audience}</span>
+                <span aria-hidden> · </span>
+                {step.where}
+              </p>
+              <h3 className="mt-2 text-xl font-extrabold text-gray-900">
                 {step.title}
               </h3>
               <p className="mt-2 text-sm leading-6 text-gray-600">
@@ -113,6 +126,10 @@ export function HowItWorks() {
           );
         })}
         </StaggerContainer>
+        <p className="relative z-10 mt-6 text-center text-sm text-gray-600">
+          Ensuite, le parent ou le professeur suit les progrès de l'élève
+          depuis le site web.
+        </p>
       </div>
     </Section>
   );
