@@ -140,7 +140,9 @@ Les sons de l'écoute sont synthétisés par l'appareil (`lib/sounds/synth.ts`).
 Il n'y a aucun fichier à télécharger, et tout fonctionne sans réseau. Les
 motifs du dessin (baobab, case, djembé, drapeau du Sénégal, papillon,
 rosace…) sont dessinés à la main dans `paliers/games/pixel.ts`. Les tests
-vérifient leurs couleurs et leur symétrie.
+vérifient leurs couleurs et leur symétrie. Sur un téléphone, l'écran du
+dessin tient sans défiler, « Valider » compris : les cases prennent la place
+libre, entre 26 et 44 px (`components/exercises/pixel-grid-fit.ts`).
 
 Dans l'administration, ces types s'éditent par leur JSON, avec un exemple de
 départ. L'aperçu montre l'écran de l'enfant, jouable, et dit si la réponse

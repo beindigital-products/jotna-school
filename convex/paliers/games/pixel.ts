@@ -71,7 +71,7 @@ export const LARGE_MOTIFS: Motif[] = [
   },
   {
     key: "case",
-    name: "la case",
+    name: "la case du village",
     mirror: true,
     rows: ["...YY...", "..YYYY..", ".YYYYYY.", "YYYYYYYY", ".NNNNNN.", ".NNNNNN.", ".NNZZNN.", ".NNZZNN."],
   },

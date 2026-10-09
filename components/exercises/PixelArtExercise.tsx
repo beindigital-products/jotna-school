@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { Eraser, Eye, RotateCcw } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
 import { BrokenExercise, SubmitButton, type ExerciseScreenProps } from "./game-parts";
+import { FRAME, fitGrid } from "./pixel-grid-fit";
 import { EMPTY_CELL, type PixelArtView, type PixelPaint } from "@/convex/paliers/games/types";
+
+/** L'air laissé sous « Valider », pour qu'il ne colle pas au bas de l'écran. */
+const BOTTOM_SLACK = 12;
 
 /**
  * LE DESSIN SUR QUADRILLAGE — reproduire un modèle, le redessiner de
@@ -12,8 +23,12 @@ import { EMPTY_CELL, type PixelArtView, type PixelPaint } from "@/convex/paliers
  *
  * L'enfant choisit une couleur, puis touche les cases — ou glisse le doigt
  * pour en peindre plusieurs. Toucher une case déjà de cette couleur l'efface,
- * comme la gomme. En symétrie, la moitié donnée est verrouillée et le miroir
- * est tracé en rouge.
+ * comme la gomme. En symétrie, la moitié donnée est verrouillée, un peu
+ * pâlie tant que l'enfant dessine, et le miroir est tracé en rouge.
+ *
+ * TOUT TIENT DANS L'ÉCRAN, « Valider » compris : la taille des cases se
+ * calcule sur la place libre (`pixel-grid-fit.ts`), mesurée avant le premier
+ * affichage.
  */
 export default function PixelArtExercise({
   prompt,
@@ -55,6 +70,41 @@ export default function PixelArtExercise({
   const [peeksLeft, setPeeksLeft] = useState(1);
   const gridRef = useRef<HTMLDivElement>(null);
   const stroke = useRef<"paint" | "erase" | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const [room, setRoom] = useState<{ width: number; height: number } | null>(null);
+
+  // LA PLACE LIBRE pour les quadrillages : du haut de leur zone au bas de
+  // l'écran, moins ce qui les suit (palette, « Valider »). Rien de cela ne
+  // dépend de la taille des cases, la mesure ne boucle donc pas. On la
+  // reprend quand l'écran tourne ou que la consigne change de hauteur (la
+  // police arrive après coup).
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!valid || !root) return;
+    const measure = () => {
+      const zone = zoneRef.current;
+      // Pas encore mis en page (ou rendu hors navigateur, dans les tests).
+      if (!zone || root.clientWidth === 0) return;
+      const box = root.getBoundingClientRect();
+      const zoneBox = zone.getBoundingClientRect();
+      const free = {
+        width: root.clientWidth,
+        height: Math.floor(
+          screenHeight() - (zoneBox.top + window.scrollY) - (box.bottom - zoneBox.bottom) - BOTTOM_SLACK,
+        ),
+      };
+      setRoom((prev) => (prev?.width === free.width && prev.height === free.height ? prev : free));
+    };
+    measure();
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
+    observer?.observe(root);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [valid]);
 
   // Le modèle de mémoire se cache tout seul au bout du compte à rebours.
   useEffect(() => {
@@ -85,10 +135,19 @@ export default function PixelArtExercise({
   const isLocked = (r: number, c: number) =>
     given !== null && (axis === "vertical" ? c < half : r < half);
   const canPaint = !disabled && phase === "draw" && !peeking;
+  // Réussi, le dessin se montre entier : plus de moitié pâlie, plus de voile.
+  const solved = isCorrect === true;
   const colorOf = (key: string) => palette.find((p) => p.key === key)?.color;
 
-  const cellSize = Math.min(44, Math.floor(296 / Math.max(width, height)));
-  const modelCell = Math.min(26, Math.floor(200 / Math.max(width, height)));
+  const { cell: cellSize, modelCell, sideBySide } = fitGrid({
+    cols: width,
+    rows: height,
+    model: model !== null,
+    controls: mode === "memory",
+    // Avant la mesure : la largeur du plus étroit des téléphones courants.
+    width: room?.width ?? 280,
+    height: room?.height ?? Infinity,
+  });
 
   const cellAt = (clientX: number, clientY: number): [number, number] | null => {
     const el = gridRef.current;
@@ -139,67 +198,76 @@ export default function PixelArtExercise({
   const painted = grid.some((row, r) => row.some((cell, c) => cell !== EMPTY_CELL && !isLocked(r, c)));
 
   return (
-    <div className="space-y-5">
+    <div ref={rootRef} className="space-y-4 sm:space-y-5">
       <ExercisePrompt prompt={prompt} />
 
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-center">
+      <div
+        ref={zoneRef}
+        className={`flex justify-center gap-4 ${sideBySide ? "flex-row items-start" : "flex-col items-center"}`}
+      >
         {model && (
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-sm font-bold text-gray-500">Le modèle</p>
-            {showModel ? (
-              <div className="relative">
+          <div className={`flex gap-3 ${sideBySide ? "flex-col items-center" : "flex-row items-center"}`}>
+            <div className="relative">
+              <FrameLabel>Le modèle</FrameLabel>
+              {showModel ? (
                 <MiniGrid rows={model} width={width} cell={modelCell} colorOf={colorOf} />
-                {mode === "memory" && phase === "show" && (
-                  <span className="absolute -right-3 -top-3 flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-lg font-extrabold text-white shadow-lg">
-                    {remaining}
+              ) : (
+                <div
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl border-3 border-dashed border-gray-300 bg-gray-50 text-center"
+                  style={{ width: modelCell * width + FRAME, height: modelCell * height + FRAME }}
+                >
+                  <span className="text-3xl" aria-hidden>
+                    🙈
                   </span>
+                  <span className="px-2 text-xs font-bold text-gray-500">Caché !</span>
+                </div>
+              )}
+              {mode === "memory" && phase === "show" && (
+                <span className="absolute -right-3 -top-3 flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-lg font-extrabold text-white shadow-lg">
+                  {remaining}
+                </span>
+              )}
+            </div>
+            {mode === "memory" && (
+              // Une colonne de largeur fixe, même vide : le modèle ne bouge
+              // pas d'une phase à l'autre.
+              <div className="flex w-28 flex-col items-center gap-2 text-center">
+                {phase === "show" && (
+                  <button
+                    type="button"
+                    onClick={() => setPhase("draw")}
+                    className="rounded-xl bg-orange-100 px-3 py-2 text-sm font-bold leading-tight text-orange-800 hover:bg-orange-200"
+                  >
+                    J&apos;ai retenu !
+                  </button>
+                )}
+                {phase === "draw" && peeksLeft > 0 && !disabled && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPeeksLeft((n) => n - 1);
+                      setPeeking(true);
+                    }}
+                    className="inline-flex flex-col items-center gap-0.5 rounded-xl bg-sky-100 px-3 py-2 text-sm font-bold leading-tight text-sky-800 hover:bg-sky-200"
+                  >
+                    <Eye className="h-4 w-4" aria-hidden /> Revoir 3 secondes
+                  </button>
                 )}
               </div>
-            ) : (
-              <div
-                className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 text-center"
-                style={{ width: modelCell * width + 8, height: modelCell * height + 8 }}
-              >
-                <span className="text-3xl" aria-hidden>
-                  🙈
-                </span>
-                <span className="px-2 text-xs font-bold text-gray-500">Caché !</span>
-              </div>
-            )}
-            {mode === "memory" && phase === "show" && (
-              <button
-                type="button"
-                onClick={() => setPhase("draw")}
-                className="rounded-xl bg-orange-100 px-3 py-1.5 text-sm font-bold text-orange-800 hover:bg-orange-200"
-              >
-                J&apos;ai retenu !
-              </button>
-            )}
-            {mode === "memory" && phase === "draw" && peeksLeft > 0 && !disabled && (
-              <button
-                type="button"
-                onClick={() => {
-                  setPeeksLeft((n) => n - 1);
-                  setPeeking(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-100 px-3 py-1.5 text-sm font-bold text-sky-800 hover:bg-sky-200"
-              >
-                <Eye className="h-4 w-4" aria-hidden /> Revoir 3 secondes
-              </button>
             )}
           </div>
         )}
 
-        <div className="flex flex-col items-center gap-2">
-          {model && <p className="text-sm font-bold text-gray-500">Ton dessin</p>}
+        <div className="relative">
+          {model && <FrameLabel>Ton dessin</FrameLabel>}
           <div
             className={`relative rounded-xl border-3 p-1 ${
-              isCorrect === true
+              solved
                 ? "border-green-400 animate-[pop-in_0.45s_ease-out]"
                 : isCorrect === false
                   ? "border-red-400 animate-[shake_0.5s_ease-in-out]"
                   : "border-gray-300"
-            } ${canPaint ? "" : "opacity-80"}`}
+            } ${canPaint || solved ? "" : "opacity-80"}`}
           >
             <div
               ref={gridRef}
@@ -219,7 +287,7 @@ export default function PixelArtExercise({
             >
               {grid.map((row, r) =>
                 row.map((cell, c) => {
-                  const locked = isLocked(r, c);
+                  const pale = isLocked(r, c) && !solved;
                   const color = cell === EMPTY_CELL ? undefined : colorOf(cell);
                   const digit = numbers?.[r]?.[c];
                   return (
@@ -228,12 +296,12 @@ export default function PixelArtExercise({
                       role="gridcell"
                       aria-label={`Ligne ${r + 1}, colonne ${c + 1}${color ? `, ${palette.find((p) => p.key === cell)?.name}` : ", vide"}`}
                       className={`relative flex items-center justify-center border border-gray-200 text-[11px] font-bold ${
-                        locked ? "after:absolute after:inset-0 after:bg-white/25" : ""
+                        pale ? "after:absolute after:inset-0 after:bg-white/25" : ""
                       }`}
                       style={{
                         width: cellSize,
                         height: cellSize,
-                        backgroundColor: color ?? (locked ? "#f3f4f6" : "#ffffff"),
+                        backgroundColor: color ?? (pale ? "#f3f4f6" : "#ffffff"),
                       }}
                     >
                       {digit && digit !== "0" && (
@@ -259,7 +327,10 @@ export default function PixelArtExercise({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2.5">
+      {/* Une seule rangée sur téléphone : quatre couleurs au plus, la gomme
+          et « Tout effacer » en icônes, nommés sur grand écran. Les numéros
+          du coloriage magique sont sur les pastilles : elles font légende. */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
         {palette.map((paint, i) => (
           <button
             key={paint.key}
@@ -268,50 +339,98 @@ export default function PixelArtExercise({
             disabled={!canPaint}
             aria-pressed={selected === paint.key}
             aria-label={numbers ? `${i + 1} : ${paint.name}` : paint.name}
-            className={`flex h-12 min-w-12 items-center justify-center gap-1 rounded-full border-3 px-1 transition-all ${
+            title={numbers ? `${i + 1} : ${paint.name}` : paint.name}
+            className={`flex h-10 min-w-10 items-center justify-center rounded-full border-3 px-0.5 transition-all ${
               selected === paint.key ? "scale-110 border-gray-900 shadow-lg" : "border-white shadow"
             } disabled:opacity-60`}
             style={{ backgroundColor: paint.color }}
           >
             {numbers && (
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/85 text-sm font-extrabold text-gray-900">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/85 text-[11px] font-extrabold text-gray-900">
                 {i + 1}
               </span>
             )}
           </button>
         ))}
-        <button
-          type="button"
+        <ToolButton
+          label="Gomme"
+          icon={<Eraser className="h-4 w-4 shrink-0" aria-hidden />}
           onClick={() => setSelected(EMPTY_CELL)}
           disabled={!canPaint}
-          aria-pressed={selected === EMPTY_CELL}
-          className={`inline-flex h-12 items-center gap-1.5 rounded-full border-3 bg-white px-4 text-sm font-bold text-gray-700 transition-all ${
-            selected === EMPTY_CELL ? "scale-105 border-gray-900 shadow-lg" : "border-gray-200 shadow"
-          } disabled:opacity-60`}
-        >
-          <Eraser className="h-4 w-4" aria-hidden /> Gomme
-        </button>
-        <button
-          type="button"
+          pressed={selected === EMPTY_CELL}
+        />
+        <ToolButton
+          label="Tout effacer"
+          icon={<RotateCcw className="h-4 w-4 shrink-0" aria-hidden />}
           onClick={() => setGrid(initial())}
           disabled={!canPaint || !painted}
-          className="inline-flex h-12 items-center gap-1.5 rounded-full border-3 border-gray-200 bg-white px-4 text-sm font-bold text-gray-700 shadow disabled:opacity-50"
-        >
-          <RotateCcw className="h-4 w-4" aria-hidden /> Tout effacer
-        </button>
+        />
       </div>
-
-      {numbers && (
-        <p className="text-center text-sm font-semibold text-gray-600">
-          {palette.map((paint, i) => `${i + 1} = ${paint.name}`).join(" · ")}
-        </p>
-      )}
 
       <SubmitButton
         onClick={() => onSubmit(JSON.stringify(grid.map((row) => row.join(""))))}
         disabled={disabled || phase !== "draw" || !painted}
       />
     </div>
+  );
+}
+
+/**
+ * La hauteur de l'écran barres du navigateur dépliées (`100svh`), moins la
+ * barre d'accueil des iPhone. `innerHeight` grandit quand la barre d'adresse
+ * se replie : calées dessus, les cases changeraient de taille au défilement,
+ * et « Valider » passerait sous la barre à son retour.
+ */
+function screenHeight(): number {
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none;" +
+    "height:calc(100svh - env(safe-area-inset-bottom, 0px))";
+  document.body.appendChild(probe);
+  const height = probe.offsetHeight;
+  probe.remove();
+  // Un navigateur sans `svh` ignore la déclaration : la sonde n'a pas de hauteur.
+  return height > 0 ? Math.min(height, window.innerHeight) : window.innerHeight;
+}
+
+/** Le nom d'un cadre, posé sur sa bordure comme une étiquette : il ne prend pas de hauteur. */
+function FrameLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="pointer-events-none absolute -top-3 left-2.5 z-10 rounded-full bg-white px-1.5 text-[11px] font-bold leading-[18px] text-gray-500">
+      {children}
+    </span>
+  );
+}
+
+/** Gomme, « Tout effacer » : une icône sur téléphone, l'icône et son nom sur grand écran. */
+function ToolButton({
+  label,
+  icon,
+  onClick,
+  disabled,
+  pressed,
+}: {
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+  disabled: boolean;
+  pressed?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={pressed}
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-full border-3 bg-white px-2 text-sm font-bold text-gray-700 transition-all sm:px-4 ${
+        pressed ? "scale-105 border-gray-900 shadow-lg" : "border-gray-200 shadow"
+      } disabled:opacity-50`}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+    </button>
   );
 }
 
