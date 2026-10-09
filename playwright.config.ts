@@ -28,9 +28,6 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Le site web : école, professeurs, parents. L'espace élève n'existe que
-    // dans l'application iOS/Android et ne s'ouvre dans aucun navigateur
-    // (`lib/build-target.ts`) : il se teste sur simulateur ou téléphone.
     command: "pnpm dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,

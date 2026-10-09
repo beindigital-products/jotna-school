@@ -7,8 +7,16 @@ import { Section } from "./section";
 
 const ITEMS = [
   {
-    q: "L'application est-elle vraiment gratuite ?",
-    a: "Oui, l'accès à Jotna est 100 % gratuit. Aucune publicité, aucun abonnement caché.",
+    q: "Combien coûte Jotna ?",
+    a: "Rien pour le moment. Écoles, professeurs et parents créent leur compte librement, et les élèves accèdent à tous les exercices de leur classe.",
+  },
+  {
+    q: "Qui crée le compte de l'enfant ?",
+    a: "Son parent, depuis son espace parent, ou son professeur, depuis l'une de ses classes. L'enfant reçoit un code de connexion qu'il tape dans l'application.",
+  },
+  {
+    q: "Comment mon enfant rejoint-il la classe de son professeur ?",
+    a: "Dans votre espace parent, chaque enfant a un code élève (il commence par ELV-). Donnez-le au professeur : il le saisit, et votre enfant apparaît dans sa classe. Vous gardez l'accès à son suivi.",
   },
   {
     q: "À quel âge s'adresse Jotna ?",
@@ -16,7 +24,7 @@ const ITEMS = [
   },
   {
     q: "Mon enfant a besoin d'une adresse email ?",
-    a: "Non. Un parent peut créer un compte unique et ajouter plusieurs profils enfants, chacun avec son avatar.",
+    a: "Non. L'adulte qui crée son compte reçoit un code de connexion personnel, et ce code suffit pour se connecter à l'application.",
   },
   {
     q: "Comment sont conçus les exercices ?",
@@ -28,7 +36,7 @@ const ITEMS = [
   },
   {
     q: "Peut-on utiliser Jotna sur tablette ou mobile ?",
-    a: "Oui. Jotna fonctionne dans le navigateur, sur ordinateur, tablette et mobile — sans installation.",
+    a: "Oui, et c'est même là que l'élève apprend : dans l'application Jotna School, sur tablette ou téléphone, iOS comme Android. Le site web, lui, sert aux parents et aux professeurs, qui y suivent ses progrès.",
   },
 ];
 

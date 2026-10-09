@@ -207,10 +207,19 @@ tourné sur le déploiement de développement le 29 septembre 2026.
 
 ## Ce qui reste
 
-- L'ancien flux d'exercices (`attempts.submit`, avec
-  `components/exercises/ExercisePlayer.tsx`) n'est monté nulle part, mais il
-  écrit encore `correctExercises` à sa façon. Le recalcul de la thématique
-  l'écrase à la fin du palier suivant.
+- L'ancien flux d'exercices n'a plus de client. Son lecteur,
+  `components/exercises/ExercisePlayer.tsx`, n'était plus monté depuis la
+  PR #8 (29 avril 2026), qui l'a remplacé par la session de palier
+  (aujourd'hui `app/(student)/student/topics/session/page.tsx`). Il a été
+  supprimé le 5 octobre 2026, avec `stores/exercise-session-store.ts`,
+  `stores/gamification-store.ts` et `components/BadgeUnlockModal.tsx` : ces
+  deux stores ne servaient qu'au lecteur et à cette modale, qu'aucun fichier
+  n'a jamais importée. Les fonctions Convex qu'il appelait restent déployées,
+  mais plus rien dans le dépôt ne les appelle : `attempts.submit`,
+  `attemptsExplain.generateExplanation` et
+  `attemptsVerify.verifyShortAnswerWithAI`. Un appel à `attempts.submit`
+  écrirait encore `correctExercises` à sa façon, et le recalcul de la
+  thématique l'écraserait à la fin du palier suivant.
 - La validation et le seuil d'étoiles ne coïncident pas (voir « Les
   étoiles »).
 - Le temps du carnet s'arrête à 1 000 lignes d'essai.

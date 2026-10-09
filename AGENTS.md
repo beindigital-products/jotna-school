@@ -4,22 +4,16 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Deux cibles de build : le site web et l'application
+# Un seul build : site web et application
 
-Le site web ne sert que l'école, les professeurs et les parents. L'espace élève
-n'existe que dans l'application iOS/Android (Capacitor, même code). Ses fichiers
-de route portent l'extension `.app.tsx` et ne sont compilés qu'avec
-`JOTNA_TARGET=app` (`pnpm build:app`, `pnpm ios:sync`, `pnpm android:sync`).
-Même construit pour l'application, l'espace élève ne s'ouvre que dans la coque
-native : dans un navigateur, il renvoie vers `/eleve`. On le teste sur le
-simulateur iOS, l'émulateur Android ou un téléphone, jamais dans un navigateur.
-Détails : `docs/capacitor-ios.md`, `lib/build-target.ts`.
+L'espace élève (`app/(student)/**`) est servi sur le web, sur tablette et sur
+smartphone comme dans l'application iOS/Android (Capacitor, même code, même
+export statique). `pnpm dev` suffit pour le voir. Détails : `docs/capacitor-ios.md`.
 
-Même règle pour un module importé : dans l'application, `x.app.tsx` (ou
-`x.app.ts`) remplace `x.tsx` à l'import ; le site garde `x.tsx`. Le hors-ligne
-s'en sert : le moteur n'existe que dans l'application, le site importe une
-version vide (`docs/hors-ligne.md`). TypeScript et Vitest lisent `x.tsx` : la
-version `.app` doit exporter la même chose.
+Le hors-ligne n'existe que dans l'application : son moteur (`lib/offline/`)
+ne s'allume que dans la coque native, et le web lit Convex. Les pages élève
+passent par `hooks/use-student-data.ts`, qui choisit la source. Détails :
+`docs/hors-ligne.md`.
 
 <!-- convex-ai-start -->
 This project uses [Convex](https://convex.dev) as its backend.

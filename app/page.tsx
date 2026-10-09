@@ -1,4 +1,3 @@
-import { CallToAction } from "@/components/landing/cta";
 import { ExerciseTypes } from "@/components/landing/exercise-types";
 import { FAQ } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
@@ -8,6 +7,7 @@ import { Hero } from "@/components/landing/hero";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Navbar } from "@/components/landing/navbar";
 import { ScrollToTop } from "@/components/landing/scroll-to-top";
+import { GetStarted } from "@/components/landing/get-started";
 import { FadeIn, ScaleIn } from "@/components/ui/motion-wrapper";
 import { NativeAppGate } from "@/components/native-app-gate";
 
@@ -35,8 +35,10 @@ export default function StorefrontPage() {
         <FadeIn direction="up" delay={0.1}>
           <FAQ />
         </FadeIn>
+        {/* Accès libre : la liste d'attente (`components/landing/waitlist.tsx`)
+            est mise de côté, pas supprimée. */}
         <ScaleIn delay={0.1}>
-          <CallToAction />
+          <GetStarted />
         </ScaleIn>
       </main>
         <Footer />

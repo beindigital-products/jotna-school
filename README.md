@@ -34,18 +34,13 @@ les fonctions à chaque changement. Dans un autre terminal :
 pnpm dev
 ```
 
-## Deux cibles de build
+## Un seul build
 
-| Commande | Cible | Espace élève |
-| --- | --- | --- |
-| `pnpm dev`, `pnpm build` | site web | absent : un élève connecté est envoyé vers l'application |
-| `pnpm build:app` | application | présent, ne s'ouvre que dans la coque native |
-| `pnpm ios:sync`, `pnpm android:sync`, `pnpm android:run` | application, puis Capacitor | présent |
-
-Les fichiers de route de l'espace élève portent l'extension `.app.tsx` et ne
-sont compilés qu'avec `JOTNA_TARGET=app`. L'espace élève ne s'ouvre dans aucun
-navigateur : il se teste sur le simulateur iOS, l'émulateur Android ou un
-téléphone. Détails dans `docs/capacitor-ios.md`.
+Le même code sert le site web (école, professeurs, parents, élèves) et
+l'application iOS/Android. `pnpm dev` et `pnpm build` suffisent ; `pnpm
+ios:sync` et `pnpm android:sync` rebâtissent puis synchronisent Capacitor.
+Détails dans `docs/capacitor-ios.md`. Seule l'application joue sans réseau
+(`docs/hors-ligne.md`).
 
 ## Vérifier
 

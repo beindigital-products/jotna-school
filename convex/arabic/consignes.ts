@@ -114,8 +114,14 @@ export function bravo(n: number): ConsigneKey {
   return BRAVOS[((Math.trunc(n) % count) + count) % count];
 }
 
-/** Les formules arabes des consignes : en latin dans la bulle, en arabe dans la voix. */
+/**
+ * Les formules arabes des consignes : en latin dans la bulle, en arabe dans la
+ * voix. « Salam » en fait partie : écrit en lettres latines, `eleven_v4` le
+ * dit « Salem » deux fois sur trois ; écrit en arabe, trois fois sur trois
+ * « Salam » (transcrit par `scribe_v2`, 5 octobre 2026).
+ */
 const FORMULES: ReadonlyArray<readonly [latin: string, arabe: string]> = [
+  ["Salam", "سَلَام"],
   ["MashaAllah", "مَا شَاءَ اللَّه"],
   ["Tabarakallah", "تَبَارَكَ اللَّه"],
   ["Barakallahou fik", "بَارَكَ اللَّهُ فِيك"],

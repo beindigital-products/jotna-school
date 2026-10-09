@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
-import { HAS_STUDENT_SPACE } from "@/lib/build-target";
 import { useBrowserOnline } from "@/components/offline/use-browser-online";
 import { useIsNativeApp } from "@/hooks/use-native-app";
 import { kidMessages } from "@/lib/kidCopy";
@@ -19,19 +18,30 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   // Se connecter demande le réseau, même dans l'application qui joue sans :
-  // c'est la seule étape qui ne peut pas se faire hors ligne.
+  // c'est la seule étape qui ne peut pas se faire hors ligne. Le hors-ligne
+  // n'existe que dans l'application iOS/Android (`docs/hors-ligne.md`).
   const online = useBrowserOnline();
-  // L'espace élève n'existe que dans l'application iOS/Android, jamais dans
-  // un navigateur, même construit pour l'application (`lib/build-target.ts`).
   const native = useIsNativeApp();
-  const studentSpaceHere = HAS_STUDENT_SPACE && native;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await signIn("password", { email, password, flow: "signIn" });
+      // UN CODE DE CONNEXION SE TAPE EN MINUSCULES AUSSI. L'identifiant est
+      // mis en minuscules par le serveur, mais le mot de passe d'un élève est
+      // le code tel qu'imprimé, en MAJUSCULES (`studentAccounts.createStudent`,
+      // `studentImportRun`). Un enfant qui tape « awa-4821 » deux fois doit
+      // entrer : quand l'identifiant n'est pas une adresse et que le mot de
+      // passe est le même code, on l'envoie en majuscules.
+      const isCode = !email.includes("@");
+      const samePassword =
+        isCode && password.trim().toUpperCase() === email.trim().toUpperCase();
+      await signIn("password", {
+        email,
+        password: samePassword ? password.trim().toUpperCase() : password,
+        flow: "signIn",
+      });
   // `router.replace` ET NON `window.location.href` : dans l'application
   // Capacitor, une navigation de DOCUMENT recharge toujours la racine
   // `index.html`, quel que soit le chemin demandé
@@ -57,7 +67,7 @@ export default function LoginPage() {
         </div>
       )}
 
-      {studentSpaceHere && !online && (
+      {native && !online && (
         <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-800">
           <p className="font-semibold">{kidMessages.offline.firstConnectionTitle}</p>
           <p>{kidMessages.offline.firstConnectionBody}</p>
@@ -94,9 +104,7 @@ export default function LoginPage() {
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          {studentSpaceHere
-            ? "Élève : saisissez le code de votre billet, comme mot de passe aussi."
-            : "Élève : ton espace est dans l'application Jotna School, sur tablette ou téléphone."}
+          Élève : saisissez le code de votre billet, comme mot de passe aussi.
         </p>
       </div>
 
@@ -138,14 +146,10 @@ export default function LoginPage() {
       </button>
 
       <p className="text-center text-sm text-gray-600">
-        Parent avec un code de l&apos;école ?{" "}
+        Pas encore de compte ?{" "}
         <Link href="/register" className="font-medium text-amber-700 hover:underline">
-          Activer votre espace
+          Créer un compte gratuit
         </Link>
-      </p>
-      <p className="text-center text-xs text-gray-500">
-        Élèves et personnel : vos identifiants vous sont remis par votre
-        établissement.
       </p>
     </form>
   );

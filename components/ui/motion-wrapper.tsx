@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, HTMLMotionProps, Variants } from "framer-motion";
+import { motion, HTMLMotionProps } from "framer-motion";
 import React from "react";
 
 interface MotionWrapperProps extends HTMLMotionProps<"div"> {

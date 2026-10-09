@@ -1,15 +1,21 @@
 "use client";
 
+import type { ComponentType, SVGProps } from "react";
 import { motion } from "framer-motion";
-import { Target, Trophy, UserRound, type LucideIcon } from "lucide-react";
 
+import {
+  LoginTicketIcon,
+  ParentHeartIcon,
+  TrophyRibbonIcon,
+} from "./landing-icons";
 import { Section } from "./section";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion-wrapper";
 
 type Step = {
   number: string;
-  icon: LucideIcon;
-  iconColor: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  iconGradient: string;
+  iconShadow: string;
   title: string;
   description: string;
   accent: string;
@@ -18,29 +24,32 @@ type Step = {
 const STEPS: Step[] = [
   {
     number: "01",
-    icon: UserRound,
-    iconColor: "bg-amber-100 text-amber-700",
-    title: "Crée ton profil",
+    icon: ParentHeartIcon,
+    iconGradient: "bg-gradient-to-br from-amber-400 to-orange-500",
+    iconShadow: "shadow-[0_8px_20px_-8px_rgba(245,158,11,0.55)]",
+    title: "Un adulte crée son compte",
     description:
-      "Les enfants créent leur avatar. Les parents gèrent plusieurs profils depuis un seul compte.",
+      "École, professeur ou parent : l'inscription est libre et gratuite. Un seul compte parent suffit pour plusieurs enfants.",
     accent: "bg-amber-50 text-amber-800 ring-amber-200",
   },
   {
     number: "02",
-    icon: Target,
-    iconColor: "bg-lime-100 text-lime-700",
-    title: "Choisis une matière",
+    icon: LoginTicketIcon,
+    iconGradient: "bg-gradient-to-br from-lime-500 to-emerald-600",
+    iconShadow: "shadow-[0_8px_20px_-8px_rgba(101,163,13,0.55)]",
+    title: "Il crée le compte de l'enfant",
     description:
-      "Maths, français, sciences… chaque matière contient des chapitres adaptés au niveau scolaire.",
+      "Le parent ou le professeur crée le compte en deux champs : nom et classe. L'enfant reçoit son code de connexion.",
     accent: "bg-lime-50 text-lime-800 ring-lime-200",
   },
   {
     number: "03",
-    icon: Trophy,
-    iconColor: "bg-orange-100 text-orange-700",
-    title: "Progresse et gagne des badges",
+    icon: TrophyRibbonIcon,
+    iconGradient: "bg-gradient-to-br from-orange-400 to-amber-600",
+    iconShadow: "shadow-[0_8px_20px_-8px_rgba(249,115,22,0.55)]",
+    title: "L'enfant apprend et progresse",
     description:
-      "Chaque exercice réussi fait grimper la jauge de maîtrise et débloque des récompenses.",
+      "Il tape son code dans l'application et joue aux exercices de sa classe. Chaque réussite fait grimper sa jauge et débloque des badges.",
     accent: "bg-orange-50 text-orange-800 ring-orange-200",
   },
 ];
@@ -50,8 +59,8 @@ export function HowItWorks() {
     <Section
       id="comment"
       eyebrow="Comment ça marche"
-      title="Trois étapes, zéro friction."
-      description="Pas d'installation, pas de configuration compliquée. On se connecte, on apprend."
+      title="Trois étapes pour démarrer."
+      description="L'élève apprend dans l'application Jotna School, sur tablette ou téléphone. Parents et professeurs suivent ses progrès depuis le site web."
     >
       <div className="relative">
         <svg
@@ -89,7 +98,7 @@ export function HowItWorks() {
                 </span>
                 <span
                   aria-hidden
-                  className={`flex size-11 items-center justify-center rounded-2xl ${step.iconColor}`}
+                  className={`flex size-11 items-center justify-center rounded-2xl text-white ${step.iconGradient} ${step.iconShadow}`}
                 >
                   <Icon className="size-5" />
                 </span>

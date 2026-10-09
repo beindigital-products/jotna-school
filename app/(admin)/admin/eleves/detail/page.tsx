@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -19,7 +20,7 @@ function StudentDetailPageInner() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
   const data = useQuery(api.students.getStudentDetail, {
-    studentId: id as any,
+    studentId: id as Id<"profiles">,
   });
 
   if (data === undefined) {
@@ -90,7 +91,7 @@ function StudentDetailPageInner() {
           <p className="text-sm text-gray-500">Aucune progression enregistrée.</p>
         ) : (
           <div className="space-y-4">
-            {subjectProgress.map((sp: any) => {
+            {subjectProgress.map((sp) => {
               const pct =
                 sp.totalTopics > 0
                   ? Math.round((sp.completedTopics / sp.totalTopics) * 100)
@@ -137,7 +138,7 @@ function StudentDetailPageInner() {
           <p className="text-sm text-gray-500">Aucun badge obtenu pour le moment.</p>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {earnedBadges.map((eb: any) => (
+            {earnedBadges.map((eb) => (
               <div
                 key={eb._id}
                 className="flex flex-col items-center rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-center"
@@ -165,7 +166,7 @@ function StudentDetailPageInner() {
           <p className="text-sm text-gray-500">Aucune activité récente.</p>
         ) : (
           <div className="space-y-2">
-            {recentAttempts.map((attempt: any) => (
+            {recentAttempts.map((attempt) => (
               <div
                 key={attempt._id}
                 className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3"

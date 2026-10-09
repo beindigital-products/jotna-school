@@ -69,6 +69,7 @@ import {
   clipCacheKey,
   synthesize,
   voiceConfig,
+  voiceFor,
   type VoiceConfig,
 } from "../voice/elevenlabs";
 
@@ -157,10 +158,10 @@ export const speak = action({
 
     const config = voiceConfig();
     if (!config) return { status: "unavailable", reason: "not_configured" };
-    // Une seule voix par défaut : `frVoiceId` vaut `voiceId` sauf réglage.
-    const voiceId = speech.lang === "fr" ? config.frVoiceId : config.voiceId;
+    // Une seule voix par défaut, mais pas le même modèle en français et en arabe.
+    const voice = voiceFor(config, speech.lang);
 
-    const cacheKey = clipCacheKey(voiceId, config.ttsModel, text);
+    const cacheKey = clipCacheKey(voice.voiceId, voice.modelId, text);
 
     const cached = await ctx.runQuery(internal.arabic.db.findClip, { cacheKey });
     if (cached) {
@@ -172,7 +173,7 @@ export const speak = action({
 
     let audio: Blob;
     try {
-      audio = await synthesize(text, config, voiceId);
+      audio = await synthesize(text, config, voice);
     } catch (error) {
       console.error("[arabe] synthèse vocale en échec", error);
       return { status: "unavailable", reason: "provider_error" };
@@ -184,8 +185,8 @@ export const speak = action({
       {
         cacheKey,
         text,
-        voiceId,
-        modelId: config.ttsModel,
+        voiceId: voice.voiceId,
+        modelId: voice.modelId,
         storageId,
         bytes: audio.size,
       },

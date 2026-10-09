@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { classEnum, visibleClassValidator } from "./curriculum";
 import { moduleKeyValidator } from "./moduleCatalog";
 import { placementLevelValidator } from "./arabic/progressRules";
+import { waitlistAudienceValidator } from "./waitlistRules";
 
 // ---------------------------------------------------------------------------
 // AI gateway purposes — mirrors aiGateway/registry.ts. Listed here as
@@ -54,7 +55,16 @@ export default defineSchema({
     // (D10) ne montre que les thématiques de ce niveau. La session de palier tient son niveau de `topic.class`, pas
     // d'ici — les deux coïncident dès que le parcours est filtré.
     class: v.optional(classEnum),
-  }).index("by_userId", ["userId"]),
+    // CODE ÉLÈVE (`ELV-7C4K2M`), élèves seulement, stocké normalisé
+    // (`importCodes.normalizeCode`). La famille le donne au professeur, qui
+    // le saisit pour ajouter l'enfant à sa classe (`classrooms.addStudentByCode`).
+    // Distinct du code de connexion, qui est aussi le mot de passe. Posé à la
+    // création du compte, ou à la demande pour un compte plus ancien
+    // (`family.ensureStudentCode`). Voir `convex/openAccessRules.ts`.
+    studentCode: v.optional(v.string()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_studentCode", ["studentCode"]),
 
   // ---------------------------------------------------------------------------
   // studentGuardians
@@ -608,7 +618,24 @@ export default defineSchema({
       v.literal("suspended"),
     ),
     createdAt: v.number(),
-  }).index("by_status", ["status"]),
+    // ACCÈS LIBRE (`convex/openAccessRules.ts`).
+    //
+    // `kind: "personal"` : l'espace d'un professeur qui n'a pas d'école. Ses
+    // classes et inscriptions exigent un `schoolId`, et cet espace le leur
+    // donne sans rien changer au reste du schéma. Il n'apparaît jamais comme
+    // une école à l'écran. Quand le professeur rejoint une vraie école
+    // (`classrooms.joinSchoolWithCode`), ses classes y passent.
+    kind: v.optional(v.literal("personal")),
+    // Le profil qui a créé l'école ou l'espace : le directeur, ou le
+    // professeur pour un espace personnel.
+    ownerProfileId: v.optional(v.id("profiles")),
+    // CODE ÉCOLE (`ECO-7C4K2M`), stocké normalisé. Les professeurs le
+    // saisissent pour rejoindre l'école. Absent sur un espace personnel.
+    joinCode: v.optional(v.string()),
+  })
+    .index("by_status", ["status"])
+    .index("by_ownerProfileId", ["ownerProfileId"])
+    .index("by_joinCode", ["joinCode"]),
 
   schoolStaff: defineTable({
     schoolId: v.id("schools"),
@@ -1314,4 +1341,18 @@ export default defineSchema({
   })
     .index("by_student_event", ["studentId", "eventId"])
     .index("by_appliedAt", ["appliedAt"]),
+
+  // ---------------------------------------------------------------------------
+  // waitlistEntries — la liste d'attente de la vitrine.
+  //
+  // Le site ne vend rien avant la rentrée 2027-2028 : il recueille les
+  // adresses à prévenir (`waitlist.join`). UNE LIGNE PAR ADRESSE, normalisée
+  // par `waitlistRules.normalizeWaitlistEmail` : la mutation relit `by_email`
+  // avant d'écrire, donc une seconde inscription n'ajoute rien.
+  // ---------------------------------------------------------------------------
+  waitlistEntries: defineTable({
+    email: v.string(),
+    audience: waitlistAudienceValidator,
+    createdAt: v.number(),
+  }).index("by_email", ["email"]),
 });

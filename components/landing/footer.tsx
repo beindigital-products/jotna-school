@@ -16,13 +16,15 @@ const COLUMNS: FooterColumn[] = [
       { label: "Exercices", href: "/#exercices" },
       { label: "Gamification", href: "/#gamification" },
       { label: "FAQ", href: "/#faq" },
+      { label: "Commencer", href: "/#commencer" },
     ],
   },
   {
     title: "Compte",
     links: [
       { label: "Se connecter", href: "/login" },
-      { label: "Activer un code école", href: "/register" },
+      { label: "Créer un compte", href: "/register" },
+      { label: "J'ai un code d'école", href: "/register/code" },
       { label: "Espace parent", href: "/parent/dashboard" },
       { label: "Espace professeur", href: "/teacher/dashboard" },
     ],
@@ -48,16 +50,13 @@ export function Footer() {
           <div className="flex flex-col gap-4">
             <Brand size="md" className="h-20 w-auto" />
             <p className="max-w-xs text-sm leading-6 text-gray-600">
-              Apprendre en s&apos;amusant, du CP au CM2. Gratuit, sans pub,
-              données protégées.
+              Apprendre en s&apos;amusant, du CP au CM2. Sans pub, données
+              protégées.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                 <ShieldCheck className="size-3.5" aria-hidden />
                 Conforme RGPD
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
-                Sans pub · Sans tracking
               </span>
             </div>
             <a

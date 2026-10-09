@@ -14,6 +14,32 @@ import {
   XCircle,
 } from "lucide-react";
 
+/**
+ * Accès libre : un professeur qui vient de s'inscrire n'a ni classe ni élève.
+ * Cet encart lui donne la première étape, puis disparaît.
+ */
+function GettingStarted() {
+  const data = useQuery(api.classrooms.myClasses);
+  if (!data || data.classes.length > 0) return null;
+  return (
+    <section className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+      <h2 className="font-semibold text-amber-900">Première étape : créez votre classe</h2>
+      <p className="mt-1 text-sm text-amber-900/80">
+        Ensuite, créez les comptes de vos élèves ou ajoutez-les avec le code
+        élève que vous donnent leurs parents. Chaque élève se connecte dans
+        l&apos;application avec son code.
+      </p>
+      <Link
+        href="/teacher/classes"
+        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+      >
+        <Plus className="h-4 w-4" />
+        Créer une classe
+      </Link>
+    </section>
+  );
+}
+
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString("fr-FR", {
     day: "numeric",
@@ -75,6 +101,8 @@ export default function TeacherDashboardPage() {
           Gérez vos exercices, vos élèves et consultez leurs résultats.
         </p>
       </div>
+
+      <GettingStarted />
 
       {/* Stats cards */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

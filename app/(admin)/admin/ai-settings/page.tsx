@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
@@ -21,6 +21,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { refusalMessage } from "@/lib/refusalMessage";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
 
 /**
  * Admin AI Settings (Decisions 4, 45, 56, 69, 70, 76, 95).
@@ -45,13 +46,30 @@ export default function AdminAiSettingsPage() {
   const [mau, setMau] = useState(100);
   const [engagement, setEngagement] = useState(70);
 
-  useEffect(() => {
-    if (settings) {
-      setBudget(settings.aiMonthlyBudgetUsd);
-      setEconomy(settings.economyMode);
-      setDailyMore(settings.dailyMoreLimitPerKid);
-    }
-  }, [settings]);
+  // Le formulaire reprend les réglages du serveur quand leurs valeurs changent
+  // (chargement, sauvegarde, modification par un autre admin).
+  useServerFormSync(
+    settings,
+    (s) =>
+      JSON.stringify([s.aiMonthlyBudgetUsd, s.economyMode, s.dailyMoreLimitPerKid]),
+    (s) => {
+      setBudget(s.aiMonthlyBudgetUsd);
+      setEconomy(s.economyMode);
+      setDailyMore(s.dailyMoreLimitPerKid);
+    },
+  );
+
+  // Calculateur de projection des coûts (Decision 70).
+  // Calculé avant les `return` anticipés : un hook placé après eux n'est pas
+  // appelé tant que les requêtes chargent, et React plante (« Rendered more
+  // hooks than during the previous render ») dès que les données arrivent.
+  const projectedMonthlyCost = useMemo(() => {
+    const wau = (mau * engagement) / 100;
+    const sessionsPerWeek = 3;
+    const callsPerSession = 2.4;
+    const costPerCall = 0.06;
+    return wau * sessionsPerWeek * callsPerSession * 4.3 * costPerCall;
+  }, [mau, engagement]);
 
   if (profile === undefined || settings === undefined) {
     return (
@@ -96,15 +114,6 @@ export default function AdminAiSettingsPage() {
   ).getUTCDate();
   const projection =
     today > 0 ? (spent / today) * daysInMonth : 0;
-
-  // Cost projection calculator (Decision 70)
-  const projectedMonthlyCost = useMemo(() => {
-    const wau = (mau * engagement) / 100;
-    const sessionsPerWeek = 3;
-    const callsPerSession = 2.4;
-    const costPerCall = 0.06;
-    return wau * sessionsPerWeek * callsPerSession * 4.3 * costPerCall;
-  }, [mau, engagement]);
 
   const chartData = Object.entries(
     (summary?.byPurpose ?? {}) as Record<string, { calls: number; cost: number }>,
@@ -203,7 +212,7 @@ export default function AdminAiSettingsPage() {
           </label>
           <label className="space-y-1">
             <span className="text-sm font-semibold text-gray-700">
-              Limite "J'en veux encore" / kid / jour
+              Limite &quot;J&apos;en veux encore&quot; / kid / jour
             </span>
             <input
               type="number"
@@ -232,7 +241,7 @@ export default function AdminAiSettingsPage() {
         </div>
         <div className="mt-4 flex items-center justify-between">
           <p className="text-xs text-gray-500">
-            Le mode économie s'active automatiquement à partir de 90% du
+            Le mode économie s&apos;active automatiquement à partir de 90% du
             budget.
           </p>
           <button
@@ -316,7 +325,7 @@ export default function AdminAiSettingsPage() {
         <div className="mt-3 rounded-xl bg-gradient-to-r from-orange-50 to-pink-50 p-4">
           <p className="text-sm text-gray-600">
             Coût IA estimé/mois pour <b>{mau}</b> MAU à {engagement}%
-            d'engagement :
+            d&apos;engagement :
           </p>
           <p className="text-2xl font-extrabold text-orange-600 mt-1">
             ${projectedMonthlyCost.toFixed(2)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Save, Send, ArrowLeft, Loader2, Plus, X, GripVertical } from "lucide-react";
 import ExercisePreview from "@/components/exercises/ExercisePreview";
 import { refusalMessage } from "@/lib/refusalMessage";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
 
 type ExerciseType = "qcm" | "drag-drop" | "match" | "order" | "short-answer";
 
@@ -38,20 +39,21 @@ function ExerciseEditPageInner() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
-  const [initialized, setInitialized] = useState(false);
 
-  // Initialize form with exercise data
-  useEffect(() => {
-    if (exercise && !initialized) {
-      setType(exercise.type);
-      setPrompt(exercise.prompt);
-      setPayload(exercise.payload);
-      setAnswerKey(exercise.answerKey);
-      setHints(exercise.hints);
-      setOrder(exercise.order);
-      setInitialized(true);
-    }
-  }, [exercise, initialized]);
+  // Rempli quand l'exercice arrive, puis de nouveau seulement si la page passe à un
+  // autre document : les modifications en cours ne sont jamais écrasées.
+  useServerFormSync(
+    exercise,
+    (e) => e._id,
+    (e) => {
+      setType(e.type);
+      setPrompt(e.prompt);
+      setPayload(e.payload);
+      setAnswerKey(e.answerKey);
+      setHints(e.hints);
+      setOrder(e.order);
+    },
+  );
 
   const handleSave = useCallback(async () => {
     setSaving(true);

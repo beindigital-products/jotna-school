@@ -7,6 +7,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
   LayoutDashboard,
+  School,
   Users,
   FileBarChart,
   Settings,
@@ -37,6 +38,7 @@ const sidebarLinks = [
     label: "Tableau de bord",
     icon: LayoutDashboard,
   },
+  { href: "/teacher/classes", label: "Mes classes", icon: School },
   { href: "/teacher/students", label: "Mes élèves", icon: Users },
   { href: "/teacher/reports", label: "Rapports", icon: FileBarChart },
   { href: "/teacher/settings", label: "Paramètres", icon: Settings },
@@ -58,6 +60,8 @@ export default function TeacherLayout({
     if (profile.role !== "professeur" && profile.role !== "admin") {
       if (profile.role === "parent") {
         router.replace("/parent/dashboard");
+      } else if (profile.role === "directeur") {
+        router.replace(roleHomePath("directeur"));
       } else if (profile.role === "student") {
         router.replace(roleHomePath("student"));
       } else {

@@ -92,7 +92,6 @@ export default function MatchExercise({
   // wired correctly. Keep the safety net for future schema drift.
   if (malformed) {
     if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console
       console.error(
         "[MatchExercise] payload missing or mismatched 'left'/'right'; soft-fail. payload =",
         payload,

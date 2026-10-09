@@ -42,7 +42,7 @@ export default function TeacherStudentsPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Mes élèves</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Les élèves qui vous sont associés comme professeur.
+          Tous les élèves de vos classes.
         </p>
       </div>
 
@@ -54,8 +54,15 @@ export default function TeacherStudentsPage() {
         <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
           <Users className="mx-auto h-12 w-12 text-gray-400" />
           <p className="mt-2 text-sm text-gray-500">
-            Aucun élève associé pour le moment.
+            Aucun élève pour le moment. Ajoutez vos élèves depuis une de vos
+            classes.
           </p>
+          <Link
+            href="/teacher/classes"
+            className="mt-4 inline-block rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            Mes classes
+          </Link>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

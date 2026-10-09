@@ -5,6 +5,17 @@ dépôt**, et rien ne peut l'être : ce sont des secrets et une configuration de
 compte. Tant que ce document n'est pas exécuté, l'application fonctionne — elle
 n'encaisse simplement pas en ligne.
 
+**Le paiement en ligne est retiré du site jusqu'à l'ouverture des ventes, à la
+rentrée 2027-2028** (décision du 5 octobre 2026). La fiche école n'a plus de
+bouton « Payer ». `billing.openPayment`, les deux adaptateurs et les deux
+webhooks restent déployés, mais aucun écran n'ouvre de paiement ; la vitrine
+propose une liste d'attente à la place (`convex/waitlist.ts`, écran
+`/admin/liste-attente`). Pour rouvrir l'encaissement en ligne, remettez le
+bouton dans `BillingSection` (`app/(admin)/admin/ecoles/detail/page.tsx`) ;
+le plus récent des commits que liste
+`git log -S "api.billing.openPayment" -- app` est celui qui l'a retiré. La
+suite de ce document s'appliquera alors telle quelle.
+
 **Le prestataire retenu est Bictorys** : 1,5 % en mobile money contre 2,25 %
 chez PayDunya sur le palier qui nous concerne, et ce palier est le seul qui nous
 concernera longtemps — le premier de la grille PayDunya va jusqu'à cent millions
@@ -20,8 +31,9 @@ npx convex env set BILLING_PROVIDER bictorys    # défaut
 npx convex env set BILLING_PROVIDER paydunya    # repli
 ```
 
-> **Ce que vous risquez si vous ne faites rien :** rien. Le bouton « Payer »
-> refuse avec une phrase lisible, le webhook répond 503, et les règlements se
+> **Ce que vous risquez si vous ne faites rien :** rien. Sans clés,
+> `billing.openPayment` refuse avec une phrase lisible, le webhook répond 503,
+> et les règlements se
 > constatent à la main sur la fiche de l'école (« Déjà réglée hors ligne »).
 > L'échéancier, lui, est créé et réclamé normalement.
 
@@ -143,7 +155,8 @@ premier essai réel.**
    **attente de paiement**. Trois tranches doivent apparaître aussitôt sous
    « Échéancier », et leur somme doit égaler le total du contrat — l'écran
    affiche un avertissement en clair si ce n'est pas le cas.
-2. Cliquer « Payer » sur la tranche 1. Un lien vers la page Bictorys doit
+2. Cliquer « Payer » sur la tranche 1 (bouton à rétablir d'abord, voir en
+   tête de ce document). Un lien vers la page Bictorys doit
    s'afficher, **au bon montant**, avec le choix entre Wave, Orange Money, Free
    Money et carte.
 3. Payer avec les moyens de test de Bictorys.
