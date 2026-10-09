@@ -14,6 +14,25 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("MVP-1 — real seeded topics", () => {
+  test("le topic Maths CE2 charge le player palier sans 5xx (auth gate kicks in)", async ({
+    page,
+  }) => {
+    // Topic ID seeded by testSeeds:seedMvp1 (Multiplication CM1)
+    // Note: we use a known-seeded ID; if seed re-ran, ID may differ.
+    // For robustness, the test allows any 200/3xx response.
+    const topicId = "kx75b69trm9sbs2j34n0qvsdgd85pm7r";
+    const response = await page.goto(
+      `/student/topics/session?id=${topicId}&palier=1`,
+    );
+    expect(response?.status()).toBeLessThan(500);
+    // Either the auth gate shows or the loader spins — both are acceptable.
+    await page.waitForTimeout(2000);
+    await page.screenshot({
+      path: ".context/screenshots/student-real-topic.png",
+      fullPage: true,
+    });
+  });
+
   test("/admin/ai-settings (avec settings seedés) charge sans 5xx", async ({
     page,
   }) => {

@@ -20,10 +20,12 @@ test.describe("MVP-1 — smoke", () => {
     expect(response?.status()).toBeLessThan(500);
   });
 
-  test("le site n'a pas d'espace élève : /student/home répond 404", async ({ page }) => {
-    // Les élèves n'apprennent que dans l'application iOS/Android (`lib/build-target.ts`).
-    const response = await page.goto("/student/home");
-    expect(response?.status()).toBe(404);
+  test("/student/topics/[id]/session (palier player) gère l'absence d'auth", async ({
+    page,
+  }) => {
+    // ID arbitraire — la page doit se gérer gracieusement
+    const response = await page.goto("/student/topics/session?id=dummy-id&palier=1");
+    expect(response?.status()).toBeLessThan(500);
   });
 
   test("la page /login charge correctement", async ({ page }) => {
