@@ -92,11 +92,15 @@ export function newSessionId(): string {
   return newId("s");
 }
 
+/**
+ * `getRandomValues` existe partout où le moteur tourne (WebKit depuis iOS 11,
+ * WebView Android, Node pour les tests) ; `randomUUID` manque avant iOS 15.4.
+ * Pas de repli sur `Math.random` : l'identifiant sert de clé d'idempotence au
+ * serveur (`palierAttempts.clientSessionId`, `clientEventId`).
+ */
 function newId(prefix: string): string {
-  const random =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID().replace(/-/g, "").slice(0, 16)
-      : Math.random().toString(36).slice(2, 12);
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  const random = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
   return `${prefix}_${Date.now().toString(36)}_${random}`;
 }
 
