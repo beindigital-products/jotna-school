@@ -40,7 +40,7 @@ const STEPS: Step[] = [
     icon: LoginTicketIcon,
     iconGradient: "bg-gradient-to-br from-lime-500 to-emerald-600",
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(101,163,13,0.55)]",
-    title: "Créez le compte de l'élève",
+    title: "Créez le compte de l'enfant",
     description:
       "Indiquez son nom et sa classe : Jotna School génère son code de connexion, à lui remettre. Dans une école, le directeur confie chaque classe à un professeur.",
     accent: "bg-lime-50 text-lime-800 ring-lime-200",
@@ -55,7 +55,7 @@ const STEPS: Step[] = [
     description:
       "Rends-toi sur le site Jotna School, saisis ton code et fais les exercices de ta classe. Chaque réussite fait grimper ta jauge et débloque des badges.",
     accent: "bg-orange-50 text-orange-800 ring-orange-200",
-    audience: "Élève",
+    audience: "Enfant",
     note: "Application iOS et Android : à venir.",
   },
 ];
@@ -66,7 +66,7 @@ export function HowItWorks() {
       id="comment"
       eyebrow="Comment ça marche"
       title="Démarrer en 3 étapes."
-      description="Les étapes 1 et 2 s'adressent aux adultes : école, professeur ou parent. L'étape 3 s'adresse à l'élève. Tout se fait sur le site web, depuis un ordinateur, une tablette ou un téléphone."
+      description="Les étapes 1 et 2 s'adressent aux adultes : école, professeur ou parent. L'étape 3 s'adresse à l'enfant. Tout se fait sur le site web, depuis un ordinateur, une tablette ou un téléphone."
     >
       <div className="relative">
         <svg
@@ -129,7 +129,7 @@ export function HowItWorks() {
         </StaggerContainer>
         <p className="relative z-10 mt-6 text-center text-sm text-gray-600">
           Ensuite, l&apos;école, le professeur et le parent suivent les progrès de
-          l&apos;élève depuis leur espace.
+          l&apos;enfant depuis leur espace.
         </p>
       </div>
     </Section>
