@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { roleHomePath, type Role } from "@/lib/auth";
+import { hasStoredConvexSession, roleHomePath, type Role } from "@/lib/auth";
 import { Pio } from "@/components/student/pio";
 import { useOffline } from "@/components/offline/context";
 import { useBrowserOnline } from "@/components/offline/use-browser-online";
@@ -33,16 +33,9 @@ function LoadingScreen() {
  * serveur ne l'a pas encore confirmé. Pendant ces quelques centaines de
  * millisecondes, `isAuthenticated` vaut `false` alors que `isLoading` aussi :
  * sans cette garde, l'écran renvoyait l'élève sur `/login` juste après une
- * connexion réussie (observé sur le web, plus lent que le webview natif).
+ * connexion réussie (observé sur le web, plus lent que le webview natif) :
+ * voir `hasStoredConvexSession`.
  */
-function hasStoredSession(): boolean {
-  try {
-    return Object.keys(localStorage).some((k) => k.startsWith("__convexAuthJWT_"));
-  } catch {
-    return false;
-  }
-}
-
 /** Au plus cette durée d'attente de la confirmation du serveur. */
 const CONFIRM_TIMEOUT_MS = 8000;
 
@@ -87,7 +80,7 @@ export default function PostAuthPage() {
     if (isLoading) return;
 
     if (!isAuthenticated) {
-      if (!hasStoredSession()) {
+      if (!hasStoredConvexSession()) {
         router.replace("/login");
         return;
       }
