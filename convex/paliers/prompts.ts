@@ -208,6 +208,38 @@ const FACTS_RULE = `
 - Les distracteurs d'un QCM sont plausibles mais clairement faux pour qui sait.`;
 
 const SUBJECT_RULES: { match: RegExp; rules: string }[] = [
+  // L'anglais passe AVANT le français : « Langue anglaise » contient « langue ».
+  {
+    match: /anglais|english/i,
+    rules: `
+[Anglais — langue étrangère d'un enfant francophone]
+- Les énoncés, les indices et les explications sont en FRANÇAIS simple. L'anglais
+  n'apparaît que dans ce que l'enfant apprend : mots, phrases, réponses.
+- Toute phrase anglaise de l'énoncé s'écrit entre guillemets français :
+  Complète : « I like rice. ».
+- Anglais correct et naturel, orthographe britannique (colour, grey, favourite),
+  la même dans tout le palier. Aucun argot, aucune expression imagée, aucun mot
+  qui ne figure pas dans le vocabulaire du « contenu officiel » ci-dessous.
+- Au CI et au CP, une voix française lit l'énoncé à voix haute : AUCUN mot
+  anglais dans l'énoncé (« Quel mot va avec l'image ? »). Les mots anglais sont
+  dans les options, et un émoji accompagne chaque mot.
+- L'application ne lit pas l'anglais : aucun exercice d'écoute, de rime ou de
+  prononciation, aucune transcription phonétique.
+- Une seule bonne réponse. Pas de traduction libre quand plusieurs
+  traductions sont possibles : demande un mot, fais choisir dans une liste, fais
+  compléter ou remettre dans l'ordre.
+- Les mauvaises options sont les erreurs classiques d'un francophone : « I have
+  8 years » pour « I am 8 », « He have », l'adjectif après le nom (« a dress
+  red »), le s d'un adjectif (« two smalls dogs »), les faux amis. Jamais une
+  phrase fausse présentée comme la bonne.
+- order : les mots d'une phrase, ou les répliques d'un dialogue, avec une seule
+  solution possible. fill-blank : le verbe, l'article a / an, la préposition.
+  match : un mot et son émoji, ou un mot et sa traduction. drag-drop : classer
+  (animaux et fruits, singulier et pluriel). short-answer : UN mot anglais à
+  l'orthographe unique, sans tenir compte des majuscules.
+- Les prénoms et les lieux sont ceux de l'enfant (Awa, Modou, Fatou, Dakar, le
+  marché) ; l'argent est le franc (FCFA).`,
+  },
   {
     match: /fran[cç]ais|langue/i,
     rules: `

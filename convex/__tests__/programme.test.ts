@@ -11,7 +11,7 @@ import { isValidPalierCount } from "../palierRules";
 import { PALIER_SIZE } from "../paliers/scoring";
 
 describe("le programme CI → CM2", () => {
-  it("compte les sept matières demandées, sans l'éducation physique", () => {
+  it("compte les sept matières du guide, sans l'éducation physique, puis l'anglais", () => {
     expect(PROGRAMME.map((s) => s.name)).toEqual([
       "Français",
       "Mathématiques",
@@ -20,7 +20,12 @@ describe("le programme CI → CM2", () => {
       "Géographie",
       "Instruction civique",
       "Éducation artistique",
+      "Anglais",
     ]);
+  });
+
+  it("donne à chaque matière son propre rang, de 1 à 8", () => {
+    expect(PROGRAMME.map((s) => s.order).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
   it("donne à chaque matière des thématiques dans chacune des six classes", () => {
@@ -101,5 +106,34 @@ describe("le programme CI → CM2", () => {
         owner.set(key, subject.key);
       }
     }
+  });
+});
+
+describe("l'anglais, hors du guide officiel", () => {
+  const anglais = PROGRAMME.find((s) => s.key === "anglais")!;
+  // Le niveau du Cadre européen commun de référence que chaque classe vise.
+  const LEVEL = { CI: "pré-A1", CP: "pré-A1", CE1: "A1", CE2: "A1", CM1: "A1+", CM2: "A2" } as const;
+  const topics = () => VISIBLE_CLASSES.flatMap((klass) => anglais.classes[klass].map((topic) => ({ klass, topic })));
+
+  it("annonce dans chaque description le niveau de sa classe", () => {
+    for (const { klass, topic } of topics()) {
+      expect(topic.description.startsWith(`Anglais, niveau ${LEVEL[klass]} : `), topic.key).toBe(true);
+    }
+  });
+
+  it("n'attend ni jeu ni oral : l'application ne lit pas l'anglais", () => {
+    for (const { topic } of topics()) {
+      expect(topic.games, topic.key).toBeUndefined();
+      expect(topic.description, topic.key).not.toMatch(/écout|prononc|phonétique|rime/i);
+    }
+  });
+
+  it("parle en francs, jamais en euros ni en dollars", () => {
+    for (const { topic } of topics()) expect(topic.description, topic.key).not.toMatch(/[€$]/);
+  });
+
+  it("est reconnue sous son nom anglais, sans prendre le nom d'une autre matière", () => {
+    expect(anglais.aliases).toContain("English");
+    expect(anglais.name).toBe("Anglais");
   });
 });

@@ -5,7 +5,8 @@
  * Source : « Guide pédagogique des matières du CI au CM2 au Sénégal »
  * (synthèse du Curriculum de l'Éducation de Base et des guides pédagogiques
  * par étape du MEN), établi le 9 octobre 2026. Sept matières, toutes hors
- * l'éducation physique et sportive :
+ * l'éducation physique et sportive, plus l'anglais, que le guide ne contient
+ * pas (voir `anglais.ts`) :
  *
  *   Français                 Domaine 1 — Langue et communication
  *   Mathématiques            Domaine 2
@@ -14,6 +15,7 @@
  *   Géographie               Domaine 3 — ESVS (Découverte du monde)
  *   Instruction civique      Domaine 3 — ESVS (Vivre ensemble)
  *   Éducation artistique     Domaine 4 — EPSA (arts plastiques, musique, arts scéniques)
+ *   Anglais                  Langue vivante, hors guide : proposition à faire relire
  *
  * Ce module ne touche pas la base. Il sert à trois choses :
  *  - le chargement des matières et des thématiques (`programme/seed.ts`) ;
@@ -23,6 +25,7 @@
  */
 import type { VisibleClassName } from "../curriculum";
 import { VISIBLE_CLASSES } from "../curriculum";
+import { ANGLAIS } from "./anglais";
 import { EDUCATION_ARTISTIQUE } from "./arts";
 import { INSTRUCTION_CIVIQUE } from "./civique";
 import { FRANCAIS } from "./francais";
@@ -34,7 +37,7 @@ import type { ProgrammeSubject, ProgrammeSubjectKey, ProgrammeTopic } from "./ty
 
 export type { ProgrammeSubject, ProgrammeSubjectKey, ProgrammeTopic } from "./types";
 
-/** Les sept matières, dans l'ordre de l'emploi du temps. */
+/** Les sept matières du guide, dans l'ordre de l'emploi du temps, puis l'anglais. */
 export const PROGRAMME: readonly ProgrammeSubject[] = [
   FRANCAIS,
   MATHEMATIQUES,
@@ -43,6 +46,7 @@ export const PROGRAMME: readonly ProgrammeSubject[] = [
   GEOGRAPHIE,
   INSTRUCTION_CIVIQUE,
   EDUCATION_ARTISTIQUE,
+  ANGLAIS,
 ];
 
 export type ProgrammeEntry = {

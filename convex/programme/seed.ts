@@ -6,8 +6,8 @@ import type { ProgrammeSubjectKey } from "./types";
 import { planProgrammeSeed, type DbTopicRow } from "./seedPlan";
 
 // ---------------------------------------------------------------------------
-// CHARGER LE PROGRAMME EN BASE — les sept matières du CI au CM2 et leurs
-// thématiques (`convex/programme`).
+// CHARGER LE PROGRAMME EN BASE — les matières du CI au CM2 (les sept du guide
+// et l'anglais) et leurs thématiques (`convex/programme`).
 //
 // MODULE INTERNE, appelé depuis un terminal, comme la pré-génération :
 //

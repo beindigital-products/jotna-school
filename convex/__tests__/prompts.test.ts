@@ -63,7 +63,21 @@ describe("la consigne de génération d'un palier", () => {
     expect(subjectRules("EMC")).toContain("[Instruction civique]");
     expect(subjectRules("Éducation artistique")).toContain("[Éducation artistique]");
     expect(subjectRules("Mathématiques")).toBe("");
-    expect(subjectRules("Anglais")).toBe("");
+    expect(subjectRules("Anglais")).toContain("[Anglais");
+    // « Langue anglaise » contient « langue » : l'anglais passe avant le français.
+    expect(subjectRules("Langue anglaise")).toContain("[Anglais");
+    expect(subjectRules("Langue anglaise")).not.toContain("[Français]");
+    expect(subjectRules("Espagnol")).toBe("");
+  });
+
+  it("en anglais, l'énoncé reste en français, sans mot anglais au CI ni au CP", () => {
+    const ci = buildPalierBaseSystemPrompt({ ...base, subject: "Anglais", class: "CI" });
+    expect(ci).toContain("FRANÇAIS simple");
+    expect(ci).toContain("AUCUN mot");
+    expect(ci).toContain("apprend à lire");
+    expect(ci).not.toContain("[Français]");
+    // La phrase à trous reste permise : le verbe, l'article, la préposition.
+    expect(buildPalierBasePrompt({ ...base, subject: "Anglais" })).toContain("fill-blank");
   });
 
   it("au CI et au CP, rappelle que l'enfant ne lit pas encore", () => {

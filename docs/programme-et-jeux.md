@@ -9,7 +9,8 @@ quadrillage, écoute, atelier des couleurs.
 
 Source : « Guide pédagogique des matières du CI au CM2 au Sénégal », la
 synthèse du Curriculum de l'Éducation de Base (CEB) et des guides
-pédagogiques par étape du MEN, établie le 9 octobre 2026.
+pédagogiques par étape du MEN, établie le 9 octobre 2026. L'anglais, que le
+guide ne contient pas, s'y ajoute comme huitième matière (voir plus bas).
 
 ## Les sept matières
 
@@ -34,6 +35,51 @@ Le programme vit dans `convex/programme/`, un fichier par matière.
 jeux et la longueur des descriptions. Le tableau complet est en fin de
 document.
 
+## L'anglais, huitième matière, hors du guide
+
+Le guide ne contient pas d'anglais. La matière est une **proposition** de
+Jotna School (`convex/programme/anglais.ts`), à faire relire par un
+professeur d'anglais avant d'être ouverte aux élèves. Elle vise le Cadre
+européen commun de référence pour les langues (CECRL) : pré-A1 au CI et au
+CP (reconnaître des mots avec l'image), A1 au CE1 et au CE2 (des phrases très
+simples sur soi, ses goûts, ce qu'on sait faire), A1+ au CM1 (sa journée, ce
+qu'on fait en ce moment), A2 au CM2 (raconter hier, dire demain, comparer,
+demander son chemin, lire un petit texte), la porte de la 6e.
+
+38 thématiques, 109 paliers, 1 090 exercices quand tout est généré. Avec les
+sept autres matières : 267 thématiques, 1 028 paliers, 10 280 exercices.
+
+Comment la génération s'y prend (`SUBJECT_RULES` dans `paliers/prompts.ts`) :
+
+- **Un vocabulaire fermé.** Chaque description donne la liste des mots et des
+  phrases de la thématique ; le modèle n'en sort pas. Sans liste, il invente
+  des mots hors niveau.
+- **Des consignes en français.** L'anglais n'est que ce que l'enfant apprend,
+  et toute phrase anglaise de l'énoncé va entre guillemets. Au CI et au CP,
+  une voix française lit la consigne : elle ne contient aucun mot anglais, et
+  les mots à apprendre sont dans les options, avec un émoji.
+- **Un anglais britannique** (colour, grey, trousers, have got), le même
+  dans tout un palier.
+- **Les mauvaises options sont les erreurs des francophones** : « I have 8
+  years » pour « I am 8 », « He have », l'adjectif après le nom (« a dress
+  red »), le s d'un adjectif, les faux amis.
+
+Ce qui manque :
+
+- **L'oral.** L'application n'a pas de voix anglaise : aucun exercice
+  d'écoute ni de prononciation. C'est le principal manque d'un cours de
+  langue. Il se comblera avec des clips audio, comme pour l'arabe.
+- **Les jeux.** Leurs consignes et leurs étiquettes sont en français
+  (`paliers/games`) ; aucune thématique d'anglais n'en mêle.
+- **Un essai sur le vrai modèle.** Les exercices d'anglais n'ont pas encore
+  été générés : relire un échantillon dans l'administration après la
+  première pré-génération, avant d'ouvrir la matière.
+
+Pour la charger seule : `"subjects":["anglais"]` (voir plus bas). Pour la
+faire relire : les listes de vocabulaire, le niveau de chaque classe, le
+choix de l'anglais britannique et l'ordre de la grammaire (be, have got, can,
+présent, présent continu, passé, going to, comparatifs).
+
 ## Ce qui est proposé et non écrit dans le guide
 
 Le guide attribue chaque palier à une classe pour le français seulement. Pour
@@ -41,6 +87,7 @@ le reste, il donne les contenus de l'étape (deux classes) en deux niveaux. La
 répartition suivante est donc une proposition, à valider par un
 pédagogue. Chaque description concernée le dit (« répartition proposée »).
 
+- **Anglais** : toute la matière (voir plus haut).
 - **Mathématiques** : l'étape 1 suit le guide (paliers 1 à 3 au CI, 4 à 6
   au CP). Aux étapes 2 et 3, les contenus sont répartis selon la règle du
   CEB : acquisition en première année, consolidation en seconde. Par
@@ -81,7 +128,8 @@ Les règles (`convex/programme/seedPlan.ts`, testées dans
    nouveau nom : « Sciences » devient « Éveil scientifique »,
    « Histoire-Géographie » devient « Histoire », « EMC » devient
    « Instruction civique », « Arts plastiques » devient « Éducation
-   artistique ». « Géographie » est créée.
+   artistique ». « Géographie » est créée. « Anglais », déjà présente et
+   vide, est reconnue par son nom et remplie ; absente, elle est créée.
 2. **Une thématique chargée n'est jamais rechargée** : elle porte sa clé
    (`topics.programmeKey`), même renommée par un administrateur. Relancer
    le chargement ne crée aucun doublon.
@@ -101,7 +149,9 @@ On peut charger une partie seulement :
 Ensuite, la pré-génération remplit les paliers avant l'arrivée des élèves
 (`docs/paliers-et-exercices.md`). Pour les cinq matières nouvelles, cela fait
 562 paliers. 556 appellent le modèle, soit moins d'un dollar au coût
-mesuré. Les deux thématiques tout en jeux ne coûtent rien.
+mesuré. Les deux thématiques tout en jeux ne coûtent rien. L'anglais ajoute
+109 paliers, tous écrits par le modèle, soit une dizaine de centimes au même
+coût.
 
 ## La génération d'un palier
 
@@ -278,3 +328,16 @@ arrivent plus tard.
 | CE2 | Le coloriage magique 🎮 (5 × coloriage magique, 3 × couleurs chaudes et froides) · Reproduire un modèle 🎮 (3 × reproduire un dessin, 2 × dessin de mémoire, 2 × symétrie) · Les mélodies 🎮 (4 × la mélodie monte ou descend, 4 × pareil ou différent) · L'hymne national et les chants 🎮 (2 × reconnaître un rythme) · Jouer une scène |
 | CM1 | Le dessin de mémoire 🎮 (6 × dessin de mémoire, 1 × reproduire un dessin) · Frises et motifs 🎮 (2 × frise de formes, 2 × frise de couleurs, 1 × frise d'images, 2 × reproduire un dessin) · Percussions et cordes 🎮 (2 × compter les coups, 2 × reconnaître un rythme) · Les rythmes 🎮 (4 × reconnaître un rythme, 3 × rythme écrit à compléter, 1 × compter les coups) · Jouer la joie et la tristesse |
 | CM2 | Rosaces et symétries 🎮 (5 × symétrie, 2 × coloriage magique) · Observer et illustrer 🎮 (2 × dessin de mémoire, 2 × reproduire un dessin) · Les instruments à vent 🎮 (2 × la mélodie monte ou descend, 2 × pareil ou différent) · Chanter et accompagner 🎮 (2 × fort ou doux, 2 × reconnaître un rythme, 2 × la mélodie monte ou descend) · La mise en scène |
+
+### Anglais
+
+*Langue vivante, hors guide : proposition à faire relire*
+
+| Classe | Thématiques |
+| --- | --- |
+| CI | Hello! Goodbye! · Les couleurs en anglais · Compter jusqu'à 10 en anglais · Les animaux en anglais · Les fruits en anglais |
+| CP | Ma famille en anglais · Mon corps en anglais · Dans ma classe en anglais · Les nombres de 11 à 20 en anglais · Manger et boire en anglais |
+| CE1 | Se présenter en anglais · Les jours de la semaine · A ou an ? · Les vêtements en anglais · J'aime, je n'aime pas · Les ordres de la classe |
+| CE2 | Être en anglais : am, is, are · J'ai : have got, has got · Je peux, je sais : can · La maison et où c'est · Les mois de l'année · Le temps qu'il fait · L'heure en anglais |
+| CM1 | Ce que je fais : le présent · He, she, it : le s du verbe · Ma journée en anglais · En ce moment : le -ing · Les métiers en anglais · Au marché en anglais · Décrire une personne ou un objet |
+| CM2 | Hier : was et were · Raconter hier : verbes en -ed · Raconter hier : verbes irréguliers · Demain : être going to · Comparer : plus grand, le plus grand · Demander son chemin · Poser des questions · Lire un petit texte |

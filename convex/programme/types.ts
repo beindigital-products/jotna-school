@@ -35,7 +35,8 @@ export type ProgrammeSubjectKey =
   | "histoire"
   | "geographie"
   | "instruction-civique"
-  | "education-artistique";
+  | "education-artistique"
+  | "anglais";
 
 export type ProgrammeSubject = {
   key: ProgrammeSubjectKey;

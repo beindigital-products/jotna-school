@@ -31,14 +31,14 @@ function devDatabase(): { subjects: DbSubjectRow[]; topics: DbTopicRow[] } {
 }
 
 describe("le chargement du programme", () => {
-  it("dans une base vide, crée les sept matières et toutes les thématiques", () => {
+  it("dans une base vide, crée toutes les matières et toutes les thématiques", () => {
     const plan = planProgrammeSeed({ subjects: [], topics: [] });
     expect(plan.subjects.filter((s) => s.kind === "create")).toHaveLength(PROGRAMME.length);
     expect(plan.report.topicsToCreate).toBe(TOTAL);
     expect(plan.topics.every((t) => t.kind === "create")).toBe(true);
   });
 
-  it("garde les mathématiques et le français déjà garnis, renomme les matières vides, en crée deux", () => {
+  it("garde les mathématiques et le français déjà garnis, renomme les matières vides, remplit l'anglais, crée la géographie", () => {
     const plan = planProgrammeSeed(devDatabase());
     const byKey = Object.fromEntries(plan.subjects.map((s) => [s.key, s]));
     expect(byKey["mathematiques"]).toMatchObject({ kind: "use", subjectId: "math" });
@@ -48,6 +48,8 @@ describe("le chargement du programme", () => {
     expect(byKey["geographie"]).toMatchObject({ kind: "create", name: "Géographie" });
     expect(byKey["instruction-civique"]).toMatchObject({ kind: "rename", subjectId: "emc" });
     expect(byKey["education-artistique"]).toMatchObject({ kind: "rename", subjectId: "ap" });
+    // L'anglais vide est reconnu par son nom : on le remplit, on n'en crée pas un second.
+    expect(byKey["anglais"]).toMatchObject({ kind: "use", subjectId: "en" });
 
     // Douze classes gardées (6 en maths, 6 en français), aucune thématique ajoutée.
     expect(plan.report.classesKept).toHaveLength(12);
