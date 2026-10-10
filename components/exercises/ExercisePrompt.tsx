@@ -11,6 +11,12 @@ import { PromptReaderButton, usePromptReader } from "./prompt-reader";
  * quoted sentence, displays the instruction on top and the sentence below
  * in a highlighted card.
  *
+ * NEVER DROPS TEXT. A quotation only becomes a card when it is the ONLY one
+ * and the prompt ENDS with it (bar the final punctuation). « Dans « Le thé
+ * est chaud. », quelle est la fonction de « chaud » ? » has two quotations
+ * and a question after the first: it is shown whole, as written. The straight
+ * apostrophe is not a quotation mark ("l'école" is not the start of one).
+ *
  * Inside a `PromptReaderProvider` (pupils who are learning to read, CI/CP),
  * a big 🔊 button sits before the prompt and Pio reads it aloud; the text
  * is tinted while he speaks. Elsewhere (older pupils, teacher previews) the
@@ -65,15 +71,16 @@ function parsePrompt(prompt: string): {
   instruction: string;
   quoted: string | null;
 } {
-  // Strategy 1 — look for a balanced quoted passage using the FIRST opening
-  // quote and the LAST matching closing quote. This handles apostrophes
-  // inside the quoted sentence (e.g. "Aujourd'hui, nous jouons.")
+  // Strategy 1 — one quoted passage that ENDS the prompt. It uses the FIRST
+  // opening quote and the LAST matching closing quote, which handles
+  // apostrophes inside the quoted sentence (e.g. "Aujourd'hui, nous jouons.").
+  // The straight apostrophe is NOT a candidate: it is a letter of the French
+  // language, not a quotation mark.
   const quoteCandidates: Array<{ open: string; close: string }> = [
     { open: "«", close: "»" },
     { open: "\u201C", close: "\u201D" }, // “ ”
     { open: '"', close: '"' },
     { open: "\u2018", close: "\u2019" }, // ‘ ’
-    { open: "'", close: "'" },
   ];
 
   for (const { open, close } of quoteCandidates) {
@@ -81,8 +88,15 @@ function parsePrompt(prompt: string): {
     const last = prompt.lastIndexOf(close);
     if (first === -1 || last === -1 || last - first < 5) continue;
     if (open === close && first === last) continue;
-    // For symmetric quotes (same open == close) we need at least 2 occurrences
-    const quoted = prompt.slice(first + open.length, last).trim();
+    const inner = prompt.slice(first + open.length, last);
+    // A second opening or closing quote means two quotations, not one: the
+    // text between them is not a quotation at all.
+    if (inner.includes(open) || inner.includes(close)) continue;
+    // Anything but the final punctuation after the quotation would be thrown
+    // away by the card: show the prompt whole instead.
+    const after = prompt.slice(last + close.length).trim();
+    if (after.length > 0 && !/^[.!?…]+$/u.test(after)) continue;
+    const quoted = inner.trim();
     if (!quoted || quoted.length < 4) continue;
     const before = prompt.slice(0, first).trim();
     const cleaned = before.replace(/[:—-]+\s*$/u, "").trim();

@@ -126,7 +126,7 @@ export default function MatchExercise({
     <div className="space-y-6">
       <ExercisePrompt prompt={prompt} />
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6">
         {/* Left column — original order */}
         <div className="space-y-3">
           {left.map((item, index) => {
@@ -138,7 +138,7 @@ export default function MatchExercise({
                 onClick={() => handleLeftClick(index)}
                 disabled={disabled}
                 className={`
-                  w-full rounded-2xl border-3 px-4 py-4 text-center text-lg font-bold transition-all duration-200
+                  w-full rounded-2xl border-3 px-2 py-3 text-center text-base font-bold hyphens-auto [overflow-wrap:anywhere] transition-all duration-200 sm:px-4 sm:py-4 sm:text-lg
                   ${color
                     ? `${color.left} shadow-md`
                     : isActive
@@ -164,7 +164,7 @@ export default function MatchExercise({
                 onClick={() => handleRightClick(index)}
                 disabled={disabled}
                 className={`
-                  w-full rounded-2xl border-3 px-4 py-4 text-center text-lg font-bold transition-all duration-200
+                  w-full rounded-2xl border-3 px-2 py-3 text-center text-base font-bold hyphens-auto [overflow-wrap:anywhere] transition-all duration-200 sm:px-4 sm:py-4 sm:text-lg
                   ${color
                     ? `${color.right} shadow-md`
                     : "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50"
