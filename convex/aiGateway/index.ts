@@ -1,7 +1,6 @@
 "use node";
 
 import { v } from "convex/values";
-import OpenAI from "openai";
 import { internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
 import {
@@ -12,6 +11,11 @@ import {
   isRetryableFailure,
   resolveModel,
 } from "./registry";
+import {
+  createAiClient,
+  providerModelId,
+  resolveAiClientConfig,
+} from "./client";
 import { evaluateBudget } from "./budget";
 import { dayKey, endOfDayUtc, evaluateQuota, type QuotaScope } from "./quota";
 // UNE SEULE DÉFINITION DE LA CLÉ DE MOIS. Ce fichier en gardait une copie
@@ -204,9 +208,10 @@ export const generate = internalAction({
       });
     }
 
-    // 6) Call OpenAI with retry on 5xx/timeout.
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    // 6) Call the model (Vercel AI Gateway, else OpenAI direct) with retry on
+    // 5xx/timeout.
+    const clientConfig = resolveAiClientConfig();
+    if (!clientConfig) {
       if (args.userId && scope === "kid_initiated") {
         await ctx.runMutation(internal.aiGateway.db.decrementUserDailyQuota, {
           userId: args.userId,
@@ -226,7 +231,7 @@ export const generate = internalAction({
         traceId,
         metadata: args.metadata,
         month,
-        errorMessage: "OPENAI_API_KEY missing",
+        errorMessage: "AI_GATEWAY_API_KEY and OPENAI_API_KEY missing",
       });
       return {
         ok: false,
@@ -236,7 +241,7 @@ export const generate = internalAction({
       };
     }
 
-    const openai = new OpenAI({ apiKey });
+    const openai = createAiClient(clientConfig);
     const t0 = Date.now();
     let lastError: unknown = null;
     let attempts = 0;
@@ -261,7 +266,7 @@ export const generate = internalAction({
       try {
         const completion = await openai.chat.completions.create(
           {
-            model: resolved.model,
+            model: providerModelId(resolved.model, clientConfig.viaGateway),
             temperature: cfg.temperature,
             max_tokens: resolved.maxOutputTokens,
             messages: [
