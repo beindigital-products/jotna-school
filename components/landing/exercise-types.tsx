@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { MotionConfig, motion } from "framer-motion";
 import { ArrowRight, Volume2 } from "lucide-react";
@@ -8,6 +8,7 @@ import { ArrowRight, Volume2 } from "lucide-react";
 import { Section } from "./section";
 import { SUBJECT_PRACTICE } from "./exercise-catalog";
 import { LANDING_SUBJECTS, type LandingSubject } from "./landing-subjects";
+import { useNearViewport } from "./use-near-viewport";
 import { CardShells, LoadFailure } from "./demo/card-frame";
 import { classicTypesFor, gamesFor } from "./demo/demo-matrix";
 import { CLASS_AGES, DEMO_CLASSES, type DemoClass, type DemoSubject } from "./demo/demo-types";
@@ -117,34 +118,6 @@ function useCards(enabled: boolean) {
     failed: enabled && !cardsReady && mine !== null && mine.module === null,
     retry: () => setAttempt((current) => current + 1),
   };
-}
-
-/** Vrai quand l'élément est à moins de `margin` de l'écran : on peut commencer à charger. */
-function useNearViewport(ref: RefObject<HTMLElement | null>, margin: string): boolean {
-  const [near, setNear] = useState(false);
-
-  useEffect(() => {
-    if (near) return;
-    const node = ref.current;
-    // Sans observateur (très vieux navigateur), on charge dès que la page est prête.
-    if (!node || typeof IntersectionObserver === "undefined") {
-      const timer = setTimeout(() => setNear(true), 0);
-      return () => clearTimeout(timer);
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setNear(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: margin },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [near, ref, margin]);
-
-  return near;
 }
 
 // ---------------------------------------------------------------------------

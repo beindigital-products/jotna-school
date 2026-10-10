@@ -8,9 +8,10 @@ lit le clip de la pose demandée ; la carte
 (`components/student/world/pio-walker.tsx`) le déplace le long du sentier
 pendant que le clip `walk` marche sur place.
 
-Sur le web, Pio est l'image fixe de la pose : le propriétaire a tranché que
-les animations sont pour l'application mobile, et le site n'a pas à charger
-17 Mo de clips. La détection passe par `hooks/use-native-app.ts`.
+Depuis le 9 octobre 2026, l'espace élève est le même sur le web et dans
+l'application : Pio y joue ses clips partout. L'image fixe de la pose reste son
+repli (mouvement réduit, `animated={false}`). La page d'accueil, elle, est une
+page que l'on ouvre sur un téléphone avec une donnée chère : voir plus bas.
 
 Ce document dit comment les clips ont été faits et comment en refaire un.
 
@@ -82,6 +83,49 @@ laisser la place au saut.
 
 Pour un nouveau mouvement d'une pose existante, seules les étapes 2 et 3
 comptent.
+
+## Sur la page d'accueil
+
+La page d'accueil montre Pio avant qu'un enfant ait joué : en haut de la page
+(`components/landing/hero-pio.tsx`), dans la section « Faites connaissance avec
+Pio » (`meet-pio.tsx`), et dans la note « Et l'élève ? » de « Créez votre
+compte ». Il réagit au toucher comme au camp de l'élève (`pio-reactions.ts` :
+pose et réplique à chaque toucher, cinq touchers en deux secondes pour la
+réaction secrète), avec les phrases de `lib/pioCopy.ts` : le visiteur entend ce
+que l'enfant entendra. Quatre « moments » (`pio-moments.ts`) le font prendre
+la pose et dire la phrase de l'application : il accueille, fête une réussite,
+encourage après une erreur, rassure quand il n'y a plus d'essais.
+
+**Elle ne charge pas 17 Mo de clips.** C'est la règle de cette page :
+
+- **Une affiche légère d'abord.** `<Pio lite />` sert les WebP de
+  `public/images/pio/lite/` (640 pixels de haut, 40 à 47 Ko) au lieu des PNG
+  d'origine (500 à 600 Ko). `node scripts/pio-lite.mjs` les refait à partir des
+  PNG. Il reprend la couleur des bords opaques sous les pixels transparents avant
+  l'encodage : détourées d'un fond bleu, les poses gardaient du bleu sous leur
+  contour, et le WebP avec perte le faisait couler dans la crinière (un liseré
+  violet sur fond clair). Seule la tenue de tous les jours en a : le boubou garde
+  ses PNG.
+- **Le clip seulement si l'appareil le permet.** `hooks/use-device-tier.ts` : ni
+  économiseur de données, ni 2G, ni petite machine, ni mouvement réduit.
+  Sur un appareil modeste, Pio reste l'affiche et la savane est en CSS.
+- **Pas avant la fin du chargement** (`use-after-load.ts`) en haut de la page ;
+  **pas avant d'approcher** (`use-near-viewport.ts`) dans la section, dont la
+  savane peinte (250 à 380 Ko) attend aussi (`SavannaBackdrop painted`).
+- **Pas pour une réaction.** Un toucher dure deux secondes et demie, moins que
+  le temps de charger un clip d'un mégaoctet : Pio y prend l'affiche de la pose,
+  instantanée. Le clip est pour les poses qui durent (« hello » en haut de la
+  page, un moment choisi dans la section) ; `hello` est chargé une fois pour les
+  deux endroits.
+- **Une seule place à l'écran.** En haut de page, Pio a deux places : à côté de
+  la carte sur un grand écran, au-dessus du titre sur un téléphone, où la
+  carte est sous le premier écran. Le CSS cache l'autre et seul le Pio visible
+  lance son clip (`use-media-query.ts`).
+
+Au total : ne rien toucher charge le clip « hello » (330 Ko, 660 Ko avec le
+.mov de Safari), après le texte, sur un appareil capable ; jouer avec les quatre
+moments en charge trois de plus (« cheer », « encourage », « sad »), 3,3 Mo en
+tout (4,6 Mo avec les .mov), chacun une seule fois.
 
 ## Les tenues : le boubou du module Arabe & Coran
 

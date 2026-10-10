@@ -2,8 +2,9 @@ import type { ComponentType, SVGProps } from "react";
 import Link from "next/link";
 import { ArrowRight, School } from "lucide-react";
 
-import { KidIcon, ParentHeartIcon, TeacherIcon } from "./landing-icons";
+import { ParentHeartIcon, TeacherIcon } from "./landing-icons";
 import { Section } from "./section";
+import { Pio } from "@/components/student/pio";
 
 /**
  * COMMENCER — la section qui remplace la liste d'attente pendant l'accès
@@ -113,18 +114,20 @@ export function GetStarted() {
         })}
       </div>
 
-      <div className="mx-auto mt-8 flex max-w-3xl items-start gap-4 rounded-3xl bg-amber-50 p-6">
-        <span
-          aria-hidden
-          className="flex size-11 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white"
-        >
-          <KidIcon className="size-5" />
-        </span>
+      <div className="mx-auto mt-8 flex max-w-3xl items-center gap-4 rounded-3xl bg-amber-50 p-6">
+        {/* Pio, en affiche légère et sans clip : un clin d'œil, pas un poids de plus. */}
+        <Pio
+          state="hello"
+          size={112}
+          lite
+          animated={false}
+          className="drop-shadow-[0_8px_10px_rgba(60,30,0,0.2)]"
+        />
         <p className="text-sm leading-6 text-amber-950">
           <strong className="font-semibold">Et l&apos;élève ?</strong> Son
           parent ou son professeur crée son compte et lui donne un code. Il le
           saisit sur le site Jotna School, depuis un ordinateur, une tablette
-          ou un téléphone, et commence à jouer.
+          ou un téléphone, et commence à jouer. Pio l&apos;attend déjà&nbsp;!
         </p>
       </div>
     </Section>
