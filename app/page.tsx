@@ -5,6 +5,7 @@ import { ForWhom } from "@/components/landing/for-whom";
 import { Gamification } from "@/components/landing/gamification";
 import { Hero } from "@/components/landing/hero";
 import { HowItWorks } from "@/components/landing/how-it-works";
+import { MeetPio } from "@/components/landing/meet-pio";
 import { Subjects } from "@/components/landing/subjects";
 import { Navbar } from "@/components/landing/navbar";
 import { ScrollToTop } from "@/components/landing/scroll-to-top";
@@ -23,6 +24,9 @@ export default function StorefrontPage() {
         <Hero />
         <FadeIn direction="up" delay={0.1}>
           <HowItWorks />
+        </FadeIn>
+        <FadeIn direction="up" delay={0.1}>
+          <MeetPio />
         </FadeIn>
         <FadeIn direction="up" delay={0.1}>
           <ExerciseTypes />

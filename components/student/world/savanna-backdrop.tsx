@@ -22,6 +22,13 @@ import { useDeviceTier } from "@/hooks/use-device-tier";
  *
  * `variant="map"` utilise le fond de sentier vertical, plus haut que large,
  * pour la carte-monde.
+ *
+ * `painted={false}` : le décor CSS même sur un appareil capable, tant que
+ * l'appelant ne juge pas le moment venu de payer les 250 Ko de la scène peinte.
+ * Pour un décor placé bas dans une page longue, comme sur la page d'accueil :
+ * le visiteur qui s'arrête en haut ne les télécharge pas (`loading="lazy"` n'y
+ * suffit pas : le navigateur charge une image paresseuse dès qu'elle est à
+ * 1 250 pixels de l'écran).
  */
 type Variant = "hub" | "map";
 
@@ -30,11 +37,13 @@ export function SavannaBackdrop({
   children,
   className = "",
   minHeightClass = "min-h-[540px]",
+  painted = true,
 }: {
   variant?: Variant;
   children: ReactNode;
   className?: string;
   minHeightClass?: string;
+  painted?: boolean;
 }) {
   const tier = useDeviceTier();
 
@@ -42,7 +51,7 @@ export function SavannaBackdrop({
     <div
       className={`savanna-motion relative isolate overflow-hidden sm:rounded-[2rem] sm:shadow-2xl ${minHeightClass} ${className}`}
     >
-      {tier === "full" ? (
+      {tier === "full" && painted ? (
         <PaintedScene variant={variant} />
       ) : (
         <CssScene variant={variant} />

@@ -233,6 +233,68 @@ arrivent plus tard.
   dans `GAME_KINDS` (`games/index.ts`). Les tests de
   `convex/__tests__/games.test.ts` le jouent alors à tous les niveaux et dans
   toutes les classes.
+- **La page d'accueil** : sa section « Exercices » est une démonstration
+  JOUABLE, sans compte. Le visiteur (un parent, un professeur, une école)
+  choisit une matière et la classe de son enfant, du CI au CM2 ; chaque carte
+  est un vrai exercice de cette classe, joué avec les écrans de l'élève
+  (`components/exercises`) et corrigé par la règle même du serveur et de
+  l'appareil (`verifyAnswer`). Rien n'est enregistré, rien ne part sur le
+  réseau. Chaque carte dit sa thématique du programme et son niveau
+  (découverte, consolidation, approfondissement, maîtrise).
+  - **Ce que chaque classe propose** est écrit dans
+    `components/landing/demo/demo-matrix.ts` : les exercices que le modèle a
+    le droit d'écrire pour la matière (moins la réponse courte au CI, où
+    l'enfant n'écrit pas encore au clavier), et les jeux que le programme
+    demande aux thématiques de CETTE classe. Le test
+    `__tests__/demo-matrix.test.ts` refait ces calculs depuis la consigne et
+    le programme : donner un premier jeu à une classe, ou autoriser un type
+    d'exercice, le fait échouer jusqu'à ce que la vitrine le dise.
+  - **Les exercices classiques** sont écrits à la main dans
+    `components/landing/demo/bank/<matière>.ts` : un par type et par classe,
+    dans une thématique du programme de la classe (jamais une thématique
+    tout en jeux), avec deux indices et un niveau. Le test
+    `__tests__/demo-bank.test.ts` joue chacun avec la vraie règle de
+    correction et recalcule chaque réponse en mathématiques ; il ne juge ni
+    un fait ni une règle de grammaire : **toute modification de la banque se
+    relit**. Un exercice se construit avec les outils de `demo/bank-helpers.ts`
+    (la bonne réponse s'y écrit par son texte, pas par un index).
+  - **Les jeux** sont fabriqués par le code, avec les mêmes générateurs que
+    l'application (`demo/make-game.ts`). « Un autre exemple » change de
+    graine, passe à la variante suivante du jeu et monte la difficulté d'un
+    cran.
+  - **Écrire ou modifier un exercice de la banque** (les règles que le test
+    ne peut pas juger) :
+    - Les textes s'écrivent avec des espaces ordinaires ; `demo/playable.ts`
+      les rend insécables à l'arrivée (tranches d'un nombre, nombre et unité,
+      guillemets français, `?` `!` `:` `;`).
+    - Une réponse courte liste les écritures naturelles (avec l'article, sans
+      l'accent) : la correction (`canonicalAnswer`) ne retire ni l'un ni
+      l'autre. **Une réponse numérique ne liste que des chiffres collés**
+      (`"40"`, `"18000000"`) : dès qu'une écriture contient une lettre ou une
+      espace, l'écran ouvre le clavier des lettres au lieu du pavé numérique.
+    - Au CI et au CP, chaque étiquette tient en trois mots et vingt-quatre
+      caractères, les émojis sont anciens (Unicode 11 au plus) et jamais le
+      seul porteur du sens : un émoji récent s'affiche en case vide sur les
+      téléphones Android anciens.
+    - Une association tient en deux colonnes : sur un téléphone de 360 px,
+      chaque tuile n'a qu'une centaine de pixels de texte. Les libellés
+      s'écrivent courts (trente-six caractères au plus, aucun mot de plus de
+      seize lettres) ; une définition de cinquante caractères s'y empile sur
+      six lignes. Le test le vérifie ; `MatchExercise` réduit lui-même le
+      corps et les marges des tuiles sous 640 px et coupe les mots trop longs
+      (`hyphens-auto` sur une page `lang="fr"`).
+    - Le deux-points n'est employé dans une consigne que devant une phrase à
+      lire ou à compléter : l'écran (`ExercisePrompt`) met ce qui le suit dans
+      une carte en italique. Une citation entre guillemets n'est mise en carte
+      que si elle est seule et termine la consigne ; sinon la consigne
+      s'affiche en entier.
+    - Un exercice de mise en ordre ou d'association ne s'affiche jamais déjà
+      rangé (`viewOf`) : le nombre d'éléments est libre dans les bornes du test.
+  - **Le poids de la page** : la vitrine ne télécharge que les onglets, le
+    sélecteur de classe et des cartes vides. Les écrans d'exercice, la règle
+    de correction, les générateurs de jeux (`demo/demo-cards.tsx`) et la
+    banque de la matière regardée (`demo/bank/`) arrivent quand le visiteur
+    approche de la section, ou choisit une matière ou une classe.
 
 ## Le programme, classe par classe
 

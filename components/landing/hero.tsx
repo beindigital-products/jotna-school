@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, Calculator, CheckCircle2 } from "lucide-react";
 
 import { ElegantShape } from "./elegant-shape";
+import { CardPio, GreeterPio } from "./hero-pio";
 import { StreakFlameIcon, TrophyRibbonIcon } from "./landing-icons";
 
 export function Hero() {
@@ -18,6 +19,7 @@ export function Hero() {
 
       <div className="relative mx-auto grid w-full max-w-7xl items-center gap-14 lg:grid-cols-[1.1fr_1fr]">
         <div className="text-center lg:text-left">
+          <GreeterPio className="mb-5" />
           <motion.span
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -287,6 +289,8 @@ function HeroVisual() {
           <p className="text-xs font-bold text-gray-900">5 jours d&apos;affilée</p>
         </div>
       </motion.div>
+
+      <CardPio className="absolute -bottom-28 z-20 lg:-right-2 xl:-right-20" />
     </div>
   );
 }

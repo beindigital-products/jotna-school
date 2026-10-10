@@ -15,11 +15,17 @@ export function SpeechBubble({
   children,
   bubbleKey,
   className = "",
+  compact = false,
+  tail = "bottom",
 }: {
   children: ReactNode;
   /** Change quand le texte change : déclenche l'animation d'entrée. */
   bubbleKey: string;
   className?: string;
+  /** Une bulle plus petite, pour un Pio de petite taille (la page d'accueil). */
+  compact?: boolean;
+  /** Où pointe la queue : vers le bas (Pio dessous) ou vers la gauche (Pio à côté). */
+  tail?: "bottom" | "left";
 }) {
   return (
     <div className={`relative ${className}`}>
@@ -32,13 +38,21 @@ export function SpeechBubble({
           transition={{ duration: 0.22, ease: "easeOut" }}
           role="status"
           aria-live="polite"
-          className="relative mx-auto max-w-[19rem] rounded-3xl border-2 border-amber-200 bg-white px-5 py-3 text-center font-display text-base font-bold leading-snug text-amber-950 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] sm:max-w-sm sm:text-lg"
+          className={`relative mx-auto rounded-3xl border-2 border-amber-200 bg-white text-center font-display font-bold leading-snug text-amber-950 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] ${
+            compact
+              ? "max-w-[14rem] text-balance px-4 py-2.5 text-sm sm:max-w-[16rem] sm:text-base"
+              : "max-w-[19rem] px-5 py-3 text-base sm:max-w-sm sm:text-lg"
+          }`}
         >
           {children}
           {/* La queue de la bulle, tournée vers Pio. */}
           <span
             aria-hidden
-            className="absolute -bottom-2.5 left-1/2 h-5 w-5 -translate-x-1/2 rotate-45 rounded-sm border-b-2 border-r-2 border-amber-200 bg-white"
+            className={
+              tail === "left"
+                ? "absolute -left-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rotate-45 rounded-sm border-b-2 border-l-2 border-amber-200 bg-white"
+                : "absolute -bottom-2.5 left-1/2 h-5 w-5 -translate-x-1/2 rotate-45 rounded-sm border-b-2 border-r-2 border-amber-200 bg-white"
+            }
           />
         </motion.div>
       </AnimatePresence>

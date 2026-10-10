@@ -35,6 +35,12 @@ import { useEffect, useRef } from "react";
  * clip. Les décisions de juillet tiennent toujours : c'est cet avatar partout,
  * l'expression est dans l'image, et son corps n'est jamais déformé par du code.
  *
+ * LES AFFICHES LÉGÈRES (`lite`). Les PNG d'origine pèsent 500 à 600 Ko. La page
+ * d'accueil, que l'on ouvre sur un téléphone avec une donnée chère, sert à la
+ * place les WebP de `public/images/pio/lite/` (40 à 50 Ko, faits par
+ * `scripts/pio-lite.mjs`) : même pose, même cadrage, 640 pixels de haut. Seule la
+ * tenue de tous les jours en a ; le boubou garde ses PNG.
+ *
  * LA HAUTEUR EST LA MESURE. `size` est la hauteur de Pio debout, en pixels,
  * comme avec les anciens PNG (572 × 800). Le clip a de l'air au-dessus de sa
  * tête pour qu'il puisse sauter : la vidéo déborde donc du cadre vers le haut,
@@ -155,8 +161,16 @@ function resolvePose(outfit: PioOutfit, state: PioState): PioState {
 }
 
 /** L'affiche et l'image de repli d'un clip. La marche part de la pose calme. */
-function posterFor(outfit: PioOutfit, pose: PioState): string {
-  return `${OUTFITS[outfit].images}/${pose === "walk" ? "idle" : pose}.png`;
+function posterFor(outfit: PioOutfit, pose: PioState, lite = false): string {
+  const name = pose === "walk" ? "idle" : pose;
+  // Le WebP léger n'existe que pour la tenue de tous les jours.
+  if (lite && outfit === "classic") return `${OUTFITS.classic.images}/lite/${name}.webp`;
+  return `${OUTFITS[outfit].images}/${name}.png`;
+}
+
+/** L'image d'une pose, telle que `Pio` l'affiche : le PNG d'origine, ou le WebP léger avec `lite`. */
+export function pioPosterSrc(state: PioState, outfit: PioOutfit = "classic", lite = false): string {
+  return posterFor(outfit, resolvePose(outfit, state), lite);
 }
 
 const LABELS: Record<PioState, string> = {
@@ -214,6 +228,8 @@ type PioProps = {
   animated?: boolean;
   /** Priorité de chargement : l'accueil, où Pio est l'élément le plus visible. */
   priority?: boolean;
+  /** Les affiches WebP légères (40 Ko) au lieu des PNG (550 Ko) : la page d'accueil. */
+  lite?: boolean;
 };
 
 export function Pio({
@@ -223,6 +239,7 @@ export function Pio({
   className = "",
   animated = true,
   priority = false,
+  lite = false,
 }: PioProps) {
   const reducedMotion = useReducedMotion();
   const width = Math.round(size * ASPECT);
@@ -237,10 +254,10 @@ export function Pio({
       style={{ width, height: size }}
     >
       {playing ? (
-        <PioClip key={`${outfit}:${pose}`} state={pose} outfit={outfit} size={size} priority={priority} />
+        <PioClip key={`${outfit}:${pose}`} state={pose} outfit={outfit} size={size} priority={priority} lite={lite} />
       ) : (
         <Image
-          src={posterFor(outfit, pose)}
+          src={posterFor(outfit, pose, lite)}
           alt=""
           width={572}
           height={800}
@@ -263,11 +280,13 @@ function PioClip({
   outfit,
   size,
   priority,
+  lite,
 }: {
   state: PioState;
   outfit: PioOutfit;
   size: number;
   priority: boolean;
+  lite: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const scale = size / CLIP.pioHeight;
@@ -301,7 +320,7 @@ function PioClip({
       style={{ width, height, top, objectFit: "contain", objectPosition: `50% ${posterY.toFixed(1)}%` }}
       width={CLIP.width}
       height={CLIP.height}
-      poster={posterFor(outfit, state)}
+      poster={posterFor(outfit, state, lite)}
       autoPlay
       loop
       muted
