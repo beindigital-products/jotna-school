@@ -118,7 +118,7 @@ export function Navbar() {
             href="/register"
             className="group hidden items-center gap-2 whitespace-nowrap rounded-full bg-gray-900 px-5 py-2.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] lg:inline-flex"
           >
-            Créer un compte
+            S&apos;inscrire
             <ArrowRight
               className="size-4 transition-transform group-hover:translate-x-0.5"
               aria-hidden
@@ -179,7 +179,7 @@ export function Navbar() {
                     onClick={closeMenu}
                     className="group flex h-12 items-center justify-center gap-2 rounded-xl bg-gray-900 text-base font-semibold text-white shadow-sm transition-transform active:scale-[0.98]"
                   >
-                    Créer un compte gratuit
+                    S&apos;inscrire
                     <ArrowRight
                       className="size-4 transition-transform group-hover:translate-x-0.5"
                       aria-hidden

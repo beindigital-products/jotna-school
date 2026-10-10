@@ -61,7 +61,7 @@ export function Hero() {
               href="/register"
               className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] sm:w-auto"
             >
-              Créer un compte gratuit
+              S&apos;inscrire
               <ArrowRight
                 className="size-4 transition-transform group-hover:translate-x-0.5"
                 aria-hidden
