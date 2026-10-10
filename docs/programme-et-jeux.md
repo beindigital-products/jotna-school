@@ -233,6 +233,16 @@ arrivent plus tard.
   dans `GAME_KINDS` (`games/index.ts`). Les tests de
   `convex/__tests__/games.test.ts` le jouent alors à tous les niveaux et dans
   toutes les classes.
+- **La page d'accueil** : sa section « Exercices » présente les matières et,
+  pour chacune, les types d'exercice qu'on y trouve, chacun joué sur un
+  exemple de la matière (`components/landing/exercise-catalog.ts`). Le test
+  `components/landing/__tests__/exercise-catalog.test.ts` la compare au
+  serveur : les exercices montrés doivent être ceux de la ligne « Types
+  autorisés » de la consigne de la matière, et les jeux ceux que ses
+  thématiques demandent (`games`). Donner un premier jeu à une matière, ou
+  autoriser un type d'exercice, fait donc échouer ce test jusqu'à ce que la
+  vitrine le montre : ajouter la carte (un type, un exemple court) au
+  catalogue de la matière.
 
 ## Le programme, classe par classe
 

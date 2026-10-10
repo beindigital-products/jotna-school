@@ -1,81 +1,8 @@
-import type { ComponentType, SVGProps } from "react";
-import {
-  BookOpen,
-  Calculator,
-  FlaskConical,
-  HeartHandshake,
-  Landmark,
-  Languages,
-  MapPinned,
-  Palette,
-  Sparkles,
-} from "lucide-react";
+import { Languages, Sparkles } from "lucide-react";
 
 import { Section } from "./section";
+import { LANDING_SUBJECTS } from "./landing-subjects";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion-wrapper";
-
-type Icon = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
-
-// Les sept matières du programme officiel, puis l'anglais, que le guide ne
-// contient pas (`convex/programme`) : résumées pour la vitrine, la liste
-// complète des thématiques, classe par classe, est dans
-// `docs/programme-et-jeux.md`. L'anglais est une matière, pas un module : comme
-// les autres, toute école abonnée l'a (`convex/moduleCatalog.ts`).
-const SUBJECTS: {
-  icon: Icon;
-  title: string;
-  description: string;
-  gradient: string;
-}[] = [
-  {
-    icon: BookOpen,
-    title: "Français",
-    description: "Des premiers sons du CI aux textes du CM2 : lire, écrire, conjuguer, accorder.",
-    gradient: "bg-gradient-to-br from-pink-500 to-rose-600",
-  },
-  {
-    icon: Calculator,
-    title: "Mathématiques",
-    description: "Nombres, calcul, géométrie, mesures et problèmes, du CI au CM2.",
-    gradient: "bg-gradient-to-br from-indigo-500 to-indigo-700",
-  },
-  {
-    icon: FlaskConical,
-    title: "Éveil scientifique",
-    description: "Le corps, les plantes, les animaux, l'eau, l'électricité, la santé et l'environnement.",
-    gradient: "bg-gradient-to-br from-emerald-500 to-teal-600",
-  },
-  {
-    icon: Landmark,
-    title: "Histoire",
-    description: "Du temps qui passe aux royaumes du Sénégal, aux grands empires et à l'indépendance.",
-    gradient: "bg-gradient-to-br from-amber-500 to-orange-700",
-  },
-  {
-    icon: MapPinned,
-    title: "Géographie",
-    description: "Se repérer, lire une carte, découvrir les régions, les saisons et les ressources du Sénégal.",
-    gradient: "bg-gradient-to-br from-sky-500 to-cyan-600",
-  },
-  {
-    icon: HeartHandshake,
-    title: "Instruction civique",
-    description: "Vivre ensemble : politesse, code de la route, symboles de la Nation, institutions.",
-    gradient: "bg-gradient-to-br from-violet-500 to-indigo-600",
-  },
-  {
-    icon: Palette,
-    title: "Éducation artistique",
-    description: "Couleurs, dessin, symétrie, sons et rythmes : des jeux pour s'exercer chaque jour.",
-    gradient: "bg-gradient-to-br from-fuchsia-500 to-pink-600",
-  },
-  {
-    icon: Languages,
-    title: "Anglais",
-    description: "Des premiers mots du CI aux petits textes du CM2 : se présenter, parler de sa journée, raconter hier.",
-    gradient: "bg-gradient-to-br from-teal-500 to-cyan-700",
-  },
-];
 
 const ARABIC_LEVELS = [
   "L'alphabet : écouter, reconnaître, prononcer, écrire du doigt",
@@ -100,7 +27,7 @@ export function Subjects() {
         Les matières
       </h3>
       <StaggerContainer className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {SUBJECTS.map(({ icon: Icon, title, description, gradient }) => (
+        {LANDING_SUBJECTS.map(({ icon: Icon, title, description, gradient }) => (
           <StaggerItem
             key={title}
             className="flex gap-4 rounded-3xl border border-gray-100 bg-white p-6 transition-shadow hover:shadow-lg"

@@ -1,3 +1,4 @@
+import { BackToHome } from "@/components/landing/back-to-home";
 import { Brand } from "@/components/landing/brand";
 
 export default function AuthLayout({
@@ -6,8 +7,13 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 via-white to-lime-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="w-full max-w-md px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 via-white to-lime-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      {/* En absolu, dans le coin : l'application mobile le retire (voir
+          `BackToHome`) sans rien déplacer. Le `pt-16` du bloc central lui
+          garde sa bande : sur un formulaire plus haut que l'écran, le bouton
+          ne passe jamais sur le logo. */}
+      <BackToHome className="absolute left-4 top-[calc(env(safe-area-inset-top)+1rem)] sm:left-6 sm:top-[calc(env(safe-area-inset-top)+1.5rem)]" />
+      <div className="w-full max-w-md px-4 pt-16 pb-6">
         <div className="mb-8 text-center">
           <Brand size="lg" priority className="mx-auto origin-center" />
           <p className="mt-2 text-sm text-gray-500">
