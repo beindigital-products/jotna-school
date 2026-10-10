@@ -98,6 +98,18 @@ export function clearConvexAuthTokens(): void {
   }
 }
 
+/**
+ * True when a Convex Auth session token sits in localStorage. The server may
+ * not have confirmed it yet, but without one the user is certainly a visitor.
+ */
+export function hasStoredConvexSession(): boolean {
+  try {
+    return Object.keys(localStorage).some((k) => k.startsWith("__convexAuthJWT_"));
+  } catch {
+    return false;
+  }
+}
+
 // ── Role-based home path ────────────────────────────────────────────────────
 
 export type Role = "admin" | "parent" | "student" | "professeur" | "directeur";

@@ -1,4 +1,5 @@
 import { Brand } from "@/components/landing/brand";
+import { GuestOnly } from "@/components/guest-only";
 
 export default function AuthLayout({
   children,
@@ -15,7 +16,7 @@ export default function AuthLayout({
           </p>
         </div>
         <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-lg">
-          {children}
+          <GuestOnly>{children}</GuestOnly>
         </div>
       </div>
     </div>
