@@ -16,9 +16,11 @@ import { StaggerContainer, StaggerItem } from "@/components/ui/motion-wrapper";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 
-// Les sept matières du programme officiel (`convex/programme`), résumées pour
-// la vitrine : la liste complète des thématiques, classe par classe, est dans
-// `docs/programme-et-jeux.md`.
+// Les sept matières du programme officiel, puis l'anglais, que le guide ne
+// contient pas (`convex/programme`) : résumées pour la vitrine, la liste
+// complète des thématiques, classe par classe, est dans
+// `docs/programme-et-jeux.md`. L'anglais est une matière, pas un module : comme
+// les autres, toute école abonnée l'a (`convex/moduleCatalog.ts`).
 const SUBJECTS: {
   icon: Icon;
   title: string;
@@ -67,6 +69,12 @@ const SUBJECTS: {
     description: "Couleurs, dessin, symétrie, sons et rythmes : des jeux pour s'exercer chaque jour.",
     gradient: "bg-gradient-to-br from-fuchsia-500 to-pink-600",
   },
+  {
+    icon: Languages,
+    title: "Anglais",
+    description: "Des premiers mots du CI aux petits textes du CM2 : se présenter, parler de sa journée, raconter hier.",
+    gradient: "bg-gradient-to-br from-teal-500 to-cyan-700",
+  },
 ];
 
 const ARABIC_LEVELS = [
@@ -78,7 +86,7 @@ const ARABIC_LEVELS = [
   "Mémoriser, avec des révisions espacées",
 ];
 
-const UPCOMING_LANGUAGES = ["Anglais", "Espagnol", "Italien"];
+const UPCOMING_LANGUAGES = ["Espagnol", "Italien"];
 
 export function Subjects() {
   return (
@@ -86,10 +94,10 @@ export function Subjects() {
       id="matieres"
       eyebrow="Matières et modules"
       title="Ce que l'élève peut apprendre."
-      description="Les sept matières du programme officiel sénégalais, du CI au CM2, sont accessibles à tous les élèves. Les modules sont des enseignements en plus, que l'école active selon ses besoins."
+      description="Les sept matières du programme officiel sénégalais, du CI au CM2, et l'anglais sont disponibles pour tous les élèves. Les modules sont des enseignements en plus, que l'école active selon ses besoins."
     >
       <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-gray-500">
-        Les matières du programme
+        Les matières
       </h3>
       <StaggerContainer className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {SUBJECTS.map(({ icon: Icon, title, description, gradient }) => (
