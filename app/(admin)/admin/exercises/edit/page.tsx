@@ -9,8 +9,8 @@ import { Save, Send, ArrowLeft, Loader2, Plus, X, GripVertical } from "lucide-re
 import ExercisePreview from "@/components/exercises/ExercisePreview";
 import { refusalMessage } from "@/lib/refusalMessage";
 import { useServerFormSync } from "@/hooks/use-server-form-sync";
-
-type ExerciseType = "qcm" | "drag-drop" | "match" | "order" | "short-answer";
+import JsonPayloadEditor, { PAYLOAD_EXAMPLES } from "@/components/exercises/JsonPayloadEditor";
+import type { ExerciseType } from "@/convex/exerciseTypes";
 
 const TYPE_OPTIONS: { value: ExerciseType; label: string }[] = [
   { value: "qcm", label: "QCM" },
@@ -18,6 +18,11 @@ const TYPE_OPTIONS: { value: ExerciseType; label: string }[] = [
   { value: "match", label: "Associer" },
   { value: "order", label: "Ordonner" },
   { value: "short-answer", label: "Reponse courte" },
+  { value: "fill-blank", label: "Phrase à trous" },
+  { value: "pattern", label: "Frise (jeu)" },
+  { value: "pixel-art", label: "Dessin sur quadrillage (jeu)" },
+  { value: "listen", label: "Écoute (jeu)" },
+  { value: "color-mix", label: "Atelier des couleurs (jeu)" },
 ];
 
 function ExerciseEditPageInner() {
@@ -335,7 +340,9 @@ function PayloadEditor({
     case "short-answer":
       return <ShortAnswerEditor payload={payload} onChange={onChange} />;
     default:
-      return null;
+      // La phrase à trous et les jeux s'éditent par leur JSON ; l'aperçu
+      // montre l'écran de l'enfant à chaque modification valide.
+      return <JsonPayloadEditor key={type} type={type} payload={payload} onChange={onChange} />;
   }
 }
 
@@ -868,7 +875,7 @@ function getDefaultPayload(type: ExerciseType) {
     case "short-answer":
       return { acceptedAnswers: [""], tolerance: "" };
     default:
-      return {};
+      return PAYLOAD_EXAMPLES[type] ?? {};
   }
 }
 

@@ -12,7 +12,7 @@ const ITEMS = [
   },
   {
     q: "Qui crée le compte de l'enfant ?",
-    a: "Son parent, depuis son espace parent, ou son professeur, depuis l'une de ses classes. L'enfant reçoit un code de connexion qu'il tape dans l'application.",
+    a: "Son parent, depuis son espace parent, ou son professeur, depuis l'une de ses classes. L'enfant reçoit un code de connexion qu'il saisit sur le site pour se connecter.",
   },
   {
     q: "Comment mon enfant rejoint-il la classe de son professeur ?",
@@ -24,7 +24,7 @@ const ITEMS = [
   },
   {
     q: "Mon enfant a besoin d'une adresse email ?",
-    a: "Non. L'adulte qui crée son compte reçoit un code de connexion personnel, et ce code suffit pour se connecter à l'application.",
+    a: "Non. L'adulte qui crée son compte reçoit un code de connexion personnel, et ce code suffit pour se connecter.",
   },
   {
     q: "Comment sont conçus les exercices ?",
@@ -36,7 +36,7 @@ const ITEMS = [
   },
   {
     q: "Peut-on utiliser Jotna sur tablette ou mobile ?",
-    a: "Oui, et c'est même là que l'élève apprend : dans l'application Jotna School, sur tablette ou téléphone, iOS comme Android. Le site web, lui, sert aux parents et aux professeurs, qui y suivent ses progrès.",
+    a: "Oui, le site s'adapte à l'ordinateur, à la tablette et au téléphone. Une application iOS et Android est à venir.",
   },
 ];
 

@@ -9,6 +9,7 @@ import {
   studentIdsTaughtBy,
 } from "./access";
 import { verifyDragDrop, verifyMatch } from "./paliers/answerCheck";
+import { correctAnswerText, verifyAnswer } from "./paliers/exerciseRules";
 
 /**
  * Compute where the current student should resume in a given topic session.
@@ -256,7 +257,8 @@ export const submit = mutation({
         isCorrect = verifyShortAnswer(args.submittedAnswer, exercise.payload);
         break;
       default:
-        throw new Error(`Type d'exercice non supporté: ${exercise.type}`);
+        // La phrase à trous et les jeux : la règle partagée avec les paliers.
+        isCorrect = verifyAnswer(exercise, args.submittedAnswer);
     }
 
     // Create the attempt record
@@ -332,6 +334,8 @@ export const submit = mutation({
         case "short-answer":
           correctAnswer = exercise.payload.acceptedAnswers[0];
           break;
+        default:
+          correctAnswer = correctAnswerText(exercise) ?? undefined;
       }
     }
 

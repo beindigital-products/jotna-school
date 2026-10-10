@@ -21,6 +21,7 @@ const EMOJI: Record<string, string> = {
   History: "🏺",
   Leaf: "🌿",
   Star: "⭐",
+  Users: "🤝",
 };
 
 export function subjectEmoji(icon: string | undefined | null): string {

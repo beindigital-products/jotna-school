@@ -84,7 +84,7 @@ export function Hero() {
             {[
               "Adapté CP → CM2",
               "Rapports parents",
-              "Appli élève iOS et Android",
+              "Sur ordinateur, tablette et mobile",
             ].map((item) => (
               <li key={item} className="inline-flex items-center gap-1.5">
                 <CheckCircle2

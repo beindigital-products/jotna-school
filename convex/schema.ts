@@ -3,6 +3,7 @@ import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { classEnum, visibleClassValidator } from "./curriculum";
 import { moduleKeyValidator } from "./moduleCatalog";
+import { exerciseTypeValidator } from "./exerciseTypes";
 import { placementLevelValidator } from "./arabic/progressRules";
 import { waitlistAudienceValidator } from "./waitlistRules";
 
@@ -116,6 +117,13 @@ export default defineSchema({
     // CI/CP, 4 en CE, 5 en CM). Posé depuis l'administration pour une
     // thématique plus large ou plus étroite que la moyenne de son niveau.
     palierCount: v.optional(v.number()),
+
+    // LA FICHE DU PROGRAMME OFFICIEL dont la thématique vient
+    // (`convex/programme`, clé « hi-cm2-empires »). Posée par le chargement
+    // du programme (`programme/seed.ts`) ; absente pour une thématique créée
+    // à la main. La génération y retrouve les jeux à mêler au palier
+    // (`paliers/games`) même quand un administrateur a renommé la thématique.
+    programmeKey: v.optional(v.string()),
   })
     .index("by_subjectId", ["subjectId"])
     .index("by_subjectId_class", ["subjectId", "class"]),
@@ -125,13 +133,9 @@ export default defineSchema({
   // ---------------------------------------------------------------------------
   exercises: defineTable({
     topicId: v.id("topics"),
-    type: v.union(
-      v.literal("qcm"),
-      v.literal("drag-drop"),
-      v.literal("match"),
-      v.literal("order"),
-      v.literal("short-answer"),
-    ),
+    // La liste vit dans `exerciseTypes.ts` : les cinq types classiques, la
+    // phrase à trous et les quatre jeux fabriqués par le code.
+    type: exerciseTypeValidator,
     prompt: v.string(),
     payload: v.any(),
     answerKey: v.string(),

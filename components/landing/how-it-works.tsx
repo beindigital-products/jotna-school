@@ -19,6 +19,8 @@ type Step = {
   title: string;
   description: string;
   accent: string;
+  audience: string;
+  note?: string;
 };
 
 const STEPS: Step[] = [
@@ -27,30 +29,34 @@ const STEPS: Step[] = [
     icon: ParentHeartIcon,
     iconGradient: "bg-gradient-to-br from-amber-400 to-orange-500",
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(245,158,11,0.55)]",
-    title: "Un adulte crée son compte",
+    title: "Créez votre compte",
     description:
-      "École, professeur ou parent : l'inscription est libre et gratuite. Un seul compte parent suffit pour plusieurs enfants.",
+      "L'inscription est gratuite. Une école inscrit son établissement et partage son code école avec ses professeurs. Un professeur crée ses classes. Un parent crée son espace : un seul compte suffit pour plusieurs enfants.",
     accent: "bg-amber-50 text-amber-800 ring-amber-200",
+    audience: "École, professeur ou parent",
   },
   {
     number: "02",
     icon: LoginTicketIcon,
     iconGradient: "bg-gradient-to-br from-lime-500 to-emerald-600",
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(101,163,13,0.55)]",
-    title: "Il crée le compte de l'enfant",
+    title: "Créez le compte de l'élève",
     description:
-      "Le parent ou le professeur crée le compte en deux champs : nom et classe. L'enfant reçoit son code de connexion.",
+      "Indiquez son nom et sa classe : Jotna School génère son code de connexion, à lui remettre. Dans une école, le directeur confie chaque classe à un professeur.",
     accent: "bg-lime-50 text-lime-800 ring-lime-200",
+    audience: "Professeur ou parent",
   },
   {
     number: "03",
     icon: TrophyRibbonIcon,
     iconGradient: "bg-gradient-to-br from-orange-400 to-amber-600",
     iconShadow: "shadow-[0_8px_20px_-8px_rgba(249,115,22,0.55)]",
-    title: "L'enfant apprend et progresse",
+    title: "Connecte-toi et apprends",
     description:
-      "Il tape son code dans l'application et joue aux exercices de sa classe. Chaque réussite fait grimper sa jauge et débloque des badges.",
+      "Rends-toi sur le site Jotna School, saisis ton code et fais les exercices de ta classe. Chaque réussite fait grimper ta jauge et débloque des badges.",
     accent: "bg-orange-50 text-orange-800 ring-orange-200",
+    audience: "Élève",
+    note: "Application iOS et Android : à venir.",
   },
 ];
 
@@ -59,8 +65,8 @@ export function HowItWorks() {
     <Section
       id="comment"
       eyebrow="Comment ça marche"
-      title="Trois étapes pour démarrer."
-      description="L'élève apprend dans l'application Jotna School, sur tablette ou téléphone. Parents et professeurs suivent ses progrès depuis le site web."
+      title="Démarrer en 3 étapes."
+      description="Les étapes 1 et 2 s'adressent aux adultes : école, professeur ou parent. L'étape 3 s'adresse à l'élève. Tout se fait sur le site web, depuis un ordinateur, une tablette ou un téléphone."
     >
       <div className="relative">
         <svg
@@ -103,16 +109,28 @@ export function HowItWorks() {
                   <Icon className="size-5" />
                 </span>
               </div>
-              <h3 className="mt-5 text-xl font-extrabold text-gray-900">
+              <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Pour : <span className="text-gray-900">{step.audience}</span>
+              </p>
+              <h3 className="mt-2 text-xl font-extrabold text-gray-900">
                 {step.title}
               </h3>
               <p className="mt-2 text-sm leading-6 text-gray-600">
                 {step.description}
               </p>
+              {step.note ? (
+                <p className="mt-3 text-xs font-medium text-gray-500">
+                  {step.note}
+                </p>
+              ) : null}
             </StaggerItem>
           );
         })}
         </StaggerContainer>
+        <p className="relative z-10 mt-6 text-center text-sm text-gray-600">
+          Ensuite, l&apos;école, le professeur et le parent suivent les progrès de
+          l&apos;élève depuis leur espace.
+        </p>
       </div>
     </Section>
   );

@@ -284,3 +284,8 @@ jeu de données et doublonnent le programme (« Fractions » en CE2, à côté d
 multiplication à 2 chiffres »), et « Conjugaison des verbes » en Français n'a
 pas de niveau : personne ne la voit. Les trois relèvent d'une décision
 d'administration, pas d'un script.
+
+Le programme des huit matières (les sept du guide officiel et l'anglais), du
+CI au CM2, se charge en base par `programme/seed:run`, et certaines
+thématiques mêlent des jeux fabriqués par le code à leurs paliers : voir
+`docs/programme-et-jeux.md`.

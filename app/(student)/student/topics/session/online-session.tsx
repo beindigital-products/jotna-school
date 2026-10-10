@@ -52,6 +52,8 @@ import ShortAnswerExercise from "@/components/exercises/ShortAnswerExercise";
 import MatchExercise from "@/components/exercises/MatchExercise";
 import OrderExercise from "@/components/exercises/OrderExercise";
 import DragDropExercise from "@/components/exercises/DragDropExercise";
+import GameExercise, { isGameScreenType } from "@/components/exercises/GameExercise";
+import type { ExerciseType } from "@/convex/exerciseTypes";
 import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
 import { isReadingLearnerClass } from "@/convex/curriculum";
 import { motion, AnimatePresence } from "framer-motion";
@@ -59,7 +61,7 @@ import { refusalMessage } from "@/lib/refusalMessage";
 
 type SanitizedExo = {
   _id: Id<"exercises">;
-  type: "qcm" | "drag-drop" | "match" | "order" | "short-answer";
+  type: ExerciseType;
   prompt: string;
   payload: Record<string, unknown>;
   hintsAvailable: number;
@@ -1048,6 +1050,19 @@ function ExerciseRenderer({
         />
       );
     default:
+      if (isGameScreenType(exo.type)) {
+        return (
+          <GameExercise
+            type={exo.type}
+            prompt={exo.prompt}
+            payload={exo.payload}
+            disabled={disabled}
+            isCorrect={isCorrect}
+            onSubmit={onSubmit}
+            onSkip={onSkip}
+          />
+        );
+      }
       return <p>Type d&apos;exercice non supporté</p>;
   }
 }

@@ -33,6 +33,11 @@ const EXERCISE_TYPE_LABELS: Record<string, string> = {
   match: "Association",
   order: "Remise en ordre",
   "short-answer": "Réponse courte",
+  "fill-blank": "Phrase à trous",
+  pattern: "Frise à compléter",
+  "pixel-art": "Dessin sur quadrillage",
+  listen: "Écoute",
+  "color-mix": "Atelier des couleurs",
 };
 
 export function formatExerciseType(type: string): string {

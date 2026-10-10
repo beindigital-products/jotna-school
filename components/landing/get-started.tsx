@@ -123,8 +123,8 @@ export function GetStarted() {
         <p className="text-sm leading-6 text-amber-950">
           <strong className="font-semibold">Et l&apos;élève ?</strong> Son
           parent ou son professeur crée son compte et lui donne un code. Il le
-          tape dans l&apos;application Jotna School, sur tablette ou téléphone,
-          et commence à jouer.
+          saisit sur le site Jotna School, depuis un ordinateur, une tablette
+          ou un téléphone, et commence à jouer.
         </p>
       </div>
     </Section>

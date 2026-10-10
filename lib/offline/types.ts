@@ -7,6 +7,7 @@
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@/convex/_generated/api";
 import type { LocalLogEntry, SessionGrade } from "./session-rules";
+import type { ExerciseType } from "@/convex/exerciseTypes";
 
 export type Snapshot = NonNullable<FunctionReturnType<typeof api.offline.pack.snapshot>>;
 export type ContentPack = NonNullable<FunctionReturnType<typeof api.offline.pack.content>>;
@@ -23,7 +24,7 @@ export type PackExercise = {
   _id: string;
   palierId: string;
   order: number;
-  type: "qcm" | "drag-drop" | "match" | "order" | "short-answer";
+  type: ExerciseType;
   prompt: string;
   payload: unknown;
   hints: string[];

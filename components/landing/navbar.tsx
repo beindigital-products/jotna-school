@@ -19,6 +19,7 @@ const LINKS = [
   { href: "#accueil", id: "accueil", label: "Accueil" },
   { href: "#comment", id: "comment", label: "Comment ça marche" },
   { href: "#exercices", id: "exercices", label: "Exercices" },
+  { href: "#matieres", id: "matieres", label: "Matières" },
   { href: "#pour-qui", id: "pour-qui", label: "Pour qui" },
   { href: "#faq", id: "faq", label: "FAQ" },
 ];
