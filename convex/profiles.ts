@@ -249,6 +249,7 @@ export const updateProfile = mutation({
     name: v.optional(v.string()),
     avatar: v.optional(v.string()),
     receiveReports: v.optional(v.boolean()),
+    dashboardTourDone: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
