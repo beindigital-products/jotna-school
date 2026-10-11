@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UserMenu } from "@/components/ui/user-menu";
 import { RoleGate } from "@/components/RoleGate";
+import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 import { roleHomePath, type Role } from "@/lib/auth";
 
 const sidebarLinks = [
@@ -76,7 +77,12 @@ export default function SchoolLayout({
                       <SidebarMenuItem key={link.href}>
                         <SidebarMenuButton
                           isActive={isActive}
-                          render={<Link href={link.href} />}
+                          render={
+                            <Link
+                              href={link.href}
+                              data-tour={`nav-${link.href.split("/").pop()}`}
+                            />
+                          }
                           className={isActive ? "bg-sky-50 text-sky-800 font-semibold border-r-2 border-sky-600 rounded-none transition-all duration-200" : ""}
                         >
                           <Icon className={isActive ? "text-sky-600" : ""} />
@@ -91,11 +97,13 @@ export default function SchoolLayout({
           </SidebarContent>
 
           <SidebarFooter>
-            <UserMenu
-              profileHref="/school/dashboard"
-              settingsHref="/school/dashboard"
-              fallbackLabel="École"
-            />
+            <div data-tour="user-menu">
+              <UserMenu
+                profileHref="/school/dashboard"
+                settingsHref="/school/dashboard"
+                fallbackLabel="École"
+              />
+            </div>
           </SidebarFooter>
         </Sidebar>
 
@@ -106,6 +114,7 @@ export default function SchoolLayout({
           </header>
           <main className="flex-1 p-4 lg:p-8">{children}</main>
         </SidebarInset>
+        <DashboardTour role="school" />
       </SidebarProvider>
     </RoleGate>
   );

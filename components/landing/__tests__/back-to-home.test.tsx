@@ -3,6 +3,13 @@ import { render, screen } from "@testing-library/react";
 
 const platform = vi.hoisted(() => ({ native: false }));
 vi.mock("@/hooks/use-native-app", () => ({ useIsNativeApp: () => platform.native }));
+// `GuestOnly` (mise en page des écrans de connexion) lit le routeur et la
+// session Convex : ici, un visiteur déconnecté, sans routeur monté.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
+vi.mock("convex/react", () => ({
+  useConvexAuth: () => ({ isLoading: false, isAuthenticated: false }),
+  useQuery: () => undefined,
+}));
 
 import AuthLayout from "@/app/(auth)/layout";
 import { BackToHome } from "../back-to-home";

@@ -8,6 +8,7 @@ import { StudentGate } from "@/components/offline/student-gate";
 import { OfflineBadge } from "@/components/offline/offline-badge";
 import { useStudentStats } from "@/hooks/use-student-data";
 import { MotionConfig } from "framer-motion";
+import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 
 /**
  * LA COQUILLE DU JEU — ce qui entoure chaque écran de l'espace élève.
@@ -103,6 +104,7 @@ export default function StudentLayout({
                     <Link
                       key={item.href}
                       href={item.href}
+                      data-tour={`nav-${item.href.split("/").pop()}`}
                       aria-current={active ? "page" : undefined}
                       className={`flex min-h-11 items-center gap-2 rounded-full px-4 py-2 font-display text-base font-bold transition-all ${
                         active
@@ -158,6 +160,7 @@ export default function StudentLayout({
         </main>
 
         {!focusMode && <BottomNav pathname={pathname} />}
+        {!focusMode && <DashboardTour role="student" />}
       </div>
     </MotionConfig>
   );
@@ -263,6 +266,7 @@ function BottomNav({ pathname }: { pathname: string }) {
             <Link
               key={item.href}
               href={item.href}
+              data-tour={`nav-${item.href.split("/").pop()}`}
               aria-current={active ? "page" : undefined}
               className={`flex min-h-14 min-w-[4.5rem] flex-col items-center justify-end gap-0.5 rounded-2xl px-2 pb-1 font-display text-xs font-extrabold transition-all ${
                 active ? "text-orange-700" : "text-amber-900/60 active:text-orange-700"

@@ -21,6 +21,8 @@ export type ProfileUpdateFields = {
   name?: string;
   avatar?: string;
   receiveReports?: boolean;
+  /** Visite guidée terminée OU passée : elle ne revient plus. */
+  dashboardTourDone?: boolean;
 };
 
 /** Ce que le handler passera à `db.patch` — jamais d'autre champ. */
@@ -80,10 +82,18 @@ export function decideProfileUpdate(
     patch.avatar = fields.avatar;
   }
 
-  if (fields.receiveReports !== undefined) {
+  if (
+    fields.receiveReports !== undefined ||
+    fields.dashboardTourDone !== undefined
+  ) {
     patch.preferences = {
       ...objectPreferences(currentPreferences),
-      receiveReports: fields.receiveReports,
+      ...(fields.receiveReports !== undefined
+        ? { receiveReports: fields.receiveReports }
+        : {}),
+      ...(fields.dashboardTourDone !== undefined
+        ? { dashboardTourDone: fields.dashboardTourDone }
+        : {}),
     };
   }
 
@@ -114,4 +124,17 @@ export function decideProfileUpdate(
  */
 export function wantsReportEmail(preferences: unknown): boolean {
   return objectPreferences(preferences).receiveReports !== false;
+}
+
+/**
+ * La visite guidée du tableau de bord est-elle déjà passée ou terminée ?
+ *
+ * ABSENT VAUT NON : un compte neuf, ou créé avant la visite, la voit une fois.
+ * Seul un `true` explicite, posé par « Passer » ou par la dernière étape, la
+ * rend définitivement muette. Une valeur abîmée (`v.any()` n'impose rien) ne
+ * compte pas comme un « passé » : mieux vaut une visite de trop qu'un
+ * parent qui n'a jamais su où créer le compte de son enfant.
+ */
+export function isDashboardTourDone(preferences: unknown): boolean {
+  return objectPreferences(preferences).dashboardTourDone === true;
 }
