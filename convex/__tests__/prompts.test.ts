@@ -122,6 +122,10 @@ describe("le niveau des maths suit la classe", () => {
     expect(cm2).not.toContain("nombres jusqu'à 10 (20 au plus)");
   });
 
+  it("veut des prix entiers et réalistes en FCFA", () => {
+    expect(buildPalierBaseSystemPrompt({ ...maths, class: "CM2" })).toContain("Le FCFA n'a pas de centimes");
+  });
+
   it("applique la même étendue aux variations", () => {
     const prompt = buildVariationSystemPrompt({
       class: "CM2",

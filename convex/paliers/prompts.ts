@@ -241,7 +241,8 @@ function classScopeRules(subject: string, cls: ClassLevel): string {
       : "";
   const mathExamples = isMaths
     ? `
-- Les exemples de la section précédente montrent la FORME des exercices (symboles, mots, trou, mélange), jamais la taille des nombres : prends des nombres et des situations de ${cls}.`
+- Les exemples de la section précédente montrent la FORME des exercices (symboles, mots, trou, mélange), jamais la taille des nombres : prends des nombres et des situations de ${cls}.
+- Le FCFA n'a pas de centimes : un prix est un nombre ENTIER réaliste (un bissap 100 FCFA, une mangue 150 FCFA, un cahier 500 FCFA, un pagne 5 000 FCFA), jamais "4,50 FCFA" ni "20,00". Les décimaux se travaillent sur des longueurs, des masses, des capacités (2,5 kg, 1,75 m).`
     : "";
   const floor = lowerClass
     ? `
