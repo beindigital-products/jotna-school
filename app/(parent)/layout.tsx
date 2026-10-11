@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UserMenu } from "@/components/ui/user-menu";
 import { RoleGate } from "@/components/RoleGate";
+import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 import { roleHomePath } from "@/lib/auth";
 
 const sidebarLinks = [
@@ -92,7 +93,12 @@ export default function ParentLayout({
                       <SidebarMenuItem key={link.href}>
                         <SidebarMenuButton
                           isActive={isActive}
-                          render={<Link href={link.href} />}
+                          render={
+                            <Link
+                              href={link.href}
+                              data-tour={`nav-${link.href.split("/").pop()}`}
+                            />
+                          }
                           className={isActive ? "bg-lime-50 text-lime-800 font-semibold border-r-2 border-lime-600 rounded-none transition-all duration-200" : ""}
                         >
                           <Icon className={isActive ? "text-lime-600" : ""} />
@@ -107,11 +113,13 @@ export default function ParentLayout({
           </SidebarContent>
 
           <SidebarFooter>
-            <UserMenu
-              profileHref="/parent/settings"
-              settingsHref="/parent/settings"
-              fallbackLabel={roleLabel}
-            />
+            <div data-tour="user-menu">
+              <UserMenu
+                profileHref="/parent/settings"
+                settingsHref="/parent/settings"
+                fallbackLabel={roleLabel}
+              />
+            </div>
           </SidebarFooter>
         </Sidebar>
 
@@ -125,6 +133,7 @@ export default function ParentLayout({
           </header>
           <main className="flex-1 p-4 lg:p-8">{children}</main>
         </SidebarInset>
+        <DashboardTour role="parent" />
       </SidebarProvider>
     </RoleGate>
   );
