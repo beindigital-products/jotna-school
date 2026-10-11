@@ -95,3 +95,77 @@ describe("la consigne de génération d'un palier", () => {
     expect(prompt).toContain("[Histoire]");
   });
 });
+
+describe("le niveau des maths suit la classe", () => {
+  const maths = { ...base, subject: "Mathématiques", topic: "Les fractions" };
+  const classes = ["CI", "CP", "CE1", "CE2", "CM1", "CM2"] as const;
+
+  it.each(classes)("nomme l'étendue de %s dans la consigne système", (cls) => {
+    const prompt = buildPalierBaseSystemPrompt({ ...maths, class: cls });
+    expect(prompt).toContain(`[Niveau ${cls} — étendue des mathématiques]`);
+    expect(prompt).toContain(`Programme ${cls} :`);
+  });
+
+  it("interdit les calculs de CI-CP à partir du CE2", () => {
+    for (const cls of ["CE2", "CM1", "CM2"] as const) {
+      expect(buildPalierBaseSystemPrompt({ ...maths, class: cls })).toContain("INTERDIT");
+    }
+    for (const cls of ["CI", "CP", "CE1"] as const) {
+      expect(buildPalierBaseSystemPrompt({ ...maths, class: cls })).not.toContain("INTERDIT");
+    }
+  });
+
+  it("donne au CM2 des pourcentages et des décimaux, pas des nombres de CI", () => {
+    const cm2 = buildPalierBaseSystemPrompt({ ...maths, class: "CM2" });
+    expect(cm2).toContain("pourcentages");
+    expect(cm2).toContain("décimaux");
+    expect(cm2).not.toContain("nombres jusqu'à 10 (20 au plus)");
+  });
+
+  it("applique la même étendue aux variations", () => {
+    const prompt = buildVariationSystemPrompt({
+      class: "CM2",
+      subject: "Mathématiques",
+      topic: "Les fractions",
+      failed: [],
+    });
+    expect(prompt).toContain("[Niveau CM2");
+  });
+
+  it("applique l'étendue de classe à toutes les matières", () => {
+    const subjects = ["Français", "Anglais", "Histoire", "Géographie", "Éveil scientifique", "Instruction civique", "Éducation artistique", "Arabe"];
+    for (const subject of subjects) {
+      for (const cls of classes) {
+        const prompt = buildPalierBaseSystemPrompt({ ...base, subject, class: cls });
+        expect(prompt, `${subject} ${cls}`).toContain(`[Niveau ${cls} — étendue de la matière]`);
+        expect(prompt, `${subject} ${cls}`).toContain(`Langue de l'exercice en ${cls}`);
+        expect(prompt, `${subject} ${cls}`).toContain("pas de notions d'une classe inférieure");
+      }
+    }
+  });
+
+  it("donne un programme différent à chaque classe pour chaque matière connue", () => {
+    for (const subject of ["Français", "Anglais", "Histoire", "Géographie", "Éveil scientifique", "Instruction civique", "Éducation artistique", "Mathématiques"]) {
+      const lines = classes.map((cls) => {
+        const prompt = buildPalierBaseSystemPrompt({ ...base, subject, class: cls });
+        return prompt.split("\n").find((l) => l.startsWith(`- Programme ${cls} :`));
+      });
+      expect(lines.every(Boolean), subject).toBe(true);
+      expect(new Set(lines.map((l) => l!.split(" : ")[1])).size, subject).toBe(6);
+    }
+  });
+
+  it("interdit les exercices de CI-CP à partir du CE2 dans toutes les matières", () => {
+    for (const subject of ["Français", "Histoire", "Éveil scientifique"]) {
+      expect(buildPalierBaseSystemPrompt({ ...base, subject, class: "CM2" })).toContain("résout sans effort est un ÉCHEC");
+      expect(buildPalierBaseSystemPrompt({ ...base, subject, class: "CP" })).not.toContain("résout sans effort");
+    }
+  });
+
+  it("garde un énoncé court et sans texte au CI, élaboré au CM2", () => {
+    const ci = buildPalierBaseSystemPrompt({ ...base, class: "CI" });
+    const cm2 = buildPalierBaseSystemPrompt({ ...base, class: "CM2" });
+    expect(ci).toContain("8 mots au plus");
+    expect(cm2).toContain("préparent la 6e");
+  });
+});
