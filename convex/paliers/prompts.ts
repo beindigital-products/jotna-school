@@ -118,6 +118,142 @@ const ageForClass = (cls: ClassLevel): string => {
   }
 };
 
+/**
+ * LE PLANCHER DE CHAQUE CLASSE. Les règles maths ci-dessous sont les mêmes de
+ * CI à CM2 et leurs exemples (« 3 × 4 », « 12 + 7 ») sont des calculs de CI :
+ * sans borne basse, le modèle servait des problèmes de CP (10 FCFA, 4 amis)
+ * sur une thématique de CM2. Cette étendue dit, pour chaque classe, les
+ * nombres et les opérations attendus ; elle passe APRÈS les règles de mélange
+ * et l'emporte sur leurs exemples.
+ */
+const MATH_SCOPE: Record<ClassLevel, string> = {
+  CI: "nombres jusqu'à 10 (20 au plus), additions et soustractions très simples, dénombrer, comparer, formes.",
+  CP: "nombres jusqu'à 100, additions et soustractions, doubles et moitiés, premières tables (2, 5, 10).",
+  CE1: "nombres jusqu'à 1 000, additions et soustractions avec retenue, tables de multiplication, premiers partages.",
+  CE2: "nombres jusqu'à 10 000, multiplication à 2 chiffres, division simple, monnaie, mesures de longueur et de durée.",
+  CM1: "nombres jusqu'à 1 000 000, multiplication et division posées, fractions simples, décimaux (dixièmes, centièmes), périmètres et aires, problèmes à 2 étapes.",
+  CM2: "grands nombres (millions), 4 opérations avec décimaux, fractions (comparer, additionner, multiplier), pourcentages, proportionnalité, aires, volumes et conversions de mesures, problèmes à plusieurs étapes préparant la 6e.",
+};
+
+/**
+ * LE NIVEAU DE LANGUE, POUR TOUTES LES MATIÈRES. Un énoncé de CM2 écrit en
+ * phrases de CP est aussi faux qu'un calcul de CP en CM2.
+ */
+const LANGUAGE_LEVEL: Record<ClassLevel, string> = {
+  CI: "énoncés de 8 mots au plus, un mot ou un émoji par option, aucun texte à lire seul.",
+  CP: "énoncés d'une phrase courte (12 mots au plus), mots simples et connus, options de 1 à 3 mots.",
+  CE1: "énoncés d'une ou deux phrases courtes, vocabulaire courant, petits textes de 2 à 3 phrases.",
+  CE2: "énoncés de 2 à 3 phrases, vocabulaire plus riche, textes de 4 à 5 phrases, premiers connecteurs (car, mais, donc).",
+  CM1: "énoncés de 2 à 4 phrases, vocabulaire précis, textes de 5 à 8 phrases, questions qui demandent de justifier.",
+  CM2: "énoncés élaborés (3 à 5 phrases), vocabulaire précis, textes de 8 à 12 phrases, questions d'inférence, de justification et de synthèse qui préparent la 6e.",
+};
+
+const SUBJECT_SCOPE: { match: RegExp; scope: Record<ClassLevel, string> }[] = [
+  {
+    match: /anglais|english/i,
+    scope: {
+      CI: "reconnaître des mots isolés avec l'image : couleurs, animaux, nombres 1 à 10, salutations (hello, goodbye).",
+      CP: "mots et très courtes expressions : famille, école, fruits, corps, « I am… », « It is a… ».",
+      CE1: "phrases très simples sur soi : « I have… », « I like… », « I can… », la famille, la classe, les nombres jusqu'à 20.",
+      CE2: "phrases simples A1 : décrire quelqu'un ou un objet, la maison, la nourriture, l'heure pleine, les jours, « There is/are ».",
+      CM1: "A1+ : le présent continu (« She is eating »), la routine de la journée, les lieux de la ville, les prépositions de lieu.",
+      CM2: "A2 : le passé simple des verbes courants (« yesterday I went »), le futur proche (« I am going to »), comparer, demander son chemin, lire un petit texte.",
+    },
+  },
+  {
+    match: /fran[cç]ais|langue/i,
+    scope: {
+      CI: "reconnaître les lettres, les sons, des syllabes, des mots d'images ; aucun texte.",
+      CP: "lire et écrire des syllabes et des mots simples, des phrases de 4 à 6 mots, le son d'une lettre.",
+      CE1: "lire de petites phrases, le nom et le verbe, la phrase et la majuscule, le pluriel simple, premiers verbes au présent.",
+      CE2: "le groupe nominal, les accords sujet-verbe et en genre, le présent, le futur et l'imparfait des verbes courants, a/à et et/est.",
+      CM1: "le passé composé, l'accord du participe, les compléments, les homophones, les types de phrases, comprendre un texte et en tirer des informations.",
+      CM2: "les modes et temps usuels (conditionnel, subjonctif), l'accord du participe passé, les propositions, les expansions du nom, l'inférence dans un texte, l'expression écrite structurée.",
+    },
+  },
+  {
+    match: /histoire/i,
+    scope: {
+      CI: "le temps vécu : hier, aujourd'hui, demain, la journée, la famille.",
+      CP: "le passé de la famille et de l'école, avant et après, les générations.",
+      CE1: "le passé du quartier et du village, les traces et objets d'autrefois.",
+      CE2: "les premiers royaumes du Sénégal et leurs chefs, la vie d'autrefois.",
+      CM1: "la préhistoire, les grands empires (Ghana, Mali, Songhaï), les résistances à la conquête.",
+      CM2: "la colonisation, les résistances, l'indépendance du Sénégal, les grandes dates et leurs causes et conséquences.",
+    },
+  },
+  {
+    match: /g[ée]ograph/i,
+    scope: {
+      CI: "se repérer dans la classe et l'école : devant/derrière, près/loin.",
+      CP: "le quartier, le chemin de l'école, un plan simple.",
+      CE1: "le village et la ville, les points cardinaux, la carte simple.",
+      CE2: "les régions du Sénégal, les fleuves, le relief, les activités des habitants.",
+      CM1: "le Sénégal en détail (régions, climats, ressources), la lecture de cartes, les pays voisins.",
+      CM2: "l'Afrique de l'Ouest, les grands ensembles géographiques, les échanges, la population, lire cartes et tableaux.",
+    },
+  },
+  {
+    match: /scien|[ée]veil|ist\b/i,
+    scope: {
+      CI: "les cinq sens, les parties du corps, les animaux et plantes familiers.",
+      CP: "le corps et l'hygiène, les besoins des plantes et des animaux, le jour et la nuit.",
+      CE1: "les êtres vivants et leur croissance, l'eau, les états de la matière observables, la santé.",
+      CE2: "le cycle de vie, les chaînes alimentaires simples, l'air, l'eau, les saisons, la nutrition.",
+      CM1: "la digestion et la respiration, les mélanges, les circuits électriques simples, l'environnement.",
+      CM2: "le corps humain et ses fonctions, la reproduction, l'énergie, les transformations de la matière, l'expérience en démarche scientifique.",
+    },
+  },
+  {
+    match: /civi|emc|vivre ensemble/i,
+    scope: {
+      CI: "les règles de la classe, dire bonjour, partager.",
+      CP: "les règles de la vie en groupe, le respect, la propreté.",
+      CE1: "les droits et devoirs de l'enfant, la famille, l'école.",
+      CE2: "les symboles du Sénégal, le quartier, les règles de sécurité.",
+      CM1: "les institutions du pays, le citoyen, la solidarité, la paix.",
+      CM2: "la Constitution, les droits de l'enfant, la démocratie, les responsabilités du citoyen.",
+    },
+  },
+  {
+    match: /artisti|arts|musi|dessin/i,
+    scope: {
+      CI: "les couleurs, les formes, des sons forts et doux.",
+      CP: "les couleurs primaires, les instruments connus, des chants simples.",
+      CE1: "les couleurs secondaires, les familles d'instruments, le rythme.",
+      CE2: "les techniques de dessin, les instruments traditionnels, le rythme et la mélodie.",
+      CM1: "les techniques (collage, peinture), les formes d'art du Sénégal, la lecture de rythmes.",
+      CM2: "l'analyse d'une œuvre, les arts du Sénégal, les émotions en musique, la création structurée.",
+    },
+  },
+];
+
+function classScopeRules(subject: string, cls: ClassLevel): string {
+  const isMaths = isMathSubject(subject);
+  const programme = isMaths
+    ? MATH_SCOPE[cls]
+    : SUBJECT_SCOPE.find((entry) => entry.match.test(subject))?.scope[cls];
+  const lowerClass = cls !== "CI" && cls !== "CP" && cls !== "CE1";
+  const mathFloor =
+    isMaths && lowerClass
+      ? `
+- INTERDIT : un calcul ou un problème de CI-CP (sommes à un chiffre, "3 × 4", petites sommes de 10 ou 50 FCFA, partage entre 2 à 4 amis). Au moins 7 exercices sur 10 demandent un calcul à plusieurs chiffres ou plusieurs étapes.`
+      : "";
+  const mathExamples = isMaths
+    ? `
+- Les exemples de la section précédente montrent la FORME des exercices (symboles, mots, trou, mélange), jamais la taille des nombres : prends des nombres et des situations de ${cls}.
+- Le FCFA n'a pas de centimes : un prix est un nombre ENTIER réaliste (un bissap 100 FCFA, une mangue 150 FCFA, un cahier 500 FCFA, un pagne 5 000 FCFA), jamais "4,50 FCFA" ni "20,00". Les décimaux se travaillent sur des longueurs, des masses, des capacités (2,5 kg, 1,75 m).`
+    : "";
+  const floor = lowerClass
+    ? `
+- Un exercice qu'un enfant de CP résout sans effort est un ÉCHEC : refais-le avec le niveau de ${cls}.`
+    : "";
+  return `
+[Niveau ${cls} — étendue ${isMaths ? "des mathématiques" : "de la matière"}]${programme ? `\n- Programme ${cls} : ${programme}` : ""}
+- Langue de l'exercice en ${cls} : ${LANGUAGE_LEVEL[cls]}${mathExamples}${mathFloor}${floor}
+- Un exercice d'une classe inférieure ou supérieure est refusé : tout le palier vise ${cls}.`;
+}
+
 const MATH_MIX_RULES = `
 [Mélange des écritures et des signes — Maths — QUOTAS OBLIGATOIRES sur les 10 exercices]
 - Au moins 3 exercices écrits en SYMBOLES ("3 × 4 = ?", "12 + 7", "25 − 8", "20 ÷ 4").
@@ -337,13 +473,13 @@ Inspiré du programme officiel sénégalais (élémentaire).
 ${SENEGAL_ANCHOR}
 
 [Contraintes pédagogiques]
-- Pas de notions hors programme ${input.class} (ex: pas de fractions en CE1).
+- Pas de notions hors programme ${input.class} (ex: pas de fractions en CE1), et pas de notions d'une classe inférieure : le niveau visé est celui de ${input.class}, ni plus facile ni plus difficile.
 - Texte adapté à l'âge (${age}), phrases courtes, vocabulaire concret.
 - Pas de question à pièges méchants ; bienveillance toujours.
 - Au moins 3 types d'exos différents dans le palier (Decision 63).
 ${HINTS_RULE}
 ${readingLearnerRules(input.class)}
-${isMaths ? MATH_MIX_RULES + MATH_OUTPUT_RULES : subjectRules(input.subject)}`;
+${isMaths ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }
 
 export function buildPalierBasePrompt(input: PalierBasePromptInput): string {
@@ -397,7 +533,7 @@ ${SENEGAL_ANCHOR}
 - Évite spécifiquement le piège qui a fait rater l'enfant — voir ses erreurs.
 ${HINTS_RULE}
 ${readingLearnerRules(input.class)}
-${isMathSubject(input.subject) ? MATH_MIX_RULES + MATH_OUTPUT_RULES : subjectRules(input.subject)}`;
+${isMathSubject(input.subject) ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }
 
 export function buildVariationPrompt(input: VariationPromptInput): string {
