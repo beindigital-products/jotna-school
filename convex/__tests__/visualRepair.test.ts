@@ -39,7 +39,13 @@ describe("repairVisualPrompt — « Combien de mangues vois-tu ? » sans mangue"
   });
 
   it("écarte un renvoi à une image absente", () => {
-    for (const prompt of ["Quelle forme vois-tu ?", "Regarde le dessin ci-dessous : quel animal est-ce ?", "Que montre l'image ?"]) {
+    for (const prompt of [
+      "Quelle forme vois-tu ?",
+      "Regarde le dessin ci-dessous : quel animal est-ce ?",
+      "Que montre l'image ?",
+      "Associe la phrase à l'image.",
+      "Quel mot correspond à l'image ?",
+    ]) {
       expect(repairVisualPrompt(qcm(prompt, ["rond", "carré"], 0)), prompt).toEqual({
         kind: "unrepairable",
         reason: "nothing_to_see",
@@ -60,6 +66,17 @@ describe("repairVisualPrompt — ce qui reste intact", () => {
     expect(repairVisualPrompt(qcm("Combien de mangues y a-t-il dans 3 paniers de 4 ?", ["7", "12"], 1))).toEqual({
       kind: "ok",
     });
+  });
+
+  it("laisse un texte qui parle d'une figure ou d'un schéma qu'on décrit en mots", () => {
+    for (const prompt of [
+      "Quel est le nom de la figure qui a ses côtés opposés parallèles et de même longueur ?",
+      "Identifiez la figure de style dans cette phrase : 'Le vent hurlait dans la nuit.'",
+      "Déposez les mots dans les bonnes zones pour compléter le schéma des rimes.",
+      "Quel outil sert pour le dessin ?",
+    ]) {
+      expect(repairVisualPrompt(qcm(prompt, ["a", "b"], 0)), prompt).toEqual({ kind: "ok" });
+    }
   });
 
   it("laisse une image portée par les options", () => {

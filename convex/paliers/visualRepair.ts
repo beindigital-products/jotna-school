@@ -48,8 +48,23 @@ const MAX_DRAWN = 20;
  * Le texte renvoie à quelque chose que l'enfant devrait VOIR : « que
  * vois-tu ? », « sur l'image », « ci-dessous ».
  */
-const PICTURE_REFERENCE =
-  /(?:\bvois[- ]?tu\b|\bvoyez[- ]?vous\b|\bvoit[- ]on\b|\bci[- ]dessus\b|\bci[- ]dessous\b|\b(?:l['’]|la |le |cette |ce )(?:image|illustration|photo|dessin|figure|sch[ée]ma)\b)/iu;
+const PICTURE_REFERENCE = new RegExp(
+  [
+    "\\bvois[- ]?tu\\b",
+    "\\bvoyez[- ]?vous\\b",
+    "\\bvoit[- ]on\\b",
+    "\\bci[- ]dessus\\b",
+    "\\bci[- ]dessous\\b",
+    // « cette image », « l'image » : l'énoncé en désigne une précise. Pas
+    // « la figure » ni « le schéma » : « figure de style », « figure qui a
+    // ses côtés parallèles » se répondent avec le texte seul ; pas « le
+    // dessin » seul non plus (le cours de dessin).
+    "\\b(?:cette |ce )(?:image|illustration|photo|dessin)\\b",
+    "\\bl['’](?:image|illustration)\\b",
+    "\\b(?:regarde[zr]?|observe[zr]?|sur|dans|selon) (?:la |le )(?:photo|dessin)\\b",
+  ].join("|"),
+  "iu",
+);
 
 /** Une question de dénombrement sur ce que l'on voit (et non un calcul en mots). */
 const COUNTING_QUESTION = /\bcombien (?:de |d['’]|des )\s*(\p{L}+)/iu;
