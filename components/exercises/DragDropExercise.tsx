@@ -30,12 +30,14 @@ interface DragDropExerciseProps {
   isCorrect: boolean | null;
 }
 
+// Les couleurs du logo de Jotna School (`--color-savanna-*`), jamais le rouge
+// ni le rose : une zone rouge se lit « faux » (voir `MatchExercise.tsx`).
 const zoneColors = [
-  { bg: "bg-blue-50", border: "border-blue-300", header: "bg-blue-200 text-blue-900", item: "bg-blue-100 border-blue-200 text-blue-800" },
-  { bg: "bg-pink-50", border: "border-pink-300", header: "bg-pink-200 text-pink-900", item: "bg-pink-100 border-pink-200 text-pink-800" },
-  { bg: "bg-amber-50", border: "border-amber-300", header: "bg-amber-200 text-amber-900", item: "bg-amber-100 border-amber-200 text-amber-800" },
-  { bg: "bg-green-50", border: "border-green-300", header: "bg-green-200 text-green-900", item: "bg-green-100 border-green-200 text-green-800" },
-  { bg: "bg-purple-50", border: "border-purple-300", header: "bg-purple-200 text-purple-900", item: "bg-purple-100 border-purple-200 text-purple-800" },
+  { bg: "bg-savanna-sky/15", border: "border-savanna-sky-deep", header: "bg-savanna-sky text-savanna-night", item: "bg-savanna-sky/40 border-savanna-sky-deep text-savanna-night" },
+  { bg: "bg-orange-50", border: "border-orange-400", header: "bg-orange-300 text-savanna-night", item: "bg-orange-100 border-orange-400 text-savanna-night" },
+  { bg: "bg-savanna-leaf/10", border: "border-savanna-leaf-deep", header: "bg-savanna-leaf text-savanna-night", item: "bg-savanna-leaf/30 border-savanna-leaf-deep text-savanna-night" },
+  { bg: "bg-savanna-earth/10", border: "border-savanna-earth", header: "bg-savanna-earth text-white", item: "bg-savanna-earth/20 border-savanna-earth text-savanna-night" },
+  { bg: "bg-savanna-sand/20", border: "border-savanna-sand-deep", header: "bg-savanna-sand text-savanna-night", item: "bg-savanna-sand/40 border-savanna-sand-deep text-savanna-night" },
 ];
 
 /*

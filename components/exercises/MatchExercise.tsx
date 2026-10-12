@@ -39,13 +39,21 @@ interface MatchExerciseProps {
   isCorrect: boolean | null;
 }
 
+/**
+ * LES COULEURS D'UN LIEN : CELLES DU LOGO DE JOTNA SCHOOL, JAMAIS LE ROUGE.
+ * Un lien rouge se lit « faux » : l'enfant croit s'être trompé alors qu'il
+ * n'a pas encore validé. Le rose en est trop proche : il est écarté aussi.
+ * Ciel, soleil (le J), feuille (le a), terre (le panneau), nuit (le mortier)
+ * et sable : la palette `--color-savanna-*` de `app/globals.css`. Le rang du
+ * lien choisit la teinte ; les deux tuiles d'un lien partagent la leur.
+ */
 const pairColors = [
-  { left: "bg-blue-200 border-blue-400 text-blue-900", right: "bg-blue-100 border-blue-300 text-blue-800", line: "text-blue-400" },
-  { left: "bg-pink-200 border-pink-400 text-pink-900", right: "bg-pink-100 border-pink-300 text-pink-800", line: "text-pink-400" },
-  { left: "bg-amber-200 border-amber-400 text-amber-900", right: "bg-amber-100 border-amber-300 text-amber-800", line: "text-amber-400" },
-  { left: "bg-green-200 border-green-400 text-green-900", right: "bg-green-100 border-green-300 text-green-800", line: "text-green-400" },
-  { left: "bg-purple-200 border-purple-400 text-purple-900", right: "bg-purple-100 border-purple-300 text-purple-800", line: "text-purple-400" },
-  { left: "bg-teal-200 border-teal-400 text-teal-900", right: "bg-teal-100 border-teal-300 text-teal-800", line: "text-teal-400" },
+  { left: "bg-savanna-sky border-savanna-sky-deep text-savanna-night", right: "bg-savanna-sky/40 border-savanna-sky-deep text-savanna-night", line: "text-savanna-sky-deep" },
+  { left: "bg-orange-300 border-orange-500 text-savanna-night", right: "bg-orange-100 border-orange-400 text-savanna-night", line: "text-orange-500" },
+  { left: "bg-savanna-leaf border-savanna-leaf-deep text-savanna-night", right: "bg-savanna-leaf/30 border-savanna-leaf-deep text-savanna-night", line: "text-savanna-leaf-deep" },
+  { left: "bg-savanna-earth border-savanna-earth text-white", right: "bg-savanna-earth/20 border-savanna-earth text-savanna-night", line: "text-savanna-earth" },
+  { left: "bg-savanna-night border-savanna-night text-white", right: "bg-savanna-night/15 border-savanna-night text-savanna-night", line: "text-savanna-night" },
+  { left: "bg-savanna-sand border-savanna-sand-deep text-savanna-night", right: "bg-savanna-sand/40 border-savanna-sand-deep text-savanna-night", line: "text-savanna-sand-deep" },
 ];
 
 export default function MatchExercise({
