@@ -47,7 +47,7 @@ export const BANK: SubjectBank = {
     match({
       topic: "Se repérer sur un quadrillage",
       stage: 2,
-      prompt: "Un pion se déplace sur le quadrillage. Relie chaque mot à sa flèche.",
+      prompt: "Pour se déplacer sur un quadrillage, relie chaque mot à sa flèche.",
       pairs: [
         ["À gauche", "⬅️"],
         ["En haut", "⬆️"],
@@ -55,7 +55,7 @@ export const BANK: SubjectBank = {
         ["En bas", "⬇️"],
       ],
       hints: [
-        "Regarde la pointe de chaque flèche : elle montre où le pion va.",
+        "Regarde la pointe de chaque flèche : elle montre où l'on va.",
         "Le haut est vers le ciel, le bas vers le sol. Pour gauche et droite, pense à tes deux mains.",
       ],
     }),
@@ -113,10 +113,10 @@ export const BANK: SubjectBank = {
     match({
       topic: "Vu de dessus",
       stage: 2,
-      prompt: "Regarde chaque objet de dessus. Relie-le à la forme que tu vois.",
+      prompt: "Imagine chaque objet vu de dessus. Relie-le à sa forme.",
       pairs: [
         ["Un seau", "🔴 un rond"],
-        ["Un dé", "🟥 un carré"],
+        ["Un dé", "⬛ un carré"],
         ["Une ardoise", "un rectangle"],
       ],
       hints: [
@@ -207,7 +207,7 @@ export const BANK: SubjectBank = {
         "Sur une boussole, pars du nord et tourne dans le sens des aiguilles d'une montre. Range les points cardinaux dans l'ordre.",
       sequence: ["Nord", "Est", "Sud", "Ouest"],
       hints: [
-        "Sur le dessin d'une boussole, le nord est en haut. Les aiguilles d'une montre tournent vers la droite, puis vers le bas.",
+        "Sur une boussole, le nord est en haut. Les aiguilles d'une montre tournent vers la droite, puis vers le bas.",
         "Après le nord, le deuxième point est celui où le soleil se lève.",
       ],
     }),

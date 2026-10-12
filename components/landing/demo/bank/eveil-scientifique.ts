@@ -177,7 +177,7 @@ export const BANK: SubjectBank = {
       explanation: "Le poisson respire avec ses branchies. L'homme, lui, respire avec ses poumons, par le nez et par la bouche.",
       hints: [
         "Un poisson vit dans l'eau : il ne respire pas comme toi, avec un nez.",
-        "Regarde sous les ouïes, de chaque côté de sa tête : on y voit de petites lames rouges.",
+        "Sous les ouïes, de chaque côté de sa tête, un poisson a de petites lames rouges.",
       ],
     }),
     dragDrop({

@@ -449,7 +449,7 @@ export const BANK: SubjectBank = {
     shortAnswer({
       topic: "Grandes découvertes et traite négrière",
       stage: 2,
-      prompt: "En quelle année l'esclavage a-t-il été aboli dans les colonies françaises ?",
+      prompt: "En quelle année l'esclavage a-t-il été définitivement aboli dans les colonies françaises ?",
       accepted: ["1848"],
       hints: [
         "C'était au milieu du XIXe siècle, bien avant la création de l'AOF.",

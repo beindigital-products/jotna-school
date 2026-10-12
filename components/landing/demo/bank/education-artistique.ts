@@ -44,10 +44,10 @@ export const BANK: SubjectBank = {
       stage: 1,
       prompt: "Relie chaque chose à sa couleur.",
       pairs: [
-        ["🍌", "🟡 jaune"],
-        ["🍅", "🔴 rouge"],
-        ["🌳", "🟢 vert"],
-        ["🥕", "🟠 orange"],
+        ["🍌", "💛 jaune"],
+        ["🍅", "❤️ rouge"],
+        ["🌳", "💚 vert"],
+        ["🥕", "🧡 orange"],
       ],
       hints: [
         "Regarde bien la couleur de chaque dessin.",
@@ -58,7 +58,7 @@ export const BANK: SubjectBank = {
       topic: "Les couleurs",
       stage: 3,
       prompt: "Mets les couleurs du drapeau du Sénégal dans l'ordre, de gauche à droite.",
-      sequence: ["🟢 vert", "🟡 jaune", "🔴 rouge"],
+      sequence: ["💚 vert", "💛 jaune", "❤️ rouge"],
       hints: [
         "Pense au drapeau dessiné dans ton livre ou au tableau.",
         "La bande du milieu a la couleur du soleil, avec une étoile verte.",
@@ -97,7 +97,7 @@ export const BANK: SubjectBank = {
       prompt: "La forme de chaque objet est-elle droite, courbe ou en zigzag ? Glisse-le dans la bonne case.",
       zones: ["Ligne droite", "Ligne courbe", "Zigzag"],
       items: {
-        "Ligne droite": ["📏 règle", "🥖 pain"],
+        "Ligne droite": ["📏 règle", "✏️ crayon"],
         "Ligne courbe": ["🌈 arc-en-ciel", "🍌 banane"],
         Zigzag: ["⚡ éclair"],
       },
@@ -109,7 +109,7 @@ export const BANK: SubjectBank = {
     match({
       topic: "Décorer avec des motifs",
       stage: 2,
-      prompt: "Pour décorer un objet, que prends-tu ? Relie chaque action à son matériel.",
+      prompt: "Que prends-tu pour peindre, dessiner ou modeler ? Relie chaque action à son matériel.",
       pairs: [
         ["Peindre", "🖌️ un pinceau"],
         ["Dessiner", "✏️ un crayon"],

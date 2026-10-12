@@ -34,7 +34,7 @@ export const BANK: SubjectBank = {
       stage: 2,
       prompt: "Dis le nom de chaque dessin. Glisse-le sous la lettre du premier son que tu entends.",
       zones: ["a", "t"],
-      items: { a: ["🍍", "✈️"], t: ["🍅", "🐢", "🚕"] },
+      items: { a: ["🍍", "✈️"], t: ["🍅", "🐢", "🥁"] },
       hints: [
         "Dis le nom du dessin tout doucement et écoute bien le premier son.",
         "Si le premier son est « a », pose le dessin sous a. Si c'est « t », pose-le sous t.",
