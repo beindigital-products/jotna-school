@@ -105,8 +105,16 @@ test.describe("Démonstration des exercices au doigt (émulation Chromium, pas W
       [Math.min(a.y, z.y), Math.max(a.y + a.height, z.y + z.height)],
     );
     await page.waitForTimeout(150);
-    const from = await centerOf(item);
-    const to = await centerOf(zone);
+    // Les deux positions se lisent APRÈS le calage et sans défilement entre elles :
+    // `centerOf` fait défiler la page, et un doigt posé là où l'étiquette n'est
+    // plus tombe sur le fond, que le navigateur prend pour un défilement.
+    const boxCenter = async (locator: Locator): Promise<Point> => {
+      const box = await locator.boundingBox();
+      if (!box) throw new Error("élément sans boîte");
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    };
+    const from = await boxCenter(item);
+    const to = await boxCenter(zone);
     await swipe(cdp, from, to);
 
     // L'étiquette a quitté le bac et se trouve dans une zone (laquelle dépend de
@@ -114,6 +122,34 @@ test.describe("Démonstration des exercices au doigt (émulation Chromium, pas W
     await expect(bin).toHaveCount(total - 1);
     await expect(card.locator("[aria-roledescription=draggable]").filter({ hasText: label.trim() })).toHaveCount(1);
     await expect(bin.filter({ hasText: label.trim() })).toHaveCount(0);
+  });
+
+  test("glisser-déposer : toucher l'étiquette puis une case hors écran la pose dans CETTE case", async ({ page }) => {
+    const card = await openCard(page, "Classer par le geste");
+    const bin = card.locator(".border-dashed [aria-roledescription=draggable]");
+    const zones = card.locator(".ring-amber-100 h4").locator("xpath=..");
+    const total = await bin.count();
+    expect(total).toBeGreaterThanOrEqual(2);
+    const target = zones.last();
+    const targetName = (await target.locator("h4").textContent()) ?? "";
+
+    // Chaque étiquette est posée dans la dernière case, à l'écran ou non : le
+    // toucher ne dépend pas de ce qui tient dans l'écran, le glissé si.
+    for (let placed = 0; placed < total; placed++) {
+      const item = bin.first();
+      const label = ((await item.textContent()) ?? "").trim();
+      await item.evaluate((el) => el.scrollIntoView({ block: "center", behavior: "instant" }));
+      await item.tap();
+      await expect(item).toHaveAttribute("aria-pressed", "true");
+      // La case est ailleurs : on défile pour l'atteindre, comme un enfant.
+      await target.evaluate((el) => el.scrollIntoView({ block: "center", behavior: "instant" }));
+      await target.tap();
+      await expect(bin).toHaveCount(total - placed - 1);
+      await expect(
+        target.locator("[aria-roledescription=draggable]").filter({ hasText: label }),
+        `« ${label} » dans « ${targetName.trim()} »`,
+      ).toHaveCount(1);
+    }
   });
 
   test("les boutons de la carte ont une cible de 44 px au moins", async ({ page }) => {
