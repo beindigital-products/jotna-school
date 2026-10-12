@@ -325,7 +325,7 @@ function ExerciseScreen({
       );
     default:
       if (isGameScreenType(exercise.type)) {
-        return <GameExercise {...common} type={exercise.type} payload={view} />;
+        return <GameExercise {...common} type={exercise.type} payload={view} fitScreen={false} />;
       }
       return <p>Type d&apos;exercice non supporté</p>;
   }

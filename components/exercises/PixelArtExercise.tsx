@@ -37,7 +37,17 @@ export default function PixelArtExercise({
   onSkip,
   disabled,
   isCorrect,
-}: ExerciseScreenProps<Partial<PixelArtView>>) {
+  fitScreen = true,
+}: ExerciseScreenProps<Partial<PixelArtView>> & {
+  /**
+   * Caler les cases sur la hauteur de l'écran, « Valider » compris (la séance :
+   * l'exercice y est en haut de la page). Faux pour une carte posée bien plus
+   * bas dans une page qui défile (la démonstration de la vitrine) : la mesure
+   * y part du haut de la PAGE, trouve une hauteur négative et réduit toujours
+   * les cases à 26 px, quel que soit l'écran.
+   */
+  fitScreen?: boolean;
+}) {
   const width = typeof payload?.width === "number" ? payload.width : 0;
   const height = typeof payload?.height === "number" ? payload.height : 0;
   const palette: PixelPaint[] = Array.isArray(payload?.palette) ? payload.palette : [];
@@ -90,9 +100,9 @@ export default function PixelArtExercise({
       const zoneBox = zone.getBoundingClientRect();
       const free = {
         width: root.clientWidth,
-        height: Math.floor(
-          screenHeight() - (zoneBox.top + window.scrollY) - (box.bottom - zoneBox.bottom) - BOTTOM_SLACK,
-        ),
+        height: fitScreen
+          ? Math.floor(screenHeight() - (zoneBox.top + window.scrollY) - (box.bottom - zoneBox.bottom) - BOTTOM_SLACK)
+          : Infinity,
       };
       setRoom((prev) => (prev?.width === free.width && prev.height === free.height ? prev : free));
     };
@@ -104,7 +114,7 @@ export default function PixelArtExercise({
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [valid]);
+  }, [valid, fitScreen]);
 
   // Le modèle de mémoire se cache tout seul au bout du compte à rebours.
   useEffect(() => {

@@ -29,7 +29,10 @@ export default function GameExercise({
   isCorrect,
   onSubmit,
   onSkip,
+  fitScreen,
 }: {
+  /** Seul le dessin sur quadrillage s'en sert (`PixelArtExercise`). */
+  fitScreen?: boolean;
   type: GameScreenType;
   prompt: string;
   payload: unknown;
@@ -45,7 +48,7 @@ export default function GameExercise({
     case "pattern":
       return <PatternExercise {...common} payload={payload as ComponentProps<typeof PatternExercise>["payload"]} />;
     case "pixel-art":
-      return <PixelArtExercise {...common} payload={payload as ComponentProps<typeof PixelArtExercise>["payload"]} />;
+      return <PixelArtExercise {...common} fitScreen={fitScreen} payload={payload as ComponentProps<typeof PixelArtExercise>["payload"]} />;
     case "listen":
       return <ListenExercise {...common} payload={payload as ComponentProps<typeof ListenExercise>["payload"]} />;
     case "color-mix":

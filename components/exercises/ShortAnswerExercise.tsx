@@ -74,7 +74,7 @@ export default function ShortAnswerExercise({
                 ? "border-red-400 bg-red-50 text-red-800"
                 : "border-gray-200 bg-white text-gray-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
             }
-            placeholder-gray-400
+            placeholder-gray-400 placeholder:text-base sm:placeholder:text-xl
             ${disabled ? "cursor-not-allowed opacity-70" : ""}
           `}
         />
