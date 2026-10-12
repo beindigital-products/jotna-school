@@ -36,7 +36,7 @@ export const exerciseExtractionSchema = {
             payload: {
               type: "string" as const,
               description:
-                "Les données spécifiques au type d'exercice, sous forme d'une chaîne JSON sérialisée. Formats attendus selon le type: qcm → {\"options\":[string],\"correctIndex\":number,\"explanation\"?:string}. match → {\"pairs\":[{\"left\":string,\"right\":string}]}. order → {\"correctSequence\":[string]}. drag-drop → {\"zones\":[string],\"items\":[{\"text\":string,\"correctZone\":string}]}. short-answer → {\"acceptedAnswers\":[string],\"tolerance\"?:string}.",
+                "Les données spécifiques au type d'exercice, sous forme d'une chaîne JSON sérialisée. Formats attendus selon le type: qcm → {\"options\":[string],\"correctIndex\":number,\"explanation\"?:string}. match → {\"pairs\":[{\"left\":string,\"right\":string}],\"accepted\"?:[{\"left\":string,\"right\":string}]} (accepted : les autres paires tout aussi justes, quand une proposition va à deux éléments). order → {\"correctSequence\":[string]}. drag-drop → {\"zones\":[string],\"items\":[{\"text\":string,\"correctZone\":string}]}. short-answer → {\"acceptedAnswers\":[string],\"tolerance\"?:string}.",
             },
             answerKey: {
               type: "string" as const,

@@ -25,27 +25,52 @@ export type DragDropItem = { text: string; correctZone: string };
 /**
  * Appariement : la liste des paires reliées, `[{ left, right }, …]`.
  *
- * Juste si les paires reçues sont exactement les paires attendues, dans
- * n'importe quel ordre. Deux mots qui ont le même son se relient chacun à
- * l'une des deux tuiles « a » : les deux paires « mangue–a » et « yassa–a »
- * sont attendues, les deux sont rendues.
+ * DEUX CONDITIONS, TOUTES DEUX NÉCESSAIRES :
+ *   1. chaque tuile est reliée UNE fois : les mots de gauche reçus, comme
+ *      ceux de droite, sont exactement ceux de l'exercice, en multi-ensemble
+ *      (deux mots qui ont le même son se relient chacun à l'une des deux
+ *      tuiles « a » : « mangue–a » et « yassa–a » sont attendues, rendues) ;
+ *   2. chaque paire reçue est VALABLE : l'une des `pairs` de l'exercice, ou
+ *      l'une des `accepted`.
+ *
+ * `accepted` EST POUR LES PROPOSITIONS QUI VONT À DEUX ÉLÉMENTS. Dans
+ * « Associe les couleurs aux objets » (rouge, vert, jaune / tomate, mangue,
+ * pomme), une pomme est rouge, verte ou jaune, une mangue verte ou jaune :
+ * le modèle n'écrit qu'une association dans `pairs`, et l'enfant qui en
+ * relie une autre, tout aussi juste, perdait. Les paires valables en plus
+ * s'écrivent dans `accepted` ; toute association complète bâtie avec des
+ * paires valables est juste, quel que soit l'ordre ou le choix de l'enfant.
+ * Sans `accepted`, la règle est celle d'avant : exactement les `pairs`.
  */
 export function verifyMatch(
   submitted: string,
-  payload: { pairs: MatchPair[] },
+  payload: { pairs: MatchPair[]; accepted?: MatchPair[] },
 ): boolean {
   const parsed = parseJson(submitted);
   if (!Array.isArray(parsed) || parsed.length !== payload.pairs.length) {
     return false;
   }
-  const given: string[] = [];
+  const given: MatchPair[] = [];
   for (const entry of parsed) {
     if (!isStringRecord(entry, "left", "right")) return false;
-    given.push(key(entry.left, entry.right));
+    given.push({ left: entry.left, right: entry.right });
   }
-  return sameMultiset(
-    given,
-    payload.pairs.map((pair) => key(pair.left, pair.right)),
+
+  const extra = Array.isArray(payload.accepted) ? payload.accepted : [];
+  const valid = new Set(
+    [...payload.pairs, ...extra].map((pair) => key(pair.left, pair.right)),
+  );
+  if (!given.every((pair) => valid.has(key(pair.left, pair.right)))) return false;
+
+  return (
+    sameMultiset(
+      given.map((pair) => pair.left),
+      payload.pairs.map((pair) => pair.left),
+    ) &&
+    sameMultiset(
+      given.map((pair) => pair.right),
+      payload.pairs.map((pair) => pair.right),
+    )
   );
 }
 

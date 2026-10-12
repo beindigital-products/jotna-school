@@ -34,7 +34,7 @@ import type { Id } from "../_generated/dataModel";
 import { checkAccess } from "../access";
 import { isReadingLearnerClass } from "../curriculum";
 import { clipCacheKey, synthesize, voiceConfig, voiceFor } from "./elevenlabs";
-import { speakablePrompt } from "./speakable";
+import { speakableExercise } from "./speakable";
 
 type PromptTarget =
   | { ok: true; text: string; studentId: Id<"profiles"> }
@@ -90,7 +90,7 @@ export const promptToRead = internalQuery({
         exercise.palierAttemptId === attempt._id);
     if (!exercise || !inPalier) return { ok: false, reason: "unknown_text" };
 
-    const text = speakablePrompt(exercise.prompt);
+    const text = speakableExercise(exercise.type, exercise.prompt);
     if (!text) return { ok: false, reason: "unknown_text" };
     return { ok: true, text, studentId: profile._id };
   },

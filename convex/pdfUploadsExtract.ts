@@ -150,7 +150,7 @@ Si un exercice contient une liste d'items à traiter, NE RENVOIE PAS un seul exe
 
 Pour chaque exercice, détermine le type d'INTERACTION le plus adapté à une application web interactive (PAS à un exercice papier):
 - qcm: Question à choix multiples. Payload: {options: string[], correctIndex: number, explanation?: string}
-- match: Association de paires gauche↔droite en cliquant. Payload: {pairs: [{left: string, right: string}]}
+- match: Association de paires gauche↔droite en cliquant. Payload: {pairs: [{left: string, right: string}], accepted?: [{left: string, right: string}]} (accepted : autres paires aussi justes quand une proposition va à deux éléments)
 - order: Remise en ordre par drag-and-drop d'une séquence. Payload: {correctSequence: string[]}
 - drag-drop: Glisser-déposer des éléments dans des zones cibles. Payload: {zones: string[], items: [{text: string, correctZone: string}]}
 - short-answer: Réponse courte à taper au clavier. Payload: {acceptedAnswers: string[], tolerance?: string}

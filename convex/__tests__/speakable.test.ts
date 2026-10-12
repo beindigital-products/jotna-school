@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SPOKEN_PROMPT_CHARS, speakablePrompt } from "../voice/speakable";
+import {
+  MATCH_HINT,
+  MAX_SPOKEN_PROMPT_CHARS,
+  speakableExercise,
+  speakablePrompt,
+} from "../voice/speakable";
 import { isReadingLearnerClass, READING_LEARNER_CLASSES } from "../curriculum";
 
 describe("speakablePrompt — ce que Pio dit d'une consigne", () => {
@@ -68,5 +73,23 @@ describe("isReadingLearnerClass — les classes où l'on apprend à lire", () =>
     expect(isReadingLearnerClass("6e")).toBe(false);
     expect(isReadingLearnerClass(undefined)).toBe(false);
     expect(isReadingLearnerClass(null)).toBe(false);
+  });
+});
+
+describe("speakableExercise — le mode d'emploi d'un appariement", () => {
+  it("ajoute où toucher à la consigne d'un appariement", () => {
+    expect(speakableExercise("match", "Associe les couleurs aux objets.")).toBe(
+      `Associe les couleurs aux objets. ${MATCH_HINT}`,
+    );
+  });
+
+  it("met un point à une consigne qui n'en a pas", () => {
+    expect(speakableExercise("match", "Associe les couleurs aux objets")).toBe(
+      `Associe les couleurs aux objets. ${MATCH_HINT}`,
+    );
+  });
+
+  it("ne change pas la consigne des autres exercices", () => {
+    expect(speakableExercise("qcm", "Quel fruit est jaune ?")).toBe("Quel fruit est jaune ?");
   });
 });

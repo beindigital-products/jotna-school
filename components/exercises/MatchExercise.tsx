@@ -3,12 +3,8 @@
 import { useState } from "react";
 import { AlertTriangle, Link2 } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
-import {
-  linkTiles,
-  matchAnswer,
-  unlinkLeft,
-  type MatchLink,
-} from "@/lib/exerciseAnswers";
+import { MATCH_HINT } from "@/convex/voice/speakable";
+import { linkTiles, matchAnswer, type MatchLink } from "@/lib/exerciseAnswers";
 
 /**
  * Server contract — the sanitized payload sent by `getExercisesForPalier`
@@ -19,6 +15,10 @@ import {
  * The submission expected by `verifyMatch` is
  *   JSON.stringify([{ left, right }, …])
  * matching the kid's connections.
+ *
+ * ON PEUT COMMENCER PAR LA GAUCHE OU PAR LA DROITE : le premier toucher
+ * choisit la tuile, le suivant, dans l'AUTRE colonne, la relie à elle. Un
+ * toucher sur une tuile déjà reliée défait son lien.
  *
  * UNE TUILE EST SA POSITION, PAS SON TEXTE. Deux tuiles peuvent se ressembler
  * (« a » deux fois : mangue et yassa ont le même son). Suivies par leur
@@ -60,22 +60,32 @@ export default function MatchExercise({
   const malformed = left.length === 0 || right.length !== left.length;
 
   // Des INDICES dans `left` et `right`, jamais des textes (voir l'en-tête).
-  const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
+  // La tuile choisie attend son partenaire dans l'autre colonne.
+  const [selected, setSelected] = useState<{ side: keyof MatchLink; index: number } | null>(
+    null,
+  );
   const [links, setLinks] = useState<MatchLink[]>([]);
 
-  const handleLeftClick = (index: number) => {
+  const handleClick = (side: keyof MatchLink, index: number) => {
     if (disabled) return;
-    if (links.some((link) => link.left === index)) {
-      setLinks(unlinkLeft(links, index));
+    // Une tuile reliée : on défait son lien.
+    if (links.some((link) => link[side] === index)) {
+      setLinks(links.filter((link) => link[side] !== index));
+      setSelected(null);
       return;
     }
-    setSelectedLeft(index);
-  };
-
-  const handleRightClick = (index: number) => {
-    if (disabled || selectedLeft === null) return;
-    setLinks(linkTiles(links, selectedLeft, index));
-    setSelectedLeft(null);
+    // Rien de choisi, ou une tuile de la même colonne : on choisit celle-ci.
+    if (selected === null || selected.side === side) {
+      setSelected({ side, index });
+      return;
+    }
+    // Une tuile de l'autre colonne : on relie.
+    setLinks(
+      side === "right"
+        ? linkTiles(links, selected.index, index)
+        : linkTiles(links, index, selected.index),
+    );
+    setSelected(null);
   };
 
   /** La couleur d'une tuile reliée : celle du rang de son lien. */
@@ -124,18 +134,21 @@ export default function MatchExercise({
 
   return (
     <div className="space-y-6">
-      <ExercisePrompt prompt={prompt} />
+      <div className="space-y-2">
+        <ExercisePrompt prompt={prompt} />
+        <p className="text-base font-medium text-gray-600">{MATCH_HINT}</p>
+      </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-6">
         {/* Left column — original order */}
         <div className="space-y-3">
           {left.map((item, index) => {
             const color = linkColor("left", index);
-            const isActive = selectedLeft === index;
+            const isActive = selected?.side === "left" && selected.index === index;
             return (
               <button
                 key={index}
-                onClick={() => handleLeftClick(index)}
+                onClick={() => handleClick("left", index)}
                 disabled={disabled}
                 className={`
                   w-full rounded-2xl border-3 px-2 py-3 text-center text-base font-bold hyphens-auto [overflow-wrap:anywhere] transition-all duration-200 sm:px-4 sm:py-4 sm:text-lg
@@ -146,6 +159,7 @@ export default function MatchExercise({
                       : "border-gray-200 bg-white text-gray-800 hover:border-indigo-300 hover:bg-indigo-50"
                   }
                   ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"}
+                  ${selected?.side === "right" && !color ? "ring-2 ring-amber-300 ring-offset-2" : ""}
                 `}
               >
                 {item}
@@ -158,19 +172,22 @@ export default function MatchExercise({
         <div className="space-y-3">
           {right.map((item, index) => {
             const color = linkColor("right", index);
+            const isActive = selected?.side === "right" && selected.index === index;
             return (
               <button
                 key={index}
-                onClick={() => handleRightClick(index)}
+                onClick={() => handleClick("right", index)}
                 disabled={disabled}
                 className={`
                   w-full rounded-2xl border-3 px-2 py-3 text-center text-base font-bold hyphens-auto [overflow-wrap:anywhere] transition-all duration-200 sm:px-4 sm:py-4 sm:text-lg
                   ${color
                     ? `${color.right} shadow-md`
-                    : "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50"
+                    : isActive
+                      ? "border-indigo-400 bg-indigo-100 text-indigo-900 scale-[1.03] shadow-md"
+                      : "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50"
                   }
                   ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"}
-                  ${selectedLeft !== null && !color ? "ring-2 ring-amber-300 ring-offset-2" : ""}
+                  ${selected?.side === "left" && !color ? "ring-2 ring-amber-300 ring-offset-2" : ""}
                 `}
               >
                 {item}

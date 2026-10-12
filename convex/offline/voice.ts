@@ -37,7 +37,7 @@ import { topicOpenTo } from "../accessRules";
 import { isReadingLearnerClass } from "../curriculum";
 import { moduleAccessForProfile } from "../modules";
 import { resolveSpeech } from "../arabic/speechText";
-import { speakablePrompt } from "../voice/speakable";
+import { speakableExercise } from "../voice/speakable";
 import { clipCacheKey, synthesize, voiceConfig, voiceFor } from "../voice/elevenlabs";
 import { clipRequestKey, clipRequestValidator, type ClipResult } from "./contract";
 
@@ -116,7 +116,7 @@ export const plan = internalQuery({
         clips.push({ key, ok: false, reason: "not_allowed" });
         continue;
       }
-      const text = speakablePrompt(exercise.prompt);
+      const text = speakableExercise(exercise.type, exercise.prompt);
       clips.push(text ? { key, ok: true, text, lang: "fr" } : { key, ok: false, reason: "unknown_text" });
     }
     return { studentId: profile._id, clips };

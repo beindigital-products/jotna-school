@@ -66,10 +66,13 @@ export function useClipSource(): (request: ClipRequest) => Promise<ClipLookup> {
           }
           return result.url;
         }
+        // L'icône « muet » ne dit pas pourquoi : la console, elle, le dit.
+        console.warn("[voix] son indisponible", request.kind, result);
         return result.status === "unavailable" && result.reason === "not_configured"
           ? "not_configured"
           : null;
-      } catch {
+      } catch (error) {
+        console.warn("[voix] l'appel au serveur a échoué", request.kind, error);
         return null;
       }
     },
