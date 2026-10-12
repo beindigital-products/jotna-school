@@ -109,6 +109,75 @@ export function findMissingVisual(prompt: string): MissingVisual | null {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Ce que l'écran montre en plus de l'énoncé
+// ---------------------------------------------------------------------------
+
+function textsIn(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
+}
+
+/**
+ * Les textes du payload que l'écran affiche : les options, les mots à relier,
+ * les tuiles, la phrase à trous. Une image y est parfois dessinée en émojis
+ * (« Glisse chaque image dans la bonne case » avec 🍎 et 🐟 en étiquettes) : un
+ * énoncé qui renvoie à « l'image » n'y est pas sans scène.
+ */
+export function displayedText(type: string, payload: unknown): string {
+  const p = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  const objects = (value: unknown, keys: string[]) =>
+    (Array.isArray(value) ? value : []).flatMap((entry) =>
+      entry && typeof entry === "object"
+        ? keys.flatMap((key) => {
+            const text = (entry as Record<string, unknown>)[key];
+            return typeof text === "string" ? [text] : [];
+          })
+        : [],
+    );
+  const parts: string[] = [];
+  switch (type) {
+    case "qcm":
+      parts.push(...textsIn(p.options));
+      break;
+    case "match":
+      parts.push(...objects(p.pairs, ["left", "right"]));
+      break;
+    case "order":
+      parts.push(...textsIn(p.correctSequence));
+      break;
+    case "drag-drop":
+      parts.push(...textsIn(p.zones), ...objects(p.items, ["text"]));
+      break;
+    case "fill-blank":
+      if (typeof p.text === "string") parts.push(p.text);
+      for (const blank of Array.isArray(p.blanks) ? p.blanks : []) {
+        parts.push(...textsIn((blank as Record<string, unknown> | null)?.options));
+      }
+      break;
+    default:
+      break;
+  }
+  return parts.join(" ");
+}
+
+/**
+ * `findMissingVisual` sur ce que l'enfant voit vraiment : l'énoncé et la phrase
+ * à trous. Un renvoi à « l'image » est levé quand les options ou les tuiles
+ * portent un pictogramme ; compter « tes billes » ne l'est jamais, car des
+ * options qui sont des chiffres ne sont pas des billes.
+ */
+export function findMissingVisualOnScreen(
+  prompt: string,
+  type: string,
+  payload: unknown,
+): MissingVisual | null {
+  const p = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  const sentence = type === "fill-blank" && typeof p.text === "string" ? ` ${p.text}` : "";
+  const missing = findMissingVisual(`${prompt}${sentence}`);
+  if (missing === "points_at_absent_image" && PICTOGRAPH.test(displayedText(type, payload))) return null;
+  return missing;
+}
+
 /**
  * Les indices qui renvoient à une scène que l'énoncé ne dessine pas
  * (« Regarde tes billes. ») sont retirés ; les autres gardent leur ordre. Un
@@ -261,7 +330,7 @@ export type VisualGuardOutcome =
  * même erreur, et `verifyMathBatch` défairait la réparation avec elle.
  */
 export function guardVisuals(input: VisualGuardInput): VisualGuardOutcome {
-  const missing = findMissingVisual(input.prompt);
+  const missing = findMissingVisualOnScreen(input.prompt, input.type, input.payload);
   if (missing) return { kind: "rejected", reason: missing };
   const counted = repairEmojiCount(input);
   if (counted.kind === "unrepairable") return { kind: "rejected", reason: "miscounted" };
@@ -270,7 +339,7 @@ export function guardVisuals(input: VisualGuardInput): VisualGuardOutcome {
     kind: "accepted",
     payload: recounted ? counted.payload : input.payload,
     answerKey: recounted ? counted.answerKey : input.answerKey,
-    hints: withoutDanglingHints(input.prompt, input.hints),
+    hints: withoutDanglingHints(`${input.prompt} ${displayedText(input.type, input.payload)}`, input.hints),
     mathExpression: recounted ? null : input.mathExpression,
     recounted,
   };

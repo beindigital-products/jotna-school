@@ -255,7 +255,10 @@ irréparables (tous de collège ou de lycée, niveaux masqués) et 21 paliers
 renvoyés en génération.
 
 Un palier n'a pas toujours dix exercices : le modèle en rend parfois neuf de
-valides, et l'écart n'est pas comblé. L'écran de fin compte alors ses
+valides, et l'écart n'est pas comblé. Sous sept exercices valides sur dix
+(`hasEnoughValidExercises`, le seuil de validation), le lot n'est pas servi : le
+palier reste `stale`, la génération échoue avec `TOO_FEW_VALID_EXERCISES` et
+`pregen:run` le liste dans `failed`. L'écran de fin compte alors ses
 étoiles sur le nombre d'exercices joués (`exerciseCount` rendu par
 `submitPalier`), trois par exercice, avec le seuil à 7 sur 10 ramené à ce
 nombre.
@@ -294,6 +297,13 @@ dans `convex/__tests__/missingVisual.test.ts`) et `paliers/prompts.ts` :
   rangées ou un chiffre dans l'énoncé : le compte est ambigu, il n'est pas
   vérifié.
 
+Ce que l'écran montre en plus de l'énoncé compte comme scène : des tuiles ou
+des options en émojis (« Glisse chaque image dans la bonne case » avec 🍎 et 🐟
+en étiquettes) lèvent un renvoi à « l'image » et gardent les indices qui s'y
+réfèrent (`displayedText`, `findMissingVisualOnScreen`). Des options qui sont
+des chiffres ne sont pas des billes : « Combien de billes as-tu ? » reste
+écarté.
+
 Les paliers déjà en base se passent au même filtre, sans appel au modèle : un
 exercice sans scène est signalé et son palier repasse en `stale`, refait avec la
 nouvelle consigne ; un compte d'émojis faux est corrigé sur place.
@@ -313,6 +323,96 @@ La description de la thématique « Les nombres jusqu'à 10 » (CI) dit désorma
 que la collection est dessinée en émojis. Une thématique déjà chargée garde sa
 description en base (`programme/seed` ne recharge pas) : la règle de la
 consigne de génération suffit, elle ne dépend pas de la description.
+
+## Le contrôleur structurel de chaque exercice
+
+Un parent a signalé, outre les billes absentes, « beaucoup d'erreurs » : des
+images qui manquent, des phrases incomplètes, des options incorrectes. Les
+gardes précédentes (`missingVisual`, `mathRepair`, `dragDropRepair`) répondent
+chacune à un défaut déjà vu ; `convex/paliers/exerciseAudit.ts` les range
+derrière une seule question : cet exercice est-il jouable et sensé ? Module
+pur, sans Convex et sans appel au modèle ; tests dans
+`convex/__tests__/exerciseAudit.test.ts`.
+
+`auditExercise({ type, prompt, payload, answerKey, hints, class, subject })`
+rend une liste de défauts `{ code, severity, detail }`, au plus un par code,
+les `blocking` d'abord :
+
+- **`blocking`** : l'exercice est injouable ou faux à coup sûr. À la
+  génération, il est écarté du lot ; en base, il est signalé.
+- **`warning`** : il se joue, mais il est maladroit. Rien n'est écarté ; la
+  génération les compte.
+
+| Domaine | `blocking` | `warning` |
+| --- | --- | --- |
+| Énoncé | `prompt_empty`, `prompt_truncated` (finit sur « de », « pour », une virgule, une élision), `prompt_dangling_colon` (réponse courte qui finit par « : »), `visual_missing` (scène absente, voir plus haut), `payload_malformed` | `prompt_too_short`, `prompt_ends_midphrase` (finit sur « le », « et »…), `prompt_unclosed_pair` (parenthèse ou guillemet jamais fermé), `prompt_too_long_for_class`, `hole_without_hole` (« Complète » sans `___` ni `?`), `short_answer_in_ci` |
+| QCM | `qcm_options_few` (moins de 2), `qcm_correct_index_out_of_range`, `qcm_correct_option_empty`, `qcm_correct_option_duplicated`, `qcm_equivalent_options_with_correct` (« 5 » et « cinq », « 0,5 » et « 1/2 »), `qcm_answer_key_mismatch` (la réponse écrite est une autre option que celle désignée) | `qcm_options_many` (plus de 6), `qcm_option_empty`, `qcm_option_duplicated`, `qcm_option_case_twin` (casse ou accents, sauf en français), `qcm_equivalent_options`, `qcm_answer_key_unrelated`, `qcm_catch_all_option` (« Toutes les réponses », « Aucune de ces réponses », « Les deux »), `qcm_correct_option_stands_out` (la bonne option est bien plus longue) |
+| Association | `match_pairs_invalid` (moins de 2), `match_side_empty` | `match_pairs_count` (hors de 3 à 6), `match_pair_duplicated`, `match_left_repeated`, `match_right_repeated` (deux sons identiques se relient pourtant à la même tuile : jamais bloquant) |
+| Ordre | `order_too_few` (moins de 2), `order_item_empty` | `order_few` (2), `order_item_duplicated`, `order_already_sorted` (suite déjà rangée alphabétiquement ou par ordre croissant, sans que l'énoncé dise quel ordre) |
+| Glisser-déposer | `dragdrop_zones_few`, `dragdrop_items_few`, `dragdrop_generic_zone` (« Zone A »), `dragdrop_zone_duplicated`, `dragdrop_zone_missing`, `dragdrop_label_without_zone` | `dragdrop_empty_zone`, `dragdrop_item_empty` |
+| Réponse courte | `short_answer_no_answer` | `short_answer_empty_accepted`, `short_answer_answer_in_prompt` (hors nombres : « 10 − 3 + 3 » a pour réponse 10) |
+| Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
+| Indices | | `hints_few` (moins de 2), `hint_empty`, `hints_duplicated`, `hint_gives_answer` (le 1er écrit le bon choix sans parler des autres), `hint_dangling_visual` |
+| Texte | `text_placeholder` (« undefined », « null », « NaN »), `text_replacement_char` (�) | `text_double_space`, `text_markup` (`**`, `#`, backtick, balise), `text_english_in_young_class` (anglais dans un énoncé de CI ou de CP hors Anglais), `text_foreign_currency` (euros, dollars : FCFA seul) |
+
+**La prudence est la règle.** Un faux positif écarte un bon exercice et le
+palier se refait pour rien : un défaut n'est `blocking` que si aucun exercice
+correct ne peut l'avoir. Le test fait respecter deux barrières : la banque
+écrite à la main de la vitrine (`components/landing/demo/bank`, 274 exercices)
+ne produit aucun défaut, et une trentaine d'exercices corrects, de toutes les
+matières et du CI au CM2, non plus. Les homophones (« a » et « à », « un » et
+« une ») ne sont pas des doublons en français. Le plafond de longueur d'énoncé
+(`PROMPT_WORD_CEILING`) est environ le double de celui de la consigne au CI et
+au CP : la banque écrite à la main atteint déjà 16 et 21 mots, et à partir du
+CE1 l'énoncé porte parfois un texte à lire.
+
+**À la génération** (`toPersistedShape`, dans `paliers/index.ts`), le
+contrôleur est la dernière porte : un exercice du modèle avec un défaut
+`blocking` est écarté du lot, comme celui qui n'a pas sa scène. En
+mathématiques, le calcul répare d'abord (`mathRepair`), puis le contrôleur
+juge : une réponse que le calcul corrige ne coûte pas l'exercice. Les
+avertissements ne retirent rien. Le palier garde deux totaux dans
+`factCheckResults` : `auditRejected` (exercices écartés) et `auditWarnings`
+(exercices gardés avec un avertissement), deux champs optionnels, absents des paliers déjà écrits. Le détail par code est dans les
+journaux (`[audit] exercice écarté : …`). Un lot peut donc compter moins de dix
+exercices du modèle. La consigne de génération (`QUALITY_RULE`, dans
+`paliers/prompts.ts`) nomme les défauts les plus fréquents pour que le modèle
+ne les écrive pas.
+
+**Sur l'existant**, `pregen:auditExercises` passe CHAQUE exercice de CHAQUE
+palier au contrôleur, un par un, sans appel au modèle :
+
+```bash
+npx convex run paliers/pregen:auditExercises '{"confirmDeployment":"impartial-ermine-150","dryRun":true}'
+npx convex run paliers/pregen:auditExercises '{"confirmDeployment":"impartial-ermine-150","dryRun":true,"limitSamples":2000}'
+npx convex run paliers/pregen:auditExercises '{"confirmDeployment":"impartial-ermine-150"}'
+```
+
+Le résumé donne `checked` (exercices vérifiés), `exercisesWithDefects`,
+`blockingExercises`, `warningOnlyExercises`, `byCode` (le nombre d'exercices
+touchés par chaque code, du plus fréquent au plus rare), `paliersTouched`
+(paliers qui ont au moins un exercice bloquant), `paliersInvalidated` et
+`samples` : 30 exemples par défaut, `limitSamples` jusqu'à 2 000 pour sortir
+TOUS les exercices défectueux. Chaque exemple porte `exerciseId`, `palierId`,
+`class`, `subject`, `type`, `prompt`, `codes` et `blockingCodes`, les
+exercices bloquants d'abord. `dryRun` ne touche à rien. Sans `dryRun`, un
+exercice bloquant est marqué `needsManualReview` et son palier repasse en
+`stale`, refait à la prochaine ouverture ou par `pregen:run`. Les avertissements
+ne modifient rien. Un enfant qui a une tentative ouverte sur un palier
+invalidé la reprend sur les nouveaux exercices : à réserver au développement ou
+à une rentrée. Lancer `repairMath`, `repairDragDrop` et `repairVisuals` avant :
+ils réparent sur place ce que l'audit ne ferait que signaler. Seuls les
+exercices rattachés à un palier sont audités (200 au plus par palier), c'est-à-dire
+tout ce que l'élève joue.
+
+**Ce que le contrôleur ne voit pas.** Il juge la forme, pas le fond : une
+erreur de fait (« la capitale du Sénégal est Thiès » dans un QCM bien formé),
+une faute d'orthographe ou de grammaire, un énoncé fluide mais absurde, une
+bonne réponse fausse dont l'option désignée est cohérente avec la réponse
+écrite, une question ambiguë dont deux options se défendent, un niveau trop
+facile ou trop difficile, un texte qui blesse. Seul le calcul est vérifié sur le
+fond, en mathématiques (`mathRepair`). Le reste se relit : c'est le rôle de
+`needsManualReview` et de `qaStatus`.
 
 ## Essais et indices
 

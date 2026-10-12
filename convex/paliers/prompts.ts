@@ -120,6 +120,26 @@ dessin, NI photo, NI tableau, NI carte, NI objet réel à l'écran.
   il n'y a QUE ce texte : s'il lui manque quelque chose pour répondre, réécris
   l'exercice.`;
 
+/**
+ * LES DÉFAUTS QUE LE CONTRÔLEUR STRUCTUREL ÉCARTE (`paliers/exerciseAudit.ts`).
+ * Chaque ligne répond à un code de défaut : un exercice qui la viole est jeté
+ * après avoir coûté sa génération. Les règles du match, du drag-drop, du
+ * fill-blank et des indices sont déjà dans `JSON_SHAPE` et `HINTS_RULE` : on
+ * ne les répète pas ici.
+ */
+const QUALITY_RULE = `
+[Qualité — contrôlée automatiquement, l'exercice fautif est jeté]
+- Un énoncé est une phrase COMPLÈTE (point, « ? » ou « ! »), jamais coupée ni terminée
+  par « : ». « Complète » exige un trou écrit (___ ou ?). Texte brut : ni markdown, ni
+  balise, ni espaces doubles. Hors Anglais, l'énoncé est en français.
+- QCM : 3 ou 4 options (6 au plus), toutes différentes, UNE seule vraie ; jamais « Toutes
+  les réponses », « Aucune de ces réponses » ni « Les deux » ; « 5 » et « cinq » comptent
+  pour la même ; la bonne option n'est pas la plus longue ; correctAnswer est le texte
+  de options[correctIndex].
+- order : 3 éléments au moins, tous différents, et l'énoncé dit l'ordre voulu. match : 3
+  à 6 paires. short-answer : acceptedAnswers non vide, réponse absente de l'énoncé.
+- 3 indices non vides et différents ; le 1er ne donne pas la réponse.`;
+
 const STAGE_LABEL: Record<DifficultyStage, string> = {
   decouverte: "découverte (notions de base, peu d'étapes).",
   consolidation: "consolidation (combinaison de plusieurs notions vues).",
@@ -525,6 +545,7 @@ ${SENEGAL_ANCHOR}
 - Au moins 3 types d'exos différents dans le palier (Decision 63).
 ${HINTS_RULE}
 ${SELF_CONTAINED_RULE}
+${QUALITY_RULE}
 ${readingLearnerRules(input.class)}
 ${isMaths ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }
@@ -580,6 +601,7 @@ ${SENEGAL_ANCHOR}
 - Évite spécifiquement le piège qui a fait rater l'enfant — voir ses erreurs.
 ${HINTS_RULE}
 ${SELF_CONTAINED_RULE}
+${QUALITY_RULE}
 ${readingLearnerRules(input.class)}
 ${isMathSubject(input.subject) ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }

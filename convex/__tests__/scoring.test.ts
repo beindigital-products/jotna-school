@@ -6,6 +6,7 @@ import {
   scoreToStars,
   scoreToStarsSingle,
   PALIER_SIZE,
+  hasEnoughValidExercises,
   PALIER_VALIDATION_THRESHOLD,
   MAX_ATTEMPTS_PER_EXERCISE,
   countRealAttempts,
@@ -266,4 +267,19 @@ describe("countRealAttempts / attemptsRemainingAfter — un indice n'est pas un 
   });
 
   it("jamais négatif", () => expect(attemptsRemainingAfter(9)).toBe(0));
+});
+
+describe("hasEnoughValidExercises : un lot du modèle trop entamé ne se sert pas", () => {
+  it("demande 7 exercices valides sur 10, comme le seuil de validation", () => {
+    expect(hasEnoughValidExercises(10, 10)).toBe(true);
+    expect(hasEnoughValidExercises(7, 10)).toBe(true);
+    expect(hasEnoughValidExercises(6, 10)).toBe(false);
+    expect(hasEnoughValidExercises(0, 10)).toBe(false);
+  });
+
+  it("garde la proportion quand des jeux complètent le palier", () => {
+    expect(hasEnoughValidExercises(3, 4)).toBe(true);
+    expect(hasEnoughValidExercises(2, 4)).toBe(false);
+    expect(hasEnoughValidExercises(0, 0)).toBe(true);
+  });
 });

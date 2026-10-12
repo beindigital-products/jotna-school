@@ -351,6 +351,11 @@ export default defineSchema({
         // Divergences corrigées par l'arithmétique (`paliers/mathRepair.ts`) :
         // la clé servie est la valeur calculée, pas celle du modèle.
         repaired: v.optional(v.number()),
+        // Le contrôleur structurel (`paliers/exerciseAudit.ts`) : exercices du
+        // modèle écartés pour un défaut bloquant, et exercices gardés avec
+        // des avertissements. Optionnels : les paliers déjà écrits n'en ont pas.
+        auditRejected: v.optional(v.number()),
+        auditWarnings: v.optional(v.number()),
       }),
     ),
     shuffleSeed: v.optional(v.string()), // Decision 75 — server-side deterministic shuffle seed prefix

@@ -15,6 +15,16 @@ export const PALIER_SIZE = 10;
 export const PALIER_VALIDATION_THRESHOLD = 7;
 export const MAX_ATTEMPTS_PER_EXERCISE = 5;
 
+/**
+ * Un lot du modèle dont trop d'exercices sont écartés (contrôleur structurel,
+ * garde de la scène, glisser-déposer irréparable) ne se sert pas : un palier de
+ * trois exercices ne se valide pas à 7 sur 10 et l'enfant y perd son temps. Il
+ * reste à régénérer. Même proportion que le seuil de validation.
+ */
+export function hasEnoughValidExercises(valid: number, requested: number): boolean {
+  return valid >= Math.ceil((requested * PALIER_VALIDATION_THRESHOLD) / PALIER_SIZE);
+}
+
 export interface AttemptForScoring {
   attemptNumber: number; // 1-based
   isCorrect: boolean;

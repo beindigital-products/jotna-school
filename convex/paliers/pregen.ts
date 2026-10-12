@@ -13,7 +13,8 @@ import { assertTargetedDeployment } from "../testSeedsSchool";
 import { generateBucketCore, isBaseExercise } from "./index";
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop as repairDragDropExercise } from "./dragDropRepair";
-import { findMissingVisual, repairEmojiCount } from "./missingVisual";
+import { findMissingVisualOnScreen, repairEmojiCount } from "./missingVisual";
+import { auditExercise, isBlocking } from "./exerciseAudit";
 import { PALIER_SIZE } from "./scoring";
 
 // ---------------------------------------------------------------------------
@@ -706,7 +707,7 @@ export const repairVisualsForPaliers = internalMutation({
       let broken = 0;
       for (const ex of exercises) {
         batch.checked += 1;
-        const missing = findMissingVisual(ex.prompt);
+        const missing = findMissingVisualOnScreen(ex.prompt, ex.type, ex.payload);
         if (missing) {
           batch.missingScene += 1;
           broken += 1;
@@ -748,6 +749,214 @@ export const repairVisualsForPaliers = internalMutation({
         if (!args.dryRun) await ctx.db.patch(palierId, { status: "stale" });
       }
     }
+    return batch;
+  },
+});
+
+// ---------------------------------------------------------------------------
+// AUDITER CHAQUE EXERCICE DÉJÀ EN BASE.
+//
+// Le contrôleur structurel (`paliers/exerciseAudit.ts`) qui écarte les exercices
+// défectueux à la génération, passé sur TOUS les exercices des paliers : phrase
+// coupée, scène absente, option « Toutes les réponses », bonne réponse qui ne
+// figure pas parmi les options, glisser-déposer sans zone… Un exercice avec un
+// défaut `blocking` est marqué `needsManualReview` et son palier repasse en
+// `stale` (régénéré à la prochaine ouverture ou par `pregen:run`) ; les
+// avertissements sont comptés et listés, rien de plus. `dryRun` ne touche à
+// rien. Sans appel au modèle. Un élève avec une tentative ouverte sur un palier
+// invalidé la reprend sur les nouveaux exercices : à réserver au développement
+// ou à une rentrée.
+//
+//     npx convex run paliers/pregen:auditExercises '{"confirmDeployment":"<nom>","dryRun":true}'
+//     npx convex run paliers/pregen:auditExercises '{"confirmDeployment":"<nom>","dryRun":true,"limitSamples":2000}'
+//     npx convex run paliers/pregen:auditExercises '{"confirmDeployment":"<nom>"}'
+//
+// Le résumé donne le nombre d'exercices vérifiés, les comptes par code de
+// défaut, les paliers touchés et `limitSamples` exemples (30 par défaut, 2 000
+// au plus) : les exercices à défaut `blocking` d'abord, avec leur identifiant,
+// leur énoncé et leurs codes. À lancer APRÈS `repairMath`, `repairDragDrop` et
+// `repairVisuals`, qui réparent sur place ce que l'audit ne ferait qu'écarter.
+// ---------------------------------------------------------------------------
+
+const AUDIT_BATCH = 25;
+const AUDIT_DEFAULT_SAMPLES = 30;
+const AUDIT_MAX_SAMPLES = 2000;
+
+type AuditSample = {
+  exerciseId: Id<"exercises">;
+  palierId: Id<"paliers">;
+  class: string;
+  subject: string;
+  type: string;
+  prompt: string;
+  /** Au moins un défaut bloquant : le palier est refait. */
+  blocking: boolean;
+  /** Tous les codes de défaut de l'exercice. */
+  codes: string[];
+  /** Ceux qui rendent l'exercice injouable. */
+  blockingCodes: string[];
+};
+
+type AuditBatch = {
+  checked: number;
+  exercisesWithDefects: number;
+  blockingExercises: number;
+  warningOnlyExercises: number;
+  byCode: Record<string, number>;
+  paliersTouched: number;
+  paliersInvalidated: number;
+  samples: AuditSample[];
+};
+
+type AuditSummary = AuditBatch & { dryRun: boolean; paliersScanned: number; samplesTruncated: boolean };
+
+export const listPalierPage = internalQuery({
+  args: { cursor: v.union(v.string(), v.null()), numItems: v.number() },
+  handler: async (ctx, args) => {
+    const page = await ctx.db.query("paliers").paginate({ cursor: args.cursor, numItems: args.numItems });
+    return { ids: page.page.map((palier) => palier._id), isDone: page.isDone, cursor: page.continueCursor };
+  },
+});
+
+export const auditExercises = internalAction({
+  args: {
+    confirmDeployment: v.string(),
+    dryRun: v.optional(v.boolean()),
+    limitSamples: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<AuditSummary> => {
+    assertTargetedDeployment(args.confirmDeployment);
+    const dryRun = args.dryRun === true;
+    const limit = Math.min(
+      AUDIT_MAX_SAMPLES,
+      Math.max(0, Math.floor(args.limitSamples ?? AUDIT_DEFAULT_SAMPLES)),
+    );
+    const totals: AuditSummary = {
+      dryRun,
+      paliersScanned: 0,
+      checked: 0,
+      exercisesWithDefects: 0,
+      blockingExercises: 0,
+      warningOnlyExercises: 0,
+      byCode: {},
+      paliersTouched: 0,
+      paliersInvalidated: 0,
+      samples: [],
+      samplesTruncated: false,
+    };
+    const blockingSamples: AuditSample[] = [];
+    const otherSamples: AuditSample[] = [];
+    // Les paliers se lisent par pages : la table n'est pas bornée.
+    let cursor: string | null = null;
+    for (;;) {
+      const page: { ids: Id<"paliers">[]; isDone: boolean; cursor: string } = await ctx.runQuery(
+        internal.paliers.pregen.listPalierPage,
+        { cursor, numItems: AUDIT_BATCH },
+      );
+      if (page.ids.length > 0) {
+        const batch: AuditBatch = await ctx.runMutation(internal.paliers.pregen.auditExercisesForPaliers, {
+          palierIds: page.ids,
+          dryRun,
+          limitSamples: limit,
+        });
+        totals.paliersScanned += page.ids.length;
+        totals.checked += batch.checked;
+        totals.exercisesWithDefects += batch.exercisesWithDefects;
+        totals.blockingExercises += batch.blockingExercises;
+        totals.warningOnlyExercises += batch.warningOnlyExercises;
+        totals.paliersTouched += batch.paliersTouched;
+        totals.paliersInvalidated += batch.paliersInvalidated;
+        for (const [code, count] of Object.entries(batch.byCode)) {
+          totals.byCode[code] = (totals.byCode[code] ?? 0) + count;
+        }
+        for (const sample of batch.samples) {
+          const kept = sample.blocking ? blockingSamples : otherSamples;
+          if (kept.length < limit) kept.push(sample);
+        }
+      }
+      if (page.isDone) break;
+      cursor = page.cursor;
+    }
+    // Les exercices injouables d'abord : ce sont eux que le client lira en premier.
+    totals.samplesTruncated = totals.exercisesWithDefects > limit;
+    totals.samples = [...blockingSamples, ...otherSamples].slice(0, limit);
+    totals.byCode = Object.fromEntries(Object.entries(totals.byCode).sort((a, b) => b[1] - a[1]));
+    return totals;
+  },
+});
+
+export const auditExercisesForPaliers = internalMutation({
+  args: { palierIds: v.array(v.id("paliers")), dryRun: v.boolean(), limitSamples: v.number() },
+  handler: async (ctx, args): Promise<AuditBatch> => {
+    const batch: AuditBatch = {
+      checked: 0,
+      exercisesWithDefects: 0,
+      blockingExercises: 0,
+      warningOnlyExercises: 0,
+      byCode: {},
+      paliersTouched: 0,
+      paliersInvalidated: 0,
+      samples: [],
+    };
+    const blockingSamples: AuditSample[] = [];
+    const warningSamples: AuditSample[] = [];
+    for (const palierId of args.palierIds) {
+      const palier = await ctx.db.get(palierId);
+      if (!palier) continue;
+      const subject = await ctx.db.get(palier.subjectId);
+      const exercises = await ctx.db
+        .query("exercises")
+        .withIndex("by_palierId", (q) => q.eq("palierId", palierId))
+        .take(200);
+      let broken = 0;
+      for (const ex of exercises) {
+        batch.checked += 1;
+        const defects = auditExercise({
+          type: ex.type,
+          prompt: ex.prompt,
+          payload: ex.payload,
+          answerKey: ex.answerKey,
+          hints: ex.hints,
+          class: palier.class,
+          subject: subject?.name ?? null,
+        });
+        if (defects.length === 0) continue;
+        batch.exercisesWithDefects += 1;
+        for (const defect of defects) batch.byCode[defect.code] = (batch.byCode[defect.code] ?? 0) + 1;
+        const blocking = defects.some(isBlocking);
+        if (blocking) {
+          batch.blockingExercises += 1;
+          broken += 1;
+          if (!args.dryRun && ex.needsManualReview !== true) {
+            await ctx.db.patch(ex._id, { needsManualReview: true });
+          }
+        } else {
+          batch.warningOnlyExercises += 1;
+        }
+        const target = blocking ? blockingSamples : warningSamples;
+        if (target.length < args.limitSamples) {
+          target.push({
+            exerciseId: ex._id,
+            palierId,
+            class: palier.class,
+            subject: subject?.name ?? "",
+            type: ex.type,
+            prompt: ex.prompt.length > 300 ? `${ex.prompt.slice(0, 299)}…` : ex.prompt,
+            blocking,
+            codes: defects.map((defect) => defect.code),
+            blockingCodes: defects.filter(isBlocking).map((defect) => defect.code),
+          });
+        }
+      }
+      if (broken > 0) {
+        batch.paliersTouched += 1;
+        if (palier.status === "cached") {
+          batch.paliersInvalidated += 1;
+          if (!args.dryRun) await ctx.db.patch(palierId, { status: "stale" });
+        }
+      }
+    }
+    batch.samples = [...blockingSamples, ...warningSamples].slice(0, args.limitSamples * 2);
     return batch;
   },
 });

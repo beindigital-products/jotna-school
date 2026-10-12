@@ -31,10 +31,12 @@ import {
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop } from "./dragDropRepair";
 import { guardVisuals } from "./missingVisual";
-import { computeExerciseScore, PALIER_SIZE } from "./scoring";
+import { validateFillBlank } from "./fillBlank";
+import { auditExercise, blockingDefects, tallyCodes } from "./exerciseAudit";
+import { computeExerciseScore, hasEnoughValidExercises, PALIER_SIZE } from "./scoring";
 import { gameOriginOf, generateGames, interleave, regenerateGame } from "./games";
 import { programmeTopic } from "../programme";
-import { BLANK_MARK, type GameOrigin } from "./games/types";
+import type { GameOrigin } from "./games/types";
 import {
   correctAnswerText,
   inputModeFor,
@@ -272,6 +274,8 @@ export const upsertBucket = internalMutation({
         totalChecked: v.number(),
         divergences: v.number(),
         repaired: v.optional(v.number()),
+        auditRejected: v.optional(v.number()),
+        auditWarnings: v.optional(v.number()),
       }),
     ),
     preGenerated: v.optional(v.boolean()),
@@ -762,6 +766,7 @@ export async function generateBucketCore(
     divergences: 0,
     repaired: 0,
     unrepairable: 0,
+    audit: emptyAuditTally(),
     exos: [],
   };
   let generationTraceId: string | undefined;
@@ -821,17 +826,21 @@ export async function generateBucketCore(
 
     const parsed = parseExercises(gen.result).slice(0, aiCount);
     const isMaths = subject.subjectName.toLowerCase().startsWith("math");
-    factCheck = isMaths
-      ? verifyMathBatch(parsed)
-      : {
-          totalChecked: 0,
-          divergences: 0,
-          repaired: 0,
-          unrepairable: 0,
-          exos: parsed
-            .map((ex, i) => toPersistedShape(ex, i))
-            .filter((s): s is PersistedShape => s !== null),
-        };
+    const shapeContext = { class: args.class, subject: subject.subjectName };
+    factCheck = isMaths ? verifyMathBatch(parsed, shapeContext) : shapeBatch(parsed, shapeContext);
+
+    // Trop d'exercices écartés : on ne sert pas un palier qui ne se valide
+    // plus. Il reste `stale`, refait à la prochaine ouverture ou par `pregen:run`.
+    if (!hasEnoughValidExercises(factCheck.exos.length, aiCount)) {
+      await ctx.runMutation(internal.paliers.index.upsertBucket, {
+        subjectId: args.subjectId,
+        class: args.class,
+        topicId: args.topicId,
+        palierIndex: args.palierIndex,
+        status: "stale",
+      });
+      throw new Error("TOO_FEW_VALID_EXERCISES");
+    }
   }
 
   // Les jeux se glissent entre les exercices du modèle au lieu de s'empiler
@@ -855,6 +864,8 @@ export async function generateBucketCore(
         totalChecked: factCheck.totalChecked,
         divergences: factCheck.divergences,
         repaired: factCheck.repaired,
+        auditRejected: factCheck.audit.rejected,
+        auditWarnings: factCheck.audit.warned,
       },
     },
   );
@@ -1061,17 +1072,10 @@ export const regenerateFailedExercises = action({
         return { ok: false, reason: "EMPTY_VARIATIONS" };
       }
       const isMaths = subject.name.toLowerCase().startsWith("math");
+      const shapeContext = { class: klass, subject: subject.name };
       const factCheck: MathBatch = isMaths
-        ? verifyMathBatch(parsed)
-        : {
-            totalChecked: 0,
-            divergences: 0,
-            repaired: 0,
-            unrepairable: 0,
-            exos: parsed
-              .map((ex, i) => toPersistedShape(ex, i))
-              .filter((s): s is PersistedShape => s !== null),
-          };
+        ? verifyMathBatch(parsed, shapeContext)
+        : shapeBatch(parsed, shapeContext);
 
       // Pair variations with originals (1-to-1, in order).
       aiVariations = factCheck.exos.slice(0, aiFailed.length).map((v, i) => ({
@@ -1474,39 +1478,63 @@ function validatePayload(
   }
 }
 
+export { validateFillBlank };
+
 /**
- * UNE PHRASE À TROUS QUE L'ENFANT PEUT FINIR : autant de trous écrits que de
- * trous décrits, chaque trou avec deux à quatre mots dont la bonne réponse,
- * et pas deux fois le même mot. Le modèle écrit parfois « ____ » ou
- * « ... » : on ramène tout repère d'au moins deux tirets bas à `___`.
+ * CE QUE LE CONTRÔLEUR A VU PENDANT UNE GÉNÉRATION (`paliers/exerciseAudit.ts`) :
+ * les exercices écartés (au moins un défaut `blocking`), ceux qui passent avec
+ * des avertissements, et le détail par code. Un lot l'accumule ; la
+ * génération d'un palier en range deux totaux dans `factCheckResults`.
  */
-export function validateFillBlank(
-  p: Record<string, unknown>,
-  optional: Record<string, unknown> = {},
-): { valid: boolean; payload: unknown } {
-  const text = typeof p.text === "string" ? p.text.replace(/_{2,}/g, BLANK_MARK).trim() : "";
-  const rawBlanks = Array.isArray(p.blanks) ? p.blanks : [];
-  const blanks = rawBlanks
-    .filter((b): b is Record<string, unknown> => !!b && typeof b === "object")
-    .map((b) => {
-      const options = Array.isArray(b.options)
-        ? Array.from(new Set(b.options.filter((o): o is string => typeof o === "string").map((o) => o.trim()).filter(Boolean)))
-        : [];
-      const answer = typeof b.answer === "string" ? b.answer.trim() : "";
-      return { options, answer };
-    });
-  const holes = text.split(BLANK_MARK).length - 1;
-  const ok =
-    text.length > 0 &&
-    blanks.length >= 1 &&
-    blanks.length <= 4 &&
-    holes === blanks.length &&
-    blanks.every((b) => b.options.length >= 2 && b.options.length <= 5 && b.options.includes(b.answer));
-  if (!ok) return { valid: false, payload: p };
-  return { valid: true, payload: { ...optional, text, blanks } };
+export type AuditTally = {
+  rejected: number;
+  warned: number;
+  byCode: Record<string, number>;
+};
+
+export const emptyAuditTally = (): AuditTally => ({ rejected: 0, warned: 0, byCode: {} });
+
+/** Pour qui l'exercice est écrit : la classe et la matière règlent la langue et la longueur de l'énoncé. */
+type ShapeContext = {
+  class?: string;
+  subject?: string;
+  tally?: AuditTally;
+  /** Les mathématiques réparent d'abord (`mathRepair`), puis contrôlent : `auditShape`. */
+  deferAudit?: boolean;
+};
+
+/**
+ * LE CONTRÔLEUR STRUCTUREL, DERNIÈRE PORTE DU LOT : un exercice qui a un défaut
+ * `blocking` (phrase coupée, bonne réponse absente des options, options
+ * identiques, zone qui n'existe pas…) est écarté ; les avertissements ne
+ * retirent rien mais sont comptés. Rend `false` quand l'exercice est écarté.
+ */
+function auditShape(shape: PersistedShape, ctx: ShapeContext | undefined): boolean {
+  const defects = auditExercise({
+    type: shape.type,
+    prompt: shape.prompt,
+    payload: shape.payload,
+    answerKey: shape.answerKey,
+    hints: shape.hints,
+    class: ctx?.class,
+    subject: ctx?.subject,
+  });
+  const blocking = blockingDefects(defects);
+  if (ctx?.tally) {
+    tallyCodes(defects, ctx.tally.byCode);
+    if (blocking.length > 0) ctx.tally.rejected += 1;
+    else if (defects.length > 0) ctx.tally.warned += 1;
+  }
+  if (blocking.length > 0) {
+    console.log(
+      `[audit] exercice écarté : ${blocking.map((defect) => defect.code).join(", ")} : ${shape.prompt.slice(0, 80)}`,
+    );
+    return false;
+  }
+  return true;
 }
 
-function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | null {
+function toPersistedShape(ex: RawGenExercise, idx?: number, ctx?: ShapeContext): PersistedShape | null {
   // Le modèle n'écrit que les types classiques et la phrase à trous : un jeu
   // (frise, dessin, écoute, couleurs) se fabrique par le code, jamais par lui.
   const t = ex.type ?? "short-answer";
@@ -1550,7 +1578,7 @@ function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | nu
     mathExpression: ex.mathExpression ?? null,
   });
   if (guarded.kind === "rejected") return null;
-  return {
+  const shape: PersistedShape = {
     type,
     prompt,
     payload: guarded.payload,
@@ -1560,6 +1588,8 @@ function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | nu
     mathExpression: guarded.mathExpression,
     needsManualReview: false,
   };
+  if (ctx?.deferAudit) return shape;
+  return auditShape(shape, ctx) ? shape : null;
 }
 
 type MathBatch = {
@@ -1570,8 +1600,19 @@ type MathBatch = {
   repaired: number;
   /** Divergences qu'on ne sait pas corriger : l'exercice reste à relire. */
   unrepairable: number;
+  /** Ce que le contrôleur structurel a écarté ou signalé dans ce lot. */
+  audit: AuditTally;
   exos: PersistedShape[];
 };
+
+/** Un lot non mathématique : rien à calculer, tout à contrôler. */
+export function shapeBatch(parsed: RawGenExercise[], ctx: ShapeContext): MathBatch {
+  const audit = ctx.tally ?? emptyAuditTally();
+  const exos = parsed
+    .map((ex, i) => toPersistedShape(ex, i, { ...ctx, tally: audit }))
+    .filter((shape): shape is PersistedShape => shape !== null);
+  return { totalChecked: 0, divergences: 0, repaired: 0, unrepairable: 0, audit, exos };
+}
 
 /**
  * L'ARITHMÉTIQUE A RAISON SUR LE MODÈLE. On calcule chaque expression ; une
@@ -1581,15 +1622,18 @@ type MathBatch = {
  * clé en fraction) laissent l'exercice à relire, et le palier en
  * `pending_human`.
  */
-function verifyMathBatch(parsed: RawGenExercise[]): MathBatch {
+export function verifyMathBatch(parsed: RawGenExercise[], ctx: ShapeContext = {}): MathBatch {
   let totalChecked = 0;
   let divergences = 0;
   let repaired = 0;
   let unrepairable = 0;
+  const audit = ctx.tally ?? emptyAuditTally();
   const exos: PersistedShape[] = [];
   for (let i = 0; i < parsed.length; i++) {
     const raw = parsed[i];
-    const shape = toPersistedShape(raw, i);
+    // Le calcul répare avant que le contrôleur ne juge : une clé de réponse
+    // que `mathRepair` corrige ne doit pas coûter l'exercice.
+    const shape = toPersistedShape(raw, i, { ...ctx, tally: audit, deferAudit: true });
     if (!shape) continue;
     const outcome = repairMathExercise({
       type: shape.type,
@@ -1609,9 +1653,14 @@ function verifyMathBatch(parsed: RawGenExercise[]): MathBatch {
       unrepairable++;
       shape.needsManualReview = true;
     }
+    if (!auditShape(shape, { ...ctx, tally: audit })) {
+      // Écarté : il n'y a plus d'exercice à relire.
+      if (shape.needsManualReview) unrepairable--;
+      continue;
+    }
     exos.push(shape);
   }
-  return { totalChecked, divergences, repaired, unrepairable, exos };
+  return { totalChecked, divergences, repaired, unrepairable, audit, exos };
 }
 
 function extractConcept(exo: Doc<"exercises">): string | null {
