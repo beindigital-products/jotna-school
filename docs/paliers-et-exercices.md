@@ -260,6 +260,60 @@ valides, et l'écart n'est pas comblé. L'écran de fin compte alors ses
 `submitPalier`), trois par exercice, avec le seuil à 7 sur 10 ramené à ce
 nombre.
 
+## Une question qui a sa scène à l'écran
+
+Le 12 octobre 2026, un palier de CI demandait « Combien de billes as-tu ? »,
+avec pour seul indice « Regarde tes billes. » Il n'y avait aucune bille : le
+modèle écrivait pour un manuel illustré, et l'écran de l'enfant n'affiche que
+le texte de l'énoncé et les options. L'enfant ne comprenait pas la question,
+et à six ans il ne sait pas que la faute est à l'exercice.
+
+Trois protections, dans `convex/paliers/missingVisual.ts` (module pur, tests
+dans `convex/__tests__/missingVisual.test.ts`) et `paliers/prompts.ts` :
+
+- **La consigne de génération** dit au modèle que l'enfant ne voit que le
+  texte (`SELF_CONTAINED_RULE`) et lui donne les deux façons de faire compter :
+  dessiner la collection en émojis dans l'énoncé, la question d'abord
+  (« Combien de billes vois-tu ? 🔵🔵🔵🔵🔵 »), ou écrire les données
+  (« Awa a 5 billes… »). La voix de Pio retire les émojis : la question doit se
+  comprendre sans eux, d'où la rangée après la question. Le premier indice ne
+  demande plus d'« observer » : il ne renvoie qu'à ce que l'énoncé écrit ou
+  dessine. La règle vaut pour les paliers, « J'en veux encore » et les
+  variations.
+- **Un filtre à la génération** écarte l'exercice dont l'énoncé renvoie à ce
+  qui n'est pas là : « combien de billes as-tu / vois-tu » sans émoji ni
+  donnée écrite, « regarde l'image », « ci-dessous », « observe tes billes ».
+  Il ne touche ni un fait qu'on sait sans rien voir (« Combien de jours dans une
+  semaine ? »), ni le corps de l'enfant (« Regarde ta main »), ni une histoire
+  (« Fatou compte ses mangues… »). Les indices pendants d'un exercice par
+  ailleurs valable sont retirés. Un palier peut donc compter neuf exercices.
+- **Un compte des émojis.** Un modèle de langage compte mal ses émojis : quand
+  l'énoncé demande « combien » devant une seule rangée d'objets identiques, sans
+  chiffre, la réponse attendue est le nombre d'émojis réellement écrits (QCM :
+  l'option qui le vaut ; sinon l'exercice est écarté). Deux sortes d'objets, deux
+  rangées ou un chiffre dans l'énoncé : le compte est ambigu, il n'est pas
+  vérifié.
+
+Les paliers déjà en base se passent au même filtre, sans appel au modèle : un
+exercice sans scène est signalé et son palier repasse en `stale`, refait avec la
+nouvelle consigne ; un compte d'émojis faux est corrigé sur place.
+
+```bash
+npx convex run paliers/pregen:repairVisuals '{"confirmDeployment":"impartial-ermine-150","dryRun":true}'
+npx convex run paliers/pregen:repairVisuals '{"confirmDeployment":"impartial-ermine-150"}'
+npx convex run paliers/pregen:run '{"confirmDeployment":"impartial-ermine-150","classes":["CI","CP"],"limit":20}'
+```
+
+Le résumé compte `missingScene`, `recounted`, `miscounted` et
+`paliersInvalidated`, avec vingt exemples. Un enfant qui a une tentative ouverte
+sur un palier invalidé la reprend sur les nouveaux exercices : à réserver au
+développement ou à une rentrée.
+
+La description de la thématique « Les nombres jusqu'à 10 » (CI) dit désormais
+que la collection est dessinée en émojis. Une thématique déjà chargée garde sa
+description en base (`programme/seed` ne recharge pas) : la règle de la
+consigne de génération suffit, elle ne dépend pas de la description.
+
 ## Essais et indices
 
 Un exercice se joue en cinq essais au plus (`MAX_ATTEMPTS_PER_EXERCISE`).

@@ -83,8 +83,42 @@ function typesFor(subject: string): string {
 }
 
 const HINTS_RULE = `
-- 3 indices progressifs : le 1er = relire l'énoncé / observer ;
-  le 2e = méthode pédagogique ; le 3e = quasi-réponse mais sans la donner.`;
+- 3 indices progressifs : le 1er = relire l'énoncé et repérer ce qu'on cherche ;
+  le 2e = méthode pédagogique ; le 3e = quasi-réponse mais sans la donner.
+  Un indice ne renvoie qu'à ce que l'énoncé écrit ou dessine : jamais « Regarde
+  tes billes » ni « Observe le dessin » si ni billes ni dessin n'y figurent.`;
+
+/**
+ * L'ÉCRAN DE L'ENFANT NE MONTRE QUE LE TEXTE. Le 12 octobre 2026, un palier de
+ * CI demandait « Combien de billes as-tu ? » avec pour seul indice « Regarde
+ * tes billes. » : aucune bille à l'écran, l'enfant ne comprenait pas la
+ * question. Le modèle écrivait pour un manuel illustré. Cette règle est
+ * doublée par un filtre (`paliers/missingVisual.ts`) qui écarte ce qu'elle
+ * n'a pas empêché. Les émojis choisis sont anciens (Unicode 11 au plus), voir
+ * `docs/programme-et-jeux.md`.
+ */
+const SELF_CONTAINED_RULE = `
+[L'énoncé se suffit à lui-même — RÈGLE ABSOLUE]
+L'enfant ne voit QUE le texte de l'énoncé et les options. Il n'y a NI image, NI
+dessin, NI photo, NI tableau, NI carte, NI objet réel à l'écran.
+- Une question sur quelque chose qu'on ne lui montre pas est un ÉCHEC : « Combien
+  de billes as-tu ? », « Combien de mangues y a-t-il ? », « Regarde l'image »,
+  « Observe le dessin », « ci-dessous ». L'enfant ne peut ni la comprendre, ni y
+  répondre.
+- Pour faire compter ou observer des objets, DESSINE-LES avec des émojis dans
+  l'énoncé : la question d'abord, puis UNE rangée d'émojis identiques, 10 au plus
+  au CI et au CP, 20 au plus ailleurs. Exemple : « Combien de billes vois-tu ? 🔵🔵🔵🔵🔵 ».
+  Émojis anciens et sûrs : 🔵 🔴 🍎 🥭 🐟 ⭐ ⚽ 🐔 🌳.
+- Le nombre d'émojis est EXACTEMENT la réponse : compte-les deux fois avant
+  d'écrire correctAnswer. Une voix lit l'énoncé sans dire les émojis : la question
+  doit se comprendre sans eux (« Combien de billes vois-tu ? »).
+- L'autre moyen est d'écrire les données : « Awa a 5 billes. Elle en perd 2.
+  Combien de billes lui reste-t-il ? ».
+- Un fait qu'on sait sans rien voir n'a pas besoin de scène : « Combien de jours
+  y a-t-il dans une semaine ? ».
+- Avant de répondre, relis chaque énoncé en imaginant l'enfant devant un écran où
+  il n'y a QUE ce texte : s'il lui manque quelque chose pour répondre, réécris
+  l'exercice.`;
 
 const STAGE_LABEL: Record<DifficultyStage, string> = {
   decouverte: "découverte (notions de base, peu d'étapes).",
@@ -368,8 +402,9 @@ const SUBJECT_RULES: { match: RegExp; rules: string }[] = [
   la même dans tout le palier. Aucun argot, aucune expression imagée, aucun mot
   qui ne figure pas dans le vocabulaire du « contenu officiel » ci-dessous.
 - Au CI et au CP, une voix française lit l'énoncé à voix haute : AUCUN mot
-  anglais dans l'énoncé (« Quel mot va avec l'image ? »). Les mots anglais sont
-  dans les options, et un émoji accompagne chaque mot.
+  anglais dans l'énoncé (« Comment dit-on « pomme » en anglais ? »). Les mots
+  anglais sont dans les options, et un émoji accompagne chaque mot. L'énoncé ne
+  parle jamais d'« image » ni de « dessin » : l'émoji est dans l'option.
 - L'application ne lit pas l'anglais : aucun exercice d'écoute, de rime ou de
   prononciation, aucune transcription phonétique.
 - Une seule bonne réponse. Pas de traduction libre quand plusieurs
@@ -489,6 +524,7 @@ ${SENEGAL_ANCHOR}
 - Pas de question à pièges méchants ; bienveillance toujours.
 - Au moins 3 types d'exos différents dans le palier (Decision 63).
 ${HINTS_RULE}
+${SELF_CONTAINED_RULE}
 ${readingLearnerRules(input.class)}
 ${isMaths ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }
@@ -543,6 +579,7 @@ ${SENEGAL_ANCHOR}
 - Reste au même niveau de difficulté.
 - Évite spécifiquement le piège qui a fait rater l'enfant — voir ses erreurs.
 ${HINTS_RULE}
+${SELF_CONTAINED_RULE}
 ${readingLearnerRules(input.class)}
 ${isMathSubject(input.subject) ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }

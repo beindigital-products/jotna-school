@@ -14,6 +14,9 @@ const base = {
   palierCount: 4,
 };
 
+/** La consigne est écrite sur plusieurs lignes : on cherche une phrase, pas une coupure. */
+const flat = (text: string) => text.replace(/\s+/g, " ");
+
 describe("la consigne de génération d'un palier", () => {
   it("transmet au modèle le contenu officiel de la thématique", () => {
     const prompt = buildPalierBasePrompt({
@@ -83,6 +86,40 @@ describe("la consigne de génération d'un palier", () => {
   it("au CI et au CP, rappelle que l'enfant ne lit pas encore", () => {
     expect(buildPalierBaseSystemPrompt({ ...base, class: "CI" })).toContain("apprend à lire");
     expect(buildPalierBaseSystemPrompt({ ...base, class: "CM1" })).not.toContain("apprend à lire");
+  });
+
+  it("dit au modèle que l'enfant ne voit que le texte, et comment dessiner une collection", () => {
+    for (const cls of ["CI", "CP", "CE2", "CM2"] as const) {
+      for (const subject of ["Mathématiques", "Histoire"]) {
+        const prompt = flat(buildPalierBaseSystemPrompt({ ...base, subject, class: cls }));
+        expect(prompt, `${subject} ${cls}`).toContain("L'énoncé se suffit à lui-même");
+        expect(prompt).toContain("Combien de billes as-tu ?");
+        expect(prompt).toContain("DESSINE-LES avec des émojis");
+        expect(prompt).toContain("EXACTEMENT la réponse");
+      }
+    }
+  });
+
+  it("ne demande plus d'« observer » dans le premier indice", () => {
+    const prompt = buildPalierBaseSystemPrompt(base);
+    expect(prompt).not.toContain("relire l'énoncé / observer");
+    expect(prompt).toContain("jamais « Regarde");
+  });
+
+  it("applique la règle de la scène aux variations d'exercices ratés", () => {
+    const prompt = buildVariationSystemPrompt({
+      class: "CI",
+      subject: "Mathématiques",
+      topic: "Les nombres jusqu'à 10",
+      failed: [],
+    });
+    expect(prompt).toContain("L'énoncé se suffit à lui-même");
+  });
+
+  it("en anglais, l'énoncé ne parle jamais d'« image »", () => {
+    const prompt = flat(buildPalierBaseSystemPrompt({ ...base, subject: "Anglais", class: "CI" }));
+    expect(prompt).not.toContain("Quel mot va avec l'image");
+    expect(prompt).toContain("ne parle jamais d'« image »");
   });
 
   it("garde les règles de la matière pour les variations d'exercices ratés", () => {

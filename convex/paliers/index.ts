@@ -30,6 +30,7 @@ import {
 } from "./prompts";
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop } from "./dragDropRepair";
+import { guardVisuals } from "./missingVisual";
 import { computeExerciseScore, PALIER_SIZE } from "./scoring";
 import { gameOriginOf, generateGames, interleave, regenerateGame } from "./games";
 import { programmeTopic } from "../programme";
@@ -1535,15 +1536,28 @@ function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | nu
     if (repaired.kind !== "ok" && repaired.kind !== "cleaned") answerKey = repaired.answerKey;
   }
 
+  // UNE QUESTION SANS SA SCÈNE (« Combien de billes as-tu ? » et rien à
+  // l'écran) est écartée du lot : l'enfant ne la comprendrait pas. Des objets
+  // dessinés en émojis se comptent : la réponse attendue est leur nombre réel,
+  // pas celui que le modèle croit avoir écrit. Voir `missingVisual.ts`.
   const hintsArr = Array.isArray(ex.hints) ? (ex.hints as unknown[]).map(String) : [];
-  return {
+  const guarded = guardVisuals({
     type,
     prompt,
     payload,
     answerKey,
-    hints: hintsArr.slice(0, 3),
-    order: typeof idx === "number" ? idx + 1 : 1,
+    hints: hintsArr,
     mathExpression: ex.mathExpression ?? null,
+  });
+  if (guarded.kind === "rejected") return null;
+  return {
+    type,
+    prompt,
+    payload: guarded.payload,
+    answerKey: guarded.answerKey,
+    hints: guarded.hints.slice(0, 3),
+    order: typeof idx === "number" ? idx + 1 : 1,
+    mathExpression: guarded.mathExpression,
     needsManualReview: false,
   };
 }

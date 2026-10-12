@@ -13,6 +13,7 @@ import { assertTargetedDeployment } from "../testSeedsSchool";
 import { generateBucketCore, isBaseExercise } from "./index";
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop as repairDragDropExercise } from "./dragDropRepair";
+import { findMissingVisual, repairEmojiCount } from "./missingVisual";
 import { PALIER_SIZE } from "./scoring";
 
 // ---------------------------------------------------------------------------
@@ -603,6 +604,145 @@ export const repairDragDropForPaliers = internalMutation({
       }
       // Un exercice injouable : tout le palier est refait, par le même
       // chemin que l'expiration, dès la prochaine ouverture ou par `run`.
+      if (broken > 0 && palier.status === "cached") {
+        batch.paliersInvalidated += 1;
+        if (!args.dryRun) await ctx.db.patch(palierId, { status: "stale" });
+      }
+    }
+    return batch;
+  },
+});
+
+// ---------------------------------------------------------------------------
+// ÉCARTER LES QUESTIONS SANS SCÈNE DÉJÀ EN BASE.
+//
+// « Combien de billes as-tu ? » sans une bille à l'écran, « Regarde l'image »
+// sans image (`paliers/missingVisual.ts`). Un exercice de ce genre ne se
+// répare pas : on ne sait pas quelle scène le modèle avait en tête. Il est
+// signalé et son palier repasse en `stale`, régénéré à la prochaine ouverture
+// ou par `pregen:run`, avec la consigne qui demande de dessiner la scène en
+// émojis. Un compte d'émojis faux, lui, se corrige sur place. Les élèves qui
+// ont une tentative ouverte sur un palier invalidé la reprennent sur les
+// nouveaux exercices : à réserver au développement ou à une rentrée.
+//
+//     npx convex run paliers/pregen:repairVisuals '{"confirmDeployment":"<nom>","dryRun":true}'
+//     npx convex run paliers/pregen:repairVisuals '{"confirmDeployment":"<nom>"}'
+//
+// Sans appel au modèle.
+// ---------------------------------------------------------------------------
+
+type VisualSample = {
+  exerciseId: Id<"exercises">;
+  prompt: string;
+  outcome: string;
+};
+
+type VisualBatch = {
+  checked: number;
+  missingScene: number;
+  recounted: number;
+  miscounted: number;
+  paliersInvalidated: number;
+  samples: VisualSample[];
+};
+
+type VisualSummary = VisualBatch & { dryRun: boolean; paliersScanned: number };
+
+export const repairVisuals = internalAction({
+  args: { confirmDeployment: v.string(), dryRun: v.optional(v.boolean()) },
+  handler: async (ctx, args): Promise<VisualSummary> => {
+    assertTargetedDeployment(args.confirmDeployment);
+    const dryRun = args.dryRun === true;
+    const palierIds: Id<"paliers">[] = await ctx.runQuery(internal.paliers.pregen.listPalierIds, {});
+    const totals: VisualSummary = {
+      dryRun,
+      paliersScanned: palierIds.length,
+      checked: 0,
+      missingScene: 0,
+      recounted: 0,
+      miscounted: 0,
+      paliersInvalidated: 0,
+      samples: [],
+    };
+    for (let i = 0; i < palierIds.length; i += REPAIR_BATCH) {
+      const batch: VisualBatch = await ctx.runMutation(
+        internal.paliers.pregen.repairVisualsForPaliers,
+        { palierIds: palierIds.slice(i, i + REPAIR_BATCH), dryRun },
+      );
+      totals.checked += batch.checked;
+      totals.missingScene += batch.missingScene;
+      totals.recounted += batch.recounted;
+      totals.miscounted += batch.miscounted;
+      totals.paliersInvalidated += batch.paliersInvalidated;
+      for (const sample of batch.samples) {
+        if (totals.samples.length < REPAIR_SAMPLES) totals.samples.push(sample);
+      }
+    }
+    return totals;
+  },
+});
+
+export const repairVisualsForPaliers = internalMutation({
+  args: { palierIds: v.array(v.id("paliers")), dryRun: v.boolean() },
+  handler: async (ctx, args): Promise<VisualBatch> => {
+    const batch: VisualBatch = {
+      checked: 0,
+      missingScene: 0,
+      recounted: 0,
+      miscounted: 0,
+      paliersInvalidated: 0,
+      samples: [],
+    };
+    const sample = (exerciseId: Id<"exercises">, prompt: string, outcome: string) => {
+      if (batch.samples.length < REPAIR_SAMPLES) batch.samples.push({ exerciseId, prompt, outcome });
+    };
+    for (const palierId of args.palierIds) {
+      const palier = await ctx.db.get(palierId);
+      if (!palier) continue;
+      const exercises = await ctx.db
+        .query("exercises")
+        .withIndex("by_palierId", (q) => q.eq("palierId", palierId))
+        .take(200);
+      let broken = 0;
+      for (const ex of exercises) {
+        batch.checked += 1;
+        const missing = findMissingVisual(ex.prompt);
+        if (missing) {
+          batch.missingScene += 1;
+          broken += 1;
+          sample(ex._id, ex.prompt, missing);
+          if (!args.dryRun && ex.needsManualReview !== true) {
+            await ctx.db.patch(ex._id, { needsManualReview: true });
+          }
+          continue;
+        }
+        const counted = repairEmojiCount({
+          type: ex.type,
+          prompt: ex.prompt,
+          payload: ex.payload,
+          answerKey: ex.answerKey,
+        });
+        if (counted.kind === "unrepairable") {
+          batch.miscounted += 1;
+          broken += 1;
+          sample(ex._id, ex.prompt, "miscounted");
+          if (!args.dryRun && ex.needsManualReview !== true) {
+            await ctx.db.patch(ex._id, { needsManualReview: true });
+          }
+        } else if (counted.kind === "repaired") {
+          batch.recounted += 1;
+          sample(ex._id, ex.prompt, `recounted:${counted.previous}->${counted.answerKey}`);
+          if (!args.dryRun) {
+            await ctx.db.patch(ex._id, {
+              payload: counted.payload,
+              answerKey: counted.answerKey,
+              // L'expression du modèle portait le même mauvais compte.
+              mathExpression: undefined,
+              needsManualReview: false,
+            });
+          }
+        }
+      }
       if (broken > 0 && palier.status === "cached") {
         batch.paliersInvalidated += 1;
         if (!args.dryRun) await ctx.db.patch(palierId, { status: "stale" });

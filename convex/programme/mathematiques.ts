@@ -35,7 +35,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         key: "ma-ci-nombres-10",
         name: "Les nombres jusqu'à 10",
         description:
-          "Palier 2 du CI : dénombrer une collection (mangues, billes, poissons) jusqu'à 10, lire et écrire les chiffres, associer un nombre et une quantité, comparer (plus que, moins que, autant que), ranger. Aucun nombre au-delà de 10.",
+          "Palier 2 du CI : dénombrer une collection dessinée en émojis dans l'énoncé (🥭🥭🥭, 🔵🔵, 🐟🐟🐟🐟) jusqu'à 10, lire et écrire les chiffres, associer un nombre et une quantité, comparer (plus que, moins que, autant que), ranger. Aucun nombre au-delà de 10.",
         games: [{ kind: "suite-nombres", count: 2 }],
       },
       {

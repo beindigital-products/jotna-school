@@ -53,6 +53,10 @@ describe("speakablePrompt — ce que Pio dit d'une consigne", () => {
     );
   });
 
+  it("dit la question d'une collection dessinée, sans les billes : l'enfant les voit", () => {
+    expect(speakablePrompt("Combien de billes vois-tu ? 🔵🔵🔵🔵🔵")).toBe("Combien de billes vois-tu ?");
+  });
+
   it("ne dit rien quand il n'y a rien à dire, ou trop", () => {
     expect(speakablePrompt("🍎🍎🍎")).toBeNull();
     expect(speakablePrompt("   ")).toBeNull();
