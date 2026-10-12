@@ -124,10 +124,10 @@ export const BANK: SubjectBank = {
       topic: "Les êtres vivants grandissent",
       stage: 1,
       prompt: "Remets les âges de la vie dans l'ordre, du plus jeune au plus âgé.",
-      sequence: ["👶 Bébé", "👦 Enfant", "👨 Adulte", "👴 Vieillard"],
+      sequence: ["👶 Bébé", "👦 Enfant", "👨 Adulte", "👴 Personne âgée"],
       hints: [
         "Pense aux gens de ta famille, du plus petit enfant jusqu'aux grands-parents.",
-        "On commence par le bébé. Celui qui a les cheveux blancs vient en dernier.",
+        "On commence par le bébé. La personne âgée, comme un grand-père, vient en dernier.",
       ],
     }),
     shortAnswer({

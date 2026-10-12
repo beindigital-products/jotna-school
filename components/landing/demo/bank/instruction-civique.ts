@@ -61,7 +61,7 @@ export const BANK: SubjectBank = {
       topic: "On s'entraide",
       stage: 3,
       prompt: "Remets l'histoire de Modou dans le bon ordre.",
-      sequence: ["Modou tombe 🤕", "Il pleure 😢", "Je l'aide 🤝", "Il sourit 😀"],
+      sequence: ["Modou tombe 🤕", "Il pleure 😢", "Fatou l'aide 🤝", "Il sourit 😀"],
       hints: [
         "Au début de l'histoire, Modou a un problème.",
         "On pleure après être tombé. On sourit quand on a été aidé.",
@@ -112,7 +112,7 @@ export const BANK: SubjectBank = {
       stage: 2,
       prompt: "Relie chaque responsabilité à sa mission.",
       pairs: [
-        ["Chef de classe", "Aide la maîtresse"],
+        ["Chef de classe", "Garde le calme"],
         ["Propreté", "Balaie la classe"],
         ["Matériel", "Range les craies"],
         ["Lever des couleurs", "Lève le drapeau"],
@@ -206,7 +206,7 @@ export const BANK: SubjectBank = {
       topic: "Les symboles de la Nation",
       stage: 1,
       prompt: "Le drapeau du Sénégal a trois bandes verticales. Range-les de gauche à droite, en partant du mât.",
-      sequence: ["Vert", "Or", "Rouge"],
+      sequence: ["Vert", "Jaune", "Rouge"],
       hints: [
         "Imagine le drapeau dessiné dans ton cahier, avec le mât à gauche.",
         "L'étoile verte est dessinée sur la bande du milieu. Quelle est la couleur de cette bande ?",
@@ -273,7 +273,7 @@ export const BANK: SubjectBank = {
       prompt: "Est-ce un droit ou un devoir de l'enfant ? Range chaque phrase dans la bonne case.",
       zones: ["Un droit", "Un devoir"],
       items: {
-        "Un droit": ["Aller à l'école", "Être soigné quand on est malade", "Jouer avec ses amis"],
+        "Un droit": ["Avoir un nom", "Être soigné quand on est malade", "Jouer avec ses amis"],
         "Un devoir": ["Respecter les autres", "Travailler à l'école", "Aider à la maison"],
       },
       hints: [
@@ -439,9 +439,9 @@ export const BANK: SubjectBank = {
       topic: "Les organisations internationales",
       stage: 2,
       prompt: "ONU ou sport ? Place chaque sigle dans la bonne case.",
-      zones: ["Agences de l'ONU", "Organisations du sport"],
+      zones: ["Organismes de l'ONU", "Organisations du sport"],
       items: {
-        "Agences de l'ONU": ["UNICEF", "UNESCO", "OMS", "FAO"],
+        "Organismes de l'ONU": ["UNICEF", "UNESCO", "OMS", "FAO"],
         "Organisations du sport": ["FIFA", "CIO"],
       },
       hints: [

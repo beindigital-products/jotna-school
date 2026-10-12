@@ -148,7 +148,7 @@ export const BANK: SubjectBank = {
       zones: ["Cercle", "Carré", "Rectangle"],
       items: {
         Cercle: ["Roue", "Pièce de 100 F"],
-        Carré: ["Case du damier", "Mouchoir"],
+        Carré: ["Case du damier", "Carreau de carrelage"],
         Rectangle: ["Ardoise", "Porte"],
       },
       hints: [

@@ -97,7 +97,7 @@ export const BANK: SubjectBank = {
       prompt: "La forme de chaque objet est-elle droite, courbe ou en zigzag ? Glisse-le dans la bonne case.",
       zones: ["Ligne droite", "Ligne courbe", "Zigzag"],
       items: {
-        "Ligne droite": ["📏 règle", "🥖 pain"],
+        "Ligne droite": ["📏 règle", "✏️ crayon"],
         "Ligne courbe": ["🌈 arc-en-ciel", "🍌 banane"],
         Zigzag: ["⚡ éclair"],
       },

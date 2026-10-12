@@ -225,7 +225,7 @@ export const BANK: SubjectBank = {
       topic: "J'aime, je n'aime pas",
       stage: 2,
       prompt: "Choisis le mot qui complète la réponse.",
-      text: "Do you like mango? Yes, I ___.",
+      text: "Do you like mangoes? Yes, I ___.",
       blanks: [{ options: ["do", "like", "are"], answer: "do" }],
       hints: [
         "Relis la question : par quel petit mot commence-t-elle ?",
@@ -361,8 +361,8 @@ export const BANK: SubjectBank = {
     order({
       topic: "Ce que je fais : le présent",
       stage: 3,
-      prompt: "Remets les mots dans l'ordre pour dire : « Je prends toujours mon petit-déjeuner. »",
-      sequence: ["I", "always", "eat", "breakfast."],
+      prompt: "Remets les mots dans l'ordre pour dire : « Je prends toujours le petit-déjeuner. »",
+      sequence: ["I", "always", "have", "breakfast."],
       hints: [
         "Commence par le sujet, puis pense à la place du mot « always ».",
         "En anglais, l'adverbe de fréquence (always, usually, sometimes, never) se place avant le verbe.",
