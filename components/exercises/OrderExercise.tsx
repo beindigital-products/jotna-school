@@ -89,10 +89,18 @@ function SortableItem({
         ${disabled ? "opacity-70" : ""}
       `}
     >
+      {/* LA POIGNÉE SE GLISSE AU DOIGT : `touch-none` (touch-action: none) dit
+          au navigateur de ne pas prendre ce geste pour un défilement. Sans lui,
+          sur iPhone, iPad et Android, le doigt qui glisse fait défiler la page,
+          le navigateur annule le geste (pointercancel) et la tuile ne bouge
+          jamais ; la souris, elle, n'a pas ce problème. 44 px, la plus petite
+          cible qu'un doigt d'enfant touche à coup sûr ; `select-none` et
+          `-webkit-touch-callout` coupent la loupe et le menu de sélection d'iOS
+          sur un appui long. */}
       <span
         {...attributes}
         {...listeners}
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 ${
+        className={`flex h-11 w-11 shrink-0 touch-none select-none items-center justify-center rounded-lg text-gray-400 [-webkit-touch-callout:none] ${
           disabled ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
         }`}
       >

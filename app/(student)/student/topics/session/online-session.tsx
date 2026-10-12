@@ -697,7 +697,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
                 hintsUsedThisExo < (failedAttemptsThisExo >= 4 ? 3 : failedAttemptsThisExo >= 2 ? 2 : 1) && (
                 <button
                   onClick={handleRequestHint}
-                  className="inline-flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 transition-all hover:bg-amber-200"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 transition-all hover:bg-amber-200"
                 >
                   <Lightbulb className="h-4 w-4" />
                   Voir un indice

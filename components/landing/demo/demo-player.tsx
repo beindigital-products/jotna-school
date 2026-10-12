@@ -195,7 +195,7 @@ export default function DemoPlayer({
         <button
           type="button"
           onClick={() => dispatch({ type: "hint" })}
-          className="inline-flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-200"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-200"
         >
           <Lightbulb className="h-4 w-4" aria-hidden />
           Voir un indice
@@ -266,7 +266,7 @@ export default function DemoPlayer({
             <button
               type="button"
               onClick={() => dispatch({ type: "retry" })}
-              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
             >
               <RotateCcw className="size-4" aria-hidden />
               Réessayer
@@ -278,7 +278,7 @@ export default function DemoPlayer({
             <button
               type="button"
               onClick={onAnother}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-gray-900 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
             >
               Un autre exemple
               <ArrowRight className="size-4" aria-hidden />

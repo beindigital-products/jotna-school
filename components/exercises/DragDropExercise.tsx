@@ -100,8 +100,12 @@ function DraggableItem({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      // `touch-none` : sans lui, au doigt, le glissé défile la page et le
+      // navigateur annule le geste (voir `OrderExercise`). `select-none` et
+      // `-webkit-touch-callout` : pas de loupe ni de sélection d'iOS sur un
+      // appui long.
       className={`
-        rounded-xl border-2 px-4 py-3 text-center text-base font-bold transition-all
+        touch-none select-none rounded-xl border-2 px-4 py-3 text-center text-base font-bold transition-all [-webkit-touch-callout:none]
         ${isDragging ? "opacity-50" : ""}
         ${inZone
           ? "border-gray-200 bg-white text-gray-800 shadow-sm"
