@@ -444,6 +444,22 @@ const SUBJECT_RULES: { match: RegExp; rules: string }[] = [
   },
 ];
 
+/**
+ * AUCUNE IMAGE N'EST AFFICHÉE : l'énoncé est du texte. « Combien de mangues
+ * vois-tu ? » sans mangue écrite laisse l'enfant devant une carte vide.
+ */
+const VISUAL_RULE = `
+[Ce que l'enfant voit — AUCUNE image n'est affichée]
+- L'enfant ne voit que le texte de l'énoncé et des options. Ne parle JAMAIS d'une
+  image, d'un dessin, d'une photo ou d'un « ci-dessous » : il n'y en a pas.
+- Pour faire COMPTER ou OBSERVER, dessine avec des émojis DANS "statement", en
+  nombre exact (réponse 5 : "🥭🥭🥭🥭🥭 Combien de mangues vois-tu ?"). Le nombre
+  d'émojis dessinés est exactement la réponse attendue.
+- Sans émojis, écris la situation avec des nombres ("Aïssatou a 3 mangues, …").
+- Dans un "match" mot ↔ image, le côté image EST un émoji ("mangue" ↔ "🥭"), jamais
+  "image_mangue" ni "image de mangue" : l'enfant lirait ce texte tel quel. Un émoji
+  par objet, tous différents, et le bon (🥭 pour une mangue, jamais 🍑).`;
+
 /** Les règles de la matière, ou une chaîne vide (les mathématiques ont les leurs). */
 export function subjectRules(subject: string): string {
   if (isMathSubject(subject)) return "";
@@ -489,6 +505,7 @@ ${SENEGAL_ANCHOR}
 - Pas de question à pièges méchants ; bienveillance toujours.
 - Au moins 3 types d'exos différents dans le palier (Decision 63).
 ${HINTS_RULE}
+${VISUAL_RULE}
 ${readingLearnerRules(input.class)}
 ${isMaths ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }
@@ -543,6 +560,7 @@ ${SENEGAL_ANCHOR}
 - Reste au même niveau de difficulté.
 - Évite spécifiquement le piège qui a fait rater l'enfant — voir ses erreurs.
 ${HINTS_RULE}
+${VISUAL_RULE}
 ${readingLearnerRules(input.class)}
 ${isMathSubject(input.subject) ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }

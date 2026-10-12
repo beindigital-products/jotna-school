@@ -46,7 +46,7 @@ function PromptText({ prompt }: { prompt: string }) {
 
   if (!quoted) {
     return (
-      <p className="text-xl font-bold text-gray-900 leading-relaxed">
+      <p className="whitespace-pre-line text-xl font-bold text-gray-900 leading-relaxed">
         {prompt}
       </p>
     );

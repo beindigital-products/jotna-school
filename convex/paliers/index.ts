@@ -30,6 +30,7 @@ import {
 } from "./prompts";
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop } from "./dragDropRepair";
+import { repairVisualPrompt } from "./visualRepair";
 import { computeExerciseScore, PALIER_SIZE } from "./scoring";
 import { gameOriginOf, generateGames, interleave, regenerateGame } from "./games";
 import { programmeTopic } from "../programme";
@@ -1510,7 +1511,7 @@ function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | nu
   // (frise, dessin, écoute, couleurs) se fabrique par le code, jamais par lui.
   const t = ex.type ?? "short-answer";
   const safeType: PersistedShape["type"] = isAiExerciseType(t) ? t : "short-answer";
-  const prompt = ex.statement ?? ex.prompt ?? "";
+  let prompt = ex.statement ?? ex.prompt ?? "";
   if (!prompt) return null;
 
   const validated = validatePayload(safeType, ex.payload ?? {});
@@ -1533,6 +1534,16 @@ function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | nu
     if (repaired.kind !== "ok") payload = repaired.payload;
     if (repaired.kind === "order" || repaired.kind === "qcm" || repaired.kind === "match") type = repaired.kind;
     if (repaired.kind !== "ok" && repaired.kind !== "cleaned") answerKey = repaired.answerKey;
+  }
+
+  // UN ÉNONCÉ QUI PARLE D'UNE IMAGE ABSENTE (« Combien de mangues vois-tu ? »
+  // sans une mangue) reçoit ses émojis quand on sait les écrire, sinon il est
+  // écarté du lot : voir `visualRepair.ts`.
+  const visual = repairVisualPrompt({ type, prompt, payload, answerKey });
+  if (visual.kind === "unrepairable") return null;
+  if (visual.kind === "repaired") {
+    prompt = visual.prompt;
+    if (visual.payload !== undefined) payload = visual.payload;
   }
 
   const hintsArr = Array.isArray(ex.hints) ? (ex.hints as unknown[]).map(String) : [];
