@@ -13,6 +13,7 @@ import { assertTargetedDeployment } from "../testSeedsSchool";
 import { generateBucketCore, isBaseExercise } from "./index";
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop as repairDragDropExercise } from "./dragDropRepair";
+import { repairVisualPrompt } from "./visualRepair";
 import { PALIER_SIZE } from "./scoring";
 
 // ---------------------------------------------------------------------------
@@ -603,6 +604,127 @@ export const repairDragDropForPaliers = internalMutation({
       }
       // Un exercice injouable : tout le palier est refait, par le même
       // chemin que l'expiration, dès la prochaine ouverture ou par `run`.
+      if (broken > 0 && palier.status === "cached") {
+        batch.paliersInvalidated += 1;
+        if (!args.dryRun) await ctx.db.patch(palierId, { status: "stale" });
+      }
+    }
+    return batch;
+  },
+});
+
+// ---------------------------------------------------------------------------
+// RÉPARER LES ÉNONCÉS QUI PARLENT D'UNE IMAGE ABSENTE.
+//
+// « Combien de mangues vois-tu ? » sans une mangue à l'écran : voir
+// `paliers/visualRepair.ts`. Un énoncé réparable reçoit ses émojis sur place ;
+// un énoncé irréparable est signalé et son palier repasse en `stale`, pour
+// être régénéré à la prochaine ouverture ou par `pregen:run`.
+//
+//     npx convex run paliers/pregen:repairVisual '{"confirmDeployment":"<nom>","dryRun":true}'
+//     npx convex run paliers/pregen:repairVisual '{"confirmDeployment":"<nom>"}'
+//
+// Sans appel au modèle.
+// ---------------------------------------------------------------------------
+
+type VisualSample = {
+  exerciseId: Id<"exercises">;
+  prompt: string;
+  outcome: string;
+};
+
+type VisualBatch = {
+  checked: number;
+  added: number;
+  resized: number;
+  unrepairable: number;
+  paliersInvalidated: number;
+  samples: VisualSample[];
+};
+
+type VisualSummary = VisualBatch & { dryRun: boolean; paliersScanned: number };
+
+export const repairVisual = internalAction({
+  args: { confirmDeployment: v.string(), dryRun: v.optional(v.boolean()) },
+  handler: async (ctx, args): Promise<VisualSummary> => {
+    assertTargetedDeployment(args.confirmDeployment);
+    const dryRun = args.dryRun === true;
+    const palierIds: Id<"paliers">[] = await ctx.runQuery(internal.paliers.pregen.listPalierIds, {});
+    const totals: VisualSummary = {
+      dryRun,
+      paliersScanned: palierIds.length,
+      checked: 0,
+      added: 0,
+      resized: 0,
+      unrepairable: 0,
+      paliersInvalidated: 0,
+      samples: [],
+    };
+    for (let i = 0; i < palierIds.length; i += REPAIR_BATCH) {
+      const batch: VisualBatch = await ctx.runMutation(
+        internal.paliers.pregen.repairVisualForPaliers,
+        { palierIds: palierIds.slice(i, i + REPAIR_BATCH), dryRun },
+      );
+      totals.checked += batch.checked;
+      totals.added += batch.added;
+      totals.resized += batch.resized;
+      totals.unrepairable += batch.unrepairable;
+      totals.paliersInvalidated += batch.paliersInvalidated;
+      for (const sample of batch.samples) {
+        if (totals.samples.length < REPAIR_SAMPLES) totals.samples.push(sample);
+      }
+    }
+    return totals;
+  },
+});
+
+export const repairVisualForPaliers = internalMutation({
+  args: { palierIds: v.array(v.id("paliers")), dryRun: v.boolean() },
+  handler: async (ctx, args): Promise<VisualBatch> => {
+    const batch: VisualBatch = {
+      checked: 0,
+      added: 0,
+      resized: 0,
+      unrepairable: 0,
+      paliersInvalidated: 0,
+      samples: [],
+    };
+    for (const palierId of args.palierIds) {
+      const palier = await ctx.db.get(palierId);
+      if (!palier) continue;
+      const exercises = await ctx.db
+        .query("exercises")
+        .withIndex("by_palierId", (q) => q.eq("palierId", palierId))
+        .take(200);
+      let broken = 0;
+      for (const ex of exercises) {
+        batch.checked += 1;
+        const outcome = repairVisualPrompt({
+          type: ex.type,
+          prompt: ex.prompt,
+          payload: ex.payload,
+          answerKey: ex.answerKey,
+        });
+        if (outcome.kind === "ok") continue;
+        const label =
+          outcome.kind === "unrepairable" ? `unrepairable:${outcome.reason}` : outcome.change;
+        if (batch.samples.length < REPAIR_SAMPLES) {
+          batch.samples.push({ exerciseId: ex._id, prompt: ex.prompt, outcome: label });
+        }
+        if (outcome.kind === "unrepairable") {
+          batch.unrepairable += 1;
+          broken += 1;
+          if (!args.dryRun && ex.needsManualReview !== true) {
+            await ctx.db.patch(ex._id, { needsManualReview: true });
+          }
+          continue;
+        }
+        if (outcome.change === "added") batch.added += 1;
+        else batch.resized += 1;
+        if (!args.dryRun) await ctx.db.patch(ex._id, { prompt: outcome.prompt });
+      }
+      // Un énoncé injouable : tout le palier est refait, par le même chemin
+      // que l'expiration, dès la prochaine ouverture ou par `run`.
       if (broken > 0 && palier.status === "cached") {
         batch.paliersInvalidated += 1;
         if (!args.dryRun) await ctx.db.patch(palierId, { status: "stale" });
