@@ -637,6 +637,7 @@ type VisualBatch = {
   checked: number;
   added: number;
   resized: number;
+  pictures: number;
   unrepairable: number;
   paliersInvalidated: number;
   samples: VisualSample[];
@@ -656,6 +657,7 @@ export const repairVisual = internalAction({
       checked: 0,
       added: 0,
       resized: 0,
+      pictures: 0,
       unrepairable: 0,
       paliersInvalidated: 0,
       samples: [],
@@ -668,6 +670,7 @@ export const repairVisual = internalAction({
       totals.checked += batch.checked;
       totals.added += batch.added;
       totals.resized += batch.resized;
+      totals.pictures += batch.pictures;
       totals.unrepairable += batch.unrepairable;
       totals.paliersInvalidated += batch.paliersInvalidated;
       for (const sample of batch.samples) {
@@ -685,6 +688,7 @@ export const repairVisualForPaliers = internalMutation({
       checked: 0,
       added: 0,
       resized: 0,
+      pictures: 0,
       unrepairable: 0,
       paliersInvalidated: 0,
       samples: [],
@@ -720,8 +724,14 @@ export const repairVisualForPaliers = internalMutation({
           continue;
         }
         if (outcome.change === "added") batch.added += 1;
-        else batch.resized += 1;
-        if (!args.dryRun) await ctx.db.patch(ex._id, { prompt: outcome.prompt });
+        else if (outcome.change === "resized") batch.resized += 1;
+        else batch.pictures += 1;
+        if (!args.dryRun) {
+          await ctx.db.patch(ex._id, {
+            prompt: outcome.prompt,
+            ...(outcome.payload !== undefined ? { payload: outcome.payload } : {}),
+          });
+        }
       }
       // Un énoncé injouable : tout le palier est refait, par le même chemin
       // que l'expiration, dès la prochaine ouverture ou par `run`.

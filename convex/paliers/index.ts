@@ -1541,7 +1541,10 @@ function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | nu
   // écarté du lot : voir `visualRepair.ts`.
   const visual = repairVisualPrompt({ type, prompt, payload, answerKey });
   if (visual.kind === "unrepairable") return null;
-  if (visual.kind === "repaired") prompt = visual.prompt;
+  if (visual.kind === "repaired") {
+    prompt = visual.prompt;
+    if (visual.payload !== undefined) payload = visual.payload;
+  }
 
   const hintsArr = Array.isArray(ex.hints) ? (ex.hints as unknown[]).map(String) : [];
   return {

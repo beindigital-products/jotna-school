@@ -113,3 +113,74 @@ describe("emojiFor", () => {
     expect(emojiFor("calebasses")).toBeNull();
   });
 });
+
+describe("repairVisualPrompt — appariement mot ↔ image", () => {
+  const match = (pairs: { left: string; right: string }[]) => ({
+    type: "match",
+    prompt: "Associe les mots avec les images :",
+    payload: { pairs },
+    answerKey: "x",
+  });
+
+  it("remplace un texte-substitut par l'émoji de l'objet", () => {
+    const outcome = repairVisualPrompt(
+      match([
+        { left: "mangue", right: "image de mangue" },
+        { left: "banane", right: "image_banane" },
+      ]),
+    );
+    expect(outcome).toEqual({
+      kind: "repaired",
+      prompt: "Associe les mots avec les images :",
+      payload: {
+        pairs: [
+          { left: "mangue", right: "🥭" },
+          { left: "banane", right: "🍌" },
+        ],
+      },
+      change: "pictures",
+    });
+  });
+
+  it("remet la mangue à sa place (🥭 et non 🍑)", () => {
+    const outcome = repairVisualPrompt(
+      match([
+        { left: "mangue", right: "🍑" },
+        { left: "moto", right: "🏍️" },
+      ]),
+    );
+    expect(outcome).toMatchObject({
+      kind: "repaired",
+      payload: { pairs: [{ left: "mangue", right: "🥭" }, { left: "moto", right: "🏍️" }] },
+    });
+  });
+
+  it("écarte tout l'appariement quand une paire n'a pas d'émoji", () => {
+    expect(
+      repairVisualPrompt(match([{ left: "mangue", right: "image de mangue" }, { left: "maïs", right: "image_maïs" }])),
+    ).toEqual({ kind: "unrepairable", reason: "nothing_to_see" });
+  });
+
+  it("écarte un substitut sans émoji connu", () => {
+    expect(
+      repairVisualPrompt(match([{ left: "lo", right: "image de lait caillé" }, { left: "pa", right: "image de pâte" }])),
+    ).toEqual({ kind: "unrepairable", reason: "nothing_to_see" });
+  });
+
+  it("écarte des images qui se ressembleraient toutes", () => {
+    expect(
+      repairVisualPrompt(
+        match([
+          { left: "1/4", right: "Image d'un gâteau coupé en 4 parts" },
+          { left: "1/2", right: "Image d'un gâteau coupé en 2 parts" },
+        ]),
+      ),
+    ).toEqual({ kind: "unrepairable", reason: "nothing_to_see" });
+  });
+
+  it("laisse un appariement déjà illustré", () => {
+    expect(
+      repairVisualPrompt(match([{ left: "maison", right: "🏠" }, { left: "mouton", right: "🐑" }])),
+    ).toEqual({ kind: "ok" });
+  });
+});

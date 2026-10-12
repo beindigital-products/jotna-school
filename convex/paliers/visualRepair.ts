@@ -16,6 +16,11 @@
  *     d'émojis que la réponse : la rangée d'émojis est refaite à la taille
  *     de la réponse (l'enfant voit alors ce que la clé dit).
  *
+ *   - Un appariement mot ↔ image dont l'« image » est un texte-substitut
+ *     (« image_mangue », « image de maïs ») : le substitut devient l'émoji de
+ *     l'objet, s'il en existe un et si chaque paire garde le sien. Un émoji
+ *     qui contredit le mot (« mangue » ↔ 🍑) est remis juste (🥭).
+ *
  * Tout autre énoncé qui renvoie à une image, un dessin ou un « ci-dessous »
  * absent est irréparable : à la génération il est écarté du lot ; en base,
  * son palier repasse en `stale`. Module pur, sans Convex, testé dans
@@ -32,7 +37,13 @@ export type VisualRepairInput = {
 
 export type VisualRepairOutcome =
   | { kind: "ok" }
-  | { kind: "repaired"; prompt: string; change: "added" | "resized" }
+  | {
+      kind: "repaired";
+      prompt: string;
+      /** Présent quand les paires d'un appariement ont changé. */
+      payload?: unknown;
+      change: "added" | "resized" | "pictures";
+    }
   | { kind: "unrepairable"; reason: "nothing_to_see" };
 
 /** Un émoji, avec ses variantes (sélecteur 16, jonction de personnages). */
@@ -158,7 +169,80 @@ function expectedCount(input: VisualRepairInput): number | null {
   return n >= 1 && n <= MAX_DRAWN ? n : null;
 }
 
+/** « image_mangue », « image de maïs », « Image d'un gâteau » : un texte, pas une image. */
+const PLACEHOLDER = /^image(?:[_\s]|$)/iu;
+
+function isSinglePictograph(value: string): boolean {
+  const found = value.trim().match(EMOJI_EACH) ?? [];
+  return found.length === 1 && found[0] === value.trim();
+}
+
+/** « image de mangue » → « mangue » ; « gâteau coupé en 4 parts » reste tel quel. */
+function pictureSubject(placeholder: string): string {
+  return placeholder
+    .replace(/^image[_\s]*/iu, "")
+    .replace(/^(?:(?:de|d['’]|du|des|la|le|l['’]|un|une)\s*)+/iu, "")
+    .replace(/_/g, " ")
+    .trim();
+}
+
+type Pair = { left: string; right: string };
+
+function repairMatchPictures(payload: unknown): VisualRepairOutcome {
+  const p = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  if (!Array.isArray(p.pairs)) return { kind: "ok" };
+  const pairs = p.pairs as Pair[];
+  if (!pairs.every((x) => x && typeof x.left === "string" && typeof x.right === "string")) {
+    return { kind: "ok" };
+  }
+  let unresolved = false;
+  const replaced: string[] = [];
+  const next = pairs.map((pair) => {
+    const right = pair.right.trim();
+    if (PLACEHOLDER.test(right)) {
+      const emoji = emojiFor(pictureSubject(right));
+      if (!emoji) {
+        unresolved = true;
+        return pair;
+      }
+      replaced.push(emoji);
+      return { ...pair, right: emoji };
+    }
+    // Un émoji qui contredit le mot : « mangue » ↔ 🍑.
+    const known = emojiFor(pair.left);
+    if (known && isSinglePictograph(right) && right !== known) {
+      replaced.push(known);
+      return { ...pair, right: known };
+    }
+    return pair;
+  });
+  // Une paire sans image possible laisse l'appariement injouable. Seules les
+  // images qu'on écrit doivent être distinctes : « chaque nom à son genre »
+  // répète légitimement la même réponse.
+  if (unresolved || new Set(replaced).size !== replaced.length) {
+    return { kind: "unrepairable", reason: "nothing_to_see" };
+  }
+  if (replaced.length === 0) return { kind: "ok" };
+  const accepted = Array.isArray(p.accepted)
+    ? (p.accepted as Pair[]).map((a) => {
+        const index = pairs.findIndex((x) => x.left === a?.left);
+        return index >= 0 && a.right === pairs[index].right ? { ...a, right: (next as Pair[])[index].right } : a;
+      })
+    : undefined;
+  return {
+    kind: "repaired",
+    prompt: "",
+    payload: { ...p, pairs: next, ...(accepted ? { accepted } : {}) },
+    change: "pictures",
+  };
+}
+
 export function repairVisualPrompt(input: VisualRepairInput): VisualRepairOutcome {
+  if (input.type === "match") {
+    const matched = repairMatchPictures(input.payload);
+    if (matched.kind === "repaired") return { ...matched, prompt: input.prompt };
+    if (matched.kind === "unrepairable") return matched;
+  }
   const prompt = input.prompt;
   const counting = COUNTING_QUESTION.exec(prompt);
   // « Combien de mangues Aïssatou a-t-elle ? » (3 + 2) se résout avec les

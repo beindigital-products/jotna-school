@@ -455,7 +455,10 @@ const VISUAL_RULE = `
 - Pour faire COMPTER ou OBSERVER, dessine avec des émojis DANS "statement", en
   nombre exact (réponse 5 : "🥭🥭🥭🥭🥭 Combien de mangues vois-tu ?"). Le nombre
   d'émojis dessinés est exactement la réponse attendue.
-- Sans émojis, écris la situation avec des nombres ("Aïssatou a 3 mangues, …").`;
+- Sans émojis, écris la situation avec des nombres ("Aïssatou a 3 mangues, …").
+- Dans un "match" mot ↔ image, le côté image EST un émoji ("mangue" ↔ "🥭"), jamais
+  "image_mangue" ni "image de mangue" : l'enfant lirait ce texte tel quel. Un émoji
+  par objet, tous différents, et le bon (🥭 pour une mangue, jamais 🍑).`;
 
 /** Les règles de la matière, ou une chaîne vide (les mathématiques ont les leurs). */
 export function subjectRules(subject: string): string {
