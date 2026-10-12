@@ -55,3 +55,21 @@ export function speakablePrompt(prompt: string): string | null {
   if (text.length > MAX_SPOKEN_PROMPT_CHARS) return null;
   return text;
 }
+
+/**
+ * LA CONSIGNE D'UN APPARIEMENT SE COMPLÈTE : « Associe les couleurs aux
+ * objets » ne dit pas où toucher. Le 12 octobre 2026, un enfant ne savait pas
+ * par où commencer. Cette phrase est écrite sous la consigne (`MatchExercise`)
+ * ET dite par Pio avec elle (`speakableExercise`) : l'enfant lit ce qu'il
+ * entend. On peut commencer par la gauche ou par la droite.
+ */
+export const MATCH_HINT =
+  "Touche un mot, puis le mot qui va avec lui dans l'autre colonne. Tu peux commencer par la gauche ou par la droite.";
+
+/** Ce que Pio dit d'un exercice : sa consigne, plus le mode d'emploi d'un appariement. */
+export function speakableExercise(type: string, prompt: string): string | null {
+  const text = speakablePrompt(prompt);
+  if (!text || type !== "match") return text;
+  const spoken = `${/[.!?…]$/.test(text) ? text : `${text}.`} ${MATCH_HINT}`;
+  return spoken.length > MAX_SPOKEN_PROMPT_CHARS + MATCH_HINT.length ? text : spoken;
+}

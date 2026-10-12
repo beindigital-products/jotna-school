@@ -43,7 +43,13 @@ export function verifyAnswer(exercise: ExerciseForPlayer, submitted: string): bo
     case "qcm":
       return verifyQcm(submitted, exercise.payload as { correctIndex: number });
     case "match":
-      return verifyMatch(submitted, exercise.payload as { pairs: { left: string; right: string }[] });
+      return verifyMatch(
+        submitted,
+        exercise.payload as {
+          pairs: { left: string; right: string }[];
+          accepted?: { left: string; right: string }[];
+        },
+      );
     case "order":
       return verifyOrder(submitted, exercise.payload as { correctSequence: string[] });
     case "drag-drop":

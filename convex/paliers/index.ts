@@ -1412,7 +1412,29 @@ function validatePayload(
             .map((pair) => ({ left: pair.left, right: pair.right }))
         : [];
       if (pairs.length < 2) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...optional, pairs } };
+      // Les paires valables en plus (une proposition qui va à deux éléments) :
+      // seulement entre des mots qui sont bien à l'écran, et pas déjà dans
+      // `pairs`. Le reste est écarté, l'exercice reste jouable.
+      const lefts = new Set(pairs.map((pair) => pair.left));
+      const rights = new Set(pairs.map((pair) => pair.right));
+      const known = new Set(pairs.map((pair) => JSON.stringify([pair.left, pair.right])));
+      const accepted: { left: string; right: string }[] = [];
+      if (Array.isArray(p.accepted)) {
+        for (const pair of p.accepted as unknown[]) {
+          if (!pair || typeof pair !== "object") continue;
+          const { left, right } = pair as Record<string, unknown>;
+          if (typeof left !== "string" || typeof right !== "string") continue;
+          if (!lefts.has(left) || !rights.has(right)) continue;
+          const id = JSON.stringify([left, right]);
+          if (known.has(id)) continue;
+          known.add(id);
+          accepted.push({ left, right });
+        }
+      }
+      return {
+        valid: true,
+        payload: { ...optional, pairs, ...(accepted.length > 0 ? { accepted } : {}) },
+      };
     }
     case "order": {
       const seq = Array.isArray(p.correctSequence) ? p.correctSequence.filter((s): s is string => typeof s === "string") : [];

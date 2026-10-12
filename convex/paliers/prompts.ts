@@ -307,11 +307,22 @@ const JSON_SHAPE = `
 
 Schémas de payload :
   qcm        -> { "options": string[], "correctIndex": number, "explanation"?: string }
-  match      -> { "pairs": [ { "left": string, "right": string } ] }
+  match      -> { "pairs": [ { "left": string, "right": string } ], "accepted"?: [ { "left": string, "right": string } ] }
   order      -> { "correctSequence": string[] }
   drag-drop  -> { "zones": string[], "items": [ { "text": string, "correctZone": string } ] }
   short-answer -> { "acceptedAnswers": string[], "tolerance"?: string }
   fill-blank -> { "text": "phrase où chaque trou s'écrit ___", "blanks": [ { "options": string[], "answer": string } ] }
+
+Règles du match (l'enfant relie chaque mot de gauche à un mot de droite) :
+  - Un mot de gauche a UNE bonne réponse que l'enfant peut trouver sans hésiter.
+    Évite les couples où deux propositions vont à deux éléments (une pomme est
+    rouge, verte ou jaune ; une mangue verte ou jaune) : préfère des couples
+    sans équivoque (rouge-tomate, vert-citron, jaune-banane).
+  - Si une ambiguïté reste, écris l'association principale dans "pairs" et
+    CHAQUE autre paire tout aussi juste dans "accepted" (même "left" et "right"
+    que dans "pairs", jamais de mot nouveau). L'enfant qui choisit l'autre
+    association doit être compté juste.
+  - Autant de mots à gauche qu'à droite, chacun relié une seule fois.
 
 Règles du drag-drop (l'enfant doit comprendre où poser chaque étiquette) :
   - Chaque zone porte sa VRAIE étiquette, lisible par l'enfant : le résultat

@@ -78,3 +78,41 @@ describe("MatchExercise — deux tuiles au même texte", () => {
     expect(isLinked(second)).toBe(true);
   });
 });
+
+describe("MatchExercise — dans les deux sens", () => {
+  it("dit par où commencer sous la consigne", () => {
+    renderExercise();
+    expect(screen.getByText(/Tu peux commencer par la gauche ou par la droite/)).toBeTruthy();
+  });
+
+  it("relie en touchant d'abord la tuile de droite", () => {
+    const onSubmit = renderExercise();
+    fireEvent.click(tile("i"));
+    fireEvent.click(tile("bissap"));
+    fireEvent.click(tile("é"));
+    fireEvent.click(tile("lait"));
+    fireEvent.click(aTiles()[1]);
+    fireEvent.click(tile("yassa"));
+    fireEvent.click(aTiles()[0]);
+    fireEvent.click(tile("mangue"));
+
+    fireEvent.click(tile("Valider"));
+    expect(JSON.parse(onSubmit.mock.calls[0][0])).toEqual([
+      { left: "bissap", right: "i" },
+      { left: "lait", right: "é" },
+      { left: "yassa", right: "a" },
+      { left: "mangue", right: "a" },
+    ]);
+  });
+
+  it("toucher une tuile reliée, de n'importe quelle colonne, défait son lien", () => {
+    renderExercise();
+    fireEvent.click(tile("mangue"));
+    fireEvent.click(aTiles()[0]);
+    expect(isLinked(aTiles()[0])).toBe(true);
+
+    fireEvent.click(aTiles()[0]);
+    expect(isLinked(aTiles()[0])).toBe(false);
+    expect(isLinked(tile("mangue"))).toBe(false);
+  });
+});

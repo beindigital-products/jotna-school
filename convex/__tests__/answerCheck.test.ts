@@ -79,6 +79,65 @@ describe("verifyMatch — paires comparées en multi-ensemble", () => {
   });
 });
 
+describe("verifyMatch — une proposition qui va à deux éléments", () => {
+  // La capture du 12 octobre 2026 : une pomme est rouge ou verte, une mangue
+  // verte ou jaune. Le modèle n'avait écrit qu'une association.
+  const couleurs = {
+    pairs: [
+      { left: "Rouge", right: "Tomate" },
+      { left: "Vert", right: "Pomme" },
+      { left: "Jaune", right: "Mangue" },
+    ],
+    accepted: [
+      { left: "Rouge", right: "Pomme" },
+      { left: "Vert", right: "Mangue" },
+    ],
+  };
+  const answer = (pairs: [string, string][]) =>
+    JSON.stringify(pairs.map(([left, right]) => ({ left, right })));
+
+  it("accepte l'association écrite", () => {
+    expect(
+      verifyMatch(answer([["Rouge", "Tomate"], ["Vert", "Pomme"], ["Jaune", "Mangue"]]), couleurs),
+    ).toBe(true);
+  });
+
+  it("accepte l'autre association, tout aussi juste", () => {
+    expect(
+      verifyMatch(answer([["Rouge", "Pomme"], ["Vert", "Mangue"], ["Jaune", "Tomate"]]), {
+        ...couleurs,
+        accepted: [...couleurs.accepted, { left: "Jaune", right: "Tomate" }],
+      }),
+    ).toBe(true);
+    expect(
+      verifyMatch(answer([["Rouge", "Tomate"], ["Vert", "Mangue"], ["Jaune", "Pomme"]]), {
+        ...couleurs,
+        accepted: [...couleurs.accepted, { left: "Jaune", right: "Pomme" }],
+      }),
+    ).toBe(true);
+  });
+
+  it("refuse une paire que ni pairs ni accepted ne connaissent", () => {
+    expect(
+      verifyMatch(answer([["Rouge", "Mangue"], ["Vert", "Pomme"], ["Jaune", "Tomate"]]), couleurs),
+    ).toBe(false);
+  });
+
+  it("refuse une tuile reliée deux fois, même avec des paires valables", () => {
+    // Pomme deux fois, Tomate jamais : chaque paire est valable, pas l'ensemble.
+    expect(
+      verifyMatch(answer([["Rouge", "Pomme"], ["Vert", "Pomme"], ["Jaune", "Mangue"]]), couleurs),
+    ).toBe(false);
+  });
+
+  it("garde la règle d'avant sans accepted", () => {
+    const sans = { pairs: couleurs.pairs };
+    expect(
+      verifyMatch(answer([["Rouge", "Pomme"], ["Vert", "Mangue"], ["Jaune", "Tomate"]]), sans),
+    ).toBe(false);
+  });
+});
+
 describe("verifyDragDrop — les deux formes de réponse", () => {
   const banane = {
     items: [
