@@ -27,6 +27,7 @@
  * `convex/__tests__/visualRepair.test.ts`.
  */
 import { exerciseImageIdOf } from "../../lib/exercise-images";
+import { BODY_AND_SELF, WRITTEN_DATA } from "./missingVisual";
 
 
 export type VisualRepairInput = {
@@ -89,6 +90,17 @@ const TILE_TYPES = new Set(["match", "drag-drop", "order"]);
 const SEEN_COUNT = /\bvoit[- ]on\b/iu;
 
 /**
+ * « Combien de cauris as-tu ? » invite à compter ce que l'écran ne montre pas.
+ * Deux exceptions, les mêmes que le contrôleur (`findMissingVisual`) : les
+ * données écrites dans l'énoncé (« Tu as trois pommes… ») se calculent sans
+ * image, et le corps de l'enfant (« Combien de doigts as-tu ? ») se répond de
+ * mémoire.
+ */
+const OWNED_COUNT = /\bas-tu\b/iu;
+const isOwnedCount = (prompt: string): boolean =>
+  OWNED_COUNT.test(prompt) && !WRITTEN_DATA.test(prompt) && !BODY_AND_SELF.test(prompt);
+
+/**
  * L'enfant invente ou décrit lui-même (« Décris un fruit que tu aimes. Que
  * vois-tu ? ») : il n'y a rien à voir, et « que voit-on d'en haut dans une
  * classe ? » se répond de tête.
@@ -143,6 +155,8 @@ const OBJECT_EMOJI: Record<string, string> = {
   livre: "📘",
   cahier: "📒",
   crayon: "✏️",
+  cauri: "🐚",
+  bille: "🔴",
 };
 
 function plain(word: string): string {
@@ -269,7 +283,7 @@ export function repairVisualPrompt(input: VisualRepairInput): VisualRepairOutcom
   const refersToPicture =
     PICTURE_REFERENCE.test(prompt) ||
     (BELOW_REFERENCE.test(prompt) && !TILE_TYPES.has(input.type)) ||
-    (counting !== null && SEEN_COUNT.test(prompt));
+    (counting !== null && (SEEN_COUNT.test(prompt) || isOwnedCount(prompt)));
   const dependsOnPicture = refersToPicture && !IMAGINED.test(prompt) && !/\d/.test(prompt);
 
   if (!hasPictograph(prompt)) {

@@ -592,6 +592,14 @@ function auditText(
 const CATCH_ALL =
   /^(?:toutes?\s+(?:les\s+|ces\s+)?(?:r[ée]ponses?|propositions?|options?|choix)(?:\s+ci-dessus)?|toutes?\s+ces\s+(?:r[ée]ponses?|propositions?)|aucune?\s+(?:de\s+)?(?:ces|les|ses)\s+(?:r[ée]ponses?|propositions?|options?|choix)|aucune?\s+r[ée]ponse|aucune?\s+des\s+(?:r[ée]ponses?|propositions?|options?)|les\s+(?:deux|trois)(?:\s+(?:r[ée]ponses?|propositions?))?(?:\s+ci-dessus)?|tous?\s+(?:les\s+)?(?:deux|trois)|a\s+et\s+b|b\s+et\s+c|a\s+et\s+c|all of the above|none of the above|both)$/iu;
 
+/**
+ * L'énoncé interroge l'écriture d'un nombre, pas sa valeur : « Quel nombre est
+ * écrit en chiffres ? » oppose légitimement « 450 » et « quatre cent cinquante »,
+ * « Quel nombre est juste en écriture ? » « cent » et « cents ».
+ */
+const ASKS_ABOUT_WRITING =
+  /(?<!\p{L})(?:en\s+(?:chiffres?|lettres?)|[ée]crit(?:e|es|s)?|[ée]criture|orthograph\p{L}*|s['’][ée]crit|[ée]cris|[ée]crivez|[ée]crire)(?!\p{L})/iu;
+
 function auditQcm(
   found: Findings,
   input: AuditInput,
@@ -653,7 +661,8 @@ function auditQcm(
 
   // Deux écritures du même nombre : « 5 » et « cinq », « 0,5 » et « 0.50 ».
   const forms = options.map((option) => numberForm(option));
-  for (let i = 0; i < count; i++) {
+  const writingQuestion = ASKS_ABOUT_WRITING.test(input.prompt);
+  for (let i = 0; i < count && !writingQuestion; i++) {
     for (let j = i + 1; j < count; j++) {
       const a = forms[i];
       const b = forms[j];
@@ -827,7 +836,9 @@ function auditDragDrop(found: Findings, payload: Record<string, unknown>): void 
       zone: typeof item.correctZone === "string" ? item.correctZone : "",
     }));
 
-  const distinct = new Set(zones.filter((zone) => zone !== "").map(fold));
+  // Les accents comptent : « a » et « à » sont deux zones pour l'écran et pour
+  // `verifyDragDrop` (une leçon d'homophones les oppose).
+  const distinct = new Set(zones.filter((zone) => zone !== "").map((zone) => zone.toLocaleLowerCase("fr")));
   if (distinct.size < 2) found.add("dragdrop_zones_few", "il faut au moins 2 zones différentes");
   if (zones.length > distinct.size && distinct.size >= 2) {
     found.add("dragdrop_zone_duplicated", "deux zones portent le même nom");

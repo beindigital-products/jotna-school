@@ -40,7 +40,7 @@ const IMAGE_PICTOGRAPH = "🖼️";
  * Ce que l'enfant peut lire dans l'énoncé comme donnée : un chiffre, un nombre
  * écrit en lettres (« un » et « une » sont des articles), une citation.
  */
-const WRITTEN_DATA =
+export const WRITTEN_DATA =
   /\d|[«»“”"]|(?<!\p{L})(?:deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|vingt|trente|cent|mille)(?!\p{L})/iu;
 
 /**
@@ -89,7 +89,7 @@ const COUNTS_WHAT_IS_NOT_THERE: RegExp[] = [
   /\bcombien\s+(?:de|d')\s*[^?.!]*\b(?:as-tu|ai-je|vois-tu|vois-je|comptes-tu|peux-tu compter)\b/iu,
   /\bcombien\s+(?:de|d')\s*[^?.!]*\by a-t-il\s+(?:ici|là|dedans|dessous|dessus|sur l'image|sur le dessin)(?!\p{L})/iu,
 ];
-const BODY_AND_SELF =
+export const BODY_AND_SELF =
   /(?<!\p{L})(?:doigts?|mains?|pieds?|orteils?|yeux|œil|oeil|oreilles?|dents?|bras|jambes?|sens|frères|sœurs|soeurs)(?!\p{L})/iu;
 
 function pointsAtAbsent(text: string): boolean {

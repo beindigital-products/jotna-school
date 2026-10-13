@@ -970,3 +970,174 @@ export const auditExercisesForPaliers = internalMutation({
     return batch;
   },
 });
+
+// ---------------------------------------------------------------------------
+// CORRIGER DES EXERCICES PRÉCIS DÉJÀ EN BASE.
+//
+// Ce que `repairMath`, `repairDragDrop` et `repairVisual` ne savent pas réparer
+// (une option écrite deux fois, une clé qui désigne la mauvaise option, des
+// zones « Zone A ») se réécrit exercice par exercice. Chaque correction passe
+// par le contrôleur (`auditExercise`) AVANT d'être écrite : une correction qui
+// garde un défaut bloquant est refusée. Un exercice corrigé perd
+// `needsManualReview`. Un palier sans exercice bloquant, encore valide
+// (`expiresAt` dans le futur) et rendu `stale` repasse en `cached` : il est
+// servi tel quel, sans régénération ni appel au modèle. Un palier expiré se
+// régénère de toute façon à l'ouverture : son statut reste tel quel. Le
+// `qaStatus` d'un palier corrigé suit les exercices encore signalés, comme
+// `repairMath`. `dryRun` ne touche à rien.
+//
+//     npx convex run paliers/pregen:applyExerciseFixes "$(cat fixes.json)"
+//
+// avec `{"confirmDeployment":"<nom>","dryRun":true,"fixes":[{"exerciseId":"…",
+// "prompt":"…","payload":{…},"answerKey":"…","mathExpression":"…"}]}` : seuls
+// les champs donnés changent.
+// ---------------------------------------------------------------------------
+
+type ExerciseFixResult = {
+  exerciseId: Id<"exercises">;
+  outcome: "fixed" | "refused" | "missing";
+  /** Les défauts bloquants qui restent, quand la correction est refusée. */
+  blockingAfter: string[];
+};
+
+type ExerciseFixSummary = {
+  dryRun: boolean;
+  fixed: number;
+  refused: number;
+  missing: number;
+  paliersTouched: number;
+  paliersRestored: number;
+  paliersExpired: number;
+  paliersStillBroken: number;
+  paliersRequalified: number;
+  results: ExerciseFixResult[];
+};
+
+const exerciseFix = v.object({
+  exerciseId: v.id("exercises"),
+  prompt: v.optional(v.string()),
+  payload: v.optional(v.any()),
+  answerKey: v.optional(v.string()),
+  mathExpression: v.optional(v.string()),
+});
+
+export const applyExerciseFixesToDb = internalMutation({
+  args: { dryRun: v.boolean(), fixes: v.array(exerciseFix) },
+  handler: async (ctx, args): Promise<ExerciseFixSummary> => {
+    const summary: ExerciseFixSummary = {
+      dryRun: args.dryRun,
+      fixed: 0,
+      refused: 0,
+      missing: 0,
+      paliersTouched: 0,
+      paliersRestored: 0,
+      paliersExpired: 0,
+      paliersStillBroken: 0,
+      paliersRequalified: 0,
+      results: [],
+    };
+    const corrected = new Map<
+      Id<"exercises">,
+      { prompt: string; payload: unknown; answerKey: string }
+    >();
+    const touched = new Set<Id<"paliers">>();
+    for (const fix of args.fixes) {
+      const ex = await ctx.db.get(fix.exerciseId);
+      const palier = ex?.palierId ? await ctx.db.get(ex.palierId) : null;
+      if (!ex || !palier) {
+        summary.missing += 1;
+        summary.results.push({ exerciseId: fix.exerciseId, outcome: "missing", blockingAfter: [] });
+        continue;
+      }
+      const subject = await ctx.db.get(palier.subjectId);
+      const next = {
+        prompt: fix.prompt ?? ex.prompt,
+        payload: fix.payload ?? ex.payload,
+        answerKey: fix.answerKey ?? ex.answerKey,
+      };
+      const blockingAfter = auditExercise({
+        type: ex.type,
+        ...next,
+        hints: ex.hints,
+        class: palier.class,
+        subject: subject?.name ?? null,
+      })
+        .filter(isBlocking)
+        .map((defect) => defect.code);
+      if (blockingAfter.length > 0) {
+        summary.refused += 1;
+        summary.results.push({ exerciseId: ex._id, outcome: "refused", blockingAfter });
+        continue;
+      }
+      corrected.set(ex._id, next);
+      touched.add(palier._id);
+      summary.fixed += 1;
+      summary.results.push({ exerciseId: ex._id, outcome: "fixed", blockingAfter: [] });
+      if (!args.dryRun) {
+        await ctx.db.patch(ex._id, {
+          ...next,
+          ...(fix.mathExpression !== undefined ? { mathExpression: fix.mathExpression } : {}),
+          needsManualReview: false,
+        });
+      }
+    }
+
+    const now = Date.now();
+    for (const palierId of touched) {
+      const palier = await ctx.db.get(palierId);
+      if (!palier) continue;
+      summary.paliersTouched += 1;
+      const subject = await ctx.db.get(palier.subjectId);
+      const exercises = await ctx.db
+        .query("exercises")
+        .withIndex("by_palierId", (q) => q.eq("palierId", palierId))
+        .take(200);
+      let broken = 0;
+      let flagged = 0;
+      for (const ex of exercises) {
+        const override = corrected.get(ex._id);
+        const defects = auditExercise({
+          type: ex.type,
+          prompt: override?.prompt ?? ex.prompt,
+          payload: override?.payload ?? ex.payload,
+          answerKey: override?.answerKey ?? ex.answerKey,
+          hints: ex.hints,
+          class: palier.class,
+          subject: subject?.name ?? null,
+        });
+        if (defects.some(isBlocking)) broken += 1;
+        if (override ? false : ex.needsManualReview === true) flagged += 1;
+      }
+      if (broken > 0) {
+        summary.paliersStillBroken += 1;
+        continue;
+      }
+      if (palier.expiresAt <= now) {
+        summary.paliersExpired += 1;
+      } else if (palier.status === "stale") {
+        summary.paliersRestored += 1;
+        if (!args.dryRun) await ctx.db.patch(palierId, { status: "cached" });
+      }
+      // Un humain qui a tranché garde le dernier mot.
+      if (palier.qaStatus === "pending_human" || palier.qaStatus === "auto_ok") {
+        const next = flagged > 0 ? "pending_human" : "auto_ok";
+        if (next !== palier.qaStatus) {
+          summary.paliersRequalified += 1;
+          if (!args.dryRun) await ctx.db.patch(palierId, { qaStatus: next });
+        }
+      }
+    }
+    return summary;
+  },
+});
+
+export const applyExerciseFixes = internalAction({
+  args: { confirmDeployment: v.string(), dryRun: v.optional(v.boolean()), fixes: v.array(exerciseFix) },
+  handler: async (ctx, args): Promise<ExerciseFixSummary> => {
+    assertTargetedDeployment(args.confirmDeployment);
+    return await ctx.runMutation(internal.paliers.pregen.applyExerciseFixesToDb, {
+      dryRun: args.dryRun === true,
+      fixes: args.fixes,
+    });
+  },
+});

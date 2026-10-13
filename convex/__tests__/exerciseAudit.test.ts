@@ -685,6 +685,43 @@ describe("auditExercise : ce qui ne doit pas être pris pour un défaut", () => 
     expect(codesOf(words)).toContain("qcm_equivalent_options_with_correct");
   });
 
+  it("laisse opposer deux écritures du même nombre quand l'énoncé interroge l'écriture", () => {
+    const digits = qcm(
+      { class: "CM1", subject: "Mathématiques", prompt: "Quel nombre est écrit en chiffres ?", answerKey: "450" },
+      { options: ["quatre cent cinquante", "450", "quatre mille cinq cent"], correctIndex: 1 },
+    );
+    expect(codesOf(digits)).not.toContain("qcm_equivalent_options_with_correct");
+    const spelling = qcm(
+      { class: "CE2", subject: "Mathématiques", prompt: "Quel nombre est juste en écriture ?", answerKey: "huit mille cinq cents" },
+      { options: ["huit mille cinq cent", "huit mille cinq cents", "huit mille cinq cent trente"], correctIndex: 1 },
+    );
+    expect(codesOf(spelling)).not.toContain("qcm_equivalent_options_with_correct");
+  });
+
+  it("compte « a » et « à » comme deux zones (leçon d'homophones)", () => {
+    const input = dragDrop(
+      {
+        zones: ["a", "à"],
+        items: [
+          { text: "Il ___ un bon repas.", correctZone: "a" },
+          { text: "Nous allons ___ la plage.", correctZone: "à" },
+        ],
+      },
+      { class: "CM1", subject: "Français", prompt: "Remplace les mots par le bon homophone." },
+    );
+    expect(codesOf(input)).not.toContain("dragdrop_zones_few");
+    const twin = dragDrop({ zones: ["Fruits", "fruits"], items: FOOD.items.slice(0, 2).map((i) => ({ ...i, correctZone: "Fruits" })) });
+    expect(codesOf(twin)).toContain("dragdrop_zones_few");
+  });
+
+  it("garde « 1 » et « 1,0 » face à face quand l'énoncé interroge une valeur", () => {
+    const input = qcm(
+      { class: "Tle", subject: "Mathématiques", prompt: "Quelle est la probabilité de l'union de A et B ?", answerKey: "1,0" },
+      { options: ["0,2", "0,4", "1", "1,0"], correctIndex: 3 },
+    );
+    expect(codesOf(input)).toContain("qcm_equivalent_options_with_correct");
+  });
+
   it("garde un association qui répète un son (« mangue » et « yassa » vont à « a »)", () => {
     const input = match([
       ["mangue", "a"],
