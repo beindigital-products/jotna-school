@@ -767,7 +767,7 @@ export const repairVisualForPaliers = internalMutation({
 // défaut, les paliers touchés et `limitSamples` exemples (30 par défaut, 2 000
 // au plus) : les exercices à défaut `blocking` d'abord, avec leur identifiant,
 // leur énoncé et leurs codes. À lancer APRÈS `repairMath`, `repairDragDrop` et
-// `repairVisuals`, qui réparent sur place ce que l'audit ne ferait qu'écarter.
+// `repairVisual`, qui réparent sur place ce que l'audit ne ferait qu'écarter.
 // ---------------------------------------------------------------------------
 
 const AUDIT_BATCH = 25;
