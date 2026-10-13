@@ -184,3 +184,56 @@ describe("repairVisualPrompt — appariement mot ↔ image", () => {
     ).toEqual({ kind: "ok" });
   });
 });
+
+describe("repairVisualPrompt — faux positifs vus sur la prod", () => {
+  const dd = (prompt: string) => ({
+    type: "drag-drop",
+    prompt,
+    payload: { zones: ["Périmètre", "Aire"], items: [{ text: "20 cm", correctZone: "Périmètre" }, { text: "24 cm²", correctZone: "Aire" }] },
+    answerKey: "x",
+  });
+
+  it("« ci-dessous » dans un glisser-déposer désigne les étiquettes à l'écran", () => {
+    expect(repairVisualPrompt(dd("Assigne les valeurs ci-dessous aux bonnes zones : Périmètre et Aire."))).toEqual({ kind: "ok" });
+  });
+
+  it("« ci-dessous » dans un QCM reste un renvoi à ce qui manque", () => {
+    expect(repairVisualPrompt(qcm("Lis la phrase ci-dessous : quel est le sujet ?", ["Awa", "Moussa"], 0))).toEqual({
+      kind: "unrepairable",
+      reason: "nothing_to_see",
+    });
+  });
+
+  it("« que voit-on d'en haut » se répond de tête", () => {
+    for (const prompt of ["Que voit-on d'en haut dans une classe ?", "Que voit-on quand on regarde une table vue de dessus ?"]) {
+      expect(repairVisualPrompt(qcm(prompt, ["des tables", "un toit"], 0)), prompt).toEqual({ kind: "ok" });
+    }
+  });
+
+  it("« Décris… Que vois-tu ? » invite l'enfant à décrire, rien à voir", () => {
+    expect(
+      repairVisualPrompt({
+        type: "short-answer",
+        prompt: "Décris un fruit que tu aimes. Que vois-tu ?",
+        payload: { acceptedAnswers: ["mangue"] },
+        answerKey: "mangue",
+      }),
+    ).toEqual({ kind: "ok" });
+  });
+
+  it("garde ce qui est vraiment cassé", () => {
+    for (const prompt of ["Que vois-tu sur la carte ?", "Quel objet est vu de dessus sur le dessin ?", "Quel mot va avec l'image ?"]) {
+      expect(repairVisualPrompt(qcm(prompt, ["a", "b"], 0)), prompt).toEqual({
+        kind: "unrepairable",
+        reason: "nothing_to_see",
+      });
+    }
+  });
+
+  it("« Combien de mangues voit-on ? » sans rangée reçoit ses mangues", () => {
+    expect(repairVisualPrompt(qcm("Combien de mangues voit-on ?", ["4", "6"], 0))).toMatchObject({
+      kind: "repaired",
+      prompt: "🥭🥭🥭🥭\nCombien de mangues voit-on ?",
+    });
+  });
+});

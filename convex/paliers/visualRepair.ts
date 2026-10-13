@@ -65,9 +65,6 @@ const PICTURE_REFERENCE = new RegExp(
   [
     "\\bvois[- ]?tu\\b",
     "\\bvoyez[- ]?vous\\b",
-    "\\bvoit[- ]on\\b",
-    "\\bci[- ]dessus\\b",
-    "\\bci[- ]dessous\\b",
     // « cette image », « l'image » : l'énoncé en désigne une précise. Pas
     // « la figure » ni « le schéma » : « figure de style », « figure qui a
     // ses côtés parallèles » se répondent avec le texte seul ; pas « le
@@ -78,6 +75,25 @@ const PICTURE_REFERENCE = new RegExp(
   ].join("|"),
   "iu",
 );
+
+/**
+ * « ci-dessus », « ci-dessous » : dans un appariement, un glisser-déposer ou un
+ * ordre, ce qui est « ci-dessous » est l'ensemble des étiquettes à l'écran
+ * (« Assigne les valeurs ci-dessous aux bonnes zones »). Ailleurs, c'est une
+ * image ou un texte qui devrait suivre l'énoncé.
+ */
+const BELOW_REFERENCE = /\bci[- ]dess(?:us|ous)\b/iu;
+const TILE_TYPES = new Set(["match", "drag-drop", "order"]);
+
+/** « Combien de mangues voit-on ? » ne se compte que sur une rangée. */
+const SEEN_COUNT = /\bvoit[- ]on\b/iu;
+
+/**
+ * L'enfant invente ou décrit lui-même (« Décris un fruit que tu aimes. Que
+ * vois-tu ? ») : il n'y a rien à voir, et « que voit-on d'en haut dans une
+ * classe ? » se répond de tête.
+ */
+const IMAGINED = /\b(?:d[ée]cris|imagine|raconte|pense [àa]|dessine)\b/iu;
 
 /** Une question de dénombrement sur ce que l'on voit (et non un calcul en mots). */
 const COUNTING_QUESTION = /\bcombien (?:de |d['’]|des )\s*(\p{L}+)/iu;
@@ -250,7 +266,11 @@ export function repairVisualPrompt(input: VisualRepairInput): VisualRepairOutcom
   // « Combien de mangues Aïssatou a-t-elle ? » (3 + 2) se résout avec les
   // nombres écrits : seule une question qui ne contient aucun chiffre ET
   // qui demande ce qu'on voit dépend d'une image.
-  const dependsOnPicture = PICTURE_REFERENCE.test(prompt) && !/\d/.test(prompt);
+  const refersToPicture =
+    PICTURE_REFERENCE.test(prompt) ||
+    (BELOW_REFERENCE.test(prompt) && !TILE_TYPES.has(input.type)) ||
+    (counting !== null && SEEN_COUNT.test(prompt));
+  const dependsOnPicture = refersToPicture && !IMAGINED.test(prompt) && !/\d/.test(prompt);
 
   if (!hasPictograph(prompt)) {
     if (!dependsOnPicture) return { kind: "ok" };
