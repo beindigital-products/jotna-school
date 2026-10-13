@@ -69,6 +69,8 @@ export const BANK: SubjectBank = {
       topic: "Les plantes autour de moi",
       stage: 2,
       prompt: "Complète la phrase avec le bon mot.",
+      // L'enfant de CI ne lit pas la phrase : l'image lui montre de quoi elle parle.
+      image: "mangue",
       text: "La mangue est ___ du manguier.",
       blanks: [{ options: ["le fruit", "la racine", "la feuille"], answer: "le fruit" }],
       hints: [

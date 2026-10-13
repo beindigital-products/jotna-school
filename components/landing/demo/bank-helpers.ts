@@ -25,7 +25,17 @@ type Base = {
   hints: string[];
   /** Mathématiques : l'expression dont la valeur est la bonne réponse. */
   expression?: string;
+  /**
+   * L'image de l'énoncé : un identifiant du catalogue (`lib/exercise-images.ts`),
+   * affichée au-dessus de la consigne. Au CI et au CP, elle montre à l'enfant qui
+   * ne lit pas encore de quoi parle la question ; elle ne donne jamais la réponse.
+   * Jamais pour compter : le comptage reste en émojis.
+   */
+  image?: string;
 };
+
+/** Le champ `image` du payload, quand l'exercice en porte une. */
+const imageField = (input: { image?: string }) => (input.image ? { image: input.image } : {});
 
 function base(input: Base) {
   const { topic, stage, prompt, hints, expression } = input;
@@ -40,6 +50,7 @@ export function qcm(
     ...base(input),
     type: "qcm",
     payload: {
+      ...imageField(input),
       options: input.options,
       correctIndex: input.options.indexOf(input.answer),
       ...(input.explanation ? { explanation: input.explanation } : {}),
@@ -53,6 +64,7 @@ export function dragDrop(input: Base & { zones: string[]; items: Record<string, 
     ...base(input),
     type: "drag-drop",
     payload: {
+      ...imageField(input),
       zones: input.zones,
       items: Object.entries(input.items).flatMap(([zone, texts]) =>
         texts.map((text) => ({ text, correctZone: zone })),
@@ -66,23 +78,23 @@ export function match(input: Base & { pairs: [string, string][] }): ClassicItem 
   return {
     ...base(input),
     type: "match",
-    payload: { pairs: input.pairs.map(([left, right]) => ({ left, right })) },
+    payload: { ...imageField(input), pairs: input.pairs.map(([left, right]) => ({ left, right })) },
   };
 }
 
 /** Une mise en ordre : la suite BONNE ; l'écran la mélange. */
 export function order(input: Base & { sequence: string[] }): ClassicItem {
-  return { ...base(input), type: "order", payload: { correctSequence: input.sequence } };
+  return { ...base(input), type: "order", payload: { ...imageField(input), correctSequence: input.sequence } };
 }
 
 /** Une réponse courte : les écritures acceptées, la première est celle qu'on montre. */
 export function shortAnswer(input: Base & { accepted: string[] }): ClassicItem {
-  return { ...base(input), type: "short-answer", payload: { acceptedAnswers: input.accepted } };
+  return { ...base(input), type: "short-answer", payload: { ...imageField(input), acceptedAnswers: input.accepted } };
 }
 
 /** Une phrase à trous : chaque trou s'écrit `___` dans `text`, avec ses mots proposés et le bon. */
 export function fillBlank(
   input: Base & { text: string; blanks: { options: string[]; answer: string }[] },
 ): ClassicItem {
-  return { ...base(input), type: "fill-blank", payload: { text: input.text, blanks: input.blanks } };
+  return { ...base(input), type: "fill-blank", payload: { ...imageField(input), text: input.text, blanks: input.blanks } };
 }

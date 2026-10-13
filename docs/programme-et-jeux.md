@@ -264,6 +264,14 @@ arrivent plus tard.
     cran.
   - **Écrire ou modifier un exercice de la banque** (les règles que le test
     ne peut pas juger) :
+    - **Une image d'énoncé** s'écrit `image: "<identifiant>"` (un identifiant de
+      `lib/exercise-images.ts`) : tous les constructeurs l'acceptent, et l'écran
+      l'affiche au-dessus de la consigne. Au CI et au CP, elle montre à l'enfant
+      qui ne lit pas encore de quoi parle la question ; elle ne donne jamais la
+      réponse, et ne sert jamais à compter. Un test vérifie qu'elle est du
+      catalogue. Le CI en éveil scientifique en porte une (« La mangue est ___ du
+      manguier », `e2e/demo-image.spec.ts`). Un exercice par type et par classe :
+      on illustre un exercice existant, on n'en ajoute pas.
     - Les textes s'écrivent avec des espaces ordinaires ; `demo/playable.ts`
       les rend insécables à l'arrivée (tranches d'un nombre, nombre et unité,
       guillemets français, `?` `!` `:` `;`).
