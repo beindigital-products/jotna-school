@@ -461,11 +461,26 @@ fermé (`lib/exercise-images.ts`), par identifiant, dans `payload.image`.
 Les paliers déjà en base ne changent pas : pour qu'un palier utilise les
 nouvelles images, il faut le régénérer (`pregen:invalidate` puis `pregen:run`).
 
-**État** : le catalogue est vide, le code est en place. La première fabrication,
-le 13 octobre 2026, a échoué côté studio (« Vercel Blob: Cannot use public
-access on a private store ») : le stockage du studio est en accès privé alors
-que l'outil écrit en accès public. Tant que ce réglage n'est pas corrigé, aucune
-image n'est servie.
+**État** : 20 images, fabriquées le 13 octobre 2026 avec le serveur « studio »
+(`recraft/recraft-v4.1`, 0,035 $ pièce, 0,81 $ en tout avec trois images refaites) :
+des animaux (chat, chien, poisson, poule, vache, mouton, éléphant, lion), des
+fruits (mangue, banane, orange, pastèque) et des objets ou lieux du quotidien
+(ballon, livre, crayon, maison, baobab, soleil, pirogue, voiture). Le chien,
+l'éléphant et la mangue ont été refaits : un chien pris pour un ourson, un
+éléphant pris pour un tapir, une mangue prise pour un piment. La pirogue se lit
+comme un bateau : ne pas lui demander de se distinguer d'une barque.
+
+Le script `scripts/add-exercise-image.mjs` met aussi à blanc pur les formes
+fantômes quasi blanches que laissent les générateurs dans le fond (de 246 à 254
+sur 255). Elles sont invisibles sur une page blanche et visibles sur une carte
+colorée. `e2e/exercise-images.spec.ts` vérifie que le site sert chaque image.
+
+**Ce qui reste à faire** : régénérer les paliers pour que le modèle utilise ces
+images (`pregen:invalidate` puis `pregen:run`), et regarder un échantillon : le
+modèle peut ne pas choisir d'image, ou en choisir une qui ne va pas avec la
+question. Rien ne vérifie que l'image choisie correspond à l'énoncé et à la bonne
+réponse : un QCM « Quel animal vois-tu ? » avec l'image du chat et la bonne
+réponse « Chien » est bien formé pour le contrôleur. C'est à relire.
 
 ## Essais et indices
 

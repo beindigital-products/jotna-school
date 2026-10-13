@@ -24,6 +24,14 @@ const require = createRequire(join(root, "package.json"));
 const sharp = require(require.resolve("sharp", { paths: [require.resolve("next/package.json")] }));
 
 const SIZE = 512;
+/**
+ * Les générateurs d'images laissent des formes fantômes quasi blanches dans le
+ * fond (de 246 à 254 sur 255, invisibles seules, visibles sur une carte
+ * colorée) : tout pixel dont les trois canaux valent au moins ce seuil devient
+ * blanc pur. Les blancs réels d'un dessin (la laine d'un mouton, vers 235)
+ * restent intacts.
+ */
+const NEAR_WHITE = 246;
 const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const args = process.argv.slice(2);
@@ -39,9 +47,18 @@ if (!source || !id || !ID.test(id)) {
 
 mkdirSync(outDir, { recursive: true });
 const target = join(outDir, `${id}.webp`);
-await sharp(resolve(source))
+const { data, info } = await sharp(resolve(source))
   .flatten({ background: "#ffffff" })
   .resize(SIZE, SIZE, { fit: "contain", background: "#ffffff" })
+  .removeAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true });
+for (let i = 0; i < data.length; i += info.channels) {
+  if (data[i] >= NEAR_WHITE && data[i + 1] >= NEAR_WHITE && data[i + 2] >= NEAR_WHITE) {
+    data[i] = data[i + 1] = data[i + 2] = 255;
+  }
+}
+await sharp(data, { raw: { width: info.width, height: info.height, channels: info.channels } })
   .webp({ quality: 85 })
   .toFile(target);
 

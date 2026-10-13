@@ -37,7 +37,36 @@ export type ExerciseImage = {
 };
 
 /** Les images fabriquées. Une entrée = un fichier `public/exercices/<id>.webp`. */
-export const EXERCISE_IMAGES: readonly ExerciseImage[] = [];
+/**
+ * Fabriquées le 13 octobre 2026 avec le studio (`recraft/recraft-v4.1`), style
+ * « illustration plate pour enfants » : un sujet, fond blanc, sans texte. Chaque
+ * image a été regardée ; le chien, l'éléphant et la mangue ont été refaits (un
+ * chien pris pour un ourson, un éléphant pris pour un tapir, une mangue prise pour
+ * un piment). La pirogue se lit comme un bateau : ne pas lui demander de se
+ * distinguer d'une barque.
+ */
+export const EXERCISE_IMAGES: readonly ExerciseImage[] = [
+  { id: "ballon", alt: "Un ballon de football", about: "un ballon de football noir et blanc" },
+  { id: "banane", alt: "Une banane", about: "une banane jaune" },
+  { id: "baobab", alt: "Un baobab", about: "un baobab, arbre à gros tronc et à cime plate" },
+  { id: "chat", alt: "Un chat assis", about: "un chat orange assis" },
+  { id: "chien", alt: "Un chien assis", about: "un chien brun et blanc aux oreilles tombantes, assis" },
+  { id: "crayon", alt: "Un crayon", about: "un crayon jaune avec une gomme rose" },
+  { id: "elephant", alt: "Un éléphant", about: "un éléphant gris, grandes oreilles et longue trompe" },
+  { id: "lion", alt: "Un lion", about: "un lion à la grande crinière, assis" },
+  { id: "livre", alt: "Un livre fermé", about: "un livre fermé à couverture rouge, sans titre" },
+  { id: "maison", alt: "Une petite maison", about: "une petite maison au toit rouge" },
+  { id: "mangue", alt: "Une mangue", about: "une mangue jaune-orangé avec sa feuille" },
+  { id: "mouton", alt: "Un mouton", about: "un mouton à la laine épaisse" },
+  { id: "orange", alt: "Une orange", about: "une orange avec sa feuille" },
+  { id: "pasteque", alt: "Une tranche de pastèque", about: "une tranche de pastèque rouge à pépins noirs" },
+  { id: "pirogue", alt: "Une pirogue", about: "une pirogue, bateau de pêcheur coloré, sans eau ni personne" },
+  { id: "poisson", alt: "Un poisson", about: "un poisson orange vu de côté" },
+  { id: "poule", alt: "Une poule", about: "une poule jaune, debout" },
+  { id: "soleil", alt: "Le soleil", about: "le soleil jaune et ses rayons, sans visage" },
+  { id: "vache", alt: "Une vache", about: "une vache rouge à cornes, debout" },
+  { id: "voiture", alt: "Une voiture", about: "une petite voiture orange vue de côté" },
+];
 
 /** Où les fichiers sont servis (dossier `public/exercices/`). */
 export const EXERCISE_IMAGE_DIR = "/exercices";
