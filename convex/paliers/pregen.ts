@@ -1,5 +1,10 @@
 import { v } from "convex/values";
-import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  type ActionCtx,
+} from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import {
@@ -353,20 +358,33 @@ type RepairSummary = RepairBatch & { dryRun: boolean; paliersScanned: number };
 const REPAIR_BATCH = 25;
 const REPAIR_SAMPLES = 20;
 
-export const listPalierIds = internalQuery({
-  args: {},
-  handler: async (ctx): Promise<Id<"paliers">[]> => {
-    const paliers = await ctx.db.query("paliers").take(1000);
-    return paliers.map((p) => p._id);
-  },
-});
+const PALIER_PAGE = 200;
+
+/**
+ * Tous les paliers du déploiement, page après page (`listPalierPage`, plus bas).
+ * `take(1000)` s'arrêtait en silence au millième palier : la prod en compte
+ * 1 028, et les réparations ne voyaient pas les derniers.
+ */
+export async function allPalierIds(ctx: ActionCtx): Promise<Id<"paliers">[]> {
+  const ids: Id<"paliers">[] = [];
+  let cursor: string | null = null;
+  for (;;) {
+    const page: { ids: Id<"paliers">[]; isDone: boolean; cursor: string } = await ctx.runQuery(
+      internal.paliers.pregen.listPalierPage,
+      { cursor, numItems: PALIER_PAGE },
+    );
+    ids.push(...page.ids);
+    if (page.isDone) return ids;
+    cursor = page.cursor;
+  }
+}
 
 export const repairMath = internalAction({
   args: { confirmDeployment: v.string(), dryRun: v.optional(v.boolean()) },
   handler: async (ctx, args): Promise<RepairSummary> => {
     assertTargetedDeployment(args.confirmDeployment);
     const dryRun = args.dryRun === true;
-    const palierIds: Id<"paliers">[] = await ctx.runQuery(internal.paliers.pregen.listPalierIds, {});
+    const palierIds = await allPalierIds(ctx);
     const totals: RepairSummary = {
       dryRun,
       paliersScanned: palierIds.length,
@@ -512,7 +530,7 @@ export const repairDragDrop = internalAction({
   handler: async (ctx, args): Promise<DragDropSummary> => {
     assertTargetedDeployment(args.confirmDeployment);
     const dryRun = args.dryRun === true;
-    const palierIds: Id<"paliers">[] = await ctx.runQuery(internal.paliers.pregen.listPalierIds, {});
+    const palierIds = await allPalierIds(ctx);
     const totals: DragDropSummary = {
       dryRun,
       paliersScanned: palierIds.length,
@@ -651,7 +669,7 @@ export const repairVisual = internalAction({
   handler: async (ctx, args): Promise<VisualSummary> => {
     assertTargetedDeployment(args.confirmDeployment);
     const dryRun = args.dryRun === true;
-    const palierIds: Id<"paliers">[] = await ctx.runQuery(internal.paliers.pregen.listPalierIds, {});
+    const palierIds = await allPalierIds(ctx);
     const totals: VisualSummary = {
       dryRun,
       paliersScanned: palierIds.length,
