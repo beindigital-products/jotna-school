@@ -20,7 +20,7 @@
  *      réponse attendue devient le nombre d'émojis réellement écrits.
  *
  * Module pur, sans Convex : il sert à la génération, à la réparation en base
- * (`paliers/pregen:repairVisuals`) et aux tests
+ * (`paliers/pregen:auditExercises`) et aux tests
  * (`convex/__tests__/missingVisual.test.ts`).
  */
 import { exerciseImageIdOf } from "../../lib/exercise-images";
@@ -32,7 +32,7 @@ const PICTOGRAPH = /\p{Extended_Pictographic}/u;
 /**
  * Une image du catalogue (`lib/exercise-images.ts`) est une scène dessinée au
  * même titre qu'un émoji : `displayedText` en porte la trace par ce pictogramme,
- * et tous les gardes (génération, contrôleur, `pregen:repairVisuals`) la voient.
+ * et tous les gardes (génération, contrôleur, `pregen:auditExercises`) la voient.
  */
 const IMAGE_PICTOGRAPH = "🖼️";
 

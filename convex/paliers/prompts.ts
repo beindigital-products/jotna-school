@@ -104,8 +104,9 @@ const HINTS_RULE = `
  */
 const SELF_CONTAINED_RULE = `
 [L'énoncé se suffit à lui-même — RÈGLE ABSOLUE]
-L'enfant ne voit QUE le texte de l'énoncé et les options. Il n'y a NI image, NI
-dessin, NI photo, NI tableau, NI carte, NI objet réel à l'écran.
+L'enfant ne voit QUE le texte de l'énoncé et les options. Il n'y a NI image (sauf
+celles du catalogue « Images d'énoncé », quand il est donné plus bas), NI dessin,
+NI photo, NI tableau, NI carte, NI objet réel à l'écran.
 - Une question sur quelque chose qu'on ne lui montre pas est un ÉCHEC : « Combien
   de billes as-tu ? », « Combien de mangues y a-t-il ? », « Regarde l'image »,
   « Observe le dessin », « ci-dessous ». L'enfant ne peut ni la comprendre, ni y
@@ -119,6 +120,9 @@ dessin, NI photo, NI tableau, NI carte, NI objet réel à l'écran.
   doit se comprendre sans eux (« Combien de billes vois-tu ? »).
 - L'autre moyen est d'écrire les données : « Awa a 5 billes. Elle en perd 2.
   Combien de billes lui reste-t-il ? ».
+- Dans un « match » mot ↔ image, le côté image EST un émoji (« mangue » ↔ 🥭),
+  jamais « image_mangue » ni « image de mangue » : l'enfant lirait ce texte tel
+  quel. Un émoji par objet, tous différents, et le bon (🥭 pour une mangue, jamais 🍑).
 - Un fait qu'on sait sans rien voir n'a pas besoin de scène : « Combien de jours
   y a-t-il dans une semaine ? ».
 - Avant de répondre, relis chaque énoncé en imaginant l'enfant devant un écran où

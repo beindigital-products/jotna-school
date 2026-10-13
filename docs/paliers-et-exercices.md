@@ -304,20 +304,28 @@ réfèrent (`displayedText`, `findMissingVisualOnScreen`). Des options qui sont
 des chiffres ne sont pas des billes : « Combien de billes as-tu ? » reste
 écarté.
 
-Les paliers déjà en base se passent au même filtre, sans appel au modèle : un
-exercice sans scène est signalé et son palier repasse en `stale`, refait avec la
-nouvelle consigne ; un compte d'émojis faux est corrigé sur place.
+**Deux mécanismes, dans cet ordre.** À la génération, `toPersistedShape` passe
+d'abord par `visualRepair.ts` : un énoncé de comptage sans émojis reçoit autant
+d'émojis que la réponse, une rangée au mauvais compte est refaite, un
+appariement mot ↔ image dont l'« image » est un texte-substitut (« image_mangue »)
+reçoit son émoji. Ce qu'il ne sait pas réparer est écarté. Puis le garde-fou
+ci-dessus écarte ce qui reste (« Combien de billes as-tu ? », « Regarde tes
+billes ») et revérifie le compte. Écarter après avoir essayé de réparer : le
+garde-fou seul aurait perdu des exercices que la réparation sauve.
+
+Les paliers déjà en base se passent à ces deux mécanismes, sans appel au modèle :
+`pregen:repairVisual` répare sur place ce qui se répare (et signale le reste, son
+palier repasse en `stale`), puis `pregen:auditExercises` (voir plus bas) signale
+ce qui reste sans scène (`visual_missing`).
 
 ```bash
-npx convex run paliers/pregen:repairVisuals '{"confirmDeployment":"impartial-ermine-150","dryRun":true}'
-npx convex run paliers/pregen:repairVisuals '{"confirmDeployment":"impartial-ermine-150"}'
+npx convex run paliers/pregen:repairVisual '{"confirmDeployment":"impartial-ermine-150","dryRun":true}'
+npx convex run paliers/pregen:repairVisual '{"confirmDeployment":"impartial-ermine-150"}'
 npx convex run paliers/pregen:run '{"confirmDeployment":"impartial-ermine-150","classes":["CI","CP"],"limit":20}'
 ```
 
-Le résumé compte `missingScene`, `recounted`, `miscounted` et
-`paliersInvalidated`, avec vingt exemples. Un enfant qui a une tentative ouverte
-sur un palier invalidé la reprend sur les nouveaux exercices : à réserver au
-développement ou à une rentrée.
+Un enfant qui a une tentative ouverte sur un palier invalidé la reprend sur les
+nouveaux exercices : à réserver au développement ou à une rentrée.
 
 La description de la thématique « Les nombres jusqu'à 10 » (CI) dit désormais
 que la collection est dessinée en émojis. Une thématique déjà chargée garde sa
@@ -400,7 +408,7 @@ exercice bloquant est marqué `needsManualReview` et son palier repasse en
 `stale`, refait à la prochaine ouverture ou par `pregen:run`. Les avertissements
 ne modifient rien. Un enfant qui a une tentative ouverte sur un palier
 invalidé la reprend sur les nouveaux exercices : à réserver au développement ou
-à une rentrée. Lancer `repairMath`, `repairDragDrop` et `repairVisuals` avant :
+à une rentrée. Lancer `repairMath`, `repairDragDrop` et `repairVisual` avant :
 ils réparent sur place ce que l'audit ne ferait que signaler. Seuls les
 exercices rattachés à un palier sont audités (200 au plus par palier), c'est-à-dire
 tout ce que l'élève joue.

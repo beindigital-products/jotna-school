@@ -30,6 +30,7 @@ import {
 } from "./prompts";
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop } from "./dragDropRepair";
+import { repairVisualPrompt } from "./visualRepair";
 import { guardVisuals } from "./missingVisual";
 import { exerciseImageIdOf } from "../../lib/exercise-images";
 import { validateFillBlank } from "./fillBlank";
@@ -1543,7 +1544,7 @@ function toPersistedShape(ex: RawGenExercise, idx?: number, ctx?: ShapeContext):
   // (frise, dessin, écoute, couleurs) se fabrique par le code, jamais par lui.
   const t = ex.type ?? "short-answer";
   const safeType: PersistedShape["type"] = isAiExerciseType(t) ? t : "short-answer";
-  const prompt = ex.statement ?? ex.prompt ?? "";
+  let prompt = ex.statement ?? ex.prompt ?? "";
   if (!prompt) return null;
 
   const validated = validatePayload(safeType, ex.payload ?? {});
@@ -1566,6 +1567,17 @@ function toPersistedShape(ex: RawGenExercise, idx?: number, ctx?: ShapeContext):
     if (repaired.kind !== "ok") payload = repaired.payload;
     if (repaired.kind === "order" || repaired.kind === "qcm" || repaired.kind === "match") type = repaired.kind;
     if (repaired.kind !== "ok" && repaired.kind !== "cleaned") answerKey = repaired.answerKey;
+  }
+
+  // UN ÉNONCÉ QUI PARLE D'UNE IMAGE ABSENTE (« Combien de mangues vois-tu ? »
+  // sans une mangue) reçoit ses émojis quand on sait les écrire, sinon il est
+  // écarté du lot : voir `visualRepair.ts`. Cette réparation passe AVANT le
+  // garde-fou ci-dessous, qui écarte ce qu'elle n'a pas su sauver.
+  const visual = repairVisualPrompt({ type, prompt, payload, answerKey });
+  if (visual.kind === "unrepairable") return null;
+  if (visual.kind === "repaired") {
+    prompt = visual.prompt;
+    if (visual.payload !== undefined) payload = visual.payload;
   }
 
   // UNE QUESTION SANS SA SCÈNE (« Combien de billes as-tu ? » et rien à
