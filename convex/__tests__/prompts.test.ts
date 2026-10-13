@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildPalierBasePrompt,
   buildPalierBaseSystemPrompt,
+  buildPersonalizedSystemPrompt,
   buildVariationSystemPrompt,
   subjectRules,
 } from "../paliers/prompts";
@@ -13,6 +14,9 @@ const base = {
   palierIndex: 1,
   palierCount: 4,
 };
+
+/** La consigne est écrite sur plusieurs lignes : on cherche une phrase, pas une coupure. */
+const flat = (text: string) => text.replace(/\s+/g, " ");
 
 describe("la consigne de génération d'un palier", () => {
   it("transmet au modèle le contenu officiel de la thématique", () => {
@@ -83,6 +87,40 @@ describe("la consigne de génération d'un palier", () => {
   it("au CI et au CP, rappelle que l'enfant ne lit pas encore", () => {
     expect(buildPalierBaseSystemPrompt({ ...base, class: "CI" })).toContain("apprend à lire");
     expect(buildPalierBaseSystemPrompt({ ...base, class: "CM1" })).not.toContain("apprend à lire");
+  });
+
+  it("dit au modèle que l'enfant ne voit que le texte, et comment dessiner une collection", () => {
+    for (const cls of ["CI", "CP", "CE2", "CM2"] as const) {
+      for (const subject of ["Mathématiques", "Histoire"]) {
+        const prompt = flat(buildPalierBaseSystemPrompt({ ...base, subject, class: cls }));
+        expect(prompt, `${subject} ${cls}`).toContain("L'énoncé se suffit à lui-même");
+        expect(prompt).toContain("Combien de billes as-tu ?");
+        expect(prompt).toContain("DESSINE-LES avec des émojis");
+        expect(prompt).toContain("EXACTEMENT la réponse");
+      }
+    }
+  });
+
+  it("ne demande plus d'« observer » dans le premier indice", () => {
+    const prompt = buildPalierBaseSystemPrompt(base);
+    expect(prompt).not.toContain("relire l'énoncé / observer");
+    expect(prompt).toContain("jamais « Regarde");
+  });
+
+  it("applique la règle de la scène aux variations d'exercices ratés", () => {
+    const prompt = buildVariationSystemPrompt({
+      class: "CI",
+      subject: "Mathématiques",
+      topic: "Les nombres jusqu'à 10",
+      failed: [],
+    });
+    expect(prompt).toContain("L'énoncé se suffit à lui-même");
+  });
+
+  it("en anglais, l'énoncé ne parle jamais d'« image »", () => {
+    const prompt = flat(buildPalierBaseSystemPrompt({ ...base, subject: "Anglais", class: "CI" }));
+    expect(prompt).not.toContain("Quel mot va avec l'image");
+    expect(prompt).toContain("ne parle jamais d'« image »");
   });
 
   it("garde les règles de la matière pour les variations d'exercices ratés", () => {
@@ -171,5 +209,60 @@ describe("le niveau des maths suit la classe", () => {
     const cm2 = buildPalierBaseSystemPrompt({ ...base, class: "CM2" });
     expect(ci).toContain("8 mots au plus");
     expect(cm2).toContain("préparent la 6e");
+  });
+});
+
+describe("les règles de qualité, doublées par le contrôleur structurel", () => {
+  const quality = (text: string) => {
+    const start = text.indexOf("[Qualité");
+    return start === -1 ? "" : flat(text.slice(start, text.indexOf("\n[", start + 1) === -1 ? undefined : text.indexOf("\n[", start + 1)));
+  };
+
+  it("nomme les défauts que le contrôleur écarte : options, phrase complète, trou, indices", () => {
+    const rules = quality(buildPalierBaseSystemPrompt(base));
+    expect(rules).toContain("phrase COMPLÈTE");
+    expect(rules).toContain("jamais coupée");
+    expect(rules).toContain("Complète » exige un trou");
+    expect(rules).toContain("UNE seule vraie");
+    expect(rules).toContain("« Toutes les réponses »");
+    expect(rules).toContain("« Aucune de ces réponses »");
+    expect(rules).toContain("« 5 » et « cinq »");
+    expect(rules).toContain("n'est pas la plus longue");
+    expect(rules).toContain("options[correctIndex]");
+    expect(rules).toContain("3 indices non vides et différents");
+    expect(rules).toContain("le 1er ne donne pas la réponse");
+  });
+
+  it("vaut pour toutes les classes et toutes les matières, et pour les variations", () => {
+    for (const cls of ["CI", "CP", "CE1", "CE2", "CM1", "CM2"] as const) {
+      for (const subject of ["Mathématiques", "Français", "Anglais", "Histoire"]) {
+        expect(buildPalierBaseSystemPrompt({ ...base, subject, class: cls }), `${subject} ${cls}`).toContain("[Qualité");
+      }
+    }
+    expect(buildPersonalizedSystemPrompt({ ...base, weaknesses: [], frequentMistakes: [] })).toContain("[Qualité");
+    expect(
+      buildVariationSystemPrompt({ class: "CE1", subject: "Histoire", topic: "Les rois", failed: [] }),
+    ).toContain("[Qualité");
+  });
+
+  it("reste courte : le coût en jetons compte", () => {
+    const rules = quality(buildPalierBaseSystemPrompt(base));
+    expect(rules.length).toBeGreaterThan(300);
+    expect(rules.length).toBeLessThan(1100);
+  });
+
+  it("ne touche pas à la règle de la scène, qui garde sa place et son texte", () => {
+    const prompt = flat(buildPalierBaseSystemPrompt(base));
+    const scene = prompt.indexOf("[L'énoncé se suffit à lui-même — RÈGLE ABSOLUE]");
+    expect(scene).toBeGreaterThan(-1);
+    expect(prompt.indexOf("[Qualité")).toBeGreaterThan(scene);
+    expect(prompt).toContain("Avant de répondre, relis chaque énoncé en imaginant l'enfant devant un écran où il n'y a QUE ce texte");
+  });
+
+  it("ne répète pas les règles du match, du drag-drop et du fill-blank, déjà dans le format", () => {
+    const rules = quality(buildPalierBaseSystemPrompt(base));
+    expect(rules).not.toContain("Zone A");
+    expect(rules).not.toContain('"accepted"');
+    expect(rules).not.toContain('"blanks"');
   });
 });

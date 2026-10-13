@@ -56,7 +56,10 @@ export async function playClip(notes: readonly ListenNote[]): Promise<void> {
   const ctx = audioContext();
   if (!ctx) return;
   try {
-    if (ctx.state === "suspended") await ctx.resume();
+    // Pas seulement « suspended » : WebKit (iPhone, iPad, coque Capacitor) passe
+    // le contexte en « interrupted » quand l'application part en arrière-plan
+    // ou qu'un appel arrive, et il reste muet tant qu'on ne l'a pas repris.
+    if (ctx.state !== "running") await ctx.resume();
   } catch {
     return;
   }

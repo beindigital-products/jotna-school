@@ -69,6 +69,8 @@ export const BANK: SubjectBank = {
       topic: "Les plantes autour de moi",
       stage: 2,
       prompt: "Complète la phrase avec le bon mot.",
+      // L'enfant de CI ne lit pas la phrase : l'image lui montre de quoi elle parle.
+      image: "mangue",
       text: "La mangue est ___ du manguier.",
       blanks: [{ options: ["le fruit", "la racine", "la feuille"], answer: "le fruit" }],
       hints: [
@@ -177,7 +179,7 @@ export const BANK: SubjectBank = {
       explanation: "Le poisson respire avec ses branchies. L'homme, lui, respire avec ses poumons, par le nez et par la bouche.",
       hints: [
         "Un poisson vit dans l'eau : il ne respire pas comme toi, avec un nez.",
-        "Regarde sous les ouïes, de chaque côté de sa tête : on y voit de petites lames rouges.",
+        "Sous les ouïes, de chaque côté de sa tête, un poisson a de petites lames rouges.",
       ],
     }),
     dragDrop({

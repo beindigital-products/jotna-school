@@ -255,10 +255,240 @@ irréparables (tous de collège ou de lycée, niveaux masqués) et 21 paliers
 renvoyés en génération.
 
 Un palier n'a pas toujours dix exercices : le modèle en rend parfois neuf de
-valides, et l'écart n'est pas comblé. L'écran de fin compte alors ses
+valides, et l'écart n'est pas comblé. Sous sept exercices valides sur dix
+(`hasEnoughValidExercises`, le seuil de validation), le lot n'est pas servi : le
+palier reste `stale`, la génération échoue avec `TOO_FEW_VALID_EXERCISES` et
+`pregen:run` le liste dans `failed`. L'écran de fin compte alors ses
 étoiles sur le nombre d'exercices joués (`exerciseCount` rendu par
 `submitPalier`), trois par exercice, avec le seuil à 7 sur 10 ramené à ce
 nombre.
+
+## Une question qui a sa scène à l'écran
+
+Le 12 octobre 2026, un palier de CI demandait « Combien de billes as-tu ? »,
+avec pour seul indice « Regarde tes billes. » Il n'y avait aucune bille : le
+modèle écrivait pour un manuel illustré, et l'écran de l'enfant n'affiche que
+le texte de l'énoncé et les options. L'enfant ne comprenait pas la question,
+et à six ans il ne sait pas que la faute est à l'exercice.
+
+Trois protections, dans `convex/paliers/missingVisual.ts` (module pur, tests
+dans `convex/__tests__/missingVisual.test.ts`) et `paliers/prompts.ts` :
+
+- **La consigne de génération** dit au modèle que l'enfant ne voit que le
+  texte (`SELF_CONTAINED_RULE`) et lui donne les deux façons de faire compter :
+  dessiner la collection en émojis dans l'énoncé, la question d'abord
+  (« Combien de billes vois-tu ? 🔵🔵🔵🔵🔵 »), ou écrire les données
+  (« Awa a 5 billes… »). La voix de Pio retire les émojis : la question doit se
+  comprendre sans eux, d'où la rangée après la question. Le premier indice ne
+  demande plus d'« observer » : il ne renvoie qu'à ce que l'énoncé écrit ou
+  dessine. La règle vaut pour les paliers, « J'en veux encore » et les
+  variations.
+- **Un filtre à la génération** écarte l'exercice dont l'énoncé renvoie à ce
+  qui n'est pas là : « combien de billes as-tu / vois-tu » sans émoji ni
+  donnée écrite, « regarde l'image », « ci-dessous », « observe tes billes ».
+  Il ne touche ni un fait qu'on sait sans rien voir (« Combien de jours dans une
+  semaine ? »), ni le corps de l'enfant (« Regarde ta main »), ni une histoire
+  (« Fatou compte ses mangues… »). Les indices pendants d'un exercice par
+  ailleurs valable sont retirés. Un palier peut donc compter neuf exercices.
+- **Un compte des émojis.** Un modèle de langage compte mal ses émojis : quand
+  l'énoncé demande « combien » devant une seule rangée d'objets identiques, sans
+  chiffre, la réponse attendue est le nombre d'émojis réellement écrits (QCM :
+  l'option qui le vaut ; sinon l'exercice est écarté). Deux sortes d'objets, deux
+  rangées ou un chiffre dans l'énoncé : le compte est ambigu, il n'est pas
+  vérifié.
+
+Ce que l'écran montre en plus de l'énoncé compte comme scène : des tuiles ou
+des options en émojis (« Glisse chaque image dans la bonne case » avec 🍎 et 🐟
+en étiquettes) lèvent un renvoi à « l'image » et gardent les indices qui s'y
+réfèrent (`displayedText`, `findMissingVisualOnScreen`). Des options qui sont
+des chiffres ne sont pas des billes : « Combien de billes as-tu ? » reste
+écarté.
+
+**Deux mécanismes, dans cet ordre.** À la génération, `toPersistedShape` passe
+d'abord par `visualRepair.ts` : un énoncé de comptage sans émojis reçoit autant
+d'émojis que la réponse, une rangée au mauvais compte est refaite, un
+appariement mot ↔ image dont l'« image » est un texte-substitut (« image_mangue »)
+reçoit son émoji. Ce qu'il ne sait pas réparer est écarté. Puis le garde-fou
+ci-dessus écarte ce qui reste (« Combien de billes as-tu ? », « Regarde tes
+billes ») et revérifie le compte. Écarter après avoir essayé de réparer : le
+garde-fou seul aurait perdu des exercices que la réparation sauve.
+
+Les paliers déjà en base se passent à ces deux mécanismes, sans appel au modèle :
+`pregen:repairVisual` répare sur place ce qui se répare (et signale le reste, son
+palier repasse en `stale`), puis `pregen:auditExercises` (voir plus bas) signale
+ce qui reste sans scène (`visual_missing`).
+
+```bash
+npx convex run paliers/pregen:repairVisual '{"confirmDeployment":"impartial-ermine-150","dryRun":true}'
+npx convex run paliers/pregen:repairVisual '{"confirmDeployment":"impartial-ermine-150"}'
+npx convex run paliers/pregen:run '{"confirmDeployment":"impartial-ermine-150","classes":["CI","CP"],"limit":20}'
+```
+
+Un enfant qui a une tentative ouverte sur un palier invalidé la reprend sur les
+nouveaux exercices : à réserver au développement ou à une rentrée.
+
+La description de la thématique « Les nombres jusqu'à 10 » (CI) dit désormais
+que la collection est dessinée en émojis. Une thématique déjà chargée garde sa
+description en base (`programme/seed` ne recharge pas) : la règle de la
+consigne de génération suffit, elle ne dépend pas de la description.
+
+## Le contrôleur structurel de chaque exercice
+
+Un parent a signalé, outre les billes absentes, « beaucoup d'erreurs » : des
+images qui manquent, des phrases incomplètes, des options incorrectes. Les
+gardes précédentes (`missingVisual`, `mathRepair`, `dragDropRepair`) répondent
+chacune à un défaut déjà vu ; `convex/paliers/exerciseAudit.ts` les range
+derrière une seule question : cet exercice est-il jouable et sensé ? Module
+pur, sans Convex et sans appel au modèle ; tests dans
+`convex/__tests__/exerciseAudit.test.ts`.
+
+`auditExercise({ type, prompt, payload, answerKey, hints, class, subject })`
+rend une liste de défauts `{ code, severity, detail }`, au plus un par code,
+les `blocking` d'abord :
+
+- **`blocking`** : l'exercice est injouable ou faux à coup sûr. À la
+  génération, il est écarté du lot ; en base, il est signalé.
+- **`warning`** : il se joue, mais il est maladroit. Rien n'est écarté ; la
+  génération les compte.
+
+| Domaine | `blocking` | `warning` |
+| --- | --- | --- |
+| Énoncé | `prompt_empty`, `prompt_truncated` (finit sur « de », « pour », une virgule, une élision), `prompt_dangling_colon` (réponse courte qui finit par « : »), `visual_missing` (scène absente, voir plus haut), `payload_malformed` | `prompt_too_short`, `prompt_ends_midphrase` (finit sur « le », « et »…), `prompt_unclosed_pair` (parenthèse ou guillemet jamais fermé), `prompt_too_long_for_class`, `hole_without_hole` (« Complète » sans `___` ni `?`), `short_answer_in_ci` |
+| QCM | `qcm_options_few` (moins de 2), `qcm_correct_index_out_of_range`, `qcm_correct_option_empty`, `qcm_correct_option_duplicated`, `qcm_equivalent_options_with_correct` (« 5 » et « cinq », « 0,5 » et « 1/2 »), `qcm_answer_key_mismatch` (la réponse écrite est une autre option que celle désignée) | `qcm_options_many` (plus de 6), `qcm_option_empty`, `qcm_option_duplicated`, `qcm_option_case_twin` (casse ou accents, sauf en français), `qcm_equivalent_options`, `qcm_answer_key_unrelated`, `qcm_catch_all_option` (« Toutes les réponses », « Aucune de ces réponses », « Les deux »), `qcm_correct_option_stands_out` (la bonne option est bien plus longue) |
+| Association | `match_pairs_invalid` (moins de 2), `match_side_empty` | `match_pairs_count` (hors de 3 à 6), `match_pair_duplicated`, `match_left_repeated`, `match_right_repeated` (deux sons identiques se relient pourtant à la même tuile : jamais bloquant) |
+| Ordre | `order_too_few` (moins de 2), `order_item_empty` | `order_few` (2), `order_item_duplicated`, `order_already_sorted` (suite déjà rangée alphabétiquement ou par ordre croissant, sans que l'énoncé dise quel ordre) |
+| Glisser-déposer | `dragdrop_zones_few`, `dragdrop_items_few`, `dragdrop_generic_zone` (« Zone A »), `dragdrop_zone_duplicated`, `dragdrop_zone_missing`, `dragdrop_label_without_zone` | `dragdrop_empty_zone`, `dragdrop_item_empty` |
+| Réponse courte | `short_answer_no_answer` | `short_answer_empty_accepted`, `short_answer_answer_in_prompt` (hors nombres : « 10 − 3 + 3 » a pour réponse 10) |
+| Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
+| Indices | | `hints_few` (moins de 2), `hint_empty`, `hints_duplicated`, `hint_gives_answer` (le 1er écrit le bon choix sans parler des autres), `hint_dangling_visual` |
+| Texte | `text_placeholder` (« undefined », « null », « NaN »), `text_replacement_char` (�) | `text_double_space`, `text_markup` (`**`, `#`, backtick, balise), `text_english_in_young_class` (anglais dans un énoncé de CI ou de CP hors Anglais), `text_foreign_currency` (euros, dollars : FCFA seul) |
+
+**La prudence est la règle.** Un faux positif écarte un bon exercice et le
+palier se refait pour rien : un défaut n'est `blocking` que si aucun exercice
+correct ne peut l'avoir. Le test fait respecter deux barrières : la banque
+écrite à la main de la vitrine (`components/landing/demo/bank`, 274 exercices)
+ne produit aucun défaut, et une trentaine d'exercices corrects, de toutes les
+matières et du CI au CM2, non plus. Les homophones (« a » et « à », « un » et
+« une ») ne sont pas des doublons en français. Le plafond de longueur d'énoncé
+(`PROMPT_WORD_CEILING`) est environ le double de celui de la consigne au CI et
+au CP : la banque écrite à la main atteint déjà 16 et 21 mots, et à partir du
+CE1 l'énoncé porte parfois un texte à lire.
+
+**À la génération** (`toPersistedShape`, dans `paliers/index.ts`), le
+contrôleur est la dernière porte : un exercice du modèle avec un défaut
+`blocking` est écarté du lot, comme celui qui n'a pas sa scène. En
+mathématiques, le calcul répare d'abord (`mathRepair`), puis le contrôleur
+juge : une réponse que le calcul corrige ne coûte pas l'exercice. Les
+avertissements ne retirent rien. Le palier garde deux totaux dans
+`factCheckResults` : `auditRejected` (exercices écartés) et `auditWarnings`
+(exercices gardés avec un avertissement), deux champs optionnels, absents des paliers déjà écrits. Le détail par code est dans les
+journaux (`[audit] exercice écarté : …`). Un lot peut donc compter moins de dix
+exercices du modèle. La consigne de génération (`QUALITY_RULE`, dans
+`paliers/prompts.ts`) nomme les défauts les plus fréquents pour que le modèle
+ne les écrive pas.
+
+**Sur l'existant**, `pregen:auditExercises` passe CHAQUE exercice de CHAQUE
+palier au contrôleur, un par un, sans appel au modèle :
+
+```bash
+npx convex run paliers/pregen:auditExercises '{"confirmDeployment":"impartial-ermine-150","dryRun":true}'
+npx convex run paliers/pregen:auditExercises '{"confirmDeployment":"impartial-ermine-150","dryRun":true,"limitSamples":2000}'
+npx convex run paliers/pregen:auditExercises '{"confirmDeployment":"impartial-ermine-150"}'
+```
+
+Le résumé donne `checked` (exercices vérifiés), `exercisesWithDefects`,
+`blockingExercises`, `warningOnlyExercises`, `byCode` (le nombre d'exercices
+touchés par chaque code, du plus fréquent au plus rare), `paliersTouched`
+(paliers qui ont au moins un exercice bloquant), `paliersInvalidated` et
+`samples` : 30 exemples par défaut, `limitSamples` jusqu'à 2 000 pour sortir
+TOUS les exercices défectueux. Chaque exemple porte `exerciseId`, `palierId`,
+`class`, `subject`, `type`, `prompt`, `codes` et `blockingCodes`, les
+exercices bloquants d'abord. `dryRun` ne touche à rien. Sans `dryRun`, un
+exercice bloquant est marqué `needsManualReview` et son palier repasse en
+`stale`, refait à la prochaine ouverture ou par `pregen:run`. Les avertissements
+ne modifient rien. Un enfant qui a une tentative ouverte sur un palier
+invalidé la reprend sur les nouveaux exercices : à réserver au développement ou
+à une rentrée. Lancer `repairMath`, `repairDragDrop` et `repairVisual` avant :
+ils réparent sur place ce que l'audit ne ferait que signaler. Seuls les
+exercices rattachés à un palier sont audités (200 au plus par palier), c'est-à-dire
+tout ce que l'élève joue.
+
+**Ce que le contrôleur ne voit pas.** Il juge la forme, pas le fond : une
+erreur de fait (« la capitale du Sénégal est Thiès » dans un QCM bien formé),
+une faute d'orthographe ou de grammaire, un énoncé fluide mais absurde, une
+bonne réponse fausse dont l'option désignée est cohérente avec la réponse
+écrite, une question ambiguë dont deux options se défendent, un niveau trop
+facile ou trop difficile, un texte qui blesse. Seul le calcul est vérifié sur le
+fond, en mathématiques (`mathRepair`). Le reste se relit : c'est le rôle de
+`needsManualReview` et de `qaStatus`.
+
+## Des images dans l'énoncé
+
+Certaines questions demandent une image (« Quel animal vois-tu ? »). L'écran
+n'affiche que le texte : sans image, la question est incompréhensible. Le
+modèle qui écrit les exercices ne crée pas d'image, car le serveur de
+production n'a pas accès au studio d'images. Il **choisit** dans un catalogue
+fermé (`lib/exercise-images.ts`), par identifiant, dans `payload.image`.
+
+- L'écran affiche `public/exercices/<id>.webp` au-dessus de l'énoncé
+  (`components/exercises/ExerciseImage.tsx`, passée par `ExercisePrompt` à tous
+  les types d'exercice). La hauteur est bornée (10 rem sur téléphone) pour ne
+  pas repousser les options. Les fichiers sont ceux du site : ils partent dans
+  l'application, donc s'affichent aussi hors ligne.
+- Un identifiant hors catalogue tombe (`validatePayload`, `sanitizePayload`). Une
+  image du catalogue compte comme une scène dessinée pour tous les gardes
+  (`displayedText`) : « Regarde l'image » n'est plus refusé quand l'image est
+  là, et l'est toujours quand elle manque. Elle ne lève pas le refus de
+  « Combien de billes as-tu ? » : **les images ne servent pas à compter**, un
+  générateur d'images ne sait pas dessiner « exactement 7 billes ». Le comptage
+  reste en émojis, vérifiés par le code.
+- La consigne de génération (`imagesRule`, `paliers/prompts.ts`) liste le
+  catalogue, au plus trois exercices avec image par palier. Tant que le
+  catalogue est vide, elle n'en dit rien : elle ne promet pas ce qui n'existe
+  pas.
+
+**Ajouter une image**
+
+1. La fabriquer avec le serveur MCP « studio » (`generate_image`). Modèle
+   conseillé : `recraft/recraft-v4.1` (0,035 $ par image), `mode: "manual"`,
+   `aspectRatio: "1:1"`. Demander l'estimation avant (`estimate_cost`). Gabarit :
+   *Children's picture-book illustration of a single <sujet>, flat vector style,
+   simple rounded shapes, thick soft outline, bright warm colors, centered, the
+   whole subject fully visible, plain pure white background, no text, no
+   letters, no shadow, no other objects.* Un seul sujet, jamais de texte dans
+   l'image, jamais plusieurs objets à compter. **La regarder** avant de la garder :
+   un modèle d'images se trompe (patte en trop, sujet coupé).
+2. La convertir : `node scripts/add-exercise-image.mjs <fichier> <identifiant>`
+   écrit `public/exercices/<identifiant>.webp` (512 × 512, fond blanc) et
+   affiche l'entrée à coller dans `EXERCISE_IMAGES`.
+3. Rédiger l'entrée : `alt` (ce que lit un lecteur d'écran, sans « image de »)
+   et `about` (le sujet, ce que le modèle lit pour choisir).
+4. `pnpm exec vitest run lib/__tests__/exercise-images.test.ts` : chaque entrée
+   a son fichier, chaque fichier son entrée.
+
+Les paliers déjà en base ne changent pas : pour qu'un palier utilise les
+nouvelles images, il faut le régénérer (`pregen:invalidate` puis `pregen:run`).
+
+**État** : 20 images, fabriquées le 13 octobre 2026 avec le serveur « studio »
+(`recraft/recraft-v4.1`, 0,035 $ pièce, 0,81 $ en tout avec trois images refaites) :
+des animaux (chat, chien, poisson, poule, vache, mouton, éléphant, lion), des
+fruits (mangue, banane, orange, pastèque) et des objets ou lieux du quotidien
+(ballon, livre, crayon, maison, baobab, soleil, pirogue, voiture). Le chien,
+l'éléphant et la mangue ont été refaits : un chien pris pour un ourson, un
+éléphant pris pour un tapir, une mangue prise pour un piment. La pirogue se lit
+comme un bateau : ne pas lui demander de se distinguer d'une barque.
+
+Le script `scripts/add-exercise-image.mjs` met aussi à blanc pur les formes
+fantômes quasi blanches que laissent les générateurs dans le fond (de 246 à 254
+sur 255). Elles sont invisibles sur une page blanche et visibles sur une carte
+colorée. `e2e/exercise-images.spec.ts` vérifie que le site sert chaque image.
+
+**Ce qui reste à faire** : régénérer les paliers pour que le modèle utilise ces
+images (`pregen:invalidate` puis `pregen:run`), et regarder un échantillon : le
+modèle peut ne pas choisir d'image, ou en choisir une qui ne va pas avec la
+question. Rien ne vérifie que l'image choisie correspond à l'énoncé et à la bonne
+réponse : un QCM « Quel animal vois-tu ? » avec l'image du chat et la bonne
+réponse « Chien » est bien formé pour le contrôleur. C'est à relire.
 
 ## Essais et indices
 

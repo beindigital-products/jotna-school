@@ -362,7 +362,7 @@ export const BANK: SubjectBank = {
       topic: "Ce que je fais : le présent",
       stage: 3,
       prompt: "Remets les mots dans l'ordre pour dire : « Je prends toujours mon petit-déjeuner. »",
-      sequence: ["I", "always", "eat", "breakfast."],
+      sequence: ["I", "always", "have", "breakfast."],
       hints: [
         "Commence par le sujet, puis pense à la place du mot « always ».",
         "En anglais, l'adverbe de fréquence (always, usually, sometimes, never) se place avant le verbe.",

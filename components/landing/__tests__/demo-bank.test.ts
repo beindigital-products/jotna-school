@@ -7,6 +7,7 @@ import { isGenericZoneLabel, repairDragDrop } from "@/convex/paliers/dragDropRep
 import { verifyAnswer } from "@/convex/paliers/exerciseRules";
 import { numericallyEqual, solveOrEvaluate } from "@/convex/paliers/mathRepair";
 import { PROGRAMME } from "@/convex/programme";
+import { findExerciseImage } from "@/lib/exercise-images";
 import { loadBank } from "../demo/bank";
 import { BANK as anglais } from "../demo/bank/anglais";
 import { BANK as educationArtistique } from "../demo/bank/education-artistique";
@@ -273,6 +274,25 @@ for (const subject of PROGRAMME) {
           if (/[\p{L}\p{N}]/u.test(label)) continue;
           expect(label, `${klass} / ${item.type}`).not.toMatch(recent);
         }
+      }
+    });
+
+    it("n'écrit une image d'énoncé que du catalogue, et jamais pour compter", () => {
+      for (const { klass, item } of everyItem) {
+        const image = payloadOf(item).image;
+        if (image === undefined) continue;
+        const label = `${klass} / ${item.type} : « ${item.prompt.slice(0, 48)} »`;
+        expect(findExerciseImage(image), `${label} : image « ${image} » hors catalogue`).not.toBeNull();
+        expect(item.prompt, `${label} : une image ne sert pas à compter`).not.toMatch(/combien/i);
+      }
+    });
+
+    it("l'image d'un exercice arrive jusqu'à l'écran de l'enfant, sans la réponse", () => {
+      for (const { klass, item } of everyItem) {
+        const image = payloadOf(item).image;
+        if (image === undefined) continue;
+        const view = viewOf(toPlayable(item, subject.key, klass)) as Payload;
+        expect(view.image, `${klass} / ${item.type}`).toBe(image);
       }
     });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Quote } from "lucide-react";
+import { ExerciseImage } from "./ExerciseImage";
 import { PromptReaderButton, usePromptReader } from "./prompt-reader";
 
 /**
@@ -22,9 +23,19 @@ import { PromptReaderButton, usePromptReader } from "./prompt-reader";
  * is tinted while he speaks. Elsewhere (older pupils, teacher previews) the
  * prompt renders exactly as before.
  */
-export default function ExercisePrompt({ prompt }: { prompt: string }) {
+export default function ExercisePrompt({ prompt, image }: { prompt: string; image?: string }) {
   const reader = usePromptReader();
   const text = <PromptText prompt={prompt} />;
+  // L'image d'énoncé (`payload.image`) passe AU-DESSUS de la consigne ; sans
+  // image, rien ne change dans le DOM.
+  if (image) {
+    return (
+      <div className="space-y-3">
+        <ExerciseImage id={image} />
+        <ExercisePrompt prompt={prompt} />
+      </div>
+    );
+  }
   if (!reader) return text;
 
   return (

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, GripVertical } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
+import { payloadImage } from "./ExerciseImage";
 import {
   DndContext,
   closestCenter,
@@ -22,6 +23,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 interface OrderPayload {
+  /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
+  image?: string;
   correctSequence?: string[];
   items?: string[];
 }
@@ -89,10 +92,18 @@ function SortableItem({
         ${disabled ? "opacity-70" : ""}
       `}
     >
+      {/* LA POIGNÉE SE GLISSE AU DOIGT : `touch-none` (touch-action: none) dit
+          au navigateur de ne pas prendre ce geste pour un défilement. Sans lui,
+          sur iPhone, iPad et Android, le doigt qui glisse fait défiler la page,
+          le navigateur annule le geste (pointercancel) et la tuile ne bouge
+          jamais ; la souris, elle, n'a pas ce problème. 44 px, la plus petite
+          cible qu'un doigt d'enfant touche à coup sûr ; `select-none` et
+          `-webkit-touch-callout` coupent la loupe et le menu de sélection d'iOS
+          sur un appui long. */}
       <span
         {...attributes}
         {...listeners}
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 ${
+        className={`flex h-11 w-11 shrink-0 touch-none select-none items-center justify-center rounded-lg text-gray-400 [-webkit-touch-callout:none] ${
           disabled ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
         }`}
       >
@@ -140,7 +151,7 @@ export default function OrderExercise({
   if (source.length < 2) {
     return (
       <div className="space-y-4">
-        <ExercisePrompt prompt={prompt} />
+        <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
         <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-amber-600" aria-hidden />
           <p className="font-bold text-amber-900">Cet exercice est cassé, on te le saute.</p>
@@ -168,7 +179,7 @@ export default function OrderExercise({
 
   return (
     <div className="space-y-6">
-      <ExercisePrompt prompt={prompt} />
+      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
       <DndContext
         sensors={sensors}

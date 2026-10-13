@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ExercisePrompt from "./ExercisePrompt";
+import { payloadImage } from "./ExerciseImage";
 import { BrokenExercise, SubmitButton, verdictClasses, type ExerciseScreenProps } from "./game-parts";
 import { splitBlanks, type FillBlankView } from "@/convex/paliers/games/types";
 
@@ -43,9 +44,9 @@ export default function FillBlankExercise({
 
   return (
     <div className="space-y-6">
-      <ExercisePrompt prompt={prompt} />
+      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
-      <div className={`rounded-2xl border-3 px-5 py-5 text-xl font-semibold leading-[2.6rem] text-gray-900 ${verdictClasses(isCorrect)}`}>
+      <div className={`rounded-2xl border-3 px-5 py-5 text-xl font-semibold leading-[3.25rem] text-gray-900 ${verdictClasses(isCorrect)}`}>
         {parts.map((part, i) => (
           <span key={i}>
             {part}
@@ -55,7 +56,7 @@ export default function FillBlankExercise({
                 onClick={() => !disabled && setActive(i)}
                 disabled={disabled}
                 aria-label={chosen[i] ? `Trou ${i + 1} : ${chosen[i]}` : `Trou ${i + 1}, vide`}
-                className={`mx-1 inline-flex min-w-[4.5rem] items-center justify-center rounded-xl border-2 border-dashed px-3 py-0.5 align-middle text-lg font-bold transition-all ${
+                className={`mx-1 inline-flex min-h-11 min-w-[4.5rem] items-center justify-center rounded-xl border-2 border-dashed px-3 py-0.5 align-middle text-lg font-bold transition-all ${
                   i === active && !disabled
                     ? "border-indigo-500 bg-indigo-50 text-indigo-800 ring-2 ring-indigo-200"
                     : chosen[i]

@@ -26,6 +26,8 @@
  * son palier repasse en `stale`. Module pur, sans Convex, testé dans
  * `convex/__tests__/visualRepair.test.ts`.
  */
+import { exerciseImageIdOf } from "../../lib/exercise-images";
+
 
 export type VisualRepairInput = {
   type: string;
@@ -255,6 +257,11 @@ export function repairVisualPrompt(input: VisualRepairInput): VisualRepairOutcom
     // L'image peut être dans les options (« Que vois-tu ? 🐶 / 🐱 ») : alors
     // l'enfant la voit.
     if (hasPictograph(payloadText(input.payload))) return { kind: "ok" };
+    // Ou être une image du catalogue (`payload.image`, `lib/exercise-images.ts`) :
+    // l'écran l'affiche au-dessus de l'énoncé. Pas pour compter : un générateur
+    // d'images ne dessine pas « exactement 5 mangues », la question de
+    // dénombrement reçoit ses émojis comme avant.
+    if (!counting && exerciseImageIdOf(input.payload)) return { kind: "ok" };
     const emoji = counting ? emojiFor(counting[1]) : null;
     const n = counting ? expectedCount(input) : null;
     if (!emoji || n === null) return { kind: "unrepairable", reason: "nothing_to_see" };

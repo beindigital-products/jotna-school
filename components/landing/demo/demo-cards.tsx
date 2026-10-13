@@ -105,7 +105,14 @@ function useBank(subject: DemoSubject) {
 export default function DemoCards({ subject, klass }: { subject: DemoSubject; klass: DemoClass }) {
   const { bank, failed, retry } = useBank(subject);
   if (failed) return <LoadFailure onRetry={retry} />;
+  // LA CLÉ EST LA MATIÈRE ET LA CLASSE. Les cartes entrent par un fondu qui ne
+  // part qu'UNE fois, à l'arrivée du conteneur dans l'écran (`StaggerContainer`,
+  // `once`). Un visiteur qui change de classe devant la section garde ce
+  // conteneur déjà « montré » : sans clé, les nouvelles cartes naissaient à
+  // `opacity: 0` et ne se montraient jamais. Avec elle, chaque choix refait un
+  // conteneur neuf, qui se montre à son tour.
+  const key = `${subject}-${klass}`;
   // En attendant la banque, les cartes montrent déjà ce que la classe propose.
-  if (!bank) return <CardShells subject={subject} klass={klass} />;
-  return <LoadedCards bank={bank} subject={subject} klass={klass} />;
+  if (!bank) return <CardShells key={key} subject={subject} klass={klass} />;
+  return <LoadedCards key={key} bank={bank} subject={subject} klass={klass} />;
 }

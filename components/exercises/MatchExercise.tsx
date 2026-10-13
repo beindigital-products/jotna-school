@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, Link2 } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
+import { payloadImage } from "./ExerciseImage";
 import { MATCH_HINT } from "@/convex/voice/speakable";
 import { linkTiles, matchAnswer, type MatchLink } from "@/lib/exerciseAnswers";
 
@@ -26,6 +27,8 @@ import { linkTiles, matchAnswer, type MatchLink } from "@/lib/exerciseAnswers";
  * partenaire. Les liens retiennent donc des indices (`lib/exerciseAnswers.ts`).
  */
 interface MatchPayload {
+  /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
+  image?: string;
   left?: string[];
   right?: string[];
 }
@@ -109,7 +112,7 @@ export default function MatchExercise({
     }
     return (
       <div className="space-y-4">
-        <ExercisePrompt prompt={prompt} />
+        <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
         <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-amber-600" aria-hidden />
           <div>
@@ -135,7 +138,7 @@ export default function MatchExercise({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <ExercisePrompt prompt={prompt} />
+        <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
         <p className="text-base font-medium text-gray-600">{MATCH_HINT}</p>
       </div>
 

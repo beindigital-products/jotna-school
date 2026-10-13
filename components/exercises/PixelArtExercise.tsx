@@ -37,7 +37,17 @@ export default function PixelArtExercise({
   onSkip,
   disabled,
   isCorrect,
-}: ExerciseScreenProps<Partial<PixelArtView>>) {
+  fitScreen = true,
+}: ExerciseScreenProps<Partial<PixelArtView>> & {
+  /**
+   * Caler les cases sur la hauteur de l'écran, « Valider » compris (la séance :
+   * l'exercice y est en haut de la page). Faux pour une carte posée bien plus
+   * bas dans une page qui défile (la démonstration de la vitrine) : la mesure
+   * y part du haut de la PAGE, trouve une hauteur négative et réduit toujours
+   * les cases à 26 px, quel que soit l'écran.
+   */
+  fitScreen?: boolean;
+}) {
   const width = typeof payload?.width === "number" ? payload.width : 0;
   const height = typeof payload?.height === "number" ? payload.height : 0;
   const palette: PixelPaint[] = Array.isArray(payload?.palette) ? payload.palette : [];
@@ -90,9 +100,9 @@ export default function PixelArtExercise({
       const zoneBox = zone.getBoundingClientRect();
       const free = {
         width: root.clientWidth,
-        height: Math.floor(
-          screenHeight() - (zoneBox.top + window.scrollY) - (box.bottom - zoneBox.bottom) - BOTTOM_SLACK,
-        ),
+        height: fitScreen
+          ? Math.floor(screenHeight() - (zoneBox.top + window.scrollY) - (box.bottom - zoneBox.bottom) - BOTTOM_SLACK)
+          : Infinity,
       };
       setRoom((prev) => (prev?.width === free.width && prev.height === free.height ? prev : free));
     };
@@ -104,7 +114,7 @@ export default function PixelArtExercise({
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [valid]);
+  }, [valid, fitScreen]);
 
   // Le modèle de mémoire se cache tout seul au bout du compte à rebours.
   useEffect(() => {
@@ -236,7 +246,7 @@ export default function PixelArtExercise({
                   <button
                     type="button"
                     onClick={() => setPhase("draw")}
-                    className="rounded-xl bg-orange-100 px-3 py-2 text-sm font-bold leading-tight text-orange-800 hover:bg-orange-200"
+                    className="min-h-11 rounded-xl bg-orange-100 px-3 py-2 text-sm font-bold leading-tight text-orange-800 hover:bg-orange-200"
                   >
                     J&apos;ai retenu !
                   </button>
@@ -248,7 +258,7 @@ export default function PixelArtExercise({
                       setPeeksLeft((n) => n - 1);
                       setPeeking(true);
                     }}
-                    className="inline-flex flex-col items-center gap-0.5 rounded-xl bg-sky-100 px-3 py-2 text-sm font-bold leading-tight text-sky-800 hover:bg-sky-200"
+                    className="inline-flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl bg-sky-100 px-3 py-2 text-sm font-bold leading-tight text-sky-800 hover:bg-sky-200"
                   >
                     <Eye className="h-4 w-4" aria-hidden /> Revoir 3 secondes
                   </button>
@@ -340,7 +350,7 @@ export default function PixelArtExercise({
             aria-pressed={selected === paint.key}
             aria-label={numbers ? `${i + 1} : ${paint.name}` : paint.name}
             title={numbers ? `${i + 1} : ${paint.name}` : paint.name}
-            className={`flex h-10 min-w-10 items-center justify-center rounded-full border-3 px-0.5 transition-all ${
+            className={`flex h-11 min-w-11 items-center justify-center rounded-full border-3 px-0.5 transition-all ${
               selected === paint.key ? "scale-110 border-gray-900 shadow-lg" : "border-white shadow"
             } disabled:opacity-60`}
             style={{ backgroundColor: paint.color }}
@@ -424,7 +434,7 @@ function ToolButton({
       aria-pressed={pressed}
       aria-label={label}
       title={label}
-      className={`inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-full border-3 bg-white px-2 text-sm font-bold text-gray-700 transition-all sm:px-4 ${
+      className={`inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border-3 bg-white px-2 text-sm font-bold text-gray-700 transition-all sm:px-4 ${
         pressed ? "scale-105 border-gray-900 shadow-lg" : "border-gray-200 shadow"
       } disabled:opacity-50`}
     >

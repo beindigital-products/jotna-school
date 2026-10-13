@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
+import { payloadImage } from "./ExerciseImage";
 import {
   DndContext,
   DragOverlay,
@@ -17,6 +18,8 @@ import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { dragDropAnswer } from "@/lib/exerciseAnswers";
 
 interface DragDropPayload {
+  /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
+  image?: string;
   zones?: string[];
   items?: { text: string }[];
 }
@@ -52,11 +55,16 @@ function DroppableZone({
   id,
   label,
   colorIndex,
+  armed,
+  onChoose,
   children,
 }: {
   id: string;
   label: string;
   colorIndex: number;
+  /** Une étiquette est choisie : toucher cette case l'y pose. */
+  armed: boolean;
+  onChoose: () => void;
   children: React.ReactNode;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id });
@@ -65,9 +73,10 @@ function DroppableZone({
   return (
     <div
       ref={setNodeRef}
+      onClick={armed ? onChoose : undefined}
       className={`rounded-2xl border-3 ${color.border} ${color.bg} p-4 min-h-[120px] transition-all ${
         isOver ? "scale-[1.02] shadow-lg ring-2 ring-offset-2 ring-indigo-300" : ""
-      }`}
+      } ${armed ? "cursor-pointer ring-2 ring-indigo-300 ring-offset-2" : ""}`}
     >
       <h4
         className={`mb-3 rounded-xl ${color.header} px-3 py-2 text-center text-base font-bold`}
@@ -84,11 +93,16 @@ function DraggableItem({
   label,
   disabled,
   inZone,
+  selected,
+  onChoose,
 }: {
   id: string;
   label: string;
   disabled: boolean;
   inZone: boolean;
+  /** Choisie par un toucher : elle attend qu'on touche sa case. */
+  selected: boolean;
+  onChoose: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
@@ -100,9 +114,25 @@ function DraggableItem({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      aria-pressed={selected}
+      onClick={(event) => {
+        // Toucher une étiquette ne touche pas la case qui la contient.
+        event.stopPropagation();
+        if (!disabled) onChoose();
+      }}
+      onKeyDown={(event) => {
+        if (disabled || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        onChoose();
+      }}
+      // `touch-none` : sans lui, au doigt, le glissé défile la page et le
+      // navigateur annule le geste (voir `OrderExercise`). `select-none` et
+      // `-webkit-touch-callout` : pas de loupe ni de sélection d'iOS sur un
+      // appui long.
       className={`
-        rounded-xl border-2 px-4 py-3 text-center text-base font-bold transition-all
+        touch-none select-none rounded-xl border-2 px-4 py-3 text-center text-base font-bold transition-all [-webkit-touch-callout:none]
         ${isDragging ? "opacity-50" : ""}
+        ${selected ? "scale-105 ring-4 ring-indigo-500 ring-offset-2" : ""}
         ${inZone
           ? "border-gray-200 bg-white text-gray-800 shadow-sm"
           : "border-indigo-200 bg-indigo-50 text-indigo-800 shadow-md hover:shadow-lg"
@@ -136,12 +166,20 @@ export default function DragDropExercise({
   // Les hooks avant le retour anticipé : leur ordre ne doit pas dépendre
   // du payload.
   const [activeId, setActiveId] = useState<string | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor));
+  // L'étiquette choisie par un toucher, par position. Glisser reste possible ;
+  // toucher l'étiquette puis sa case est l'autre façon, et la seule qui ne
+  // dépend pas de la taille de l'écran : sur un téléphone, l'étiquette et sa
+  // case ne tiennent pas toujours ensemble à l'écran, et le glissé qui
+  // approche du bord fait défiler la page sous le doigt.
+  const [chosen, setChosen] = useState<number | null>(null);
+  // 8 px avant de partir en glissé : sans cela, un simple toucher est déjà un
+  // glissé et dnd-kit avale le clic qui le suit.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   if (zones.length < 2 || items.length < 2) {
     return (
       <div className="space-y-4">
-        <ExercisePrompt prompt={prompt} />
+        <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
         <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-amber-600" aria-hidden />
           <p className="font-bold text-amber-900">Cet exercice est cassé, on te le saute.</p>
@@ -159,6 +197,9 @@ export default function DragDropExercise({
   const zoneIds = zones.map((_, index) => zoneId(index));
   const itemIds = items.map((_, index) => itemId(index));
 
+  const place = (item: number, zone: number) =>
+    setZoneOfItem((prev) => prev.map((current, index) => (index === item ? zone : current)));
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
@@ -167,7 +208,34 @@ export default function DragDropExercise({
     const zone = zoneIds.indexOf(String(over.id));
     const item = itemIds.indexOf(String(active.id));
     if (zone < 0 || item < 0) return;
-    setZoneOfItem((prev) => prev.map((current, index) => (index === item ? zone : current)));
+    place(item, zone);
+    setChosen(null);
+  };
+
+  // Toucher une étiquette :
+  //  - la choisie : on la relâche ;
+  //  - une étiquette déjà POSÉE dans une case, alors qu'une autre est choisie :
+  //    c'est toucher cette case (le centre d'une case pleine tombe sur une
+  //    étiquette, pas sur le fond) ; la choisie y est posée ;
+  //  - sinon : c'est la nouvelle étiquette choisie.
+  const choose = (item: number) => {
+    if (disabled) return;
+    if (chosen === item) {
+      setChosen(null);
+      return;
+    }
+    const zone = zoneOfItem[item];
+    if (chosen !== null && zone !== null && zoneOfItem[chosen] !== zone) {
+      place(chosen, zone);
+      setChosen(null);
+      return;
+    }
+    setChosen(item);
+  };
+  const putChosenIn = (zone: number) => {
+    if (chosen === null || disabled) return;
+    place(chosen, zone);
+    setChosen(null);
   };
 
   const handleSubmit = () => {
@@ -187,7 +255,7 @@ export default function DragDropExercise({
 
   return (
     <div className="space-y-6">
-      <ExercisePrompt prompt={prompt} />
+      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
       <DndContext
         sensors={sensors}
@@ -203,6 +271,8 @@ export default function DragDropExercise({
               id={zoneIds[zoneIndex]}
               label={zone}
               colorIndex={zoneIndex}
+              armed={chosen !== null && zoneOfItem[chosen] !== zoneIndex}
+              onChoose={() => putChosenIn(zoneIndex)}
             >
               {items.map((item, index) =>
                 zoneOfItem[index] === zoneIndex ? (
@@ -212,6 +282,8 @@ export default function DragDropExercise({
                     label={item.text}
                     disabled={disabled}
                     inZone={true}
+                    selected={chosen === index}
+                    onChoose={() => choose(index)}
                   />
                 ) : null,
               )}
@@ -222,8 +294,20 @@ export default function DragDropExercise({
         {/* Unplaced items */}
         {unplacedItems.length > 0 && (
           <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-4">
-            <p className="mb-3 text-center font-display text-sm font-extrabold uppercase tracking-wide text-gray-500">
-              Glisse chaque étiquette dans la bonne case
+            <p
+              aria-live="polite"
+              className="mb-3 text-center font-display text-sm font-extrabold uppercase tracking-wide text-gray-500"
+            >
+              {chosen !== null ? (
+                `Touche la case où poser « ${items[chosen].text} »`
+              ) : (
+                <>
+                  Glisse chaque étiquette dans la bonne case
+                  <span className="mt-1 block text-xs font-semibold normal-case tracking-normal">
+                    Ou touche l&apos;étiquette, puis la case.
+                  </span>
+                </>
+              )}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {unplacedItems.map(({ item, index }) => (
@@ -233,6 +317,8 @@ export default function DragDropExercise({
                   label={item.text}
                   disabled={disabled}
                   inZone={false}
+                  selected={chosen === index}
+                  onChoose={() => choose(index)}
                 />
               ))}
             </div>
