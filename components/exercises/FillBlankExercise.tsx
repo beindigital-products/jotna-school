@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ExercisePrompt from "./ExercisePrompt";
+import { payloadImage } from "./ExerciseImage";
 import { BrokenExercise, SubmitButton, verdictClasses, type ExerciseScreenProps } from "./game-parts";
 import { splitBlanks, type FillBlankView } from "@/convex/paliers/games/types";
 
@@ -43,7 +44,7 @@ export default function FillBlankExercise({
 
   return (
     <div className="space-y-6">
-      <ExercisePrompt prompt={prompt} />
+      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
       <div className={`rounded-2xl border-3 px-5 py-5 text-xl font-semibold leading-[3.25rem] text-gray-900 ${verdictClasses(isCorrect)}`}>
         {parts.map((part, i) => (

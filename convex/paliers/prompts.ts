@@ -15,6 +15,11 @@
 
 import type { AiPurpose } from "../aiGateway/registry";
 import { difficultyStage, type DifficultyStage } from "../palierRules";
+import {
+  EXERCISE_IMAGES,
+  exerciseImageCatalogueText,
+  type ExerciseImage,
+} from "../../lib/exercise-images";
 
 export type ClassLevel = "CI" | "CP" | "CE1" | "CE2" | "CM1" | "CM2";
 
@@ -139,6 +144,29 @@ const QUALITY_RULE = `
 - order : 3 éléments au moins, tous différents, et l'énoncé dit l'ordre voulu. match : 3
   à 6 paires. short-answer : acceptedAnswers non vide, réponse absente de l'énoncé.
 - 3 indices non vides et différents ; le 1er ne donne pas la réponse.`;
+
+/**
+ * LES IMAGES D'ÉNONCÉ, À CHOISIR DANS UN CATALOGUE FERMÉ (`lib/exercise-images.ts`).
+ * Le modèle ne crée pas d'image : il en désigne une, par identifiant, dans
+ * `payload.image`. Vide tant que le catalogue est vide : la consigne ne promet
+ * pas ce qui n'existe pas.
+ */
+export function imagesRule(catalogue: readonly ExerciseImage[] = EXERCISE_IMAGES): string {
+  if (catalogue.length === 0) return "";
+  return `
+[Images d'énoncé — catalogue fermé]
+Pour une question qui demande de RECONNAÎTRE ce qu'on voit (« Quel animal vois-tu ? »,
+« Comment s'appelle ce fruit ? »), tu peux montrer une image : écris dans "payload"
+un champ "image" avec l'un de ces identifiants, EXACTEMENT, et rien d'autre.
+${exerciseImageCatalogueText(catalogue)}
+- L'image s'affiche au-dessus de l'énoncé : l'énoncé peut dire « Que vois-tu ? ».
+  Les options sont des mots (ou des émojis), jamais « l'image A ».
+- Aucun identifiant ne convient : n'écris PAS de champ "image" et n'écris pas de
+  question qui renvoie à une image.
+- Jamais d'image pour COMPTER : le comptage se fait en émojis. Jamais d'image dont
+  la réponse est écrite dessus.
+- Au plus 3 exercices avec image par palier.`;
+}
 
 const STAGE_LABEL: Record<DifficultyStage, string> = {
   decouverte: "découverte (notions de base, peu d'étapes).",
@@ -546,6 +574,7 @@ ${SENEGAL_ANCHOR}
 ${HINTS_RULE}
 ${SELF_CONTAINED_RULE}
 ${QUALITY_RULE}
+${imagesRule()}
 ${readingLearnerRules(input.class)}
 ${isMaths ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }
@@ -602,6 +631,7 @@ ${SENEGAL_ANCHOR}
 ${HINTS_RULE}
 ${SELF_CONTAINED_RULE}
 ${QUALITY_RULE}
+${imagesRule()}
 ${readingLearnerRules(input.class)}
 ${isMathSubject(input.subject) ? MATH_MIX_RULES + classScopeRules(input.subject, input.class) + MATH_OUTPUT_RULES : subjectRules(input.subject) + classScopeRules(input.subject, input.class)}`;
 }

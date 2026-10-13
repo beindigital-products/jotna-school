@@ -11,6 +11,7 @@
  *
  * Ni base, ni `ctx`, ni import de Convex : le paquet de l'écran l'embarque.
  */
+import { exerciseImageIdOf } from "../../lib/exercise-images";
 import { numericallyEqual } from "./mathRepair";
 import { verifyDragDrop, verifyMatch } from "./answerCheck";
 import type { ExerciseType } from "../exerciseTypes";
@@ -276,6 +277,19 @@ export function inputModeFor(acceptedAnswers: unknown): AnswerInputMode {
  * serveur ou celle de la séance jouée sur l'appareil.
  */
 export function sanitizePayload(
+  type: ExerciseForPlayer["type"],
+  payload: unknown,
+  exerciseId: string,
+  seedPrefix: string,
+): unknown {
+  const safe = sanitizePayloadByType(type, payload, exerciseId, seedPrefix);
+  // L'image d'énoncé n'est pas un secret : l'écran l'affiche. Seul un
+  // identifiant du catalogue passe (`lib/exercise-images.ts`).
+  const image = exerciseImageIdOf(payload);
+  return image && safe && typeof safe === "object" ? { ...(safe as Record<string, unknown>), image } : safe;
+}
+
+function sanitizePayloadByType(
   type: ExerciseForPlayer["type"],
   payload: unknown,
   exerciseId: string,

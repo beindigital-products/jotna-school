@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, GripVertical } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
+import { payloadImage } from "./ExerciseImage";
 import {
   DndContext,
   closestCenter,
@@ -22,6 +23,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 interface OrderPayload {
+  /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
+  image?: string;
   correctSequence?: string[];
   items?: string[];
 }
@@ -148,7 +151,7 @@ export default function OrderExercise({
   if (source.length < 2) {
     return (
       <div className="space-y-4">
-        <ExercisePrompt prompt={prompt} />
+        <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
         <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-amber-600" aria-hidden />
           <p className="font-bold text-amber-900">Cet exercice est cassé, on te le saute.</p>
@@ -176,7 +179,7 @@ export default function OrderExercise({
 
   return (
     <div className="space-y-6">
-      <ExercisePrompt prompt={prompt} />
+      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
       <DndContext
         sensors={sensors}

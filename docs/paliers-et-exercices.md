@@ -414,6 +414,59 @@ facile ou trop difficile, un texte qui blesse. Seul le calcul est vérifié sur 
 fond, en mathématiques (`mathRepair`). Le reste se relit : c'est le rôle de
 `needsManualReview` et de `qaStatus`.
 
+## Des images dans l'énoncé
+
+Certaines questions demandent une image (« Quel animal vois-tu ? »). L'écran
+n'affiche que le texte : sans image, la question est incompréhensible. Le
+modèle qui écrit les exercices ne crée pas d'image, car le serveur de
+production n'a pas accès au studio d'images. Il **choisit** dans un catalogue
+fermé (`lib/exercise-images.ts`), par identifiant, dans `payload.image`.
+
+- L'écran affiche `public/exercices/<id>.webp` au-dessus de l'énoncé
+  (`components/exercises/ExerciseImage.tsx`, passée par `ExercisePrompt` à tous
+  les types d'exercice). La hauteur est bornée (10 rem sur téléphone) pour ne
+  pas repousser les options. Les fichiers sont ceux du site : ils partent dans
+  l'application, donc s'affichent aussi hors ligne.
+- Un identifiant hors catalogue tombe (`validatePayload`, `sanitizePayload`). Une
+  image du catalogue compte comme une scène dessinée pour tous les gardes
+  (`displayedText`) : « Regarde l'image » n'est plus refusé quand l'image est
+  là, et l'est toujours quand elle manque. Elle ne lève pas le refus de
+  « Combien de billes as-tu ? » : **les images ne servent pas à compter**, un
+  générateur d'images ne sait pas dessiner « exactement 7 billes ». Le comptage
+  reste en émojis, vérifiés par le code.
+- La consigne de génération (`imagesRule`, `paliers/prompts.ts`) liste le
+  catalogue, au plus trois exercices avec image par palier. Tant que le
+  catalogue est vide, elle n'en dit rien : elle ne promet pas ce qui n'existe
+  pas.
+
+**Ajouter une image**
+
+1. La fabriquer avec le serveur MCP « studio » (`generate_image`). Modèle
+   conseillé : `recraft/recraft-v4.1` (0,035 $ par image), `mode: "manual"`,
+   `aspectRatio: "1:1"`. Demander l'estimation avant (`estimate_cost`). Gabarit :
+   *Children's picture-book illustration of a single <sujet>, flat vector style,
+   simple rounded shapes, thick soft outline, bright warm colors, centered, the
+   whole subject fully visible, plain pure white background, no text, no
+   letters, no shadow, no other objects.* Un seul sujet, jamais de texte dans
+   l'image, jamais plusieurs objets à compter. **La regarder** avant de la garder :
+   un modèle d'images se trompe (patte en trop, sujet coupé).
+2. La convertir : `node scripts/add-exercise-image.mjs <fichier> <identifiant>`
+   écrit `public/exercices/<identifiant>.webp` (512 × 512, fond blanc) et
+   affiche l'entrée à coller dans `EXERCISE_IMAGES`.
+3. Rédiger l'entrée : `alt` (ce que lit un lecteur d'écran, sans « image de »)
+   et `about` (le sujet, ce que le modèle lit pour choisir).
+4. `pnpm exec vitest run lib/__tests__/exercise-images.test.ts` : chaque entrée
+   a son fichier, chaque fichier son entrée.
+
+Les paliers déjà en base ne changent pas : pour qu'un palier utilise les
+nouvelles images, il faut le régénérer (`pregen:invalidate` puis `pregen:run`).
+
+**État** : le catalogue est vide, le code est en place. La première fabrication,
+le 13 octobre 2026, a échoué côté studio (« Vercel Blob: Cannot use public
+access on a private store ») : le stockage du studio est en accès privé alors
+que l'outil écrit en accès public. Tant que ce réglage n'est pas corrigé, aucune
+image n'est servie.
+
 ## Essais et indices
 
 Un exercice se joue en cinq essais au plus (`MAX_ATTEMPTS_PER_EXERCISE`).

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
+import { payloadImage } from "./ExerciseImage";
 import {
   DndContext,
   DragOverlay,
@@ -17,6 +18,8 @@ import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { dragDropAnswer } from "@/lib/exerciseAnswers";
 
 interface DragDropPayload {
+  /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
+  image?: string;
   zones?: string[];
   items?: { text: string }[];
 }
@@ -176,7 +179,7 @@ export default function DragDropExercise({
   if (zones.length < 2 || items.length < 2) {
     return (
       <div className="space-y-4">
-        <ExercisePrompt prompt={prompt} />
+        <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
         <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-amber-600" aria-hidden />
           <p className="font-bold text-amber-900">Cet exercice est cassé, on te le saute.</p>
@@ -252,7 +255,7 @@ export default function DragDropExercise({
 
   return (
     <div className="space-y-6">
-      <ExercisePrompt prompt={prompt} />
+      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
       <DndContext
         sensors={sensors}

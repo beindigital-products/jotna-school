@@ -23,9 +23,18 @@
  * (`paliers/pregen:repairVisuals`) et aux tests
  * (`convex/__tests__/missingVisual.test.ts`).
  */
+import { exerciseImageIdOf } from "../../lib/exercise-images";
+
 
 /** Une scène dessinée : au moins un pictogramme dans l'énoncé. */
 const PICTOGRAPH = /\p{Extended_Pictographic}/u;
+
+/**
+ * Une image du catalogue (`lib/exercise-images.ts`) est une scène dessinée au
+ * même titre qu'un émoji : `displayedText` en porte la trace par ce pictogramme,
+ * et tous les gardes (génération, contrôleur, `pregen:repairVisuals`) la voient.
+ */
+const IMAGE_PICTOGRAPH = "🖼️";
 
 /**
  * Ce que l'enfant peut lire dans l'énoncé comme donnée : un chiffre, un nombre
@@ -135,6 +144,7 @@ export function displayedText(type: string, payload: unknown): string {
         : [],
     );
   const parts: string[] = [];
+  if (exerciseImageIdOf(p)) parts.push(IMAGE_PICTOGRAPH);
   switch (type) {
     case "qcm":
       parts.push(...textsIn(p.options));

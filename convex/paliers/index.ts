@@ -31,6 +31,7 @@ import {
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop } from "./dragDropRepair";
 import { guardVisuals } from "./missingVisual";
+import { exerciseImageIdOf } from "../../lib/exercise-images";
 import { validateFillBlank } from "./fillBlank";
 import { auditExercise, blockingDefects, tallyCodes } from "./exerciseAudit";
 import { computeExerciseScore, hasEnoughValidExercises, PALIER_SIZE } from "./scoring";
@@ -1398,6 +1399,9 @@ function validatePayload(
   const optional = {
     ...(typeof p.explanation === "string" ? { explanation: p.explanation } : {}),
     ...(typeof p.concept === "string" ? { concept: p.concept } : {}),
+    // L'image d'énoncé : un identifiant du catalogue (`lib/exercise-images.ts`),
+    // ou rien. Un identifiant inconnu tombe.
+    ...(exerciseImageIdOf(p) ? { image: exerciseImageIdOf(p) } : {}),
   };
 
   switch (type) {

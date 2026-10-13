@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { Pencil } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
+import { payloadImage } from "./ExerciseImage";
 
 interface ShortAnswerPayload {
+  /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
+  image?: string;
   acceptedAnswers?: string[];
   tolerance?: string | null;
   /** Posé par le serveur (`paliers.sanitizePayload`) : le clavier à ouvrir. */
@@ -49,7 +52,7 @@ export default function ShortAnswerExercise({
 
   return (
     <div className="space-y-6">
-      <ExercisePrompt prompt={prompt} />
+      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
       <div className="relative">
         <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400" />
