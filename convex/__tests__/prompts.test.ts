@@ -85,6 +85,12 @@ describe("la consigne de génération d'un palier", () => {
     expect(buildPalierBasePrompt({ ...base, subject: "Anglais" })).toContain("fill-blank");
   });
 
+  it("dit au modèle de dessiner une forme avec un émoji, et que 🟦 est un carré", () => {
+    const prompt = flat(buildPalierBaseSystemPrompt({ ...base, subject: "Mathématiques", class: "CI" }));
+    expect(prompt).toContain("dessine-la avec un émoji de forme");
+    expect(prompt).toContain("🟦 est un carré (jamais un rectangle)");
+  });
+
   it("au CI, retire la réponse courte de la liste, du format et des maths", () => {
     for (const subject of ["Français", "Mathématiques"]) {
       const prompt = buildPalierBasePrompt({ ...base, subject, class: "CI" });
