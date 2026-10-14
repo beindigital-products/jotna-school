@@ -5,6 +5,7 @@ import {
   PROMPT_WORD_CEILING,
   auditExercise,
   blockingDefects,
+  emojiArithmetic,
   tallyCodes,
   type AuditInput,
   type DefectCode,
@@ -176,6 +177,10 @@ const CASES: Record<DefectCode, AuditInput> = {
   qcm_answer_key_mismatch: qcm({ answerKey: "Thiès" }),
   qcm_answer_key_unrelated: qcm({ answerKey: "Saint-Louis" }),
   qcm_catch_all_option: qcm({}, { options: ["Dakar", "Thiès", "Toutes les réponses"] }),
+  qcm_emoji_sum_mismatch: qcm(
+    { prompt: "Combien de mangues as-tu ? 🥭🥭 + 🥭", class: "CI", subject: "Mathématiques", answerKey: "2" },
+    { options: ["2", "3", "4"], correctIndex: 0 },
+  ),
   qcm_correct_option_stands_out: qcm(
     { answerKey: "Dakar est la capitale du Sénégal depuis 1960" },
     { options: ["Thiès", "Kaolack", "Dakar est la capitale du Sénégal depuis 1960"], correctIndex: 2 },
@@ -196,6 +201,16 @@ const CASES: Record<DefectCode, AuditInput> = {
   order_item_empty: order(["L'eau s'évapore", "", "La pluie tombe"]),
   order_item_duplicated: order(["L'eau s'évapore", "La pluie tombe", "L'eau s'évapore"]),
   order_already_sorted: order(["Banane", "Mangue", "Orange", "Pomme"], { prompt: "Pose les fruits sur la table." }),
+  order_spells_other_word: order(["e", "l", "o", "p", "u"], {
+    prompt: "Mets les lettres dans l'ordre pour écrire 'poule'.",
+    class: "CI",
+    subject: "Français",
+  }),
+  order_syllable_without_vowel: order(["ma", "ng", "ue"], {
+    prompt: "Remets les syllabes dans l'ordre pour le mot de la ville.",
+    class: "CI",
+    subject: "Français",
+  }),
   // --- Glisser-déposer ---
   dragdrop_zones_few: dragDrop({ zones: ["Fruits"], items: FOOD.items.slice(0, 2) }),
   dragdrop_items_few: dragDrop({ zones: FOOD.zones, items: [FOOD.items[0]] }),
@@ -1102,5 +1117,55 @@ describe("pregen:auditExercises : l'audit de tous les exercices en base", () => 
     const everything = await run(5000);
     expect(asked).toEqual([2000, 2000]);
     expect(everything.samples).toHaveLength(80);
+  });
+});
+
+
+describe("les erreurs de contenu que la forme ne montrait pas (CI)", () => {
+  const ci = { class: "CI", subject: "Français" } as const;
+
+  it("les lettres doivent écrire le mot demandé", () => {
+    const poule = (sequence: string[]) =>
+      order(sequence, { ...ci, prompt: "Mets les lettres dans l'ordre pour écrire 'poule'." });
+    expect(codesOf(poule(["p", "o", "u", "l", "e"]))).not.toContain("order_spells_other_word");
+    expect(codesOf(poule(["e", "l", "o", "p", "u"]))).toContain("order_spells_other_word");
+    expect(codesOf(poule(["p", "o", "u", "l"]))).toContain("order_spells_other_word");
+  });
+
+  it("des syllabes qui écrivent le mot passent, même avec des accents ou une majuscule", () => {
+    const e = order(["Ma", "ngue"], { ...ci, prompt: "Remets les syllabes dans l'ordre pour faire « mangue »." });
+    expect(codesOf(e)).not.toContain("order_spells_other_word");
+    const accent = order(["thié", "bou", "dienne"], {
+      ...ci,
+      prompt: "Remets les syllabes dans l'ordre pour faire le mot 'thiéboudienne'.",
+    });
+    expect(codesOf(accent)).not.toContain("order_spells_other_word");
+  });
+
+  it("ne juge pas un ordre de mots ou d'étapes", () => {
+    const e = order(["Je", "mange", "une", "mangue"], { ...ci, prompt: "Remets les mots dans l'ordre pour faire 'je mange une mangue'." });
+    expect(codesOf(e)).not.toContain("order_spells_other_word");
+  });
+
+  it("une syllabe a une voyelle", () => {
+    const bissap = (sequence: string[]) =>
+      order(sequence, { ...ci, prompt: "Remets les syllabes dans l'ordre pour faire 'bissap'." });
+    expect(codesOf(bissap(["bi", "ssap"]))).not.toContain("order_syllable_without_vowel");
+    expect(codesOf(bissap(["bi", "ss", "ap"]))).toContain("order_syllable_without_vowel");
+    expect(codesOf(bissap(["bi", "ssa", "p"]))).toContain("order_syllable_without_vowel");
+  });
+
+  it("le calcul dessiné en émojis doit valoir l'option juste", () => {
+    const sum = (prompt: string, options: string[], correctIndex: number) =>
+      qcm({ prompt, class: "CI", subject: "Mathématiques", answerKey: options[correctIndex] }, { options, correctIndex });
+    expect(emojiArithmetic("Combien ? 🥭🥭 + 🥭")).toBe(3);
+    expect(emojiArithmetic("Combien reste-t-il ? 🔵🔵🔵🔵 − 🔵")).toBe(3);
+    expect(emojiArithmetic("🥭🥭 + 🍌")).toBeNull();
+    expect(emojiArithmetic("Combien de billes vois-tu ? 🔵🔵🔵")).toBeNull();
+    expect(codesOf(sum("Combien de mangues ? 🥭🥭 + 🥭", ["2", "3", "4"], 1))).not.toContain("qcm_emoji_sum_mismatch");
+    expect(codesOf(sum("Combien de mangues ? 🥭🥭 + 🥭", ["2", "3", "4"], 0))).toContain("qcm_emoji_sum_mismatch");
+    expect(codesOf(sum("Combien reste-t-il ? 🔵🔵🔵🔵 − 🔵", ["3", "4", "5"], 0))).not.toContain("qcm_emoji_sum_mismatch");
+    // Des émojis différents : la question décide, le contrôleur ne tranche pas.
+    expect(codesOf(sum("Combien de mangues ? 🥭🥭 + 🍌", ["2", "3", "4"], 0))).not.toContain("qcm_emoji_sum_mismatch");
   });
 });

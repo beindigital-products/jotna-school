@@ -82,6 +82,7 @@ export const DEFECT_SEVERITY = {
   qcm_answer_key_unrelated: "warning",
   qcm_catch_all_option: "warning",
   qcm_correct_option_stands_out: "warning",
+  qcm_emoji_sum_mismatch: "blocking",
   // --- Association --------------------------------------------------------
   match_pairs_invalid: "blocking",
   match_pairs_count: "warning",
@@ -95,6 +96,8 @@ export const DEFECT_SEVERITY = {
   order_item_empty: "blocking",
   order_item_duplicated: "warning",
   order_already_sorted: "warning",
+  order_spells_other_word: "blocking",
+  order_syllable_without_vowel: "blocking",
   // --- Glisser-déposer ----------------------------------------------------
   dragdrop_zones_few: "blocking",
   dragdrop_items_few: "blocking",
@@ -697,6 +700,16 @@ function auditQcm(
     }
   }
 
+  // Un calcul dessiné en émojis (« 🥭🥭 + 🥭 ») dont l'option juste n'est pas le résultat.
+  const drawn = emojiArithmetic(input.prompt);
+  const chosen = correct === -1 ? null : numberForm(options[correct]);
+  if (drawn !== null && chosen && !chosen.fraction && Math.abs(chosen.value - drawn) > 1e-9) {
+    found.add(
+      "qcm_emoji_sum_mismatch",
+      `le calcul dessiné vaut ${drawn}, mais l'option juste est « ${excerpt(options[correct], 25)} »`,
+    );
+  }
+
   // La réponse écrite par le modèle contre l'option qu'il désigne.
   const key = typeof input.answerKey === "string" ? input.answerKey : "";
   if (key.trim() !== "" && correct !== -1) {
@@ -788,6 +801,35 @@ function auditMatch(found: Findings, payload: Record<string, unknown>): void {
 const ORDER_SAYS =
   /(?<![\p{L}])(?:ordre|croissants?|d[ée]croissants?|alphab\w*|chronolog\w*|[ée]tapes?|plus|moins|suite|phrase|histoire|dialogue|syllabes?|d'abord|ensuite|puis|avant|apr[èe]s|premier|derni\w*|début|fin|range[rz]?|remets?|remettre|reconstitue\w*|classe[rz]?|num[ée]rote\w*|file|rang|jours?|mois|saisons?|semaine|cycle|phases?|temps|si[èe]cle|date|grand|petit)(?![\p{L}])/iu;
 
+/**
+ * UN CALCUL DESSINÉ EN ÉMOJIS : « 🥭🥭 + 🥭 », « 🔵🔵🔵 − 🔵 ». Rend son résultat,
+ * ou `null` quand l'énoncé n'en porte pas, ou quand les émojis diffèrent
+ * (« 🥭🥭 + 🍌 » : combien de mangues, ou de fruits ? Le résultat dépend de la
+ * question, le contrôleur ne tranche pas).
+ */
+export function emojiArithmetic(prompt: string): number | null {
+  const group = String.raw`(?:\p{Extended_Pictographic}[\uFE0F]?\s*)+`;
+  const match = new RegExp(`${group}(?:[+−–-]\\s*${group})+`, "u").exec(prompt);
+  if (!match) return null;
+  const segment = match[0];
+  const kinds = new Set(Array.from(segment.matchAll(PICTOGRAPHS), (m) => m[0].replace(/\uFE0F/g, "")));
+  if (kinds.size !== 1) return null;
+  const parts = segment.split(/[+−–-]/);
+  const operators = Array.from(segment.matchAll(/[+−–-]/g), (m) => m[0]);
+  const count = (text: string) => Array.from(text.matchAll(PICTOGRAPHS)).length;
+  let total = count(parts[0]);
+  parts.slice(1).forEach((part, i) => {
+    total += operators[i] === "+" ? count(part) : -count(part);
+  });
+  return total >= 0 ? total : null;
+}
+
+/** Le mot qu'un exercice de lettres ou de syllabes demande de former : « pour faire 'mangue' ». */
+const SPELLED_WORD =
+  /pour\s+(?:[ée]crire|faire|former|obtenir|reconstituer|construire|trouver)\s+(?:(?:le|un)\s+mot\s+)?['‘’«"“]\s*([\p{L}-]+)\s*['‘’»"”]/iu;
+const PIECES_OF_WORD = /(?<![\p{L}])(?:lettres?|syllabes?)(?![\p{L}])/iu;
+const SYLLABLES = /(?<![\p{L}])syllabes?(?![\p{L}])/iu;
+
 function auditOrder(found: Findings, prompt: string, payload: Record<string, unknown>): void {
   const sequence = strings(payload.correctSequence);
   if (sequence.length < 2) {
@@ -803,6 +845,26 @@ function auditOrder(found: Findings, prompt: string, payload: Record<string, unk
     if (key === "") continue;
     if (seen.has(key)) found.add("order_item_duplicated", `l'élément « ${excerpt(key, 25)} » est écrit deux fois`);
     seen.add(key);
+  }
+
+  // Les lettres ou les syllabes, une fois remises dans l'ordre, doivent écrire le mot demandé :
+  // « poule » ne s'écrit pas e-l-o-p-u.
+  const target = SPELLED_WORD.exec(prompt)?.[1];
+  if (target && PIECES_OF_WORD.test(prompt)) {
+    const written = fold(sequence.join(""));
+    if (written !== fold(target)) {
+      found.add(
+        "order_spells_other_word",
+        `la suite « ${excerpt(sequence.join(" "), 40)} » écrit « ${excerpt(written, 25)} », pas « ${excerpt(target, 25)} »`,
+      );
+    }
+  }
+  // Une syllabe a une voyelle : « ng », « ss » ou « p » seuls ne sont pas des syllabes.
+  if (SYLLABLES.test(prompt)) {
+    const bare = sequence.find((item) => collapse(item) !== "" && !/[aeiouy]/.test(fold(item)));
+    if (bare !== undefined) {
+      found.add("order_syllable_without_vowel", `« ${excerpt(bare, 20)} » est donné comme syllabe mais n'a pas de voyelle`);
+    }
   }
 
   // Une suite rangée dans l'ordre alphabétique ou croissant sans que l'énoncé dise quel ordre.
