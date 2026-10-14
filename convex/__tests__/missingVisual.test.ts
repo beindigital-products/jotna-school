@@ -38,6 +38,44 @@ describe("findMissingVisual : une question sans sa scène", () => {
     }
   });
 
+  it("écarte un démonstratif qui désigne une chose absente (« cette forme »)", () => {
+    for (const prompt of [
+      "Quel est le nom de cette forme ?",
+      "Que représente cette image ?",
+      "Quel animal est ce personnage ?",
+      "Combien de syllabes dans ce mot ?",
+      "De quelle couleur est cet objet ?",
+      "Glisse le mot qui correspond à cette image.",
+    ]) {
+      expect(findMissingVisual(prompt), prompt).toBe("points_at_absent_image");
+    }
+  });
+
+  it("garde un démonstratif dont la chose est écrite ou dessinée", () => {
+    for (const prompt of [
+      "Cette forme a quatre côtés égaux. Comment s'appelle-t-elle ?",
+      "Combien de syllabes dans ce mot : mangue ?",
+      "Quelle lettre commence ce mot « mangue » ?",
+      "Quel est le nom de cette forme ? 🔺",
+      "Combien de doigts a cette main ?",
+      "Quelle est cette phrase ?",
+      "Quel est le nom de cette forme ? ⬤",
+      "Quel est le nom de cette forme ? ▲",
+      "Mariama mange des ___ car elle aime ce fruit.",
+      "Awa aime ce fruit. Elle le mange.",
+    ]) {
+      expect(findMissingVisual(prompt), prompt).toBeNull();
+    }
+  });
+
+  it("lève le démonstratif quand les options portent un émoji", () => {
+    const options = { options: ["🐶 dog", "🐱 cat", "🐦 bird"], correctIndex: 0 };
+    expect(findMissingVisualOnScreen("Quel animal est-ce ? Choisis cette image.", "qcm", options)).toBeNull();
+    expect(
+      findMissingVisualOnScreen("Quel est le nom de cette forme ?", "qcm", { options: ["Triangle", "Carré", "Cercle"], correctIndex: 2 }),
+    ).toBe("points_at_absent_image");
+  });
+
   it("laisse « ci-dessous » dans un glisser-déposer, un appariement ou un ordre : ce sont les tuiles", () => {
     const tiles = { zones: ["Périmètre", "Aire"], items: [{ text: "20 cm", correctZone: "Périmètre" }, { text: "24 cm²", correctZone: "Aire" }] };
     const prompt = "Assigne les valeurs ci-dessous aux bonnes zones : Périmètre et Aire.";

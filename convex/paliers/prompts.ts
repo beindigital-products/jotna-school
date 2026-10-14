@@ -135,6 +135,10 @@ NI photo, NI tableau, NI carte, NI objet réel à l'écran.
 - Dans un « match » mot ↔ image, le côté image EST un émoji (« mangue » ↔ 🥭),
   jamais « image_mangue » ni « image de mangue » : l'enfant lirait ce texte tel
   quel. Un émoji par objet, tous différents, et le bon (🥭 pour une mangue, jamais 🍑).
+- Pour montrer une FORME, dessine-la avec un émoji de forme : carré 🟦 🟥 🟩 ⬜, cercle
+  🔴 🔵 🟡 ⚪, triangle 🔺, étoile ⭐. L'émoji dit la forme : 🟦 est un carré (jamais un
+  rectangle), 🔴 est un cercle. « Quel est le nom de cette forme ? » sans émoji de forme
+  est un ÉCHEC ; sinon donne la forme par ses côtés (« Quelle forme a trois côtés ? »).
 - Un fait qu'on sait sans rien voir n'a pas besoin de scène : « Combien de jours
   y a-t-il dans une semaine ? ».
 - Avant de répondre, relis chaque énoncé en imaginant l'enfant devant un écran où

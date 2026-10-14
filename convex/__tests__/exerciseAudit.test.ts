@@ -181,6 +181,10 @@ const CASES: Record<DefectCode, AuditInput> = {
     { prompt: "Combien de mangues as-tu ? 🥭🥭 + 🥭", class: "CI", subject: "Mathématiques", answerKey: "2" },
     { options: ["2", "3", "4"], correctIndex: 0 },
   ),
+  shape_emoji_mismatch: qcm(
+    { prompt: "Quel est le nom de cette forme ? 🟦", class: "CI", subject: "Mathématiques", answerKey: "rectangle" },
+    { options: ["carré", "rectangle", "triangle", "cercle"], correctIndex: 1 },
+  ),
   qcm_correct_option_stands_out: qcm(
     { answerKey: "Dakar est la capitale du Sénégal depuis 1960" },
     { options: ["Thiès", "Kaolack", "Dakar est la capitale du Sénégal depuis 1960"], correctIndex: 2 },
@@ -1217,5 +1221,40 @@ describe("le mot qu'un trou de lettre ou de syllabe fait écrire (CI, CP)", () =
   it("refuse « Le mot est ___ » sans mot écrit, l'accepte avec une image", () => {
     expect(codesOf(trou("Le mot est ___ (pa, ra, ni).", "pa"))).toContain("fill_blank_word_unreadable");
     expect(codesOf(trou("🥭 Le mot est ___.", "mangue"))).not.toContain("fill_blank_word_unreadable");
+  });
+});
+
+
+describe("la forme qu'un émoji dessine", () => {
+  const forme = (prompt: string, options: string[], correctIndex: number) =>
+    qcm({ prompt, class: "CI", subject: "Mathématiques", answerKey: options[correctIndex] }, { options, correctIndex });
+  const OPTIONS = ["carré", "rectangle", "triangle", "cercle"];
+
+  it("🟦 est un carré, pas un rectangle", () => {
+    expect(codesOf(forme("Quel est le nom de cette forme ? 🟦", OPTIONS, 0))).not.toContain("shape_emoji_mismatch");
+    expect(codesOf(forme("Quel est le nom de cette forme ? 🟦", OPTIONS, 1))).toContain("shape_emoji_mismatch");
+  });
+
+  it("reconnaît le cercle, le rond et le triangle", () => {
+    expect(codesOf(forme("Quelle est cette forme ? 🔴", ["un rond", "un carré", "un triangle"], 0))).not.toContain("shape_emoji_mismatch");
+    expect(codesOf(forme("Quelle est cette forme ? 🔴", ["un rond", "un carré", "un triangle"], 2))).toContain("shape_emoji_mismatch");
+    expect(codesOf(forme("Quelle est cette forme ? 🔺", OPTIONS, 2))).not.toContain("shape_emoji_mismatch");
+  });
+
+  it("accepte l'une des formes dessinées quand l'énoncé en montre plusieurs", () => {
+    expect(codesOf(forme("Quelle forme a trois côtés ? 🔴 🔺", OPTIONS, 2))).not.toContain("shape_emoji_mismatch");
+  });
+
+  it("ne juge ni une question de couleur, ni une réponse qui n'est pas une forme", () => {
+    expect(codesOf(forme("De quelle couleur est cette forme ? 🔴", ["rouge", "bleu", "vert"], 0))).not.toContain("shape_emoji_mismatch");
+    expect(codesOf(forme("Quel objet est un cercle ? 🔴 🍎", ["la pomme", "le livre"], 0))).not.toContain("shape_emoji_mismatch");
+  });
+
+  it("vérifie les paires d'un appariement forme ↔ nom", () => {
+    const pairs = (list: [string, string][]) =>
+      codesOf(match(list, { prompt: "Relie chaque forme à son nom.", class: "CI", subject: "Mathématiques" }));
+    expect(pairs([["🔺", "triangle"], ["🔵", "cercle"], ["⬜", "carré"]])).not.toContain("shape_emoji_mismatch");
+    expect(pairs([["🔺", "triangle"], ["🔵", "cercle"], ["🟦", "rectangle"]])).toContain("shape_emoji_mismatch");
+    expect(pairs([["🔴", "rouge"], ["🔵", "bleu"], ["🟢", "vert"]])).not.toContain("shape_emoji_mismatch");
   });
 });

@@ -84,6 +84,7 @@ export const DEFECT_SEVERITY = {
   qcm_catch_all_option: "warning",
   qcm_correct_option_stands_out: "warning",
   qcm_emoji_sum_mismatch: "blocking",
+  shape_emoji_mismatch: "blocking",
   // --- Association --------------------------------------------------------
   match_pairs_invalid: "blocking",
   match_pairs_count: "warning",
@@ -704,6 +705,14 @@ function auditQcm(
     }
   }
 
+  // Une forme dessinée par un émoji (🟦 est un carré) que la bonne option nomme autrement.
+  if (correct !== -1 && /(?<![\p{L}])(?:forme|figure)s?(?![\p{L}])/iu.test(input.prompt)) {
+    const wrong = wrongShapeName(shapesDrawn(input.prompt), options[correct]);
+    if (wrong) {
+      found.add("shape_emoji_mismatch", `l'émoji de l'énoncé dessine un ${wrong.drawn}, la bonne option est « ${excerpt(options[correct], 25)} »`);
+    }
+  }
+
   // Un calcul dessiné en émojis (« 🥭🥭 + 🥭 ») dont l'option juste n'est pas le résultat.
   const drawn = emojiArithmetic(input.prompt);
   const chosen = correct === -1 ? null : numberForm(options[correct]);
@@ -761,6 +770,16 @@ function auditQcm(
 // ---------------------------------------------------------------------------
 
 function auditMatch(found: Findings, payload: Record<string, unknown>): void {
+  for (const pair of Array.isArray(payload.pairs) ? payload.pairs : []) {
+    const entry = asRecord(pair);
+    if (!entry || typeof entry.left !== "string" || typeof entry.right !== "string") continue;
+    const wrong = wrongShapeName(shapesDrawn(entry.left), entry.right) ?? wrongShapeName(shapesDrawn(entry.right), entry.left);
+    if (wrong) {
+      found.add("shape_emoji_mismatch", `« ${excerpt(entry.left, 20)} » est relié à « ${excerpt(entry.right, 20)} », mais l'émoji dessine un ${wrong.drawn}`);
+      break;
+    }
+  }
+
   const pairs = (Array.isArray(payload.pairs) ? payload.pairs : [])
     .map((pair) => asRecord(pair))
     .filter((pair): pair is Record<string, unknown> => pair !== null)
@@ -804,6 +823,49 @@ function auditMatch(found: Findings, payload: Record<string, unknown>): void {
 
 const ORDER_SAYS =
   /(?<![\p{L}])(?:ordre|croissants?|d[ée]croissants?|alphab\w*|chronolog\w*|[ée]tapes?|plus|moins|suite|phrase|histoire|dialogue|syllabes?|d'abord|ensuite|puis|avant|apr[èe]s|premier|derni\w*|début|fin|range[rz]?|remets?|remettre|reconstitue\w*|classe[rz]?|num[ée]rote\w*|file|rang|jours?|mois|saisons?|semaine|cycle|phases?|temps|si[èe]cle|date|grand|petit)(?![\p{L}])/iu;
+
+/**
+ * UNE FORME DESSINÉE PAR UN ÉMOJI : 🟦 est un carré, 🔴 un cercle, 🔺 un triangle.
+ * Le 14 octobre 2026, « Quel est le nom de cette forme ? 🟦 » avait pour
+ * réponse « rectangle ». Seuls les émojis dont la forme ne fait pas de doute
+ * sont listés ; la couleur (« 🔴 est rouge ») n'est pas une forme.
+ */
+const SHAPE_OF_EMOJI: Record<string, string> = {
+  "🟥": "carre", "🟦": "carre", "🟩": "carre", "🟨": "carre", "🟧": "carre", "🟪": "carre", "🟫": "carre",
+  "⬛": "carre", "⬜": "carre", "◼": "carre", "◻": "carre", "■": "carre", "□": "carre",
+  "🔴": "cercle", "🔵": "cercle", "🟠": "cercle", "🟡": "cercle", "🟢": "cercle", "🟣": "cercle", "🟤": "cercle",
+  "⚫": "cercle", "⚪": "cercle", "●": "cercle", "○": "cercle", "⬤": "cercle",
+  "🔺": "triangle", "🔻": "triangle", "▲": "triangle", "▼": "triangle", "△": "triangle",
+  "⭐": "etoile", "🌟": "etoile", "★": "etoile", "☆": "etoile",
+  "🔶": "losange", "🔷": "losange", "◆": "losange", "◇": "losange",
+};
+const SHAPE_ALIASES: Record<string, string> = { rond: "cercle", disque: "cercle" };
+const SHAPE_WORDS = ["carre", "cercle", "rond", "disque", "triangle", "rectangle", "losange", "etoile"];
+
+/** Les formes que les émojis du texte dessinent. */
+function shapesDrawn(text: string): Set<string> {
+  const shapes = new Set<string>();
+  for (const char of text.replace(/\uFE0F/g, "")) {
+    const shape = SHAPE_OF_EMOJI[char];
+    if (shape) shapes.add(shape);
+  }
+  return shapes;
+}
+
+/** La forme que nomme ce texte, ou `null` quand il n'en nomme aucune, ou plusieurs. */
+function shapeNamed(text: string): string | null {
+  const folded = fold(text);
+  const named = Array.from(new Set(SHAPE_WORDS.filter((word) => hasWord(folded, word)).map((word) => SHAPE_ALIASES[word] ?? word)));
+  return named.length === 1 ? named[0] : null;
+}
+
+/** `{ drawn }` quand `text` nomme une forme que les émojis dessinés ne contiennent pas. */
+function wrongShapeName(drawn: Set<string>, text: string): { drawn: string } | null {
+  if (drawn.size === 0) return null;
+  const named = shapeNamed(text);
+  if (!named || drawn.has(named)) return null;
+  return { drawn: Array.from(drawn).join(" ou ") };
+}
 
 /**
  * UN CALCUL DESSINÉ EN ÉMOJIS : « 🥭🥭 + 🥭 », « 🔵🔵🔵 − 🔵 ». Rend son résultat,
