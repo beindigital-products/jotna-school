@@ -233,6 +233,14 @@ const CASES: Record<DefectCode, AuditInput> = {
     text: "Mes amis ___ un ballon.",
     blanks: [{ options: ["ont", "on", "sont", "es", "est", "a"], answer: "ont" }],
   }),
+  fill_blank_word_unknown: fillBlank(
+    { text: "Complète avec la bonne lettre : ___ngue.", blanks: [{ options: ["m", "t", "s"], answer: "m" }] },
+    { prompt: "Complète avec la bonne lettre.", class: "CI" },
+  ),
+  fill_blank_word_unreadable: fillBlank(
+    { text: "Le mot est ___ (pa, ra, ni).", blanks: [{ options: ["pa", "ra", "ni"], answer: "pa" }] },
+    { prompt: "Complète avec la bonne syllabe.", class: "CI" },
+  ),
   // --- Indices ---
   hints_few: qcm({ hints: ["Un seul indice."] }),
   hint_empty: qcm({ hints: ["Pense à la côte.", "", "C'est la plus grande ville."] }),
@@ -1167,5 +1175,47 @@ describe("les erreurs de contenu que la forme ne montrait pas (CI)", () => {
     expect(codesOf(sum("Combien reste-t-il ? 🔵🔵🔵🔵 − 🔵", ["3", "4", "5"], 0))).not.toContain("qcm_emoji_sum_mismatch");
     // Des émojis différents : la question décide, le contrôleur ne tranche pas.
     expect(codesOf(sum("Combien de mangues ? 🥭🥭 + 🍌", ["2", "3", "4"], 0))).not.toContain("qcm_emoji_sum_mismatch");
+  });
+});
+
+
+describe("le mot qu'un trou de lettre ou de syllabe fait écrire (CI, CP)", () => {
+  const trou = (text: string, answer: string, over: Partial<AuditInput> = {}) =>
+    fillBlank(
+      { text, blanks: [{ options: [answer, "x", "z"], answer }] },
+      { prompt: "Complète avec la bonne syllabe.", class: "CI", ...over },
+    );
+
+  it("accepte un trou qui écrit un mot connu", () => {
+    expect(codesOf(trou("Complète la lettre : m___to.", "o"))).not.toContain("fill_blank_word_unknown");
+    expect(codesOf(trou("Complète la syllabe : ___ngue.", "ma"))).not.toContain("fill_blank_word_unknown");
+    expect(codesOf(trou("Complète la syllabe : ___ ssa", "ya"))).not.toContain("fill_blank_word_unknown");
+    expect(codesOf(trou("___mille.", "fa"))).not.toContain("fill_blank_word_unknown");
+  });
+
+  it("refuse un trou qui écrit un mot inconnu", () => {
+    expect(codesOf(trou("Complète la lettre : ___ngue.", "m"))).toContain("fill_blank_word_unknown");
+    expect(codesOf(trou("Complète la syllabe : ___mille.", "mi"))).toContain("fill_blank_word_unknown");
+  });
+
+  it("reconnaît un pluriel et un féminin", () => {
+    expect(codesOf(trou("Complète la syllabe : ___ngues.", "ma"))).not.toContain("fill_blank_word_unknown");
+    expect(codesOf(trou("Complète la syllabe : pe___te.", "ti"))).not.toContain("fill_blank_word_unknown");
+  });
+
+  it("ne juge ni une phrase, ni une autre classe, ni l'anglais", () => {
+    expect(codesOf(trou("Awa a ___ biscuits.", "5", { prompt: "Complète avec la bonne lettre." }))).not.toContain("fill_blank_word_unknown");
+    expect(codesOf(trou("Complète la lettre : ___ngue.", "m", { class: "CE2" }))).not.toContain("fill_blank_word_unknown");
+    expect(codesOf(trou("Complète la lettre : a___le.", "pp", { subject: "Anglais" }))).not.toContain("fill_blank_word_unknown");
+  });
+
+  it("juge aussi « Complète le mot »", () => {
+    expect(codesOf(trou("p___lle", "o", { prompt: "Complète le mot : p___lle." }))).toContain("fill_blank_word_unknown");
+    expect(codesOf(trou("m___to", "o", { prompt: "Complète le mot : m___to." }))).not.toContain("fill_blank_word_unknown");
+  });
+
+  it("refuse « Le mot est ___ » sans mot écrit, l'accepte avec une image", () => {
+    expect(codesOf(trou("Le mot est ___ (pa, ra, ni).", "pa"))).toContain("fill_blank_word_unreadable");
+    expect(codesOf(trou("🥭 Le mot est ___.", "mangue"))).not.toContain("fill_blank_word_unreadable");
   });
 });

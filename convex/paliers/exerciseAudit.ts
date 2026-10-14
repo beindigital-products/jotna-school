@@ -42,6 +42,7 @@ import { isGenericZoneLabel } from "./dragDropRepair";
 import { validateFillBlank } from "./fillBlank";
 import { displayedText, findMissingVisualOnScreen, withoutDanglingHints } from "./missingVisual";
 import { BLANK_MARK } from "./games/types";
+import { KNOWN_WORDS } from "./knownWords";
 
 // ===========================================================================
 // LES CODES DE DÉFAUT ET LEUR GRAVITÉ
@@ -114,6 +115,8 @@ export const DEFECT_SEVERITY = {
   // --- Phrase à trous -----------------------------------------------------
   fill_blank_invalid: "blocking",
   fill_blank_off_limits: "warning",
+  fill_blank_word_unknown: "blocking",
+  fill_blank_word_unreadable: "blocking",
   // --- Indices ------------------------------------------------------------
   hints_few: "warning",
   hint_empty: "warning",
@@ -450,6 +453,7 @@ function auditInto(found: Findings, input: AuditInput): void {
           break;
         case "fill-blank":
           auditFillBlank(found, payload);
+          auditFillBlankWord(found, input, payload);
           break;
         default:
           break;
@@ -982,6 +986,54 @@ function auditFillBlank(found: Findings, payload: Record<string, unknown>): void
     found.add("fill_blank_invalid", "la bonne réponse d'un trou ne figure pas parmi les mots proposés");
   } else {
     found.add("fill_blank_off_limits", "trop de trous (plus de 4), ou un trou avec moins de 2 ou plus de 5 mots");
+  }
+}
+
+/**
+ * LE MOT QU'UN TROU DE LETTRE OU DE SYLLABE FAIT ÉCRIRE, AU CI ET AU CP.
+ * « ___ngue » avec « m » écrit « mngue » ; « Le mot est ___ (pa, ra, ni) » ne
+ * dit nulle part de quel mot il s'agit. Un enfant qui apprend à lire ne peut
+ * ni deviner ni vérifier : le mot rempli doit exister dans `knownWords.ts`.
+ *
+ * LA LISTE EST FERMÉE : un bon mot qui lui manque écarte un bon exercice, et
+ * le palier se refait. On ne juge que les trous d'un seul mot (« m___to »,
+ * « ___ ssa »), jamais une phrase, et jamais l'anglais.
+ */
+const FRAGMENT_TASK = /(?<![\p{L}])(?:lettres?|syllabes?|le\s+mot)(?![\p{L}])/iu;
+const WORD_UNNAMED = /(?<![\p{L}])(?:mot|syllabe|lettre)\s+(?:qui\s+manque\s+)?(?:est|manque)\s*_{3}/iu;
+
+function auditFillBlankWord(found: Findings, input: AuditInput, payload: Record<string, unknown>): void {
+  if (input.class !== "CI" && input.class !== "CP") return;
+  if (input.subject && ANGLAIS.test(input.subject)) return;
+  const text = typeof payload.text === "string" ? payload.text.replace(/_{2,}/g, BLANK_MARK) : "";
+  const blanks = Array.isArray(payload.blanks) ? payload.blanks : [];
+  const answer = asRecord(blanks[0])?.answer;
+  if (blanks.length !== 1 || typeof answer !== "string" || text.split(BLANK_MARK).length !== 2) return;
+  const shown = `${input.prompt} ${text}`;
+  // Le mot n'est écrit nulle part, ni en lettres ni en image : « Le mot est ___ (pa, ra, ni) ».
+  if (WORD_UNNAMED.test(`${input.prompt} ${text}`.replace(/\([^)]*\)/g, "")) && !PICTOGRAPH.test(shown)) {
+    found.add("fill_blank_word_unreadable", "le mot à retrouver n'est écrit nulle part : l'enfant ne peut pas le deviner");
+    return;
+  }
+  if (!FRAGMENT_TASK.test(shown)) return;
+
+  const task = text.slice(text.lastIndexOf(":") + 1).replace(/[.!?\s]+$/u, "").trim();
+  if (task === "") return;
+  const tokens = task.split(/\s+/);
+  let word: string | null = null;
+  if (tokens.length === 1 && tokens[0].includes(BLANK_MARK)) word = tokens[0];
+  else if (tokens.length === 2) {
+    const [first, second] = tokens;
+    if (first === BLANK_MARK && /^\p{L}+$/u.test(second)) word = `${first}${second}`;
+    else if (second === BLANK_MARK && /^\p{L}+$/u.test(first)) word = `${first}${second}`;
+  }
+  if (!word) return;
+  const filled = word.replace(BLANK_MARK, answer.trim());
+  const candidate = fold(filled).replace(/œ/g, "oe");
+  if (!/^\p{L}+$/u.test(candidate)) return;
+  const known = [candidate, candidate.replace(/[sx]$/, ""), candidate.replace(/e$/, "")].some((form) => KNOWN_WORDS.has(form));
+  if (!known) {
+    found.add("fill_blank_word_unknown", `le trou fait écrire « ${excerpt(filled, 30)} », un mot que la liste du CI et du CP ne connaît pas`);
   }
 }
 

@@ -359,7 +359,7 @@ les `blocking` d'abord :
 | Ordre | `order_too_few` (moins de 2), `order_item_empty`, `order_spells_other_word` (« pour écrire 'poule' » avec les lettres e-l-o-p-u : la suite doit écrire le mot cité), `order_syllable_without_vowel` (« ng », « ss », « p » donnés comme syllabes) | `order_few` (2), `order_item_duplicated`, `order_already_sorted` (suite déjà rangée alphabétiquement ou par ordre croissant, sans que l'énoncé dise quel ordre) |
 | Glisser-déposer | `dragdrop_zones_few`, `dragdrop_items_few`, `dragdrop_generic_zone` (« Zone A »), `dragdrop_zone_duplicated`, `dragdrop_zone_missing`, `dragdrop_label_without_zone` | `dragdrop_empty_zone`, `dragdrop_item_empty` |
 | Réponse courte | `short_answer_no_answer` | `short_answer_empty_accepted`, `short_answer_answer_in_prompt` (hors nombres : « 10 − 3 + 3 » a pour réponse 10) |
-| Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
+| Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots), `fill_blank_word_unknown` (CI et CP : le trou d'une lettre ou d'une syllabe écrit un mot absent de `paliers/knownWords.ts`, « ___ngue » avec « m »), `fill_blank_word_unreadable` (« Le mot est ___ (pa, ra, ni) » : le mot n'est écrit nulle part) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
 | Indices | | `hints_few` (moins de 2), `hint_empty`, `hints_duplicated`, `hint_gives_answer` (le 1er écrit le bon choix sans parler des autres), `hint_dangling_visual` |
 | Texte | `text_placeholder` (« undefined », « null », « NaN »), `text_replacement_char` (�) | `text_double_space`, `text_markup` (`**`, `#`, backtick, balise), `text_english_in_young_class` (anglais dans un énoncé de CI ou de CP hors Anglais), `text_foreign_currency` (euros, dollars : FCFA seul) |
 
@@ -538,3 +538,12 @@ thématiques mêlent des jeux fabriqués par le code à leurs paliers : voir
   l'identique ; `exactSpelling: true` dans le payload (conjugaison, accord,
   homophone) refuse la faute. Le modèle liste toutes les réponses admises
   (singulier, pluriel, avec ou sans article, synonymes).
+
+**Le vocabulaire fermé du CI et du CP** (`paliers/knownWords.ts`) : un trou de
+lettre ou de syllabe doit écrire un mot de cette liste (pluriel et féminin
+admis). Elle vient de la banque écrite à la main de la vitrine et de mots
+courants de l'école, de la maison, de la cuisine, des animaux et des lieux du
+Sénégal. Elle est fermée : un bon mot qui lui manque écarte un bon exercice et
+le palier se refait ; ajoute le mot dans le fichier (sans accent, en
+minuscules). Les phrases (« Awa a ___ biscuits »), les autres classes et
+l'anglais ne sont pas jugés.
