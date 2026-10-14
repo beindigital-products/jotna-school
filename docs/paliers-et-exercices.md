@@ -353,13 +353,13 @@ les `blocking` d'abord :
 
 | Domaine | `blocking` | `warning` |
 | --- | --- | --- |
-| Énoncé | `prompt_empty`, `prompt_truncated` (finit sur « de », « pour », une virgule, une élision), `prompt_dangling_colon` (réponse courte qui finit par « : »), `visual_missing` (scène absente, voir plus haut), `payload_malformed` | `prompt_too_short`, `prompt_ends_midphrase` (finit sur « le », « et »…), `prompt_unclosed_pair` (parenthèse ou guillemet jamais fermé), `prompt_too_long_for_class`, `hole_without_hole` (« Complète » sans `___` ni `?`), `short_answer_in_ci` |
-| QCM | `qcm_options_few` (moins de 2), `qcm_correct_index_out_of_range`, `qcm_correct_option_empty`, `qcm_correct_option_duplicated`, `qcm_equivalent_options_with_correct` (« 5 » et « cinq », « 0,5 » et « 1/2 »), `qcm_answer_key_mismatch` (la réponse écrite est une autre option que celle désignée) | `qcm_options_many` (plus de 6), `qcm_option_empty`, `qcm_option_duplicated`, `qcm_option_case_twin` (casse ou accents, sauf en français), `qcm_equivalent_options`, `qcm_answer_key_unrelated`, `qcm_catch_all_option` (« Toutes les réponses », « Aucune de ces réponses », « Les deux »), `qcm_correct_option_stands_out` (la bonne option est bien plus longue) |
+| Énoncé | `prompt_empty`, `prompt_truncated` (finit sur « de », « pour », une virgule, une élision), `prompt_dangling_colon` (réponse courte qui finit par « : »), `visual_missing` (scène absente, voir plus haut), `payload_malformed`, `short_answer_in_ci` (réponse tapée au CI) | `prompt_too_short`, `prompt_ends_midphrase` (finit sur « le », « et »…), `prompt_unclosed_pair` (parenthèse ou guillemet jamais fermé), `prompt_too_long_for_class`, `hole_without_hole` (« Complète » sans `___` ni `?`) |
+| QCM | `qcm_options_few` (moins de 2), `qcm_correct_index_out_of_range`, `qcm_correct_option_empty`, `qcm_correct_option_duplicated`, `qcm_equivalent_options_with_correct` (« 5 » et « cinq », « 0,5 » et « 1/2 »), `qcm_answer_key_mismatch` (la réponse écrite est une autre option que celle désignée), `qcm_emoji_sum_mismatch` (« 🥭🥭 + 🥭 » avec « 2 » pour option juste ; émojis tous identiques seulement) | `qcm_options_many` (plus de 6), `qcm_option_empty`, `qcm_option_duplicated`, `qcm_option_case_twin` (casse ou accents, sauf en français), `qcm_equivalent_options`, `qcm_answer_key_unrelated`, `qcm_catch_all_option` (« Toutes les réponses », « Aucune de ces réponses », « Les deux »), `qcm_correct_option_stands_out` (la bonne option est bien plus longue) |
 | Association | `match_pairs_invalid` (moins de 2), `match_side_empty` | `match_pairs_count` (hors de 3 à 6), `match_pair_duplicated`, `match_left_repeated`, `match_right_repeated` (deux sons identiques se relient pourtant à la même tuile : jamais bloquant) |
-| Ordre | `order_too_few` (moins de 2), `order_item_empty` | `order_few` (2), `order_item_duplicated`, `order_already_sorted` (suite déjà rangée alphabétiquement ou par ordre croissant, sans que l'énoncé dise quel ordre) |
+| Ordre | `order_too_few` (moins de 2), `order_item_empty`, `order_spells_other_word` (« pour écrire 'poule' » avec les lettres e-l-o-p-u : la suite doit écrire le mot cité), `order_syllable_without_vowel` (« ng », « ss », « p » donnés comme syllabes) | `order_few` (2), `order_item_duplicated`, `order_already_sorted` (suite déjà rangée alphabétiquement ou par ordre croissant, sans que l'énoncé dise quel ordre) |
 | Glisser-déposer | `dragdrop_zones_few`, `dragdrop_items_few`, `dragdrop_generic_zone` (« Zone A »), `dragdrop_zone_duplicated`, `dragdrop_zone_missing`, `dragdrop_label_without_zone` | `dragdrop_empty_zone`, `dragdrop_item_empty` |
 | Réponse courte | `short_answer_no_answer` | `short_answer_empty_accepted`, `short_answer_answer_in_prompt` (hors nombres : « 10 − 3 + 3 » a pour réponse 10) |
-| Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
+| Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots), `fill_blank_word_unknown` (CI et CP : le trou d'une lettre ou d'une syllabe écrit un mot absent de `paliers/knownWords.ts`, « ___ngue » avec « m »), `fill_blank_word_unreadable` (« Le mot est ___ (pa, ra, ni) » : le mot n'est écrit nulle part) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
 | Indices | | `hints_few` (moins de 2), `hint_empty`, `hints_duplicated`, `hint_gives_answer` (le 1er écrit le bon choix sans parler des autres), `hint_dangling_visual` |
 | Texte | `text_placeholder` (« undefined », « null », « NaN »), `text_replacement_char` (�) | `text_double_space`, `text_markup` (`**`, `#`, backtick, balise), `text_english_in_young_class` (anglais dans un énoncé de CI ou de CP hors Anglais), `text_foreign_currency` (euros, dollars : FCFA seul) |
 
@@ -519,3 +519,31 @@ Le programme des huit matières (les sept du guide officiel et l'anglais), du
 CI au CM2, se charge en base par `programme/seed:run`, et certaines
 thématiques mêlent des jeux fabriqués par le code à leurs paliers : voir
 `docs/programme-et-jeux.md`.
+
+
+## Réponse courte : types par classe et orthographe
+
+- **CI : aucune réponse tapée.** `short-answer` sort des types autorisés et du
+  format JSON demandé au modèle (`prompts.typesFor`), en maths comme ailleurs :
+  un calcul à trou se pose en QCM. `short_answer_in_ci` est `blocking` : le
+  contrôleur écarte ce qui passe quand même, et `pregen:auditExercises` le
+  signale en base. La consigne du CI décrit les exercices des manuels (relier,
+  classer, remettre des syllabes dans l'ordre, lettre qui manque, compter).
+- **Dès le CP, la réponse courte ne punit pas l'orthographe**
+  (`exerciseRules.judgeShortAnswer`) : réponse identique, ou sans accents ni
+  ponctuation, ou à une faute de frappe près (deux à partir de 8 lettres) est
+  validée. L'écran affiche « Attention, tu as mal écrit » et la bonne graphie
+  (`verifyAttempt` renvoie `spelling`, l'application hors ligne le calcule avec
+  `spellingNote`). Un mot de moins de 4 lettres et un nombre se jugent à
+  l'identique ; `exactSpelling: true` dans le payload (conjugaison, accord,
+  homophone) refuse la faute. Le modèle liste toutes les réponses admises
+  (singulier, pluriel, avec ou sans article, synonymes).
+
+**Le vocabulaire fermé du CI et du CP** (`paliers/knownWords.ts`) : un trou de
+lettre ou de syllabe doit écrire un mot de cette liste (pluriel et féminin
+admis). Elle vient de la banque écrite à la main de la vitrine et de mots
+courants de l'école, de la maison, de la cuisine, des animaux et des lieux du
+Sénégal. Elle est fermée : un bon mot qui lui manque écarte un bon exercice et
+le palier se refait ; ajoute le mot dans le fichier (sans accent, en
+minuscules). Les phrases (« Awa a ___ biscuits »), les autres classes et
+l'anglais ne sont pas jugés.

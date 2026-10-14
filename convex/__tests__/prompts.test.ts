@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildPalierBasePrompt,
   buildPalierBaseSystemPrompt,
+  buildPersonalizedPrompt,
   buildPersonalizedSystemPrompt,
   buildVariationSystemPrompt,
   subjectRules,
@@ -82,6 +83,33 @@ describe("la consigne de génération d'un palier", () => {
     expect(ci).not.toContain("[Français]");
     // La phrase à trous reste permise : le verbe, l'article, la préposition.
     expect(buildPalierBasePrompt({ ...base, subject: "Anglais" })).toContain("fill-blank");
+  });
+
+  it("au CI, retire la réponse courte de la liste, du format et des maths", () => {
+    for (const subject of ["Français", "Mathématiques"]) {
+      const prompt = buildPalierBasePrompt({ ...base, subject, class: "CI" });
+      expect(prompt).not.toContain("short-answer");
+      expect(prompt).toContain("Types autorisés : qcm, drag-drop, match, order");
+      expect(buildPersonalizedPrompt({ ...base, subject, class: "CI", weaknesses: [], frequentMistakes: [] })).not.toContain("short-answer");
+    }
+    // Les autres classes la gardent.
+    expect(buildPalierBasePrompt({ ...base, class: "CP" })).toContain("short-answer");
+  });
+
+  it("au CI, décrit des exercices de manuel : relier, classer, syllabes, lettre qui manque", () => {
+    const prompt = buildPalierBaseSystemPrompt({ ...base, class: "CI" });
+    expect(prompt).toContain("Kotti Kotti Yoli Yoli");
+    expect(prompt).toContain("remettre des syllabes dans l'ordre");
+    expect(prompt).toContain("AUCUNE réponse tapée");
+  });
+
+  it("dès le CP, demande plusieurs réponses admises et l'orthographe exacte quand elle est la question", () => {
+    for (const cls of ["CP", "CE2", "CM2"] as const) {
+      const prompt = buildPalierBaseSystemPrompt({ ...base, class: cls });
+      expect(prompt).toContain("TOUTES les réponses justes");
+      expect(prompt).toContain('"exactSpelling": true');
+    }
+    expect(buildPalierBaseSystemPrompt({ ...base, class: "CI" })).not.toContain("exactSpelling");
   });
 
   it("au CI et au CP, rappelle que l'enfant ne lit pas encore", () => {

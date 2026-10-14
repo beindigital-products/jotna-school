@@ -42,6 +42,7 @@ import { isGenericZoneLabel } from "./dragDropRepair";
 import { validateFillBlank } from "./fillBlank";
 import { displayedText, findMissingVisualOnScreen, withoutDanglingHints } from "./missingVisual";
 import { BLANK_MARK } from "./games/types";
+import { KNOWN_WORDS } from "./knownWords";
 
 // ===========================================================================
 // LES CODES DE DÉFAUT ET LEUR GRAVITÉ
@@ -66,7 +67,7 @@ export const DEFECT_SEVERITY = {
   visual_missing: "blocking",
   hole_without_hole: "warning",
   payload_malformed: "blocking",
-  short_answer_in_ci: "warning",
+  short_answer_in_ci: "blocking",
   // --- QCM ----------------------------------------------------------------
   qcm_options_few: "blocking",
   qcm_options_many: "warning",
@@ -82,6 +83,7 @@ export const DEFECT_SEVERITY = {
   qcm_answer_key_unrelated: "warning",
   qcm_catch_all_option: "warning",
   qcm_correct_option_stands_out: "warning",
+  qcm_emoji_sum_mismatch: "blocking",
   // --- Association --------------------------------------------------------
   match_pairs_invalid: "blocking",
   match_pairs_count: "warning",
@@ -95,6 +97,8 @@ export const DEFECT_SEVERITY = {
   order_item_empty: "blocking",
   order_item_duplicated: "warning",
   order_already_sorted: "warning",
+  order_spells_other_word: "blocking",
+  order_syllable_without_vowel: "blocking",
   // --- Glisser-déposer ----------------------------------------------------
   dragdrop_zones_few: "blocking",
   dragdrop_items_few: "blocking",
@@ -111,6 +115,8 @@ export const DEFECT_SEVERITY = {
   // --- Phrase à trous -----------------------------------------------------
   fill_blank_invalid: "blocking",
   fill_blank_off_limits: "warning",
+  fill_blank_word_unknown: "blocking",
+  fill_blank_word_unreadable: "blocking",
   // --- Indices ------------------------------------------------------------
   hints_few: "warning",
   hint_empty: "warning",
@@ -447,6 +453,7 @@ function auditInto(found: Findings, input: AuditInput): void {
           break;
         case "fill-blank":
           auditFillBlank(found, payload);
+          auditFillBlankWord(found, input, payload);
           break;
         default:
           break;
@@ -697,6 +704,16 @@ function auditQcm(
     }
   }
 
+  // Un calcul dessiné en émojis (« 🥭🥭 + 🥭 ») dont l'option juste n'est pas le résultat.
+  const drawn = emojiArithmetic(input.prompt);
+  const chosen = correct === -1 ? null : numberForm(options[correct]);
+  if (drawn !== null && chosen && !chosen.fraction && Math.abs(chosen.value - drawn) > 1e-9) {
+    found.add(
+      "qcm_emoji_sum_mismatch",
+      `le calcul dessiné vaut ${drawn}, mais l'option juste est « ${excerpt(options[correct], 25)} »`,
+    );
+  }
+
   // La réponse écrite par le modèle contre l'option qu'il désigne.
   const key = typeof input.answerKey === "string" ? input.answerKey : "";
   if (key.trim() !== "" && correct !== -1) {
@@ -788,6 +805,35 @@ function auditMatch(found: Findings, payload: Record<string, unknown>): void {
 const ORDER_SAYS =
   /(?<![\p{L}])(?:ordre|croissants?|d[ée]croissants?|alphab\w*|chronolog\w*|[ée]tapes?|plus|moins|suite|phrase|histoire|dialogue|syllabes?|d'abord|ensuite|puis|avant|apr[èe]s|premier|derni\w*|début|fin|range[rz]?|remets?|remettre|reconstitue\w*|classe[rz]?|num[ée]rote\w*|file|rang|jours?|mois|saisons?|semaine|cycle|phases?|temps|si[èe]cle|date|grand|petit)(?![\p{L}])/iu;
 
+/**
+ * UN CALCUL DESSINÉ EN ÉMOJIS : « 🥭🥭 + 🥭 », « 🔵🔵🔵 − 🔵 ». Rend son résultat,
+ * ou `null` quand l'énoncé n'en porte pas, ou quand les émojis diffèrent
+ * (« 🥭🥭 + 🍌 » : combien de mangues, ou de fruits ? Le résultat dépend de la
+ * question, le contrôleur ne tranche pas).
+ */
+export function emojiArithmetic(prompt: string): number | null {
+  const group = String.raw`(?:\p{Extended_Pictographic}[\uFE0F]?\s*)+`;
+  const match = new RegExp(`${group}(?:[+−–-]\\s*${group})+`, "u").exec(prompt);
+  if (!match) return null;
+  const segment = match[0];
+  const kinds = new Set(Array.from(segment.matchAll(PICTOGRAPHS), (m) => m[0].replace(/\uFE0F/g, "")));
+  if (kinds.size !== 1) return null;
+  const parts = segment.split(/[+−–-]/);
+  const operators = Array.from(segment.matchAll(/[+−–-]/g), (m) => m[0]);
+  const count = (text: string) => Array.from(text.matchAll(PICTOGRAPHS)).length;
+  let total = count(parts[0]);
+  parts.slice(1).forEach((part, i) => {
+    total += operators[i] === "+" ? count(part) : -count(part);
+  });
+  return total >= 0 ? total : null;
+}
+
+/** Le mot qu'un exercice de lettres ou de syllabes demande de former : « pour faire 'mangue' ». */
+const SPELLED_WORD =
+  /pour\s+(?:[ée]crire|faire|former|obtenir|reconstituer|construire|trouver)\s+(?:(?:le|un)\s+mot\s+)?['‘’«"“]\s*([\p{L}-]+)\s*['‘’»"”]/iu;
+const PIECES_OF_WORD = /(?<![\p{L}])(?:lettres?|syllabes?)(?![\p{L}])/iu;
+const SYLLABLES = /(?<![\p{L}])syllabes?(?![\p{L}])/iu;
+
 function auditOrder(found: Findings, prompt: string, payload: Record<string, unknown>): void {
   const sequence = strings(payload.correctSequence);
   if (sequence.length < 2) {
@@ -803,6 +849,26 @@ function auditOrder(found: Findings, prompt: string, payload: Record<string, unk
     if (key === "") continue;
     if (seen.has(key)) found.add("order_item_duplicated", `l'élément « ${excerpt(key, 25)} » est écrit deux fois`);
     seen.add(key);
+  }
+
+  // Les lettres ou les syllabes, une fois remises dans l'ordre, doivent écrire le mot demandé :
+  // « poule » ne s'écrit pas e-l-o-p-u.
+  const target = SPELLED_WORD.exec(prompt)?.[1];
+  if (target && PIECES_OF_WORD.test(prompt)) {
+    const written = fold(sequence.join(""));
+    if (written !== fold(target)) {
+      found.add(
+        "order_spells_other_word",
+        `la suite « ${excerpt(sequence.join(" "), 40)} » écrit « ${excerpt(written, 25)} », pas « ${excerpt(target, 25)} »`,
+      );
+    }
+  }
+  // Une syllabe a une voyelle : « ng », « ss » ou « p » seuls ne sont pas des syllabes.
+  if (SYLLABLES.test(prompt)) {
+    const bare = sequence.find((item) => collapse(item) !== "" && !/[aeiouy]/.test(fold(item)));
+    if (bare !== undefined) {
+      found.add("order_syllable_without_vowel", `« ${excerpt(bare, 20)} » est donné comme syllabe mais n'a pas de voyelle`);
+    }
   }
 
   // Une suite rangée dans l'ordre alphabétique ou croissant sans que l'énoncé dise quel ordre.
@@ -920,6 +986,54 @@ function auditFillBlank(found: Findings, payload: Record<string, unknown>): void
     found.add("fill_blank_invalid", "la bonne réponse d'un trou ne figure pas parmi les mots proposés");
   } else {
     found.add("fill_blank_off_limits", "trop de trous (plus de 4), ou un trou avec moins de 2 ou plus de 5 mots");
+  }
+}
+
+/**
+ * LE MOT QU'UN TROU DE LETTRE OU DE SYLLABE FAIT ÉCRIRE, AU CI ET AU CP.
+ * « ___ngue » avec « m » écrit « mngue » ; « Le mot est ___ (pa, ra, ni) » ne
+ * dit nulle part de quel mot il s'agit. Un enfant qui apprend à lire ne peut
+ * ni deviner ni vérifier : le mot rempli doit exister dans `knownWords.ts`.
+ *
+ * LA LISTE EST FERMÉE : un bon mot qui lui manque écarte un bon exercice, et
+ * le palier se refait. On ne juge que les trous d'un seul mot (« m___to »,
+ * « ___ ssa »), jamais une phrase, et jamais l'anglais.
+ */
+const FRAGMENT_TASK = /(?<![\p{L}])(?:lettres?|syllabes?|le\s+mot)(?![\p{L}])/iu;
+const WORD_UNNAMED = /(?<![\p{L}])(?:mot|syllabe|lettre)\s+(?:qui\s+manque\s+)?(?:est|manque)\s*_{3}/iu;
+
+function auditFillBlankWord(found: Findings, input: AuditInput, payload: Record<string, unknown>): void {
+  if (input.class !== "CI" && input.class !== "CP") return;
+  if (input.subject && ANGLAIS.test(input.subject)) return;
+  const text = typeof payload.text === "string" ? payload.text.replace(/_{2,}/g, BLANK_MARK) : "";
+  const blanks = Array.isArray(payload.blanks) ? payload.blanks : [];
+  const answer = asRecord(blanks[0])?.answer;
+  if (blanks.length !== 1 || typeof answer !== "string" || text.split(BLANK_MARK).length !== 2) return;
+  const shown = `${input.prompt} ${text}`;
+  // Le mot n'est écrit nulle part, ni en lettres ni en image : « Le mot est ___ (pa, ra, ni) ».
+  if (WORD_UNNAMED.test(`${input.prompt} ${text}`.replace(/\([^)]*\)/g, "")) && !PICTOGRAPH.test(shown)) {
+    found.add("fill_blank_word_unreadable", "le mot à retrouver n'est écrit nulle part : l'enfant ne peut pas le deviner");
+    return;
+  }
+  if (!FRAGMENT_TASK.test(shown)) return;
+
+  const task = text.slice(text.lastIndexOf(":") + 1).replace(/[.!?\s]+$/u, "").trim();
+  if (task === "") return;
+  const tokens = task.split(/\s+/);
+  let word: string | null = null;
+  if (tokens.length === 1 && tokens[0].includes(BLANK_MARK)) word = tokens[0];
+  else if (tokens.length === 2) {
+    const [first, second] = tokens;
+    if (first === BLANK_MARK && /^\p{L}+$/u.test(second)) word = `${first}${second}`;
+    else if (second === BLANK_MARK && /^\p{L}+$/u.test(first)) word = `${first}${second}`;
+  }
+  if (!word) return;
+  const filled = word.replace(BLANK_MARK, answer.trim());
+  const candidate = fold(filled).replace(/œ/g, "oe");
+  if (!/^\p{L}+$/u.test(candidate)) return;
+  const known = [candidate, candidate.replace(/[sx]$/, ""), candidate.replace(/e$/, "")].some((form) => KNOWN_WORDS.has(form));
+  if (!known) {
+    found.add("fill_blank_word_unknown", `le trou fait écrire « ${excerpt(filled, 30)} », un mot que la liste du CI et du CP ne connaît pas`);
   }
 }
 

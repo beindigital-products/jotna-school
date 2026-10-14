@@ -20,7 +20,7 @@ import {
   PALIER_VALIDATION_THRESHOLD,
   scoreExerciseFromAttempts,
 } from "./paliers/scoring";
-import { shuffleDeterministic, verifyAnswer } from "./paliers/exerciseRules";
+import { shuffleDeterministic, spellingNote, verifyAnswer } from "./paliers/exerciseRules";
 import { internal } from "./_generated/api";
 import { checkAccess, requireAccess } from "./access";
 import { finalExerciseIdsForAttempt, summaryPatch, syncTopicProgress } from "./progression";
@@ -95,9 +95,14 @@ export const verifyAttempt = mutation({
       palierAttemptId: args.palierAttemptId,
     });
 
+    // Réponse juste mais mal écrite : la graphie attendue, à montrer. La
+    // réponse est déjà validée, ce n'est donc pas une fuite (Décision 61).
+    const spelling = isCorrect ? spellingNote(exercise, args.userAnswer) : null;
+
     // Server-only feedback. We DO NOT return the correct answer — Decision 61.
     return {
       isCorrect,
+      ...(spelling ? { spelling } : {}),
       attemptNumber,
       hintsUsedSoFar: hintsUsedCount,
       attemptsRemaining: attemptsRemainingAfter(attemptNumber),

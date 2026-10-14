@@ -146,6 +146,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   const [feedback, setFeedback] = useState<{
     correct: boolean;
     attemptsRemaining: number;
+    spelling?: string;
   } | null>(null);
   const [hintShown, setHintShown] = useState<{
     text: string;
@@ -365,6 +366,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
         setFeedback({
           correct: res.isCorrect,
           attemptsRemaining: res.attemptsRemaining,
+          spelling: res.spelling,
         });
         // REPRISE D'UNE SÉANCE : jusqu'ici, l'écran suivait la progression
         // serveur (question 3, deux indices...). Passer en état local sans
@@ -377,7 +379,8 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
           setLocalStateAttemptId(palierAttemptId);
           void playCorrect();
           // Le temps de voir Pio fêter et les étoiles partir.
-          feedbackTimer.current = setTimeout(() => nextExoRef.current(), 1800);
+          // Plus long quand il faut lire la bonne graphie.
+          feedbackTimer.current = setTimeout(() => nextExoRef.current(), res.spelling ? 4500 : 1800);
         } else {
           setLocalStateAttemptId(palierAttemptId);
           setLocalFailedAttemptsThisExo(failedAttemptsThisExo + 1);
