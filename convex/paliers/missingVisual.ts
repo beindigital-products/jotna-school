@@ -97,6 +97,27 @@ const COUNTS_WHAT_IS_NOT_THERE: RegExp[] = [
 export const BODY_AND_SELF =
   /(?<!\p{L})(?:doigts?|mains?|pieds?|orteils?|yeux|œil|oeil|oreilles?|dents?|bras|jambes?|sens|frères|sœurs|soeurs)(?!\p{L})/iu;
 
+/**
+ * « Quel est le nom de cette forme ? », « Que représente cette image ? » : le
+ * démonstratif désigne une chose que l'énoncé ne montre pas. Le 14 octobre
+ * 2026, des paliers de CI de la prod posaient « Quel est le nom de cette
+ * forme ? » avec trois noms de formes pour seules options : l'enfant cherchait
+ * une forme qui n'existait pas à l'écran.
+ *
+ * Elle se lève dès que la chose est écrite : un chiffre, un nombre en lettres
+ * ou une citation (« cette forme a quatre côtés »), un mot après deux-points
+ * (« Combien de syllabes dans ce mot : mangue ? »), un émoji. Les noms de
+ * choses qu'une phrase décrit en entier (« ce jour », « cette phrase ») n'y
+ * sont pas : seule une chose à regarder désigne une scène. « Cette lettre » n'y est pas
+ * non plus : elle désigne aussi une lettre qu'on écrit (« les parties de cette
+ * lettre », dans la banque de la vitrine).
+ */
+const SHOWN_THING = new RegExp(
+  `(?<!\\p{L})(?:cette|ce|cet)\\s+(?:forme|figure|solide|objet|dessin|image|photo|animal|fruit|l[ée]gume|personnage|drapeau|instrument|symbole|signe|chiffre|nombre|syllabe|mot|son|couleur)(?!\\p{L})`,
+  "iu",
+);
+const WRITTEN_AFTER_COLON = /:\s*\p{L}{2,}/u;
+
 function pointsAtAbsent(text: string): boolean {
   if (NAMES_AN_IMAGE.some((pattern) => pattern.test(text))) return true;
   return POINTS_AT_BELONGINGS.test(text) && !BODY_AND_SELF.test(text);
@@ -123,6 +144,14 @@ export function findMissingVisual(prompt: string): MissingVisual | null {
     }
   }
   if (pointsAtAbsent(text)) return "points_at_absent_image";
+  if (
+    SHOWN_THING.test(text) &&
+    !WRITTEN_DATA.test(text) &&
+    !BODY_AND_SELF.test(text) &&
+    !WRITTEN_AFTER_COLON.test(text)
+  ) {
+    return "points_at_absent_image";
+  }
   return null;
 }
 
