@@ -57,10 +57,32 @@ describe("réparer d'abord, écarter ensuite", () => {
     if (outcome.kind === "accepted") expect(outcome.prompt).toContain("🥭🥭🥭🥭🥭");
   });
 
-  it("écarte « Combien de billes as-tu ? » : aucun émoji de bille, la réparation n'y touche pas, le garde-fou l'écarte", () => {
+  it("sauve « Combien de billes as-tu ? » : la réparation dessine les billes", () => {
+    const outcome = pipeline({
+      type: "short-answer",
+      prompt: "Combien de billes as-tu ?",
+      payload: { acceptedAnswers: ["5"] },
+      answerKey: "5",
+    });
+    expect(outcome.kind).toBe("accepted");
+    if (outcome.kind === "accepted") expect(outcome.prompt).toContain("🔴🔴🔴🔴🔴");
+  });
+
+  it("écarte « Combien de calebasses as-tu ? » : aucun émoji, la réparation l'écarte", () => {
     expect(
-      pipeline({ type: "short-answer", prompt: "Combien de billes as-tu ?", payload: { acceptedAnswers: ["5"] }, answerKey: "5" }),
-    ).toMatchObject({ kind: "rejected", by: "guardVisuals", reason: "counts_what_is_not_there" });
+      pipeline({ type: "short-answer", prompt: "Combien de calebasses as-tu ?", payload: { acceptedAnswers: ["5"] }, answerKey: "5" }),
+    ).toMatchObject({ kind: "rejected", by: "visualRepair" });
+  });
+
+  it("sauve « Combien de mangues as-tu ? » : la réparation écrit les émojis, le garde-fou les laisse passer", () => {
+    const outcome = pipeline({
+      type: "short-answer",
+      prompt: "Combien de mangues as-tu ?",
+      payload: { acceptedAnswers: ["4"] },
+      answerKey: "4",
+    });
+    expect(outcome.kind).toBe("accepted");
+    if (outcome.kind === "accepted") expect(outcome.prompt).toContain("🥭🥭🥭🥭");
   });
 
   it("écarte « Regarde tes billes. Combien sont rouges ? » : une scène qui n'existe pas", () => {

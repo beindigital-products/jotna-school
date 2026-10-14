@@ -237,3 +237,56 @@ describe("repairVisualPrompt — faux positifs vus sur la prod", () => {
     });
   });
 });
+
+describe("repairVisualPrompt — « Combien de X as-tu ? »", () => {
+  it("sans rangée, reçoit ses émojis", () => {
+    expect(
+      repairVisualPrompt({
+        type: "short-answer",
+        prompt: "Combien de mangues as-tu ?",
+        payload: { acceptedAnswers: ["4"] },
+        answerKey: "4",
+      }),
+    ).toEqual({ kind: "repaired", prompt: "🥭🥭🥭🥭\nCombien de mangues as-tu ?", change: "added" });
+  });
+
+  it("refait la rangée quand elle ne dit pas la clé", () => {
+    expect(repairVisualPrompt(qcm("🥭🥭 Combien de mangues as-tu ?", ["2", "5"], 1))).toMatchObject({
+      kind: "repaired",
+      change: "resized",
+      prompt: "🥭🥭🥭🥭🥭 Combien de mangues as-tu ?",
+    });
+  });
+
+  it("dessine les cauris et les billes", () => {
+    expect(repairVisualPrompt(qcm("Combien de cauris as-tu ?", ["8", "6"], 0))).toMatchObject({
+      kind: "repaired",
+      prompt: "🐚🐚🐚🐚🐚🐚🐚🐚\nCombien de cauris as-tu ?",
+    });
+    expect(repairVisualPrompt(qcm("Combien de billes as-tu ?", ["1", "4", "3"], 2))).toMatchObject({
+      kind: "repaired",
+      prompt: "🔴🔴🔴\nCombien de billes as-tu ?",
+    });
+  });
+
+  it("écarte un objet sans émoji connu", () => {
+    expect(repairVisualPrompt(qcm("Combien de calebasses as-tu ?", ["8", "6"], 0))).toEqual({
+      kind: "unrepairable",
+      reason: "nothing_to_see",
+    });
+  });
+
+  it("laisse les données écrites dans l'énoncé", () => {
+    for (const prompt of [
+      "Tu as 3 pommes et tu en manges 1. Combien de pommes as-tu ?",
+      "Tu as trois pommes et tu en manges une. Combien de pommes as-tu ?",
+      "Awa dit : « J'ai des mangues. » Combien de mangues as-tu ?",
+    ]) {
+      expect(repairVisualPrompt(qcm(prompt, ["2", "3"], 0)), prompt).toEqual({ kind: "ok" });
+    }
+  });
+
+  it("laisse le corps de l'enfant", () => {
+    expect(repairVisualPrompt(qcm("Combien de doigts as-tu ?", ["10", "8"], 0))).toEqual({ kind: "ok" });
+  });
+});
