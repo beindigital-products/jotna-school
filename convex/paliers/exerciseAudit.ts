@@ -505,7 +505,9 @@ function auditPrompt(
   }
 
   // « : » final : rien à répondre derrière, pour un type qui ne montre rien en dessous.
-  if (input.type === "short-answer" && /:\s*$/.test(text)) {
+  // Pas quand la matière vient d'être citée (« Écris le pluriel de 'mangue' : ») :
+  // la zone de réponse suit l'énoncé.
+  if (input.type === "short-answer" && /:\s*$/.test(text) && !/['‘’«“"][^'‘’«»“”"]+['’»”"]\s*:\s*$/u.test(text)) {
     found.add("prompt_dangling_colon", `l'énoncé finit par « : » et rien ne suit : « …${excerpt(text.slice(-30))} »`);
   }
 

@@ -64,7 +64,12 @@ const SENTENCE_START = "(?:^|[.!?:;]\\s+)(?:\\p{L}+,\\s+)?";
  */
 const NAMES_AN_IMAGE: RegExp[] = [
   /\bci[- ](?:dessous|dessus|contre|joint)\b/i,
-  new RegExp(`\\b(?:sur|dans|d'apr[èe]s|selon)\\s+${ARTICLE}${SHOWN_NOUN}`, "iu"),
+  // « Que doit montrer l'illustrateur dans une image de la cour ? » : l'image
+  // est à produire ou à décrire, l'énoncé n'en désigne aucune.
+  new RegExp(
+    `(?<!(?:montrer|repr[ée]senter|dessiner|figurer|illustrer|peindre|inclure|d[ée]crire)\\s+)\\b(?:sur|dans|d'apr[èe]s|selon)\\s+${ARTICLE}${SHOWN_NOUN}`,
+    "iu",
+  ),
   new RegExp(
     `${SENTENCE_START}(?:regarde|regardez|observe|observez|voici|voilà)\\s+(?:bien\\s+)?${ARTICLE}${OBSERVED_NOUN}(?!\\p{L})`,
     "iu",
@@ -96,6 +101,9 @@ function pointsAtAbsent(text: string): boolean {
   if (NAMES_AN_IMAGE.some((pattern) => pattern.test(text))) return true;
   return POINTS_AT_BELONGINGS.test(text) && !BODY_AND_SELF.test(text);
 }
+
+const TILE_TYPES = new Set(["match", "drag-drop", "order"]);
+const BELOW_ON_SCREEN = /\bci[- ]dess(?:us|ous)\b/giu;
 
 export type MissingVisual = "counts_what_is_not_there" | "points_at_absent_image";
 
@@ -183,7 +191,11 @@ export function findMissingVisualOnScreen(
 ): MissingVisual | null {
   const p = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
   const sentence = type === "fill-blank" && typeof p.text === "string" ? ` ${p.text}` : "";
-  const missing = findMissingVisual(`${prompt}${sentence}`);
+  // Dans un appariement, un glisser-déposer ou un ordre, ce qui est
+  // « ci-dessous » ce sont les étiquettes à l'écran (« Assigne les valeurs
+  // ci-dessous aux bonnes zones ») : même règle que `visualRepair.ts`.
+  const asked = TILE_TYPES.has(type) ? prompt.replace(BELOW_ON_SCREEN, " ") : prompt;
+  const missing = findMissingVisual(`${asked}${sentence}`);
   if (missing === "points_at_absent_image" && PICTOGRAPH.test(displayedText(type, payload))) return null;
   return missing;
 }
