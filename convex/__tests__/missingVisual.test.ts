@@ -45,6 +45,7 @@ describe("findMissingVisual : une question sans sa scène", () => {
       "Quel animal est ce personnage ?",
       "Combien de syllabes dans ce mot ?",
       "De quelle couleur est cet objet ?",
+      "Glisse le mot qui correspond à cette image.",
     ]) {
       expect(findMissingVisual(prompt), prompt).toBe("points_at_absent_image");
     }
@@ -58,6 +59,10 @@ describe("findMissingVisual : une question sans sa scène", () => {
       "Quel est le nom de cette forme ? 🔺",
       "Combien de doigts a cette main ?",
       "Quelle est cette phrase ?",
+      "Quel est le nom de cette forme ? ⬤",
+      "Quel est le nom de cette forme ? ▲",
+      "Mariama mange des ___ car elle aime ce fruit.",
+      "Awa aime ce fruit. Elle le mange.",
     ]) {
       expect(findMissingVisual(prompt), prompt).toBeNull();
     }

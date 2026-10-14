@@ -113,9 +113,20 @@ export const BODY_AND_SELF =
  * lettre », dans la banque de la vitrine).
  */
 const SHOWN_THING = new RegExp(
-  `(?<!\\p{L})(?:cette|ce|cet)\\s+(?:forme|figure|solide|objet|dessin|image|photo|animal|fruit|l[ée]gume|personnage|drapeau|instrument|symbole|signe|chiffre|nombre|syllabe|mot|son|couleur)(?!\\p{L})`,
+  `(?<!\\p{L})(?:cette|ce|cet)\\s+(?:forme|figure|solide|objet|dessin|image|photo|personnage|drapeau|symbole|couleur)(?!\\p{L})`,
   "iu",
 );
+/**
+ * Ces noms-là reprennent souvent un mot de la phrase (« elle aime ce fruit »,
+ * « ce mot » après une citation) : ils ne désignent une scène absente que dans
+ * une question (« Combien de syllabes dans ce mot ? »).
+ */
+const SHOWN_THING_IN_QUESTION = new RegExp(
+  `(?<!\\p{L})(?:cette|ce|cet)\\s+(?:animal|fruit|l[ée]gume|instrument|signe|chiffre|nombre|syllabe|mot|son)(?!\\p{L})`,
+  "iu",
+);
+/** Une forme dessinée avec un glyphe (⬤ ■ ▲ ★ ♥ ➜) : ce n'est pas un émoji, c'est pourtant une scène. */
+const DRAWN_WITH_A_GLYPH = /[\u25A0-\u25FF\u2600-\u27BF\u2B00-\u2BFF]/u;
 const WRITTEN_AFTER_COLON = /:\s*\p{L}{2,}/u;
 
 function pointsAtAbsent(text: string): boolean {
@@ -144,8 +155,11 @@ export function findMissingVisual(prompt: string): MissingVisual | null {
     }
   }
   if (pointsAtAbsent(text)) return "points_at_absent_image";
+  const points = SHOWN_THING.test(text) || (/\?/.test(text) && SHOWN_THING_IN_QUESTION.test(text));
   if (
-    SHOWN_THING.test(text) &&
+    points &&
+    !text.includes("___") &&
+    !DRAWN_WITH_A_GLYPH.test(text) &&
     !WRITTEN_DATA.test(text) &&
     !BODY_AND_SELF.test(text) &&
     !WRITTEN_AFTER_COLON.test(text)
