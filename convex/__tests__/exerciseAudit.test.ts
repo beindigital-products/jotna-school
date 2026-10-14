@@ -210,6 +210,11 @@ const CASES: Record<DefectCode, AuditInput> = {
     class: "CI",
     subject: "Français",
   }),
+  order_without_criterion: order(["Lion", "Chat", "Chien"], {
+    prompt: "Mets ces animaux dans l'ordre : chat, chien, lion.",
+    class: "CI",
+    subject: "Mathématiques",
+  }),
   order_syllable_without_vowel: order(["ma", "ng", "ue"], {
     prompt: "Remets les syllabes dans l'ordre pour le mot de la ville.",
     class: "CI",
@@ -1256,5 +1261,56 @@ describe("la forme qu'un émoji dessine", () => {
     expect(pairs([["🔺", "triangle"], ["🔵", "cercle"], ["⬜", "carré"]])).not.toContain("shape_emoji_mismatch");
     expect(pairs([["🔺", "triangle"], ["🔵", "cercle"], ["🟦", "rectangle"]])).toContain("shape_emoji_mismatch");
     expect(pairs([["🔴", "rouge"], ["🔵", "bleu"], ["🟢", "vert"]])).not.toContain("shape_emoji_mismatch");
+  });
+});
+
+
+describe("un ordre à ranger doit dire selon quoi", () => {
+  const rank = (prompt: string, sequence: string[] = ["a", "b", "c"]) =>
+    codesOf(order(sequence, { prompt, class: "CI", subject: "Mathématiques" }));
+
+  it("refuse des choses sans ordre naturel rangées sans critère", () => {
+    for (const prompt of [
+      "Mets ces animaux dans l'ordre : lion, cat, dog.",
+      "Mets les couleurs dans l'ordre.",
+      "Mets ces fruits dans l'ordre : mangue, pomme, banane.",
+      "Remets ces formes dans l'ordre : carré, cercle, triangle.",
+      "Mets ces parties du corps dans l'ordre : main, tête, jambe.",
+      "Mets ces villes en ordre.",
+    ]) {
+      expect(rank(prompt), prompt).toContain("order_without_criterion");
+    }
+  });
+
+  it("accepte un critère nommé", () => {
+    for (const prompt of [
+      "Mets ces fruits dans l'ordre alphabétique.",
+      "Range ces fruits du plus petit au plus grand.",
+      "Mets ces formes dans l'ordre de leur nombre de côtés.",
+      "Mets ces régions dans l'ordre de l'ouest à l'est.",
+      "Classe les régions du Sénégal du nord au sud.",
+      "Range les couleurs par ordre de l'arc-en-ciel.",
+      "Mets ces animaux dans l'ordre de leur taille.",
+      "Mets ces lieux dans l'ordre quand tu arrives à l'école.",
+      "Classe ces objets de famille en fonction de leur âge :",
+      "Mets ces animaux par leur habitat : terre, eau, air.",
+      "Mets dans l'ordre les parties du corps pour se lever.",
+      "Mets ces lieux dans l'ordre où tu les utilises pendant une journée, d'abord l'entrée.",
+    ]) {
+      expect(rank(prompt), prompt).not.toContain("order_without_criterion");
+    }
+  });
+
+  it("accepte ce qui porte son ordre : étapes, phrases, jours, nombres, mots d'une phrase", () => {
+    for (const prompt of [
+      "Mets ces étapes dans l'ordre.",
+      "Mets ces phrases dans le bon ordre.",
+      "Mets les jours de la semaine dans l'ordre.",
+      "Mets ces nombres dans l'ordre : 6, 1, 4.",
+      "Mets les mots dans le bon ordre.",
+      "Remets les syllabes dans l'ordre pour former un mot.",
+    ]) {
+      expect(rank(prompt), prompt).not.toContain("order_without_criterion");
+    }
   });
 });
