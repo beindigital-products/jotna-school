@@ -27,8 +27,17 @@ import { pickLine, pioSays } from "@/lib/pioCopy";
  * LES PHRASES CHANGENT. `seed` vient de l'exercice et de l'essai en cours :
  * même exercice, même essai, même phrase (pas de tirage pendant le rendu),
  * mais l'enfant n'entend pas « Bravo ! » dix fois de suite.
+ *
+ * UNE RÉPONSE JUSTE MAL ÉCRITE reste un bravo : la scène est la même, avec en
+ * plus « Attention, tu as mal écrit » et la bonne graphie. L'enfant apprend à
+ * écrire, on ne lui retire pas sa réponse pour une lettre.
  */
-export type AnswerOutcome = { correct: boolean; attemptsRemaining: number };
+export type AnswerOutcome = {
+  correct: boolean;
+  attemptsRemaining: number;
+  /** Réponse validée mais mal écrite : la bonne graphie, montrée à l'enfant. */
+  spelling?: string;
+};
 
 type Kind = "right" | "wrong" | "out";
 
@@ -171,6 +180,15 @@ export function AnswerFeedback({
 
         <p className={`font-display text-3xl font-extrabold leading-tight ${scene.title}`}>{title}</p>
         <p className={`mt-1 font-display text-lg font-bold ${scene.sub}`}>{sub}</p>
+
+        {kind === "right" && outcome.spelling && (
+          <p className="mt-3 rounded-2xl border-2 border-white bg-white/85 px-4 py-2 font-display text-base font-extrabold text-green-950 shadow-sm">
+            Attention, tu as mal écrit.
+            <span className="mt-0.5 block text-xl">
+              On écrit : <span className="text-orange-600">{outcome.spelling}</span>
+            </span>
+          </p>
+        )}
 
         {kind === "wrong" && (
           <>

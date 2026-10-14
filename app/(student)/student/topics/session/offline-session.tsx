@@ -67,6 +67,7 @@ import { attemptsRemainingAfter } from "@/convex/paliers/scoring";
 import {
   correctAnswerText,
   sanitizePayload,
+  spellingNote,
   verifyAnswer,
 } from "@/convex/paliers/exerciseRules";
 import { CapRegenAlternatives } from "@/components/cap-regen-alternatives";
@@ -161,6 +162,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   const [feedback, setFeedback] = useState<{
     correct: boolean;
     attemptsRemaining: number;
+    spelling?: string;
   } | null>(null);
   const [hintShown, setHintShown] = useState<{
     text: string;
@@ -372,6 +374,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
       const id = ensureSession();
       if (!id) return;
       const correct = verifyAnswer(full, answer);
+      const spelling = correct ? (spellingNote(full, answer) ?? undefined) : undefined;
       // Le journal à l'instant du geste, relu dans le moteur : pas celui du
       // dernier rendu.
       const attemptNumber = realAttemptsOn(engine.getSession(id)?.log ?? NO_LOG, exo._id) + 1;
@@ -385,12 +388,13 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
       // L'écran reste sur cet exercice le temps de la réaction.
       setShownIndex(currentIndex);
       const attemptsRemaining = attemptsRemainingAfter(attemptNumber);
-      setFeedback({ correct, attemptsRemaining });
+      setFeedback({ correct, attemptsRemaining, spelling });
       if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
       if (correct) {
         void playCorrect();
         // Le temps de voir Pio fêter et les étoiles partir.
-        feedbackTimer.current = setTimeout(() => nextExoRef.current(), 1800);
+        // Plus long quand il faut lire la bonne graphie.
+        feedbackTimer.current = setTimeout(() => nextExoRef.current(), spelling ? 4500 : 1800);
       } else if (attemptsRemaining > 0) {
         feedbackTimer.current = setTimeout(() => setFeedback(null), 2600);
       }

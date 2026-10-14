@@ -59,7 +59,7 @@ export function verifyAnswer(exercise: ExerciseForPlayer, submitted: string): bo
         exercise.payload as { items: { text: string; correctZone: string }[] },
       );
     case "short-answer":
-      return verifyShortAnswer(submitted, exercise.payload as { acceptedAnswers: string[] });
+      return judgeShortAnswer(submitted, exercise.payload as ShortAnswerPayload).correct;
     case "fill-blank":
       return verifyFillBlank(submitted, exercise.payload as FillBlankPayload);
     case "pattern":
@@ -162,19 +162,111 @@ function verifyOrder(submitted: string, payload: { correctSequence: string[] }):
   }
 }
 
-function verifyShortAnswer(
-  submitted: string,
-  payload: { acceptedAnswers: string[] },
-): boolean {
+type ShortAnswerPayload = { acceptedAnswers: string[]; exactSpelling?: boolean };
+
+export type ShortAnswerVerdict = {
+  correct: boolean;
+  /**
+   * La réponse est validée MAIS mal écrite : la graphie attendue, à montrer
+   * à l'enfant (« Attention, tu as mal écrit »). `null` quand la réponse est
+   * écrite comme attendu, ou fausse.
+   */
+  spelling: string | null;
+};
+
+/**
+ * JUGER UNE RÉPONSE COURTE, SANS PUNIR L'ORTHOGRAPHE.
+ *
+ * Un enfant qui apprend à écrire tape « mangu » ou « ecole » : il a la bonne
+ * idée, il se trompe de lettre. Refuser sa réponse lui apprend qu'il s'est
+ * trompé de réponse, pas de lettre. On la VALIDE et on lui montre la bonne
+ * graphie.
+ *
+ * Trois étages, du plus strict au plus large :
+ *   1. identique à une réponse admise, à la casse, aux espaces et aux
+ *      nombres près (« 2,5 » = « 2.5 », « 18 m » = « 18 ») : juste, sans note ;
+ *   2. identique une fois les accents, la ponctuation et les tirets effacés
+ *      (« ecole » pour « école ») : juste, avec note ;
+ *   3. à une faute de frappe près — une lettre en trop, en moins, changée ou
+ *      deux lettres échangées (« mangu » pour « mangue ») ; deux fautes à
+ *      partir de 8 lettres : juste, avec note.
+ *
+ * LES LIMITES, POUR NE PAS VALIDER UNE VRAIE ERREUR. Un mot de moins de 4
+ * lettres se juge à l'identique (« a » et « à », « on » et « ont » sont
+ * deux réponses). Une réponse admise qui porte un chiffre se juge à
+ * l'identique (« 12 » n'accepte pas « 13 »). Un exercice dont l'orthographe
+ * EST la question (conjugaison, accord, homophone) pose `exactSpelling: true`
+ * dans son payload : « mange » n'y accepte pas « manges ».
+ */
+export function judgeShortAnswer(submitted: string, payload: ShortAnswerPayload): ShortAnswerVerdict {
+  const accepted = (Array.isArray(payload?.acceptedAnswers) ? payload.acceptedAnswers : []).filter(
+    (a): a is string => typeof a === "string" && a.trim() !== "",
+  );
   // « 2,5 » et « 2.5 », « 1 000 » et « 1000 » : la même réponse. On compare
   // des formes canoniques, sans exiger du modèle toutes les variantes. Et
   // « 18 m » vaut « 18 », « 60% » vaut « 0,6 » : deux formes numériques qui
   // disent le même nombre (`numericallyEqual`). Une fraction, elle, se
   // compare à l'identique : « 1/2 » n'accepte pas « 0,5 ».
   const norm = canonicalAnswer(submitted);
-  return (payload?.acceptedAnswers ?? []).some(
-    (a) => canonicalAnswer(a) === norm || numericallyEqual(a, submitted),
-  );
+  if (accepted.some((a) => canonicalAnswer(a) === norm || numericallyEqual(a, submitted))) {
+    return { correct: true, spelling: null };
+  }
+  if (payload?.exactSpelling === true) return { correct: false, spelling: null };
+
+  const typed = foldSpelling(submitted);
+  if (typed.length < 2) return { correct: false, spelling: null };
+  let best: { answer: string; distance: number } | null = null;
+  for (const answer of accepted) {
+    if (/\d/.test(answer)) continue;
+    const expected = foldSpelling(answer);
+    if (expected.length < 4) continue;
+    const distance = editDistance(typed, expected);
+    const allowed = expected.length >= 8 ? 2 : 1;
+    if (distance <= allowed && (!best || distance < best.distance)) {
+      best = { answer: answer.trim(), distance };
+    }
+  }
+  return best ? { correct: true, spelling: best.answer } : { correct: false, spelling: null };
+}
+
+/** La graphie à montrer quand la réponse est juste mais mal écrite, sinon `null`. */
+export function spellingNote(exercise: ExerciseForPlayer, submitted: string): string | null {
+  if (exercise.type !== "short-answer") return null;
+  return judgeShortAnswer(submitted, exercise.payload as ShortAnswerPayload).spelling;
+}
+
+/** Sans accents, majuscules, ponctuation ni tirets : la forme où deux graphies d'un mot se rejoignent. */
+function foldSpelling(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/** Distance de Damerau (échange de deux lettres voisines compté pour une faute). */
+function editDistance(a: string, b: string): number {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const d: number[][] = Array.from({ length: rows }, (_, i) => {
+    const row = new Array<number>(cols).fill(0);
+    row[0] = i;
+    return row;
+  });
+  for (let j = 0; j < cols; j++) d[0][j] = j;
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[rows - 1][cols - 1];
 }
 
 export function canonicalAnswer(value: string): string {

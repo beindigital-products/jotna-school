@@ -1473,6 +1473,7 @@ function validatePayload(
           ...optional,
           acceptedAnswers: accepted,
           ...(typeof p.tolerance === "string" || typeof p.tolerance === "number" ? { tolerance: p.tolerance } : {}),
+          ...(p.exactSpelling === true ? { exactSpelling: true } : {}),
         },
       };
     }

@@ -167,16 +167,6 @@ function verifyOrder(
   }
 }
 
-function verifyShortAnswer(
-  submittedAnswer: string,
-  payload: { acceptedAnswers: string[] },
-): boolean {
-  const normalized = submittedAnswer.toLowerCase().trim();
-  return payload.acceptedAnswers.some(
-    (answer) => answer.toLowerCase().trim() === normalized,
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
@@ -253,11 +243,8 @@ export const submit = mutation({
       case "drag-drop":
         isCorrect = verifyDragDrop(args.submittedAnswer, exercise.payload);
         break;
-      case "short-answer":
-        isCorrect = verifyShortAnswer(args.submittedAnswer, exercise.payload);
-        break;
       default:
-        // La phrase à trous et les jeux : la règle partagée avec les paliers.
+        // La réponse courte, la phrase à trous et les jeux : la règle partagée avec les paliers.
         isCorrect = verifyAnswer(exercise, args.submittedAnswer);
     }
 

@@ -353,7 +353,7 @@ les `blocking` d'abord :
 
 | Domaine | `blocking` | `warning` |
 | --- | --- | --- |
-| Énoncé | `prompt_empty`, `prompt_truncated` (finit sur « de », « pour », une virgule, une élision), `prompt_dangling_colon` (réponse courte qui finit par « : »), `visual_missing` (scène absente, voir plus haut), `payload_malformed` | `prompt_too_short`, `prompt_ends_midphrase` (finit sur « le », « et »…), `prompt_unclosed_pair` (parenthèse ou guillemet jamais fermé), `prompt_too_long_for_class`, `hole_without_hole` (« Complète » sans `___` ni `?`), `short_answer_in_ci` |
+| Énoncé | `prompt_empty`, `prompt_truncated` (finit sur « de », « pour », une virgule, une élision), `prompt_dangling_colon` (réponse courte qui finit par « : »), `visual_missing` (scène absente, voir plus haut), `payload_malformed`, `short_answer_in_ci` (réponse tapée au CI) | `prompt_too_short`, `prompt_ends_midphrase` (finit sur « le », « et »…), `prompt_unclosed_pair` (parenthèse ou guillemet jamais fermé), `prompt_too_long_for_class`, `hole_without_hole` (« Complète » sans `___` ni `?`) |
 | QCM | `qcm_options_few` (moins de 2), `qcm_correct_index_out_of_range`, `qcm_correct_option_empty`, `qcm_correct_option_duplicated`, `qcm_equivalent_options_with_correct` (« 5 » et « cinq », « 0,5 » et « 1/2 »), `qcm_answer_key_mismatch` (la réponse écrite est une autre option que celle désignée) | `qcm_options_many` (plus de 6), `qcm_option_empty`, `qcm_option_duplicated`, `qcm_option_case_twin` (casse ou accents, sauf en français), `qcm_equivalent_options`, `qcm_answer_key_unrelated`, `qcm_catch_all_option` (« Toutes les réponses », « Aucune de ces réponses », « Les deux »), `qcm_correct_option_stands_out` (la bonne option est bien plus longue) |
 | Association | `match_pairs_invalid` (moins de 2), `match_side_empty` | `match_pairs_count` (hors de 3 à 6), `match_pair_duplicated`, `match_left_repeated`, `match_right_repeated` (deux sons identiques se relient pourtant à la même tuile : jamais bloquant) |
 | Ordre | `order_too_few` (moins de 2), `order_item_empty` | `order_few` (2), `order_item_duplicated`, `order_already_sorted` (suite déjà rangée alphabétiquement ou par ordre croissant, sans que l'énoncé dise quel ordre) |
@@ -519,3 +519,22 @@ Le programme des huit matières (les sept du guide officiel et l'anglais), du
 CI au CM2, se charge en base par `programme/seed:run`, et certaines
 thématiques mêlent des jeux fabriqués par le code à leurs paliers : voir
 `docs/programme-et-jeux.md`.
+
+
+## Réponse courte : types par classe et orthographe
+
+- **CI : aucune réponse tapée.** `short-answer` sort des types autorisés et du
+  format JSON demandé au modèle (`prompts.typesFor`), en maths comme ailleurs :
+  un calcul à trou se pose en QCM. `short_answer_in_ci` est `blocking` : le
+  contrôleur écarte ce qui passe quand même, et `pregen:auditExercises` le
+  signale en base. La consigne du CI décrit les exercices des manuels (relier,
+  classer, remettre des syllabes dans l'ordre, lettre qui manque, compter).
+- **Dès le CP, la réponse courte ne punit pas l'orthographe**
+  (`exerciseRules.judgeShortAnswer`) : réponse identique, ou sans accents ni
+  ponctuation, ou à une faute de frappe près (deux à partir de 8 lettres) est
+  validée. L'écran affiche « Attention, tu as mal écrit » et la bonne graphie
+  (`verifyAttempt` renvoie `spelling`, l'application hors ligne le calcule avec
+  `spellingNote`). Un mot de moins de 4 lettres et un nombre se jugent à
+  l'identique ; `exactSpelling: true` dans le payload (conjugaison, accord,
+  homophone) refuse la faute. Le modèle liste toutes les réponses admises
+  (singulier, pluriel, avec ou sans article, synonymes).

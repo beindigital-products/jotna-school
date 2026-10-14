@@ -66,7 +66,7 @@ export const DEFECT_SEVERITY = {
   visual_missing: "blocking",
   hole_without_hole: "warning",
   payload_malformed: "blocking",
-  short_answer_in_ci: "warning",
+  short_answer_in_ci: "blocking",
   // --- QCM ----------------------------------------------------------------
   qcm_options_few: "blocking",
   qcm_options_many: "warning",

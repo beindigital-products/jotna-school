@@ -83,8 +83,20 @@ const TYPES_LIST = `qcm, drag-drop, match, order, short-answer, fill-blank`;
  */
 const MATH_TYPES_LIST = `qcm, drag-drop, match, order, short-answer`;
 
-function typesFor(subject: string): string {
-  return isMathSubject(subject) ? MATH_TYPES_LIST : TYPES_LIST;
+/**
+ * AU CI, AUCUNE RÉPONSE TAPÉE. L'enfant de 5-6 ans apprend à lire et à écrire :
+ * le clavier n'est pas son outil. Il touche, relie, glisse, choisit. Le type
+ * `short-answer` sort donc de la liste, en maths comme ailleurs (un calcul à
+ * trou se pose en QCM), et `paliers/exerciseAudit.ts` écarte ceux qui passent
+ * quand même (`short_answer_in_ci`).
+ */
+function typesFor(subject: string, cls?: ClassLevel): string {
+  const list = isMathSubject(subject) ? MATH_TYPES_LIST : TYPES_LIST;
+  if (cls !== "CI") return list;
+  return list
+    .split(", ")
+    .filter((type) => type !== "short-answer")
+    .join(", ");
 }
 
 const HINTS_RULE = `
@@ -396,7 +408,7 @@ Schémas de payload :
   match      -> { "pairs": [ { "left": string, "right": string } ], "accepted"?: [ { "left": string, "right": string } ] }
   order      -> { "correctSequence": string[] }
   drag-drop  -> { "zones": string[], "items": [ { "text": string, "correctZone": string } ] }
-  short-answer -> { "acceptedAnswers": string[], "tolerance"?: string }
+  short-answer -> { "acceptedAnswers": string[], "tolerance"?: string, "exactSpelling"?: true }
   fill-blank -> { "text": "phrase où chaque trou s'écrit ___", "blanks": [ { "options": string[], "answer": string } ] }
 
 Règles du match (l'enfant relie chaque mot de gauche à un mot de droite) :
@@ -537,16 +549,61 @@ export function subjectRules(subject: string): string {
   return SUBJECT_RULES.find((entry) => entry.match.test(subject))?.rules ?? "";
 }
 
-/** Au CI et au CP, l'enfant ne lit pas encore : seule la consigne lui est lue. */
+/**
+ * UNE RÉPONSE COURTE NE PUNIT PAS L'ORTHOGRAPHE. L'application valide une
+ * réponse à une faute de frappe près et montre la bonne graphie
+ * (`judgeShortAnswer`, `paliers/exerciseRules.ts`) ; encore faut-il que le
+ * modèle liste toutes les réponses justes, pas une seule.
+ */
+const SHORT_ANSWER_RULE = `
+[Réponses courtes — l'enfant apprend à écrire]
+- "acceptedAnswers" liste TOUTES les réponses justes, pas une seule : le singulier
+  et le pluriel, avec et sans article (« mangue », « la mangue »), les synonymes
+  courants. Pour un nombre, une forme suffit : « 2,5 » et « 2.5 » sont déjà confondus.
+- Écris chaque réponse avec la BONNE orthographe : l'application accepte une lettre
+  oubliée ou un accent manquant et montre à l'enfant « Attention, tu as mal écrit ».
+- Si l'orthographe EST ce qu'on apprend (conjugaison, accord, a/à, on/ont, un
+  pluriel), ajoute "exactSpelling": true dans le payload : la faute y est refusée.
+- Une réponse courte est UN mot ou UN nombre, jamais une phrase.`;
+
+/**
+ * LES EXERCICES D'UN ENFANT QUI APPREND À LIRE ET À ÉCRIRE. Les manuels de CI
+ * (« Français CI » collection Téranga, EDICEF ; « Kotti Kotti Yoli Yoli » ;
+ * « Njàng CI » en wolof) font toucher, relier, entourer, classer et remettre
+ * dans l'ordre : jamais rédiger. Le modèle écrivait des questions de culture
+ * à réponse courte, bonnes pour un CE2. Le type `short-answer` est retiré de
+ * la liste au CI (`typesFor`) ; cette consigne dit ce qu'on y met à la place.
+ */
 function readingLearnerRules(cls: ClassLevel): string {
-  if (cls !== "CI" && cls !== "CP") return "";
-  return `
-[Enfant qui apprend à lire — ${cls}]
+  if (cls === "CP") {
+    return `
+[Enfant qui apprend à lire — CP]
 - La consigne ("statement") est lue à voix haute par l'application : elle peut
   être une vraie phrase, mais courte.
 - Les options, les étiquettes et les mots à relier, l'enfant doit les reconnaître
-  SANS lire de phrase : un émoji, un nombre, une syllabe, un mot très court.
-- Pas de short-answer au CI : l'enfant ne sait pas encore écrire au clavier.`;
+  SANS lire de phrase : un émoji, un nombre, une syllabe, un mot court.
+${SHORT_ANSWER_RULE}`;
+  }
+  if (cls !== "CI") return `${SHORT_ANSWER_RULE}`;
+  return `
+[Enfant qui apprend à lire et à écrire — CI]
+- La consigne ("statement") est lue à voix haute par l'application : une phrase
+  courte. L'enfant ne lit pas de phrase : ses options sont un émoji, un nombre,
+  une lettre, une syllabe ou un mot très court.
+- AUCUNE réponse tapée au clavier : jamais de short-answer. Tout se touche, se
+  relie, se glisse ou se choisit.
+- Fais les exercices des manuels de CI (« Français CI » collection Téranga,
+  « Kotti Kotti Yoli Yoli », « Njàng CI »), à la façon d'un cahier d'élève :
+  · reconnaître une lettre, un son ou un chiffre parmi 3 choix (qcm) ;
+  · relier un mot, une syllabe ou une lettre à son émoji (match) ;
+  · classer des mots ou des émojis : « on entend a » / « on n'entend pas a », un
+    animal / un fruit, grand / petit (drag-drop) ;
+  · remettre des syllabes dans l'ordre pour former un mot de 2 syllabes (order) ;
+  · choisir la lettre ou la syllabe qui manque dans un mot (fill-blank, 2 ou 3 choix) ;
+  · compter 1 à 10 émojis, comparer deux nombres, reconnaître une forme (qcm).
+- Hors de propos au CI : une question de culture générale, une définition, un mot
+  abstrait, une phrase à lire seule, une dictée, une réponse rédigée.
+- Un trou se choisit dans une liste (qcm ou fill-blank) : on ne le tape pas.`;
 }
 
 function topicBlock(description: string | undefined): string {
@@ -558,8 +615,21 @@ ${text}
 `;
 }
 
-function shapeFor(count: number): string {
-  return JSON_SHAPE.replace("// ... 10 items au total", `// ... ${count} items au total`);
+/** Le format JSON, sans le type `short-answer` au CI (voir `typesFor`). */
+function shapeForClass(shape: string, cls: ClassLevel): string {
+  if (cls !== "CI") return shape;
+  return shape
+    .replace(' | "short-answer"', "")
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("short-answer ->"))
+    .join("\n");
+}
+
+function shapeFor(count: number, cls: ClassLevel): string {
+  return shapeForClass(
+    JSON_SHAPE.replace("// ... 10 items au total", `// ... ${count} items au total`),
+    cls,
+  );
 }
 
 export function buildPalierBaseSystemPrompt(input: PalierBasePromptInput): string {
@@ -589,10 +659,10 @@ export function buildPalierBasePrompt(input: PalierBasePromptInput): string {
 Génère ${count} exercices pour la matière "${input.subject}", thème "${input.topic}",
 palier ${input.palierIndex}/${countOf(input)}, classe ${input.class}.
 ${topicBlock(input.topicDescription)}
-Types autorisés : ${typesFor(input.subject)}.
+Types autorisés : ${typesFor(input.subject, input.class)}.
 ${DIFFICULTY_NOTE(input.palierIndex, countOf(input))}
 
-${shapeFor(count)}`;
+${shapeFor(count, input.class)}`;
 }
 
 export function buildPersonalizedSystemPrompt(input: PersonalizedPromptInput): string {
@@ -614,10 +684,10 @@ Cet enfant veut faire 10 exercices supplémentaires sur le thème "${input.topic
 Cible spécifiquement ce qui pose problème à cet enfant — il a déjà fait le palier de base.
 ${weaknessesBlock}${mistakesBlock}
 
-Types autorisés : ${typesFor(input.subject)}.
+Types autorisés : ${typesFor(input.subject, input.class)}.
 ${DIFFICULTY_NOTE(input.palierIndex, countOf(input))}
 
-${JSON_SHAPE}`;
+${shapeForClass(JSON_SHAPE, input.class)}`;
 }
 
 export function buildVariationSystemPrompt(input: VariationPromptInput): string {
