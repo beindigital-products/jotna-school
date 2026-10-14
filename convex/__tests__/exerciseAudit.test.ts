@@ -698,6 +698,29 @@ describe("auditExercise : ce qui ne doit pas être pris pour un défaut", () => 
     expect(codesOf(spelling)).not.toContain("qcm_equivalent_options_with_correct");
   });
 
+  it("ne bloque pas un « : » final qui suit la matière citée, et garde le « : » qui ne suit rien", () => {
+    for (const prompt of ["Écris le pluriel de 'mangue' :", "Écris le pluriel de « mil » :"]) {
+      expect(codesOf(shortAnswer({ prompt })), prompt).not.toContain("prompt_dangling_colon");
+    }
+    for (const prompt of ["Écris le nom du fruit :", "Complète la phrase :"]) {
+      expect(codesOf(shortAnswer({ prompt })), prompt).toContain("prompt_dangling_colon");
+    }
+  });
+
+  it("ne signale pas une scène absente pour « ci-dessous » dans un glisser-déposer, ni pour une image à produire", () => {
+    const tiles = dragDrop(
+      { zones: ["Périmètre", "Aire"], items: [{ text: "20 cm", correctZone: "Périmètre" }, { text: "24 cm²", correctZone: "Aire" }] },
+      { class: "CE2", subject: "Mathématiques", prompt: "Assigne les valeurs ci-dessous aux bonnes zones : Périmètre et Aire." },
+    );
+    expect(codesOf(tiles)).not.toContain("visual_missing");
+    const art = shortAnswer({
+      class: "CM2",
+      subject: "Éducation artistique",
+      prompt: "Donne deux éléments que l'illustrateur doit montrer dans une image de la cour de récréation.",
+    });
+    expect(codesOf(art)).not.toContain("visual_missing");
+  });
+
   it("compte « a » et « à » comme deux zones (leçon d'homophones)", () => {
     const input = dragDrop(
       {

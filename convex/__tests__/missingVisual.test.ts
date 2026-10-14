@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   countedEmojis,
   findMissingVisual,
+  findMissingVisualOnScreen,
   guardVisuals,
   repairEmojiCount,
   withoutDanglingHints,
@@ -35,6 +36,24 @@ describe("findMissingVisual : une question sans sa scène", () => {
     ]) {
       expect(findMissingVisual(prompt), prompt).toBe("points_at_absent_image");
     }
+  });
+
+  it("laisse « ci-dessous » dans un glisser-déposer, un appariement ou un ordre : ce sont les tuiles", () => {
+    const tiles = { zones: ["Périmètre", "Aire"], items: [{ text: "20 cm", correctZone: "Périmètre" }, { text: "24 cm²", correctZone: "Aire" }] };
+    const prompt = "Assigne les valeurs ci-dessous aux bonnes zones : Périmètre et Aire.";
+    expect(findMissingVisualOnScreen(prompt, "drag-drop", tiles)).toBeNull();
+    expect(findMissingVisualOnScreen("Relie les mots ci-dessus à leur définition.", "match", { pairs: [] })).toBeNull();
+    // Ailleurs, « ci-dessous » renvoie à ce qui devrait suivre l'énoncé.
+    expect(findMissingVisualOnScreen("Quelle est la forme ci-dessous ?", "qcm", { options: ["rond", "carré"] })).toBe("points_at_absent_image");
+    // Un dessin à regarder reste absent, tuiles ou non.
+    expect(findMissingVisualOnScreen("Regarde le dessin ci-dessous et place les objets.", "drag-drop", tiles)).toBe("points_at_absent_image");
+  });
+
+  it("laisse une image à produire ou à décrire (« ce que l'illustrateur doit montrer dans une image »)", () => {
+    expect(findMissingVisual("Donne deux éléments que l'illustrateur doit montrer dans une image de la cour de récréation.")).toBeNull();
+    expect(findMissingVisual("Que faut-il dessiner dans un dessin de la mer ?")).toBeNull();
+    expect(findMissingVisual("Dans l'image, quelle est la couleur de la mangue ?")).toBe("points_at_absent_image");
+    expect(findMissingVisual("Sur une image, de quelle couleur est la mangue ?")).toBe("points_at_absent_image");
   });
 
   it("garde une question dont la scène est dessinée en émojis", () => {
