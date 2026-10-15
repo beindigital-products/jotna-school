@@ -101,6 +101,10 @@ export const DEFECT_SEVERITY = {
   order_spells_other_word: "blocking",
   order_syllable_without_vowel: "blocking",
   order_without_criterion: "blocking",
+  order_words_without_criterion: "blocking",
+  order_spatial_without_scene: "blocking",
+  order_shapes_by_size: "blocking",
+  order_proximity_without_reference: "blocking",
   // --- Glisser-déposer ----------------------------------------------------
   dragdrop_zones_few: "blocking",
   dragdrop_items_few: "blocking",
@@ -915,6 +919,76 @@ const NO_NATURAL_ORDER = new RegExp(
 const ORDER_CRITERION =
   /croissant|d[ée]croissant|alphab|chronolog|par\s+ordre|ordre\s+(?:de|du|des|d')\s|en\s+ordre\s+(?:de|du|des|d')\s|ordre\s+o[uù]\s|selon|(?:du|de\s+la)\s+(?:plus|moins)\s|au\s+(?:plus|moins)\b|[àa]\s+la\s+(?:plus|moins)\b|du\s+(?:nord|sud)|de\s+l'(?:ouest|est)|de\s+gauche|de\s+\d+\s+[àa]\s+\d+|arc-en-ciel|nombre\s+de|d'abord|ensuite|puis\b|quand\b|en\s+fonction|par\s+(?:leur|son|sa|ses)\s|pour\s+(?:aller|arriver|rentrer|sortir|se\s)/iu;
 
+/**
+ * QUATRE ORDRES SANS BONNE RÉPONSE QUE L'ENFANT PUISSE TROUVER, vus en prod le
+ * 15 octobre 2026 :
+ *   - « Mets ces mots dans l'ordre : ear, hand, eye » : une liste de mots sans
+ *     phrase à former, sans critère ;
+ *   - « Range ces objets de gauche à droite : Livre, Crayon, Cahier » : la
+ *     scène où ils se tiennent n'est pas à l'écran ;
+ *   - « Mets ces formes du plus petit au plus grand : 🔴 🟦 🔺 » : un émoji
+ *     n'a pas de taille, et un cercle n'est ni plus petit ni plus grand qu'un
+ *     carré ;
+ *   - « Mets ces lieux du plus proche au plus loin » : proche de quoi ?
+ */
+const FUNCTION_WORDS = new Set(
+  (
+    "the a an is are am i he she it we you they my your his her our their this that these those to of in on at with and or but not " +
+    "do does did can has have had will like want go goes what where who when how please " +
+    "le la les un une des du de est sont suis es sommes etes je tu il elle on nous vous ils elles mon ma mes ton ta tes son sa ses " +
+    "ce cette ces et ou mais ne pas ai as avons avez ont va vais vont dans sur sous avec pour par chez"
+  ).split(" "),
+);
+const NATURAL_ORDER_ITEM =
+  /^(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|un|deux|trois|quatre|cinq|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt|monday|tuesday|wednesday|thursday|friday|saturday|sunday|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|hier|aujourd'?hui|demain|premier|dernier|au milieu|milieu|yesterday|today|tomorrow|first|second|third|last|matin|midi|soir|nuit|morning|afternoon|evening|night|january|february|march|april|may|june|july|august|september|october|november|december|janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)$/;
+const SPATIAL_ORDER = /de\s+gauche\s+[àa]\s+droite|de\s+droite\s+[àa]\s+gauche|de\s+devant\s+[àa]\s+derri[èe]re/iu;
+const SIZE_COMPARATOR = /plus\s+(?:petit|grand|gros|long|court)|taille/iu;
+const PROXIMITY = /proche|plus\s+loin|distance|proximit/iu;
+const PROXIMITY_REFERENCE =
+  /[àa]\s+partir\s+de|depuis|par\s+rapport|jusqu'|(?:proche|loin)\s+de|(?:distance|proximit[ée])\s+(?:de\s+(?:ton|ta|ma|mon|la|le|l')|de\s+\p{Lu}|[àa]\s|d')|chez\s|[àa]\s+\p{Lu}/u;
+
+function auditUnanswerableOrder(found: Findings, prompt: string, sequence: string[]): void {
+  const hasCriterion = ORDER_CRITERION.test(prompt);
+  const pictures = PICTOGRAPH.test(`${prompt} ${sequence.join(" ")}`);
+
+  // Une liste de mots sans phrase à former et sans critère.
+  if (
+    /(?<![\p{L}])mots?(?![\p{L}])/iu.test(prompt) &&
+    !hasCriterion &&
+    !/phrase|question|dialogue|r[ée]plique|syllabes?|lettres?/iu.test(prompt) &&
+    // « mame / yassa / mange » : les mots d'une phrase, séparés par « / ».
+    !/\p{L}\s+\/\s+\p{L}/u.test(prompt)
+  ) {
+    const tokens = sequence.flatMap((item) => fold(item).split(/[^a-z0-9]+/).filter(Boolean));
+    const sentence = tokens.some((token) => FUNCTION_WORDS.has(token));
+    const natural = sequence.every((item) => NATURAL_ORDER_ITEM.test(fold(item)));
+    if (!sentence && !natural && sequence.length <= 6) {
+      found.add("order_words_without_criterion", "des mots à ranger sans phrase à former ni critère : aucun ordre n'est le bon");
+    }
+  }
+
+  // Un ordre dans l'espace, sans scène ni description : une consigne d'une seule phrase,
+  // « Range ces objets de gauche à droite : … ». Si l'énoncé décrit la scène avant
+  // (« Le drapeau a trois bandes verticales. Range-les… »), il la donne en mots.
+  const describes = prompt.split(/[.!?]\s+\p{Lu}/u).length > 1 || /en\s+partant/iu.test(prompt);
+  if (SPATIAL_ORDER.test(prompt) && !pictures && !describes && !/lettres?|syllabes?|mots?|phrases?|g[ée]ograph|carte/iu.test(prompt)) {
+    found.add("order_spatial_without_scene", "un ordre de gauche à droite, sans scène à l'écran : l'enfant ne voit pas où sont les objets");
+  }
+
+  // Des formes rangées par taille : une forme n'a pas de taille.
+  if (SIZE_COMPARATOR.test(prompt) && sequence.length >= 2) {
+    const allShapes = sequence.every((item) => shapesDrawn(item).size > 0 || shapeNamed(item) !== null);
+    if (allShapes) {
+      found.add("order_shapes_by_size", "des formes rangées par taille : un cercle, un carré ou un triangle n'ont pas de taille");
+    }
+  }
+
+  // Proche, loin : de quoi ?
+  if (PROXIMITY.test(prompt) && !PROXIMITY_REFERENCE.test(prompt)) {
+    found.add("order_proximity_without_reference", "l'énoncé range du plus proche au plus loin sans dire proche de quoi");
+  }
+}
+
 function auditOrder(found: Findings, prompt: string, payload: Record<string, unknown>): void {
   const sequence = strings(payload.correctSequence);
   if (sequence.length < 2) {
@@ -931,6 +1005,8 @@ function auditOrder(found: Findings, prompt: string, payload: Record<string, unk
     if (seen.has(key)) found.add("order_item_duplicated", `l'élément « ${excerpt(key, 25)} » est écrit deux fois`);
     seen.add(key);
   }
+
+  auditUnanswerableOrder(found, prompt, sequence);
 
   // « Mets ces animaux dans l'ordre » : dans quel ordre ? Rien ne le dit, et rien ne le fixe.
   if (NO_NATURAL_ORDER.test(prompt) && !ORDER_CRITERION.test(prompt)) {
