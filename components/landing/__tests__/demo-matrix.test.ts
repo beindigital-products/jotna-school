@@ -35,11 +35,19 @@ function authorizedFor(subjectName: string): ExerciseType[] {
   return line[1].split(",").map((type) => type.trim() as ExerciseType);
 }
 
+/**
+ * Les gabarits (`paliers/games/words.ts`, `counting.ts`) fabriquent des
+ * exercices CLASSIQUES : la vitrine les montre déjà avec leur type (QCM, ordre,
+ * association, phrase à trous). Seuls les quatre jeux ont leur carte.
+ */
+const isShownGame = (kind: GameKind) => (GAME_EXERCISE_TYPES as readonly string[]).includes(GAME_KINDS[kind].type);
+
 /** Les jeux d'une classe, refaits depuis le programme : par type, dans l'ordre où le programme les cite. */
 function gamesOfProgramme(subject: (typeof PROGRAMME)[number], klass: (typeof DEMO_CLASSES)[number]): GameOffer[] {
   const offers = new Map<GameOffer["type"], { kind: GameKind; topic: string }[]>();
   for (const topic of subject.classes[klass]) {
     for (const spec of topic.games ?? []) {
+      if (!isShownGame(spec.kind)) continue;
       const type = GAME_KINDS[spec.kind].type as GameOffer["type"];
       const options = offers.get(type) ?? [];
       if (!options.some((option) => option.kind === spec.kind)) options.push({ kind: spec.kind, topic: topic.name });
@@ -117,7 +125,7 @@ describe("la vitrine : les exercices de chaque classe sont ceux que l'applicatio
     const shown = new Set<GameKind>();
     for (const subject of PROGRAMME) {
       for (const klass of DEMO_CLASSES) {
-        for (const topic of subject.classes[klass]) for (const spec of topic.games ?? []) cited.add(spec.kind);
+        for (const topic of subject.classes[klass]) for (const spec of topic.games ?? []) if (isShownGame(spec.kind)) cited.add(spec.kind);
         for (const offer of gamesFor(subject.key, klass)) for (const option of offer.options) shown.add(option.kind);
       }
     }

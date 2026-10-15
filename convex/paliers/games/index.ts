@@ -13,6 +13,7 @@
 import type { VisibleClassName } from "../../curriculum";
 import { PALIER_SIZE } from "../scoring";
 import { makeColorPair, makeColorPick, makeColorResult, makeWarmCold } from "./colors";
+import { makeAddEmojis, makeCountEmojis, makeTakeAwayEmojis } from "./counting";
 import {
   makeBeatCount,
   makeDuration,
@@ -23,6 +24,17 @@ import {
   makeVolume,
 } from "./listen";
 import { makeFreshFrise, makeNumberSuite } from "./patterns";
+import {
+  makeFirstLetter,
+  makeFirstSyllable,
+  makeLetterOrder,
+  makeMissingLetter,
+  makeMissingSyllable,
+  makeSyllableCount,
+  makeSyllableOrder,
+  makeSyllableToWord,
+  makeWordToPicture,
+} from "./words";
 import { makeColorByNumber, makePixelCopy, makePixelMemory, makePixelSymmetry } from "./pixel";
 import {
   gameLevel,
@@ -73,6 +85,19 @@ export const GAME_KINDS = {
   "couleurs-melange": { label: "Mélanger deux couleurs", type: "color-mix", make: makeColorResult },
   "couleurs-melange-inverse": { label: "Retrouver un mélange", type: "color-mix", make: makeColorPair },
   "couleurs-chaudes-froides": { label: "Couleurs chaudes et froides", type: "color-mix", make: makeWarmCold },
+  // Les gabarits : des exercices classiques, écrits à partir d'un vocabulaire fermé.
+  "syllabes-ordre": { label: "Remettre des syllabes dans l'ordre", type: "order", make: makeSyllableOrder },
+  "lettres-ordre": { label: "Remettre des lettres dans l'ordre", type: "order", make: makeLetterOrder },
+  "syllabe-initiale": { label: "Première syllabe d'un mot", type: "qcm", make: makeFirstSyllable },
+  "lettre-initiale": { label: "Première lettre d'un mot", type: "qcm", make: makeFirstLetter },
+  "syllabes-compter": { label: "Compter les syllabes", type: "qcm", make: makeSyllableCount },
+  "syllabe-manquante": { label: "Syllabe qui manque", type: "fill-blank", make: makeMissingSyllable },
+  "lettre-manquante": { label: "Lettre qui manque", type: "fill-blank", make: makeMissingLetter },
+  "syllabe-mot": { label: "Relier une syllabe et un mot", type: "match", make: makeSyllableToWord },
+  "mot-image": { label: "Relier un mot et son image", type: "match", make: makeWordToPicture },
+  "compter-emojis": { label: "Compter des dessins", type: "qcm", make: makeCountEmojis },
+  "ajouter-emojis": { label: "Ajouter des dessins", type: "qcm", make: makeAddEmojis },
+  "enlever-emojis": { label: "Enlever des dessins", type: "qcm", make: makeTakeAwayEmojis },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
@@ -81,7 +106,12 @@ export const GAME_KINDS = {
 export type GameKind = keyof typeof GAME_KINDS;
 
 /** « Trois frises de couleurs » : ce qu'une thématique demande à chaque palier. */
-export type GameSpec = { kind: GameKind; count: number };
+export type GameSpec = {
+  kind: GameKind;
+  count: number;
+  /** Pour les gabarits de mots : « mots-2 », les mots vus jusqu'au deuxième palier de lecture. */
+  vocabulary?: string;
+};
 
 export function isGameKind(value: unknown): value is GameKind {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(GAME_KINDS, value);
@@ -113,7 +143,7 @@ export function generateGames(specs: readonly GameSpec[], opts: GameRunOptions):
   for (const spec of specs) {
     if (!isGameKind(spec.kind)) continue;
     for (let i = 0; i < spec.count && out.length < PALIER_SIZE; i++) {
-      const ctx = makeContext(opts.klass, level, `${opts.seed}:${spec.kind}:${n++}`, used);
+      const ctx = makeContext(opts.klass, level, `${opts.seed}:${spec.kind}:${n++}`, used, spec.vocabulary);
       out.push(GAME_KINDS[spec.kind].make(ctx));
     }
   }
@@ -132,7 +162,7 @@ export function regenerateGame(
 ): GeneratedGame | null {
   if (!origin || !isGameKind(origin.kind)) return null;
   const level = Math.min(4, Math.max(1, Math.round(origin.level))) as GameLevel;
-  return GAME_KINDS[origin.kind].make(makeContext(klass, level, seed));
+  return GAME_KINDS[origin.kind].make(makeContext(klass, level, seed, undefined, origin.vocabulary));
 }
 
 /** Le jeu d'origine d'un exercice, lu dans son payload. */
@@ -140,9 +170,9 @@ export function gameOriginOf(payload: unknown): GameOrigin | null {
   if (!payload || typeof payload !== "object") return null;
   const game = (payload as { game?: unknown }).game;
   if (!game || typeof game !== "object") return null;
-  const { kind, level } = game as { kind?: unknown; level?: unknown };
+  const { kind, level, vocabulary } = game as { kind?: unknown; level?: unknown; vocabulary?: unknown };
   if (typeof kind !== "string" || typeof level !== "number") return null;
-  return { kind, level };
+  return typeof vocabulary === "string" ? { kind, level, vocabulary } : { kind, level };
 }
 
 /**
