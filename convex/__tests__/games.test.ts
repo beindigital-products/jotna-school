@@ -40,6 +40,15 @@ function rightAnswer(type: string, payload: unknown): string {
       return String((payload as ListenPayload).correctIndex);
     case "color-mix":
       return JSON.stringify((payload as ColorMixPayload).answer);
+    // Les gabarits (`games/words.ts`, `games/counting.ts`) rendent des types classiques.
+    case "qcm":
+      return String((payload as { correctIndex: number }).correctIndex);
+    case "order":
+      return JSON.stringify((payload as { correctSequence: string[] }).correctSequence);
+    case "match":
+      return JSON.stringify((payload as { pairs: unknown[] }).pairs);
+    case "fill-blank":
+      return JSON.stringify((payload as { blanks: { answer: string }[] }).blanks.map((b) => b.answer));
     default:
       throw new Error(`type inattendu ${type}`);
   }

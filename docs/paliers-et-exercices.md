@@ -547,3 +547,42 @@ Sénégal. Elle est fermée : un bon mot qui lui manque écarte un bon exercice 
 le palier se refait ; ajoute le mot dans le fichier (sans accent, en
 minuscules). Les phrases (« Awa a ___ biscuits »), les autres classes et
 l'anglais ne sont pas jugés.
+
+## Les gabarits : des exercices classiques écrits par le code
+
+Le modèle de langue se trompait de découpe en syllabes (`ma / ng / ue`), de
+somme (« 🥭🥭 + 🥭 » égal 2) et de mot à compléter (`___ngue` avec « m »), et
+le contrôleur ne voit que la forme. Pour le CI, une partie de chaque palier est
+donc FABRIQUÉE PAR LE CODE, comme les jeux (`paliers/games`), mais en types
+classiques : l'écran, la correction et l'audit sont ceux de toujours.
+
+| Gabarit | Type | Exemple |
+| --- | --- | --- |
+| `syllabes-ordre` | ordre | « Remets les syllabes dans l'ordre pour former un mot. 🍅 » : `to / ma / te` |
+| `lettres-ordre` | ordre | les lettres de « rat 🐀 » |
+| `syllabe-initiale` | QCM | « Par quelle syllabe commence « penda » ? » : `pen` |
+| `lettre-initiale` | QCM | « Par quelle lettre commence « lit » ? 🛏️ » |
+| `syllabes-compter` | QCM | « Combien de syllabes entends-tu dans « mère » ? » : 2 |
+| `syllabe-manquante` | phrase à trous | `to___te` : `ma` |
+| `lettre-manquante` | phrase à trous | `m___to` : `o` |
+| `syllabe-mot` | association | `ba~bateau ; sa~savon…` |
+| `mot-image` | association | `poule~🐔…` |
+| `compter-emojis`, `ajouter-emojis`, `enlever-emojis` | QCM | « Combien de mangues en tout ? 🥭🥭 + 🥭 » : 3 |
+
+- **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
+  thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
+  main. `vocabulary: "mots-2"` dans la fiche du programme limite les mots à ceux
+  des deux premiers paliers de lecture (les mauvais choix aussi). Un mot ajouté
+  doit aussi figurer dans `paliers/knownWords.ts` : un test le vérifie.
+- **Les mauvais choix d'un trou ne forment aucun mot** (`KNOWN_WORDS`), sinon
+  l'exercice aurait deux bonnes réponses. Une syllabe donnée comme mauvais choix
+  ne commence jamais le mot (« ba » pour « ballon »).
+- **Le dénombrement** (`paliers/games/counting.ts`) compte les émojis qu'il
+  écrit : jamais plus de 5 au premier palier, 10 au dernier.
+- **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
+  `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10` et `ma-ci-calcul-10`
+  (`convex/programme`), cinq exercices au plus par palier ; le modèle écrit le
+  reste. Un palier déjà généré garde ses exercices : il faut l'invalider
+  (`pregen:auditExercises` ou une régénération) pour qu'il reçoive les gabarits.
+- **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
+  associations et des phrases à trous, déjà montrés.

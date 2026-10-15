@@ -9,8 +9,22 @@ import { difficultyStage } from "../../palierRules";
 import { seededRandom } from "../exerciseRules";
 import type { GameOrigin } from "./types";
 
-/** Les quatre jeux fabriqués par le code, comme les nomme `exerciseTypes.ts`. */
-export type GameExerciseType = "pattern" | "pixel-art" | "listen" | "color-mix";
+/**
+ * Les exercices fabriqués par le code : les quatre jeux (`exerciseTypes.ts`)
+ * et les GABARITS, qui rendent un type classique (QCM, ordre, association,
+ * phrase à trous) écrit à partir d'un vocabulaire fermé et vérifié
+ * (`words.ts`, `counting.ts`). Le modèle de langue se trompait de découpe en
+ * syllabes et de somme ; un gabarit ne se trompe pas.
+ */
+export type GameExerciseType =
+  | "pattern"
+  | "pixel-art"
+  | "listen"
+  | "color-mix"
+  | "qcm"
+  | "order"
+  | "match"
+  | "fill-blank";
 
 /** Un exercice fabriqué, prêt à rejoindre les exercices du palier. */
 export type GeneratedGame = {
@@ -65,6 +79,8 @@ export type GameContext = {
    * une frise) : deux exercices identiques dans un palier, l'enfant le voit.
    */
   used: Set<string>;
+  /** Le vocabulaire d'un gabarit de mots (« mots-2 » : les mots vus jusqu'au deuxième palier de lecture). */
+  vocabulary?: string;
 };
 
 export function makeContext(
@@ -72,8 +88,14 @@ export function makeContext(
   level: GameLevel,
   seed: string,
   used: Set<string> = new Set(),
+  vocabulary?: string,
 ): GameContext {
-  return { klass, band: ageBand(klass), level, rng: seededRandom(seed), used };
+  return { klass, band: ageBand(klass), level, rng: seededRandom(seed), used, vocabulary };
+}
+
+/** L'origine à poser dans le payload : de quoi refaire le même gabarit avec une autre graine. */
+export function originOf(kind: string, ctx: GameContext): GameOrigin {
+  return ctx.vocabulary ? { kind, level: ctx.level, vocabulary: ctx.vocabulary } : { kind, level: ctx.level };
 }
 
 export function randomInt(rng: () => number, min: number, max: number): number {

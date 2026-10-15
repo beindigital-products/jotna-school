@@ -173,4 +173,4 @@ export type ColorMixView = {
  * variation du même jeu quand l'enfant échoue (`paliers/index.ts`), sans
  * appeler le modèle.
  */
-export type GameOrigin = { kind: string; level: number };
+export type GameOrigin = { kind: string; level: number; vocabulary?: string };
