@@ -210,6 +210,26 @@ const CASES: Record<DefectCode, AuditInput> = {
     class: "CI",
     subject: "Français",
   }),
+  order_words_without_criterion: order(["eye", "ear", "hand"], {
+    prompt: "Mets ces mots dans l'ordre : 'ear', 'hand', 'eye'.",
+    class: "CP",
+    subject: "Anglais",
+  }),
+  order_spatial_without_scene: order(["Livre", "Cahier", "Crayon"], {
+    prompt: "Range ces objets de gauche à droite : Livre, Crayon, Cahier.",
+    class: "CI",
+    subject: "Mathématiques",
+  }),
+  order_shapes_by_size: order(["🔴", "🟦", "🔺"], {
+    prompt: "Mets ces formes en ordre, du plus petit au plus grand : 🔴 🟦 🔺",
+    class: "CI",
+    subject: "Mathématiques",
+  }),
+  order_proximity_without_reference: order(["école", "mosquée", "marché"], {
+    prompt: "Mets ces lieux en ordre du plus proche au plus loin.",
+    class: "CP",
+    subject: "Mathématiques",
+  }),
   order_without_criterion: order(["Lion", "Chat", "Chien"], {
     prompt: "Mets ces animaux dans l'ordre : chat, chien, lion.",
     class: "CI",
@@ -1312,5 +1332,54 @@ describe("un ordre à ranger doit dire selon quoi", () => {
     ]) {
       expect(rank(prompt), prompt).not.toContain("order_without_criterion");
     }
+  });
+});
+
+
+describe("quatre ordres sans bonne réponse que l'enfant puisse trouver", () => {
+  const rank = (prompt: string, sequence: string[], subject = "Mathématiques") =>
+    codesOf(order(sequence, { prompt, class: "CP", subject }));
+
+  it("refuse une liste de mots sans phrase ni critère", () => {
+    expect(rank("Mets ces mots dans l'ordre : desk, chair, window.", ["desk", "chair", "window"], "Anglais")).toContain("order_words_without_criterion");
+    expect(rank("Mets ces mots dans l'ordre : bras, jambe, tête.", ["bras", "jambe", "tête"])).toContain("order_words_without_criterion");
+  });
+
+  it("accepte les mots d'une phrase, d'une suite connue ou rangés selon un critère", () => {
+    expect(rank("Mets les mots dans le bon ordre.", ["This", "is", "my", "father"], "Anglais")).not.toContain("order_words_without_criterion");
+    expect(rank("Mets ces mots dans l'ordre : 'plays / He / football'", ["He", "plays", "football"], "Anglais")).not.toContain("order_words_without_criterion");
+    expect(rank("Mets ces mots dans l'ordre : ten, two, one.", ["one", "two", "ten"], "Anglais")).not.toContain("order_words_without_criterion");
+    expect(rank("Mets ces mots dans l'ordre alphabétique.", ["cat", "dog", "fish"], "Anglais")).not.toContain("order_words_without_criterion");
+    expect(rank("Mets ces mots dans l'ordre pour faire une phrase.", ["Awa", "mange", "mangue"])).not.toContain("order_words_without_criterion");
+    expect(rank("Remets les syllabes dans l'ordre pour former le mot : 'mi', 'se'.", ["mi", "se"])).not.toContain("order_words_without_criterion");
+    expect(rank("Remets les mots dans l'ordre : mame / yassa / mange.", ["Mame", "mange", "yassa"])).not.toContain("order_words_without_criterion");
+    expect(rank("Mets ces mots dans l'ordre : demain, aujourd'hui, hier.", ["Hier", "Aujourd'hui", "Demain"])).not.toContain("order_words_without_criterion");
+  });
+
+  it("refuse un ordre de gauche à droite sans scène, accepte une scène décrite ou dessinée", () => {
+    expect(rank("Range ces objets de gauche à droite : Livre, Crayon, Cahier.", ["Livre", "Cahier", "Crayon"])).toContain("order_spatial_without_scene");
+    expect(rank("Le drapeau du Sénégal a trois bandes verticales. Range-les de gauche à droite, en partant du mât.", ["vert", "jaune", "rouge"])).not.toContain("order_spatial_without_scene");
+    expect(rank("Range ces objets de gauche à droite : 📕 ✏️ 📓", ["📕", "✏️", "📓"])).not.toContain("order_spatial_without_scene");
+    expect(rank("Mets ces parties de la plante dans l'ordre de bas en haut.", ["Racine", "Tige", "Feuille"])).not.toContain("order_spatial_without_scene");
+    expect(rank("Mets ces royaumes dans l'ordre géographique de gauche à droite : Sine, Saloum.", ["Sine", "Saloum", "Fouta"])).not.toContain("order_spatial_without_scene");
+    expect(rank("Mets les lettres de gauche à droite pour écrire 'mangue'.", ["m", "a", "n", "g", "u", "e"])).not.toContain("order_spatial_without_scene");
+  });
+
+  it("refuse des formes rangées par taille, accepte le nombre de côtés ou de vrais objets", () => {
+    expect(rank("Mets ces formes du plus petit au plus grand : triangle, carré, rectangle.", ["triangle", "carré", "rectangle"])).toContain("order_shapes_by_size");
+    expect(rank("Mets ces formes en ordre, du plus petit au plus grand : 🔴 🟦 🔺", ["🔴", "🟦", "🔺"])).toContain("order_shapes_by_size");
+    expect(rank("Mets ces formes dans l'ordre de leur nombre de côtés.", ["cercle", "triangle", "carré"])).not.toContain("order_shapes_by_size");
+    expect(rank("Range ces animaux du plus petit au plus grand.", ["souris", "chat", "éléphant"])).not.toContain("order_shapes_by_size");
+  });
+
+  it("refuse « le plus proche » sans repère, accepte un repère nommé", () => {
+    expect(rank("Mets ces lieux en ordre du plus proche au plus loin.", ["école", "mosquée", "marché"])).toContain("order_proximity_without_reference");
+    expect(rank("Mets les lieux dans l'ordre de proximité : mosquée, terrain de football, marché.", ["mosquée", "terrain", "marché"])).toContain("order_proximity_without_reference");
+    expect(rank("Mets ces villes en ordre de distance à partir de Ziguinchor.", ["Kolda", "Thiès", "Dakar"])).not.toContain("order_proximity_without_reference");
+    expect(rank("Mets ces villes dans l'ordre de proximité à Dakar.", ["Thiès", "Kaolack", "Matam"])).not.toContain("order_proximity_without_reference");
+    expect(rank("Mettez ces distances en ordre croissant : 150 km, 90 km, 120 km.", ["90 km", "120 km", "150 km"])).not.toContain("order_proximity_without_reference");
+    expect(rank("Range ces distances du plus proche au plus loin : 5 km, 2 km, 9 km.", ["2 km", "5 km", "9 km"])).not.toContain("order_proximity_without_reference");
+    expect(rank("Mets ces lieux en ordre de distance de Dakar, du plus proche au plus loin.", ["Mbour", "Thiès", "Kaolack"])).not.toContain("order_proximity_without_reference");
+    expect(rank("Range ces lieux du plus proche au plus loin de ta maison.", ["école", "mosquée", "marché"])).not.toContain("order_proximity_without_reference");
   });
 });
