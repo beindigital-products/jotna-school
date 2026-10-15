@@ -1377,6 +1377,8 @@ describe("quatre ordres sans bonne réponse que l'enfant puisse trouver", () => 
     expect(rank("Mets les lieux dans l'ordre de proximité : mosquée, terrain de football, marché.", ["mosquée", "terrain", "marché"])).toContain("order_proximity_without_reference");
     expect(rank("Mets ces villes en ordre de distance à partir de Ziguinchor.", ["Kolda", "Thiès", "Dakar"])).not.toContain("order_proximity_without_reference");
     expect(rank("Mets ces villes dans l'ordre de proximité à Dakar.", ["Thiès", "Kaolack", "Matam"])).not.toContain("order_proximity_without_reference");
+    expect(rank("Mettez ces distances en ordre croissant : 150 km, 90 km, 120 km.", ["90 km", "120 km", "150 km"])).not.toContain("order_proximity_without_reference");
+    expect(rank("Range ces distances du plus proche au plus loin : 5 km, 2 km, 9 km.", ["2 km", "5 km", "9 km"])).not.toContain("order_proximity_without_reference");
     expect(rank("Mets ces lieux en ordre de distance de Dakar, du plus proche au plus loin.", ["Mbour", "Thiès", "Kaolack"])).not.toContain("order_proximity_without_reference");
     expect(rank("Range ces lieux du plus proche au plus loin de ta maison.", ["école", "mosquée", "marché"])).not.toContain("order_proximity_without_reference");
   });

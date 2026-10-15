@@ -984,7 +984,9 @@ function auditUnanswerableOrder(found: Findings, prompt: string, sequence: strin
   }
 
   // Proche, loin : de quoi ?
-  if (PROXIMITY.test(prompt) && !PROXIMITY_REFERENCE.test(prompt)) {
+  // Des distances chiffrées (« 150 km, 90 km ») se rangent par leur valeur : rien à repérer.
+  const numeric = /croissant|d[ée]croissant/iu.test(prompt) || sequence.some((item) => /\d/.test(item));
+  if (PROXIMITY.test(prompt) && !PROXIMITY_REFERENCE.test(prompt) && !numeric) {
     found.add("order_proximity_without_reference", "l'énoncé range du plus proche au plus loin sans dire proche de quoi");
   }
 }
