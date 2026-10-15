@@ -161,7 +161,9 @@ const QUALITY_RULE = `
   les réponses », « Aucune de ces réponses » ni « Les deux » ; « 5 » et « cinq » comptent
   pour la même ; la bonne option n'est pas la plus longue ; correctAnswer est le texte
   de options[correctIndex].
-- order : 3 éléments au moins, tous différents, et l'énoncé dit l'ordre voulu. match : 3
+- order : 3 éléments au moins, tous différents, et l'énoncé NOMME l'ordre voulu (« du plus
+  petit au plus grand », « alphabétique ») ou range des étapes, phrases, jours, nombres.
+  Jamais « Mets ces animaux dans l'ordre » (fruits, couleurs, formes, villes : pas d'ordre). match : 3
   à 6 paires. short-answer : acceptedAnswers non vide, réponse absente de l'énoncé.
 - 3 indices non vides et différents ; le 1er ne donne pas la réponse.`;
 

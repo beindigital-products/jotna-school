@@ -100,6 +100,7 @@ export const DEFECT_SEVERITY = {
   order_already_sorted: "warning",
   order_spells_other_word: "blocking",
   order_syllable_without_vowel: "blocking",
+  order_without_criterion: "blocking",
   // --- Glisser-déposer ----------------------------------------------------
   dragdrop_zones_few: "blocking",
   dragdrop_items_few: "blocking",
@@ -896,6 +897,24 @@ const SPELLED_WORD =
 const PIECES_OF_WORD = /(?<![\p{L}])(?:lettres?|syllabes?)(?![\p{L}])/iu;
 const SYLLABLES = /(?<![\p{L}])syllabes?(?![\p{L}])/iu;
 
+/**
+ * DES CHOSES SANS ORDRE NATUREL : des animaux, des fruits, des couleurs, des
+ * formes, des villes. « Mets ces animaux dans l'ordre : lion, cat, dog » n'a
+ * pas de bonne réponse que l'enfant puisse trouver ; le palier l'attendait
+ * pourtant dans l'ordre où le modèle les avait écrits. Les étapes, les
+ * phrases, les syllabes, les jours, les nombres, eux, portent leur ordre.
+ */
+const NO_NATURAL_ORDER = new RegExp(
+  "(?<![\\p{L}])(?:mets?|remets?|range[rz]?|classe[rz]?|place[rz]?|ordonne[rz]?|d[ée]pose[rz]?)\\s+" +
+    "(?:(?:dans\\s+l'ordre|en\\s+ordre)\\s+)?(?:ces|les|des|tes|mes|ses)\\s+" +
+    "(?:animaux|fruits|l[ée]gumes|aliments|couleurs|formes|figures|solides|objets|villes|r[ée]gions|lieux|personnages|parties\\s+du\\s+corps|instruments)" +
+    "(?![\\p{L}])",
+  "iu",
+);
+/** Ce qui dit selon quoi ranger : un critère nommé, même vague (« de leur importance »). */
+const ORDER_CRITERION =
+  /croissant|d[ée]croissant|alphab|chronolog|par\s+ordre|ordre\s+(?:de|du|des|d')\s|en\s+ordre\s+(?:de|du|des|d')\s|ordre\s+o[uù]\s|selon|(?:du|de\s+la)\s+(?:plus|moins)\s|au\s+(?:plus|moins)\b|[àa]\s+la\s+(?:plus|moins)\b|du\s+(?:nord|sud)|de\s+l'(?:ouest|est)|de\s+gauche|de\s+\d+\s+[àa]\s+\d+|arc-en-ciel|nombre\s+de|d'abord|ensuite|puis\b|quand\b|en\s+fonction|par\s+(?:leur|son|sa|ses)\s|pour\s+(?:aller|arriver|rentrer|sortir|se\s)/iu;
+
 function auditOrder(found: Findings, prompt: string, payload: Record<string, unknown>): void {
   const sequence = strings(payload.correctSequence);
   if (sequence.length < 2) {
@@ -911,6 +930,11 @@ function auditOrder(found: Findings, prompt: string, payload: Record<string, unk
     if (key === "") continue;
     if (seen.has(key)) found.add("order_item_duplicated", `l'élément « ${excerpt(key, 25)} » est écrit deux fois`);
     seen.add(key);
+  }
+
+  // « Mets ces animaux dans l'ordre » : dans quel ordre ? Rien ne le dit, et rien ne le fixe.
+  if (NO_NATURAL_ORDER.test(prompt) && !ORDER_CRITERION.test(prompt)) {
+    found.add("order_without_criterion", "l'énoncé demande de ranger des choses sans ordre naturel, sans dire selon quoi");
   }
 
   // Les lettres ou les syllabes, une fois remises dans l'ordre, doivent écrire le mot demandé :

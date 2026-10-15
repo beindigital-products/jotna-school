@@ -91,6 +91,13 @@ describe("la consigne de génération d'un palier", () => {
     expect(prompt).toContain("🟦 est un carré (jamais un rectangle)");
   });
 
+  it("exige que l'énoncé d'un ordre nomme l'ordre", () => {
+    const prompt = flat(buildPalierBaseSystemPrompt(base));
+    expect(prompt).toContain("l'énoncé NOMME l'ordre voulu");
+    expect(prompt).toContain("Jamais « Mets ces animaux dans l'ordre »");
+    expect(prompt).toContain("pas d'ordre");
+  });
+
   it("au CI, retire la réponse courte de la liste, du format et des maths", () => {
     for (const subject of ["Français", "Mathématiques"]) {
       const prompt = buildPalierBasePrompt({ ...base, subject, class: "CI" });
