@@ -5,7 +5,7 @@ import { GAME_KINDS, gameOriginOf, generateGames, isGameKind, regenerateGame, ty
 import { makeContext, type GameLevel } from "../paliers/games/shared";
 import { LEXICON, stageOf } from "../paliers/games/words";
 import { KNOWN_WORDS } from "../paliers/knownWords";
-import { shouldInvalidate } from "../paliers/pregen";
+import { countByTopic, shouldInvalidate } from "../paliers/pregen";
 import { allProgrammeEntries } from "../programme";
 
 /**
@@ -309,5 +309,21 @@ describe("marquer à refaire les paliers d'une thématique (pregen:invalidate)",
     expect(shouldInvalidate(palier, filters)).toBe(true);
     expect(shouldInvalidate({ ...palier, class: "CP" }, filters)).toBe(false);
     expect(shouldInvalidate({ ...palier, subjectId: "s2" }, filters)).toBe(false);
+  });
+});
+
+describe("le résumé de pregen:invalidate", () => {
+  it("compte les paliers par thématique en liste, sans nom de champ accentué", () => {
+    const summary = countByTopic(["Ajouter et enlever jusqu'à 10", "Les sons a, i, o, l, t", "Ajouter et enlever jusqu'à 10"]);
+    expect(summary).toEqual([
+      { topic: "Ajouter et enlever jusqu'à 10", paliers: 2 },
+      { topic: "Les sons a, i, o, l, t", paliers: 1 },
+    ]);
+    // Convex refuse un nom de champ hors ASCII : les clés du résumé sont fixes.
+    for (const entry of summary) expect(Object.keys(entry)).toEqual(["topic", "paliers"]);
+  });
+
+  it("rend une liste vide quand rien n'est touché", () => {
+    expect(countByTopic([])).toEqual([]);
   });
 });
