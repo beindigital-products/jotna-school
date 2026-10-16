@@ -21,6 +21,20 @@ export const MAX_ATTEMPTS_PER_EXERCISE = 5;
  * trois exercices ne se valide pas à 7 sur 10 et l'enfant y perd son temps. Il
  * reste à régénérer. Même proportion que le seuil de validation.
  */
+/**
+ * Les exercices de RÉSERVE qu'on demande au modèle quand des gabarits remplissent
+ * une partie du palier. Le seuil de `hasEnoughValidExercises` exige 3 exercices
+ * valides sur 3 demandés : un seul écarté par le contrôleur ferait échouer le
+ * palier. On en demande deux de plus, et `generateBucketCore` garde les premiers
+ * valides.
+ */
+export const SPARE_AI_EXERCISES = 2;
+
+/** Combien d'exercices demander au modèle pour en garder `needed` : de la réserve dès qu'un gabarit partage le palier. */
+export function exercisesToRequest(needed: number): number {
+  return needed > 0 && needed < PALIER_SIZE ? needed + SPARE_AI_EXERCISES : needed;
+}
+
 export function hasEnoughValidExercises(valid: number, requested: number): boolean {
   return valid >= Math.ceil((requested * PALIER_VALIDATION_THRESHOLD) / PALIER_SIZE);
 }

@@ -33,9 +33,10 @@ export const FRANCAIS: ProgrammeSubject = {
           "Lecture, palier 2 du CI : entendre et reconnaître les sons [a], [i], [o], [l], [t] ; trouver le mot où l'on entend un son (ami, lit, olive, tomate) ; lire les syllabes la, li, lo, ta, ti, to. À l'oral, n'importe quel mot connu de l'enfant ; à l'écrit, seulement des syllabes et des mots faits de ces lettres (lit, Lola, Toto, tata, tôt). Un émoji illustre chaque mot.",
         games: [
           { kind: "lettre-initiale", count: 2, vocabulary: "mots-1" },
-          { kind: "syllabe-manquante", count: 1, vocabulary: "mots-1" },
+          { kind: "syllabe-manquante", count: 2, vocabulary: "mots-1" },
           { kind: "syllabes-compter", count: 1, vocabulary: "mots-1" },
           { kind: "lettres-ordre", count: 1, vocabulary: "mots-1" },
+          { kind: "syllabe-initiale", count: 1, vocabulary: "mots-1" },
         ],
       },
       {
@@ -44,10 +45,11 @@ export const FRANCAIS: ProgrammeSubject = {
         description:
           "Lecture, palier 3 du CI : les sons [n], [ə] (le, me, ne), [p], [d], [m], [b], avec les sons déjà vus (a, i, o, l, t). Syllabes na, ne, pa, po, di, da, ma, mi, bo, ba ; mots à lire faits de ces lettres seulement (papa, dodo, moto, malade, tomate, midi, Modou, Penda). Trouver le son dans un mot entendu, assembler deux syllabes.",
         games: [
-          { kind: "syllabe-initiale", count: 1, vocabulary: "mots-2" },
+          { kind: "syllabe-initiale", count: 2, vocabulary: "mots-2" },
           { kind: "syllabe-manquante", count: 2, vocabulary: "mots-2" },
           { kind: "syllabe-mot", count: 1, vocabulary: "mots-2" },
           { kind: "syllabes-ordre", count: 1, vocabulary: "mots-2" },
+          { kind: "lettre-manquante", count: 1, vocabulary: "mots-2" },
         ],
       },
       {
@@ -57,8 +59,8 @@ export const FRANCAIS: ProgrammeSubject = {
           "Lecture, palier 4 du CI (première partie) : les sons [f], [y] (u), [u] (ou), [e] (é), [ɛ] (è), avec les sons déjà vus. Syllabes fa, fu, fou, pou, dé, mè ; mots : poule, loupe, fumée, été, élève, père, mère, café, bébé, foulard. Distinguer u et ou, é et è.",
         games: [
           { kind: "syllabe-initiale", count: 1, vocabulary: "mots-3" },
-          { kind: "lettre-manquante", count: 1, vocabulary: "mots-3" },
-          { kind: "syllabe-manquante", count: 1, vocabulary: "mots-3" },
+          { kind: "lettre-manquante", count: 2, vocabulary: "mots-3" },
+          { kind: "syllabe-manquante", count: 2, vocabulary: "mots-3" },
           { kind: "syllabes-compter", count: 1, vocabulary: "mots-3" },
           { kind: "syllabes-ordre", count: 1, vocabulary: "mots-3" },
         ],
@@ -70,10 +72,11 @@ export const FRANCAIS: ProgrammeSubject = {
           "Lecture, palier 4 du CI (seconde partie) : les sons [s], [r], [o] écrit au ou eau, [ɔ̃] écrit on ou om. Mots : sac, rat, robe, sel, radio, auto, bateau, eau, mouton, savon, salon, bonbon, ballon. Trouver comment s'écrit le son (au ou eau, on ou om) dans des mots connus.",
         games: [
           { kind: "lettre-initiale", count: 1, vocabulary: "mots-4" },
-          { kind: "lettres-ordre", count: 1, vocabulary: "mots-4" },
+          { kind: "lettres-ordre", count: 2, vocabulary: "mots-4" },
           { kind: "syllabes-ordre", count: 1, vocabulary: "mots-4" },
           { kind: "syllabe-manquante", count: 1, vocabulary: "mots-4" },
           { kind: "mot-image", count: 1, vocabulary: "mots-4" },
+          { kind: "syllabe-mot", count: 1, vocabulary: "mots-4" },
         ],
       },
       {
@@ -85,6 +88,8 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "lettre-initiale", count: 2, vocabulary: "mots-4" },
           { kind: "lettres-ordre", count: 2, vocabulary: "mots-4" },
           { kind: "mot-image", count: 1, vocabulary: "mots-4" },
+          { kind: "lettre-manquante", count: 1, vocabulary: "mots-4" },
+          { kind: "syllabes-compter", count: 1, vocabulary: "mots-4" },
         ],
       },
       {

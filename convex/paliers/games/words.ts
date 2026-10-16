@@ -19,7 +19,7 @@
  * MODULE PUR (voir `types.ts`).
  */
 import { KNOWN_WORDS } from "../knownWords";
-import { originOf, pickFresh, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { originOf, pick, shuffle, type GameContext, type GeneratedGame } from "./shared";
 
 type Stage = 1 | 2 | 3 | 4;
 
@@ -102,6 +102,21 @@ function piecesSeen(ctx: GameContext, piecesOf: (entry: LexiconWord) => string[]
   return seen.length >= atLeast ? seen : Array.from(new Set(LEXICON.flatMap(piecesOf)));
 }
 
+/**
+ * Un mot pour ce gabarit. Sept gabarits par palier piochent dans 7 à 37 mots :
+ * on prend d'abord un mot qu'AUCUN gabarit n'a pris dans ce palier ; sinon un mot que CE
+ * gabarit n'a pas pris (« tomate » en première lettre puis en syllabes, deux exercices
+ * différents) ; sinon, tout a servi et on recommence.
+ */
+function pickWord(ctx: GameContext, kind: string, pool: readonly LexiconWord[]): LexiconWord {
+  const untouched = pool.filter((e) => !ctx.used.has(e.word));
+  const unseenHere = pool.filter((e) => !ctx.used.has(`${kind}:${e.word}`));
+  const chosen = pick(ctx.rng, untouched.length > 0 ? untouched : unseenHere.length > 0 ? unseenHere : pool);
+  ctx.used.add(chosen.word);
+  ctx.used.add(`${kind}:${chosen.word}`);
+  return chosen;
+}
+
 const stripAccents = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "");
 const picture = (entry: LexiconWord) => (entry.emoji ? ` ${entry.emoji}` : "");
 
@@ -136,10 +151,10 @@ function choices(ctx: GameContext, answer: string, wrong: string[]): { options: 
 
 /** « Remets les syllabes dans l'ordre pour former un mot » : trois syllabes différentes. */
 export function makeSyllableOrder(ctx: GameContext): GeneratedGame {
-  const entry = pickFresh(
+  const entry = pickWord(
     ctx,
+    "syllabes-ordre",
     wordsOf(ctx, (e) => e.syllables.length >= 3 && new Set(e.syllables).size === e.syllables.length),
-    (e) => e.word,
   );
   return exercise(
     "syllabes-ordre",
@@ -159,13 +174,13 @@ export function makeSyllableOrder(ctx: GameContext): GeneratedGame {
 
 /** « Remets les lettres dans l'ordre pour écrire le mot » : un mot dessiné, des lettres toutes différentes. */
 export function makeLetterOrder(ctx: GameContext): GeneratedGame {
-  const entry = pickFresh(
+  const entry = pickWord(
     ctx,
+    "lettres-ordre",
     wordsOf(ctx, (e) => {
       const letters = Array.from(e.word);
       return !!e.emoji && letters.length >= 3 && letters.length <= 5 && new Set(letters).size === letters.length;
     }),
-    (e) => e.word,
   );
   const letters = Array.from(entry.word);
   return exercise(
@@ -186,7 +201,7 @@ export function makeLetterOrder(ctx: GameContext): GeneratedGame {
 
 /** « Par quelle syllabe commence ce mot ? » */
 export function makeFirstSyllable(ctx: GameContext): GeneratedGame {
-  const entry = pickFresh(ctx, wordsOf(ctx, (e) => e.syllables.length >= 2), (e) => e.word);
+  const entry = pickWord(ctx, "syllabe-initiale", wordsOf(ctx, (e) => e.syllables.length >= 2));
   const answer = entry.syllables[0];
   const pool = piecesSeen(ctx, (e) => e.syllables.slice(0, 1));
   // Un distracteur qui commence le mot serait une deuxième bonne réponse (« ba » pour « ballon »).
@@ -213,7 +228,7 @@ export function makeFirstSyllable(ctx: GameContext): GeneratedGame {
 
 /** « Par quelle lettre commence ce mot ? » */
 export function makeFirstLetter(ctx: GameContext): GeneratedGame {
-  const entry = pickFresh(ctx, wordsOf(ctx), (e) => e.word);
+  const entry = pickWord(ctx, "lettre-initiale", wordsOf(ctx));
   const answer = Array.from(entry.word)[0];
   const letters = piecesSeen(ctx, (e) => Array.from(e.word).slice(0, 1), 4);
   const wrong = shuffle(
@@ -239,7 +254,7 @@ export function makeFirstLetter(ctx: GameContext): GeneratedGame {
 
 /** « Combien de syllabes dans ce mot ? » */
 export function makeSyllableCount(ctx: GameContext): GeneratedGame {
-  const entry = pickFresh(ctx, wordsOf(ctx), (e) => e.word);
+  const entry = pickWord(ctx, "syllabes-compter", wordsOf(ctx));
   const answer = entry.syllables.length;
   const wrong = shuffle(
     ctx.rng,
@@ -286,7 +301,7 @@ function wrongPieces(
 
 /** « Quelle syllabe manque pour écrire le mot ? » : `to___te`. */
 export function makeMissingSyllable(ctx: GameContext): GeneratedGame {
-  const entry = pickFresh(ctx, wordsOf(ctx, (e) => e.syllables.length >= 2), (e) => e.word);
+  const entry = pickWord(ctx, "syllabe-manquante", wordsOf(ctx, (e) => e.syllables.length >= 2));
   const index = Math.floor(ctx.rng() * entry.syllables.length);
   const answer = entry.syllables[index];
   const before = entry.syllables.slice(0, index).join("");
@@ -312,7 +327,7 @@ export function makeMissingSyllable(ctx: GameContext): GeneratedGame {
 
 /** « Quelle lettre manque pour écrire le mot ? » : `m___to`. */
 export function makeMissingLetter(ctx: GameContext): GeneratedGame {
-  const entry = pickFresh(ctx, wordsOf(ctx, (e) => Array.from(e.word).length >= 3), (e) => e.word);
+  const entry = pickWord(ctx, "lettre-manquante", wordsOf(ctx, (e) => Array.from(e.word).length >= 3));
   const letters = Array.from(entry.word);
   const index = 1 + Math.floor(ctx.rng() * (letters.length - 1));
   const answer = letters[index];
