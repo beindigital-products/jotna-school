@@ -320,6 +320,17 @@ export function shouldInvalidate(
  *
  *     npx convex run paliers/pregen:invalidate '{"confirmDeployment":"<nom>","programmeKeys":["fr-ci-sons-1"],"dryRun":true}'
  */
+/**
+ * Le nombre de paliers par thématique, en LISTE. Un objet « nom → nombre » ne
+ * passe pas : Convex refuse les accents dans un nom de champ (« jusqu'à »), et
+ * le nom d'une thématique en porte.
+ */
+export function countByTopic(names: readonly string[]): { topic: string; paliers: number }[] {
+  const counts = new Map<string, number>();
+  for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1);
+  return Array.from(counts, ([topic, paliers]) => ({ topic, paliers })).sort((a, b) => a.topic.localeCompare(b.topic, "fr"));
+}
+
 export const invalidate = internalMutation({
   args: {
     confirmDeployment: v.string(),
@@ -346,14 +357,14 @@ export const invalidate = internalMutation({
     };
     const paliers = await ctx.db.query("paliers").take(1000);
     let invalidated = 0;
-    const byTopic: Record<string, number> = {};
+    const touched: string[] = [];
     for (const palier of paliers) {
       if (!shouldInvalidate({ ...palier, subjectId: palier.subjectId as string, topicId: palier.topicId as string }, filters)) {
         continue;
       }
       invalidated += 1;
       const name = topicNames.get(palier.topicId as string);
-      if (name) byTopic[name] = (byTopic[name] ?? 0) + 1;
+      if (name) touched.push(name);
       if (!args.dryRun) await ctx.db.patch(palier._id, { status: "stale" });
     }
     return {
@@ -361,7 +372,7 @@ export const invalidate = internalMutation({
       paliersScanned: paliers.length,
       topicsMatched: topicNames.size,
       invalidated,
-      ...(args.programmeKeys ? { byTopic } : {}),
+      ...(args.programmeKeys ? { byTopic: countByTopic(touched) } : {}),
     };
   },
 });
