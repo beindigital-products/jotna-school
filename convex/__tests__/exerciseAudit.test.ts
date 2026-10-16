@@ -198,6 +198,10 @@ const CASES: Record<DefectCode, AuditInput> = {
   match_side_empty: match([...THREE_PAIRS, ["Matam", ""]]),
   match_pair_duplicated: match([...THREE_PAIRS, ["Mbour", "Thiès"]]),
   match_left_repeated: match([...THREE_PAIRS, ["Mbour", "Dakar"]]),
+  match_pair_identical: match(
+    [["moto", "moto"], ["papa", "papa"], ["mangue", "mangue"]],
+    { prompt: "Relie chaque mot à son image.", class: "CI", subject: "Français" },
+  ),
   match_right_repeated: match([...THREE_PAIRS, ["Joal", "Thiès"]]),
   // --- Ordre ---
   order_too_few: order(["Une seule étape"]),
@@ -207,6 +211,16 @@ const CASES: Record<DefectCode, AuditInput> = {
   order_already_sorted: order(["Banane", "Mangue", "Orange", "Pomme"], { prompt: "Pose les fruits sur la table." }),
   order_spells_other_word: order(["e", "l", "o", "p", "u"], {
     prompt: "Mets les lettres dans l'ordre pour écrire 'poule'.",
+    class: "CI",
+    subject: "Français",
+  }),
+  order_syllables_without_word: order(["na", "ma", "pa"], {
+    prompt: "Mets ces syllabes dans l'ordre : ma, pa, na.",
+    class: "CI",
+    subject: "Français",
+  }),
+  order_prompt_mentions_zones: order(["na", "ma", "pa"], {
+    prompt: "Place chaque syllabe dans la bonne zone pour former un mot.",
     class: "CI",
     subject: "Français",
   }),
@@ -1381,5 +1395,40 @@ describe("quatre ordres sans bonne réponse que l'enfant puisse trouver", () => 
     expect(rank("Range ces distances du plus proche au plus loin : 5 km, 2 km, 9 km.", ["2 km", "5 km", "9 km"])).not.toContain("order_proximity_without_reference");
     expect(rank("Mets ces lieux en ordre de distance de Dakar, du plus proche au plus loin.", ["Mbour", "Thiès", "Kaolack"])).not.toContain("order_proximity_without_reference");
     expect(rank("Range ces lieux du plus proche au plus loin de ta maison.", ["école", "mosquée", "marché"])).not.toContain("order_proximity_without_reference");
+  });
+});
+
+
+describe("trois défauts du modèle vus dans les paliers du CI en prod", () => {
+  it("une association dont un côté est identique à l'autre n'a rien à relier", () => {
+    const pairs = (list: [string, string][], subject = "Français") =>
+      codesOf(match(list, { prompt: "Relie chaque mot à son image.", class: "CI", subject }));
+    expect(pairs([["moto", "moto"], ["papa", "papa"], ["lit", "lit"]])).toContain("match_pair_identical");
+    expect(pairs([["moto", "🏍️"], ["papa", "👨"], ["lit", "🛏️"]])).not.toContain("match_pair_identical");
+    // La région « Dakar » et la ville « Dakar » : une vraie paire, l'énoncé ne parle pas d'image.
+    const ville = (list: [string, string][], prompt: string) => codesOf(match(list, { prompt, class: "CM1", subject: "Géographie" }));
+    expect(ville([["Dakar", "Dakar"], ["Thiès", "Thiès"], ["Mbour", "Thiès"]], "Associe chaque ville à sa région.")).not.toContain("match_pair_identical");
+    expect(ville([["mama", "mama"], ["papa", "papa"], ["lit", "lit"]], "Relie les mots identiques.")).not.toContain("match_pair_identical");
+    // Majuscule et minuscule : deux écritures, une vraie paire.
+    expect(pairs([["A", "a"], ["B", "b"], ["M", "m"]])).not.toContain("match_pair_identical");
+    // En anglais, « radio » s'écrit pareil dans les deux langues.
+    expect(pairs([["radio", "radio"], ["taxi", "taxi"], ["lit", "bed"]], "Anglais")).not.toContain("match_pair_identical");
+  });
+
+  it("des syllabes à ranger demandent un mot à former", () => {
+    const rank = (prompt: string) => codesOf(order(["ma", "la", "de"], { prompt, class: "CI", subject: "Français" }));
+    expect(rank("Mets ces syllabes dans l'ordre : ma, pa, na.")).toContain("order_syllables_without_word");
+    expect(rank("Remets les syllabes dans l'ordre.")).toContain("order_syllables_without_word");
+    expect(rank("Remets les syllabes dans l'ordre pour former un mot.")).not.toContain("order_syllables_without_word");
+    expect(rank("Remets les syllabes dans l'ordre pour écrire le mot.")).not.toContain("order_syllables_without_word");
+    expect(rank("Mets les syllabes dans l'ordre alphabétique.")).not.toContain("order_syllables_without_word");
+    expect(rank("Remets les syllabes dans l'ordre pour écrire « tomate » 🍅.")).not.toContain("order_syllables_without_word");
+    expect(rank("Remets les syllabes dans l'ordre. 🍅")).not.toContain("order_syllables_without_word");
+  });
+
+  it("un ordre ne parle pas de zones", () => {
+    const rank = (prompt: string) => codesOf(order(["ma", "la", "de"], { prompt, class: "CI", subject: "Français" }));
+    expect(rank("Place chaque syllabe dans la bonne zone.")).toContain("order_prompt_mentions_zones");
+    expect(rank("Remets les syllabes dans l'ordre pour former un mot.")).not.toContain("order_prompt_mentions_zones");
   });
 });
