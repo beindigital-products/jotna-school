@@ -181,6 +181,10 @@ const CASES: Record<DefectCode, AuditInput> = {
     { prompt: "Combien de mangues as-tu ? 🥭🥭 + 🥭", class: "CI", subject: "Mathématiques", answerKey: "2" },
     { options: ["2", "3", "4"], correctIndex: 0 },
   ),
+  qcm_sound_ambiguous: qcm(
+    { prompt: "Quel mot a le son [é] ?", class: "CI", subject: "Français", answerKey: "été" },
+    { options: ["été", "poule", "fumée"], correctIndex: 0 },
+  ),
   shape_emoji_mismatch: qcm(
     { prompt: "Quel est le nom de cette forme ? 🟦", class: "CI", subject: "Mathématiques", answerKey: "rectangle" },
     { options: ["carré", "rectangle", "triangle", "cercle"], correctIndex: 1 },
@@ -1204,6 +1208,29 @@ describe("les erreurs de contenu que la forme ne montrait pas (CI)", () => {
     expect(codesOf(bissap(["bi", "ssap"]))).not.toContain("order_syllable_without_vowel");
     expect(codesOf(bissap(["bi", "ss", "ap"]))).toContain("order_syllable_without_vowel");
     expect(codesOf(bissap(["bi", "ssa", "p"]))).toContain("order_syllable_without_vowel");
+  });
+
+  it("un son demandé n'a qu'une bonne réponse", () => {
+    const sound = (prompt: string, options: string[], correctIndex = 0) =>
+      qcm({ prompt, class: "CI", subject: "Français", answerKey: options[correctIndex] }, { options, correctIndex });
+    // Deux mots ont le son [é] : « fumée » est aussi une bonne réponse.
+    expect(codesOf(sound("Quel mot a le son [é] ?", ["été", "poule", "fumée"]))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel mot a le son [é] ?", ["été", "poule", "tomate"]))).not.toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel mot fait entendre le son « ou » ?", ["poule", "loup", "lune"]))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel mot contient le son [u] ?", ["lune", "fou", "rat"]))).not.toContain("qcm_sound_ambiguous");
+    // Le « u » de « ou », « eu », « qu » n'est pas [u].
+    expect(codesOf(sound("Quel mot a le son [u] ?", ["lune", "fleur", "queue"]))).not.toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel mot a le son [ch] ?", ["chat", "cheval", "lune"]))).toContain("qcm_sound_ambiguous");
+    // Un son que le contrôleur ne connaît pas : il ne dit rien.
+    expect(codesOf(sound("Quel mot a le son [an] ?", ["maman", "banane", "lune"]))).not.toContain("qcm_sound_ambiguous");
+    // La place du son change la question : « premier son », « commence par ».
+    expect(codesOf(sound("Quel mot commence par le son [f] ?", ["fumée", "café", "lune"]))).not.toContain("qcm_sound_ambiguous");
+    // Le son d'un mot : « fumée » fait entendre [f], [u] et [é].
+    expect(codesOf(sound("Quel est le son du mot « fumée » ?", ["f", "u", "ou"]))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel est le son du mot « fumée » ?", ["ch", "ou", "è"]))).not.toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel est le son du mot « fumée » ?", ["f", "ch", "ou"]))).not.toContain("qcm_sound_ambiguous");
+    // Des options qui ne sont pas toutes des sons : on laisse.
+    expect(codesOf(sound("Quel est le son du mot « fumée » ?", ["f", "u", "fumée"]))).not.toContain("qcm_sound_ambiguous");
   });
 
   it("le calcul dessiné en émojis doit valoir l'option juste", () => {
