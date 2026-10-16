@@ -43,6 +43,7 @@ import { validateFillBlank } from "./fillBlank";
 import { displayedText, findMissingVisualOnScreen, withoutDanglingHints } from "./missingVisual";
 import { BLANK_MARK } from "./games/types";
 import { KNOWN_WORDS } from "./knownWords";
+import { hasSound, knownSound } from "./sounds";
 
 // ===========================================================================
 // LES CODES DE DÉFAUT ET LEUR GRAVITÉ
@@ -84,6 +85,7 @@ export const DEFECT_SEVERITY = {
   qcm_catch_all_option: "warning",
   qcm_correct_option_stands_out: "warning",
   qcm_emoji_sum_mismatch: "blocking",
+  qcm_sound_ambiguous: "blocking",
   shape_emoji_mismatch: "blocking",
   // --- Association --------------------------------------------------------
   match_pairs_invalid: "blocking",
@@ -700,6 +702,9 @@ function auditQcm(
     }
   }
 
+  // « Quel mot a le son [é] ? » avec deux mots qui l'ont, « le son de « fumée » » avec deux sons qu'elle fait entendre.
+  auditSound(found, input.prompt, options);
+
   // La bonne réponse se devine à sa longueur.
   if (correct !== -1) {
     const length = (text: string) => collapse(text.replace(PICTOGRAPHS, "")).length;
@@ -770,6 +775,49 @@ function auditQcm(
         );
       }
     }
+  }
+}
+
+/** Une consigne sur la place du son (« premier son », « commence par ») : plusieurs mots peuvent convenir sans défaut. */
+const SOUND_POSITION =
+  /(?<!\p{L})(?:premi[eè]re?s?|derni[eè]re?s?|d[ée]but|commenc\p{L}*|fin|finit|termin\p{L}*|initial\p{L}*|syllabes?|combien)(?!\p{L})/iu;
+
+/** Le son demandé : « le son [é] », « le son « ou » », « le son u ». */
+const ASKED_SOUND =
+  /(?<!\p{L})son\s+(?:de\s+la\s+lettre\s+)?(?:\[\s*(\p{L}{1,2})\s*\]|[«"“']\s*(\p{L}{1,2})\s*[»"”']|(\p{L}{1,2})(?!\p{L}))/iu;
+
+/** Le mot dont on demande le son : « Quel est le son du mot « fumée » ? ». */
+const WORD_ASKED = /(?<!\p{L})mot\s*[«"“']\s*(\p{L}+)\s*[»"”']/iu;
+
+/**
+ * UN SON, UNE SEULE BONNE RÉPONSE. « Quel mot a le son [é] ? » avec « été » et
+ * « fumée » : les deux le font entendre. « Quel est le son du mot « fumée » ? »
+ * avec « f », « u », « ou » : « f » et « u » y sont. Seuls les sons que
+ * `sounds.ts` reconnaît sûrement sont contrôlés ; les questions sur la place du
+ * son sont laissées de côté.
+ */
+function auditSound(found: Findings, prompt: string, options: string[]): void {
+  if (SOUND_POSITION.test(prompt)) return;
+  const filled = options.filter((option) => collapse(option) !== "");
+
+  const word = WORD_ASKED.exec(prompt)?.[1];
+  if (word) {
+    const sounds = filled.map((option) => knownSound(option));
+    if (sounds.length < 2 || sounds.some((sound) => sound === null)) return;
+    const heard = filled.filter((_, i) => hasSound(word, sounds[i]!));
+    if (heard.length > 1) {
+      found.add("qcm_sound_ambiguous", `« ${excerpt(word, 25)} » fait entendre ${heard.map((option) => `« ${excerpt(option, 10)} »`).join(" et ")}`);
+    }
+    return;
+  }
+
+  const asked = ASKED_SOUND.exec(prompt);
+  if (!asked || !/(?<!\p{L})mots?(?!\p{L})/iu.test(prompt)) return;
+  const sound = knownSound(asked[1] ?? asked[2] ?? asked[3] ?? "");
+  if (!sound) return;
+  const having = filled.filter((option) => hasSound(option, sound));
+  if (having.length > 1) {
+    found.add("qcm_sound_ambiguous", `le son [${sound}] est dans ${having.map((option) => `« ${excerpt(option, 25)} »`).join(" et ")}`);
   }
 }
 
