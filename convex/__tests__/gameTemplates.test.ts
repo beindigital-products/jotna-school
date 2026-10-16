@@ -5,6 +5,7 @@ import { GAME_KINDS, gameOriginOf, generateGames, isGameKind, regenerateGame, ty
 import { makeContext, type GameLevel } from "../paliers/games/shared";
 import { LEXICON, stageOf } from "../paliers/games/words";
 import { KNOWN_WORDS } from "../paliers/knownWords";
+import { shouldInvalidate } from "../paliers/pregen";
 import { allProgrammeEntries } from "../programme";
 
 /**
@@ -279,5 +280,34 @@ describe("refaire un gabarit raté", () => {
     expect(again?.type).toBe("qcm");
     const word = /« ([^»]+) »/.exec(again!.prompt)![1];
     expect(LEXICON.find((e) => e.word === word)?.stage).toBe(1);
+  });
+});
+
+describe("marquer à refaire les paliers d'une thématique (pregen:invalidate)", () => {
+  const palier = { status: "cached", class: "CI", subjectId: "s1", topicId: "t1" };
+  const none = { classes: null, subjects: null, topics: null };
+
+  it("prend un palier en cache quand aucun filtre ne l'écarte", () => {
+    expect(shouldInvalidate(palier, none)).toBe(true);
+  });
+
+  it("laisse un palier déjà périmé ou en cours de génération", () => {
+    expect(shouldInvalidate({ ...palier, status: "stale" }, none)).toBe(false);
+    expect(shouldInvalidate({ ...palier, status: "generating" }, none)).toBe(false);
+  });
+
+  it("ne vise que les thématiques demandées", () => {
+    const topics = new Set(["t1", "t2"]);
+    expect(shouldInvalidate(palier, { ...none, topics })).toBe(true);
+    expect(shouldInvalidate({ ...palier, topicId: "t9" }, { ...none, topics })).toBe(false);
+    // Aucune thématique trouvée pour les clés demandées : rien n'est invalidé, pas tout.
+    expect(shouldInvalidate(palier, { ...none, topics: new Set() })).toBe(false);
+  });
+
+  it("cumule les filtres de classe, de matière et de thématique", () => {
+    const filters = { classes: new Set(["CI"]), subjects: new Set(["s1"]), topics: new Set(["t1"]) };
+    expect(shouldInvalidate(palier, filters)).toBe(true);
+    expect(shouldInvalidate({ ...palier, class: "CP" }, filters)).toBe(false);
+    expect(shouldInvalidate({ ...palier, subjectId: "s2" }, filters)).toBe(false);
   });
 });
