@@ -91,6 +91,7 @@ export const DEFECT_SEVERITY = {
   match_side_empty: "blocking",
   match_pair_duplicated: "warning",
   match_left_repeated: "warning",
+  match_pair_identical: "blocking",
   match_right_repeated: "warning",
   // --- Remise en ordre ----------------------------------------------------
   order_too_few: "blocking",
@@ -101,6 +102,8 @@ export const DEFECT_SEVERITY = {
   order_spells_other_word: "blocking",
   order_syllable_without_vowel: "blocking",
   order_without_criterion: "blocking",
+  order_syllables_without_word: "blocking",
+  order_prompt_mentions_zones: "blocking",
   order_words_without_criterion: "blocking",
   order_spatial_without_scene: "blocking",
   order_shapes_by_size: "blocking",
@@ -446,7 +449,7 @@ function auditInto(found: Findings, input: AuditInput): void {
           auditQcm(found, input, payload, subject);
           break;
         case "match":
-          auditMatch(found, payload);
+          auditMatch(found, prompt, payload, subject);
           break;
         case "order":
           auditOrder(found, prompt, payload);
@@ -774,7 +777,21 @@ function auditQcm(
 // Association
 // ---------------------------------------------------------------------------
 
-function auditMatch(found: Findings, payload: Record<string, unknown>): void {
+function auditMatch(found: Findings, prompt: string, payload: Record<string, unknown>, subject: string | null): void {
+  // « moto ~ moto » dans « Relie chaque mot à son image » : l'image est le mot lui-même, il
+  // n'y a rien à relier. Seulement quand l'énoncé parle d'image : la région « Dakar » et la
+  // ville « Dakar », ou « Relie les mots identiques », sont de vraies paires. En anglais, un
+  // mot peut s'écrire pareil dans les deux langues (radio).
+  if (/(?<![\p{L}])(?:images?|dessins?|illustrations?|photos?)(?![\p{L}])/iu.test(prompt) && !(subject && ANGLAIS.test(subject))) {
+    for (const pair of Array.isArray(payload.pairs) ? payload.pairs : []) {
+      const entry = asRecord(pair);
+      if (!entry || typeof entry.left !== "string" || typeof entry.right !== "string") continue;
+      if (collapse(entry.left) !== "" && collapse(entry.left) === collapse(entry.right)) {
+        found.add("match_pair_identical", `« ${excerpt(entry.left, 25)} » est relié à lui-même : rien à relier`);
+        break;
+      }
+    }
+  }
   for (const pair of Array.isArray(payload.pairs) ? payload.pairs : []) {
     const entry = asRecord(pair);
     if (!entry || typeof entry.left !== "string" || typeof entry.right !== "string") continue;
@@ -949,6 +966,23 @@ const PROXIMITY_REFERENCE =
 
 function auditUnanswerableOrder(found: Findings, prompt: string, sequence: string[]): void {
   const hasCriterion = ORDER_CRITERION.test(prompt);
+
+  // Des syllabes en vrac sans mot à former : « Mets ces syllabes dans l'ordre : ma, pa, na ».
+  // Rien ne dit quel ordre est le bon. Avec « pour former un mot », l'enfant cherche le mot.
+  if (
+    /(?<![\p{L}])syllabes?(?![\p{L}])/iu.test(prompt) &&
+    !/(?<![\p{L}])(?:mots?|phrases?)(?![\p{L}])/iu.test(prompt) &&
+    !/pour\s+(?:[ée]crire|faire|former|obtenir|reconstituer|construire|trouver)/iu.test(prompt) &&
+    !PICTOGRAPH.test(prompt) &&
+    !hasCriterion
+  ) {
+    found.add("order_syllables_without_word", "des syllabes à ranger sans mot à former : aucun ordre n'est le bon");
+  }
+
+  // « Place chaque syllabe dans la bonne zone » pour un ordre : il n'y a pas de zones à l'écran.
+  if (/(?<![\p{L}])zones?(?![\p{L}])/iu.test(prompt)) {
+    found.add("order_prompt_mentions_zones", "l'énoncé parle de zones, mais un ordre n'en montre pas : l'enfant ne sait pas quoi faire");
+  }
   const pictures = PICTOGRAPH.test(`${prompt} ${sequence.join(" ")}`);
 
   // Une liste de mots sans phrase à former et sans critère.
