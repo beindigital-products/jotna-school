@@ -38,7 +38,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
           "Palier 2 du CI : dénombrer une collection dessinée en émojis dans l'énoncé (🥭🥭🥭, 🔵🔵, 🐟🐟🐟🐟) jusqu'à 10, lire et écrire les chiffres, associer un nombre et une quantité, comparer (plus que, moins que, autant que), ranger. Aucun nombre au-delà de 10.",
         games: [
           { kind: "suite-nombres", count: 2 },
-          { kind: "compter-emojis", count: 3 },
+          { kind: "compter-emojis", count: 5 },
         ],
       },
       {
@@ -47,8 +47,8 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         description:
           "Palier 2 du CI : additions et soustractions dont le résultat ne dépasse pas 10, en situation (« J'ai 3 mangues, on m'en donne 2 »), le double et la moitié des petits nombres (le double de 3, la moitié de 8).",
         games: [
-          { kind: "ajouter-emojis", count: 2 },
-          { kind: "enlever-emojis", count: 2 },
+          { kind: "ajouter-emojis", count: 4 },
+          { kind: "enlever-emojis", count: 3 },
         ],
       },
       {

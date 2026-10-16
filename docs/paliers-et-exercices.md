@@ -589,8 +589,10 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   écrit : jamais plus de 5 au premier palier, 10 au dernier.
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10` et `ma-ci-calcul-10`
-  (`convex/programme`), cinq exercices au plus par palier ; le modèle écrit le
-  reste. Un palier déjà généré garde ses exercices : il faut l'invalider
+  (`convex/programme`), sept exercices par palier ; le modèle n'en écrit que trois.
+  Pour que ces trois-là ne fassent pas échouer le palier (le seuil de validation
+  exige 3 valides sur 3), le modèle en écrit deux de plus et on garde les premiers
+  valides (`scoring.exercisesToRequest`). Un palier déjà généré garde ses exercices : il faut l'invalider
   (`pregen:auditExercises` ou une régénération) pour qu'il reçoive les gabarits.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
   associations et des phrases à trous, déjà montrés.

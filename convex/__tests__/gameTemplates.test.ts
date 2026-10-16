@@ -5,6 +5,7 @@ import { GAME_KINDS, gameOriginOf, generateGames, isGameKind, regenerateGame, ty
 import { makeContext, type GameLevel } from "../paliers/games/shared";
 import { LEXICON, stageOf } from "../paliers/games/words";
 import { KNOWN_WORDS } from "../paliers/knownWords";
+import { SPARE_AI_EXERCISES, exercisesToRequest, hasEnoughValidExercises } from "../paliers/scoring";
 import { countByTopic, shouldInvalidate } from "../paliers/pregen";
 import { allProgrammeEntries } from "../programme";
 
@@ -231,13 +232,13 @@ describe("les gabarits dans le programme du CI", () => {
     );
   });
 
-  it("ne demande que des jeux connus, et jamais plus de cinq par palier", () => {
+  it("ne demande que des jeux connus, et exactement sept gabarits par palier", () => {
     for (const entry of entries) {
       for (const spec of entry.topic.games ?? []) {
         expect(isGameKind(spec.kind), `${entry.topic.key} : ${spec.kind}`).toBe(true);
       }
       const total = (entry.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0);
-      expect(total, entry.topic.key).toBeLessThanOrEqual(5);
+      expect(total, entry.topic.key).toBe(7);
     }
   });
 
@@ -325,5 +326,29 @@ describe("le résumé de pregen:invalidate", () => {
 
   it("rend une liste vide quand rien n'est touché", () => {
     expect(countByTopic([])).toEqual([]);
+  });
+});
+
+describe("sept gabarits dans un palier de dix", () => {
+  it("demande au modèle deux exercices de réserve, jamais pour un palier tout écrit par lui", () => {
+    expect(exercisesToRequest(3)).toBe(3 + SPARE_AI_EXERCISES);
+    expect(exercisesToRequest(5)).toBe(7);
+    expect(exercisesToRequest(10)).toBe(10);
+    expect(exercisesToRequest(0)).toBe(0);
+    // Trois sur trois à garder : sans réserve, un exercice écarté ferait échouer le palier.
+    expect(hasEnoughValidExercises(2, 3)).toBe(false);
+    expect(hasEnoughValidExercises(3, 3)).toBe(true);
+  });
+
+  it("varie les mots d'un palier : sept gabarits, au plus un mot en double", () => {
+    for (const key of ["fr-ci-sons-1", "fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4", "fr-ci-alphabet"]) {
+      const entry = allProgrammeEntries().find((e) => e.topic.key === key)!;
+      for (let n = 0; n < 20; n++) {
+        const games = generateGames(entry.topic.games ?? [], { klass: "CI", palierIndex: 2, palierCount: 3, seed: `${key}:${n}` });
+        const words = games.flatMap((g) => /« ([^»]+) »/.exec(g.prompt)?.[1] ?? []);
+        const duplicates = words.length - new Set(words).size;
+        expect(duplicates, `${key} #${n} : ${words.join(", ")}`).toBeLessThanOrEqual(1);
+      }
+    }
   });
 });

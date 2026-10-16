@@ -35,7 +35,7 @@ import { guardVisuals } from "./missingVisual";
 import { exerciseImageIdOf } from "../../lib/exercise-images";
 import { validateFillBlank } from "./fillBlank";
 import { auditExercise, blockingDefects, tallyCodes } from "./exerciseAudit";
-import { computeExerciseScore, hasEnoughValidExercises, PALIER_SIZE } from "./scoring";
+import { computeExerciseScore, exercisesToRequest, hasEnoughValidExercises, PALIER_SIZE } from "./scoring";
 import { gameOriginOf, generateGames, interleave, regenerateGame } from "./games";
 import { programmeTopic } from "../programme";
 import type { GameOrigin } from "./games/types";
@@ -781,7 +781,7 @@ export async function generateBucketCore(
       palierIndex: args.palierIndex,
       palierCount,
       topicDescription: subject.topic.description,
-      exerciseCount: aiCount,
+      exerciseCount: exercisesToRequest(aiCount),
     };
     const systemPrompt = buildPalierBaseSystemPrompt(promptInput);
     const userPrompt = buildPalierBasePrompt(promptInput);
@@ -826,13 +826,15 @@ export async function generateBucketCore(
     }
     generationTraceId = gen.traceId;
 
-    const parsed = parseExercises(gen.result).slice(0, aiCount);
+    const parsed = parseExercises(gen.result).slice(0, exercisesToRequest(aiCount));
     const isMaths = subject.subjectName.toLowerCase().startsWith("math");
     const shapeContext = { class: args.class, subject: subject.subjectName };
     factCheck = isMaths ? verifyMathBatch(parsed, shapeContext) : shapeBatch(parsed, shapeContext);
 
     // Trop d'exercices écartés : on ne sert pas un palier qui ne se valide
     // plus. Il reste `stale`, refait à la prochaine ouverture ou par `pregen:run`.
+    // Les exercices de réserve ne servent qu'à remplacer un exercice écarté : le palier garde `aiCount`.
+    factCheck = { ...factCheck, exos: factCheck.exos.slice(0, aiCount) };
     if (!hasEnoughValidExercises(factCheck.exos.length, aiCount)) {
       await ctx.runMutation(internal.paliers.index.upsertBucket, {
         subjectId: args.subjectId,
