@@ -284,6 +284,25 @@ export const dedupe = internalMutation({
   },
 });
 
+export type InvalidateFilters = {
+  classes: ReadonlySet<string> | null;
+  subjects: ReadonlySet<string> | null;
+  topics: ReadonlySet<string> | null;
+};
+
+/** Ce palier est-il à passer en `stale` ? Seuls les paliers en cache, d'une classe visible, qui passent tous les filtres. */
+export function shouldInvalidate(
+  palier: { status: string; class: string; subjectId: string; topicId: string },
+  filters: InvalidateFilters,
+): boolean {
+  if (palier.status !== "cached") return false;
+  if (isHiddenClass(palier.class)) return false;
+  if (filters.classes && !filters.classes.has(palier.class)) return false;
+  if (filters.subjects && !filters.subjects.has(palier.subjectId)) return false;
+  if (filters.topics && !filters.topics.has(palier.topicId)) return false;
+  return true;
+}
+
 /**
  * MARQUER DES PALIERS À REFAIRE. Quand la consigne de génération change (un
  * mix d'écritures, une règle de plus), le contenu déjà en cache ne la
@@ -293,29 +312,57 @@ export const dedupe = internalMutation({
  * exercices : à réserver au développement ou à une rentrée.
  *
  *     npx convex run paliers/pregen:invalidate '{"confirmDeployment":"<nom>","subjectIds":["..."],"classes":["CM1"]}'
+ *
+ * `programmeKeys` vise des thématiques précises (`fr-ci-sons-1`, `ma-ci-calcul-10`)
+ * : quand une fiche du programme gagne des gabarits (`paliers/games`), seuls
+ * ses paliers sont à refaire, pas toute une classe. Les filtres se cumulent.
+ * `dryRun` compte et nomme les thématiques sans rien écrire.
+ *
+ *     npx convex run paliers/pregen:invalidate '{"confirmDeployment":"<nom>","programmeKeys":["fr-ci-sons-1"],"dryRun":true}'
  */
 export const invalidate = internalMutation({
   args: {
     confirmDeployment: v.string(),
     subjectIds: v.optional(v.array(v.id("subjects"))),
     classes: v.optional(v.array(visibleClassValidator)),
+    programmeKeys: v.optional(v.array(v.string())),
     dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     assertTargetedDeployment(args.confirmDeployment);
-    const wantedClasses = args.classes ? new Set<string>(args.classes) : null;
-    const wantedSubjects = args.subjectIds ? new Set<string>(args.subjectIds) : null;
+    // Les thématiques visées par leur clé de programme : lues une fois, pas une fois par palier.
+    let topicNames = new Map<string, string>();
+    if (args.programmeKeys) {
+      const wanted = new Set(args.programmeKeys);
+      const topics = await ctx.db.query("topics").take(1000);
+      topicNames = new Map(
+        topics.filter((t) => t.programmeKey && wanted.has(t.programmeKey)).map((t) => [t._id as string, t.name]),
+      );
+    }
+    const filters: InvalidateFilters = {
+      classes: args.classes ? new Set<string>(args.classes) : null,
+      subjects: args.subjectIds ? new Set<string>(args.subjectIds) : null,
+      topics: args.programmeKeys ? new Set(topicNames.keys()) : null,
+    };
     const paliers = await ctx.db.query("paliers").take(1000);
     let invalidated = 0;
+    const byTopic: Record<string, number> = {};
     for (const palier of paliers) {
-      if (palier.status !== "cached") continue;
-      if (isHiddenClass(palier.class)) continue;
-      if (wantedClasses && !wantedClasses.has(palier.class)) continue;
-      if (wantedSubjects && !wantedSubjects.has(palier.subjectId as string)) continue;
+      if (!shouldInvalidate({ ...palier, subjectId: palier.subjectId as string, topicId: palier.topicId as string }, filters)) {
+        continue;
+      }
       invalidated += 1;
+      const name = topicNames.get(palier.topicId as string);
+      if (name) byTopic[name] = (byTopic[name] ?? 0) + 1;
       if (!args.dryRun) await ctx.db.patch(palier._id, { status: "stale" });
     }
-    return { dryRun: args.dryRun === true, paliersScanned: paliers.length, invalidated };
+    return {
+      dryRun: args.dryRun === true,
+      paliersScanned: paliers.length,
+      topicsMatched: topicNames.size,
+      invalidated,
+      ...(args.programmeKeys ? { byTopic } : {}),
+    };
   },
 });
 

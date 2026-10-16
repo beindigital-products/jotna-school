@@ -161,6 +161,14 @@ remplaçant leurs exercices :
 npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","subjectIds":["<id de la matière>"],"classes":["CM1"]}'
 ```
 
+`programmeKeys` vise des thématiques précises, par la clé de leur fiche du
+programme : quand une fiche gagne des gabarits (voir plus bas), seuls ses
+paliers sont à refaire. `dryRun` compte et nomme les thématiques :
+
+```bash
+npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10"],"dryRun":true}'
+```
+
 Les élèves qui ont une tentative ouverte sur un palier invalidé la
 reprennent sur les nouveaux exercices : à réserver au développement ou à une
 rentrée.
