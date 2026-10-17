@@ -1374,6 +1374,13 @@ describe("la forme qu'un émoji dessine", () => {
     expect(codesOf(forme("Quel est le nom de cette forme ? 🟦", OPTIONS, 1))).toContain("shape_emoji_mismatch");
   });
 
+  it("🔲 et 🔳 sont des carrés, comme ⬛ et ⬜", () => {
+    for (const emoji of ["🔲", "🔳", "⬛", "⬜"]) {
+      expect(codesOf(forme(`Quel est le nom de cette forme ? ${emoji}`, ["le carré", "le rond", "le triangle"], 0))).not.toContain("shape_emoji_mismatch");
+      expect(codesOf(forme(`Quel est le nom de cette forme ? ${emoji}`, ["le carré", "le rond", "le triangle"], 1))).toContain("shape_emoji_mismatch");
+    }
+  });
+
   it("reconnaît le cercle, le rond et le triangle", () => {
     expect(codesOf(forme("Quelle est cette forme ? 🔴", ["un rond", "un carré", "un triangle"], 0))).not.toContain("shape_emoji_mismatch");
     expect(codesOf(forme("Quelle est cette forme ? 🔴", ["un rond", "un carré", "un triangle"], 2))).toContain("shape_emoji_mismatch");

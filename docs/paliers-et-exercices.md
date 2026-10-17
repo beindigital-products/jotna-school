@@ -169,7 +169,7 @@ paliers sont à refaire. `dryRun` compte et nomme les thématiques (et dit
 `truncated: true` si la base compte plus de paliers que la lecture) :
 
 ```bash
-npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10","ma-ci-nombres-20"],"dryRun":true}'
+npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10","ma-ci-nombres-20","ma-ci-trier","ma-ci-espace","ma-ci-formes","ma-ci-mesures"],"dryRun":true}'
 ```
 
 Les élèves qui ont une tentative ouverte sur un palier invalidé la
@@ -594,6 +594,19 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `complement` | QCM | « Combien faut-il ajouter à 6 pour faire 10 ? » : 4 |
 | `calcul-ecrit` | QCM | « Combien font 4 + 3 ? » : 7 ; « Combien font 8 − 5 ? » : 3 |
 | `dizaine-unites` | QCM | « Dans 14, il y a une dizaine et combien d'unités ? » : 4 (de 11 à 19) |
+| `forme-nom` | QCM | « Quel est le nom de cette forme ? ⬛ » : `le carré` (jamais « le rectangle » pour un carré) |
+| `forme-coins` | QCM | « Combien de coins a un triangle ? » : 3 (carré et rectangle 4, rond 0) |
+| `solide-nom` | QCM | « Quel est le nom du solide qui ressemble à cet objet ? 🎲 » : `le cube` (jamais « le pavé » pour le dé) |
+| `classer-formes` | glisser-déposer | « Glisse chaque forme dans la bonne case. » : `⬛🔲` dans Carrés, `🔴` dans Ronds |
+| `rangee-position` | QCM | « Regarde la rangée 🐔 🍌 🐄. Qui est à gauche ? » : `🐔 la poule` |
+| `rangee-ordinal` | QCM | « …Qui est le troisième, en lisant de gauche à droite ? » |
+| `intrus` | QCM | « Lequel n'est pas comme les autres ? » : trois fruits et un animal |
+| `appartient` | QCM | « Est-ce un fruit ? 🐔 » : Non |
+| `couleur-objet` | QCM | « Qu'est-ce qui est jaune ? » : `🍌 la banane`, parmi trois couleurs |
+| `comparer-mesure` | QCM | « Quel animal est le plus lourd ? » : trois animaux espacés d'au moins deux crans |
+| `animaux-ordre` | ordre | « Mets ces animaux dans l'ordre, du plus léger au plus lourd. » |
+| `moment-journee` | QCM | « Le soleil se couche. Quel moment de la journée est-ce ? » : `le soir` |
+| `jour-voisin` | QCM | « Quel jour vient juste après mardi ? » : mercredi |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -623,6 +636,24 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   chacun des mots du vocabulaire, à chaque palier de lecture, avec 25 graines.
 - **Le dénombrement** (`paliers/games/counting.ts`) compte les émojis qu'il
   écrit : jamais plus de 5 au premier palier, 10 au dernier.
+- **Les choses du monde de l'enfant** (`paliers/games/things.ts`) : chaque animal, fruit,
+  vêtement, véhicule ou objet d'école est écrit UNE fois, avec son émoji ancien (Unicode 11
+  au plus, sans sélecteur de variation), sa famille, sa couleur et son rang de taille et de
+  poids. `geometry.ts` (formes, coins, solides, classement, rangées) et `sorting.ts` (intrus,
+  famille, couleur, comparaisons, rangement, moments, jours) n'inventent rien. Une comparaison
+  espace toujours les choses d'au moins deux crans de l'échelle (un chien et un mouton, une
+  poule et un chien, se discutent) ; l'éléphant n'est pas dans l'échelle de taille (la girafe est
+  plus haute) ; un carré est un rectangle particulier et un cube un pavé particulier, donc
+  jamais « rectangle » pour un carré ni « pavé » pour le dé. Ajouter une chose : un émoji ancien,
+  une seule famille et une seule couleur sans doute possible. Les énoncés des jeux ne contiennent
+  aucun « : » (l'écran, `ExercisePrompt`, coupe une consigne sur le deux-points) ni plus d'une
+  apostrophe droite (précaution du test des jeux : l'apostrophe droite ne coupe rien, seules les
+  guillemets le font). La voix de Pio ne dit pas les émojis : un énoncé ne doit jamais nommer un
+  dessin par son seul émoji (« Qui est entre 🐟 et 🐕 ? » devenait « Qui est entre et ? »), d'où
+  l'absence de « entre ». Un mot de la question n'est jamais celui de la réponse (« l'orange »
+  pour la couleur orange, le jour cité pour le jour d'avant). Le soir et la nuit ne se proposent
+  jamais ensemble. La difficulté monte avec le palier : rangées de trois puis de quatre dessins,
+  quatre puis cinq choix à l'intrus, quatre couleurs, deux animaux très différents puis trois.
 - **Les nombres** (`paliers/games/numbers.ts`) CALCULENT leur réponse, jamais
   écrite : une seule option juste, les mauvais choix sont des erreurs d'enfant (le
   nombre lui-même, un de plus, un de moins, l'autre opération) et ne valent jamais
@@ -643,8 +674,9 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   refait de la même façon (`regenerateGame`).
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
-  `ma-ci-nombres-20` (`convex/programme`), dix exercices par palier, voir plus
-  bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
+  `ma-ci-nombres-20`, `ma-ci-trier`, `ma-ci-espace`, `ma-ci-formes` et `ma-ci-mesures`
+  (`convex/programme`), dix exercices par palier, voir plus bas ; le modèle n'écrit plus
+  rien. (Quand une fiche garde des exercices du
   modèle, le seuil de validation exige tous les exercices écrits : le modèle en
   écrit deux de plus et on garde les premiers valides, `scoring.exercisesToRequest`.)
   Un palier déjà généré garde ses exercices : il faut l'invalider
@@ -668,7 +700,12 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   « 14 − 10 » : jamais un passage de la dizaine). Les suites de nombres suivent la
   plage de leur fiche (de 0 à 10, puis de 10 à 20, qui monte avec le palier), ne
   servent jamais deux fois la même dans un palier et gardent toujours au moins deux
-  mauvais choix, jamais au-dessus du plafond. `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
+  mauvais choix, jamais au-dessus du plafond. **Géométrie et mesures :**
+  `ma-ci-trier` = 2 frises de formes, 2 frises de couleurs, 2 intrus, un « est-ce un
+  fruit ? », une couleur, 2 rangements d'animaux ; `ma-ci-espace` = 2 dessins à copier, 4
+  repérages dans une rangée, 4 rangs ; `ma-ci-formes` = 2 frises de formes, 2 noms de forme,
+  2 coins, 2 solides, 2 classements de formes ; `ma-ci-mesures` = 4 comparaisons d'animaux,
+  3 moments de la journée, 3 jours voisins. `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
   `exercisesToRequest(0)` aussi), ne demande aucune réserve, n'échoue pas en
   `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices, tant que le contrôleur
   n'abandonne aucun gabarit (un gabarit refusé après les essais rouvre une place
@@ -677,15 +714,20 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces huit thématiques contre un faux modèle qui lève une
+  chaque palier de ces douze thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
-  Les autres thématiques (trier, espace, formes, mesures et problèmes du CI ; autres classes)
-  gardent des exercices du modèle, avec leurs défauts connus (voir plus haut) ;
-  leur donner dix gabarits demande des gabarits sûrs de plus.
+  Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
+  haut) : en CI, les petits problèmes, les premières phrases, les salutations, l'éveil, l'histoire, la
+  géographie, l'instruction civique, l'anglais et l'éducation artistique ; toutes les autres classes.
+  Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
+  dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
+  rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à
+  ajouter.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
   associations et des phrases à trous, déjà montrés. Son test n'admet un exercice
   dans une thématique tout en jeux que si l'un de ses gabarits fabrique ce type
-  (le glisser-déposer du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
-  modèle l'écrit).
+  (le glisser-déposer du français du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
+  modèle l'écrit ; celui des mathématiques à « Les formes et les solides », que `classer-formes`
+  fabrique).

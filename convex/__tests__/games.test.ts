@@ -49,6 +49,10 @@ function rightAnswer(type: string, payload: unknown): string {
       return JSON.stringify((payload as { pairs: unknown[] }).pairs);
     case "fill-blank":
       return JSON.stringify((payload as { blanks: { answer: string }[] }).blanks.map((b) => b.answer));
+    case "drag-drop":
+      return JSON.stringify(
+        Object.fromEntries((payload as { items: { text: string; correctZone: string }[] }).items.map((item) => [item.text, item.correctZone])),
+      );
     default:
       throw new Error(`type inattendu ${type}`);
   }

@@ -24,6 +24,7 @@ export type GameExerciseType =
   | "qcm"
   | "order"
   | "match"
+  | "drag-drop"
   | "fill-blank";
 
 /** Un exercice fabriqué, prêt à rejoindre les exercices du palier. */
@@ -96,6 +97,41 @@ export function makeContext(
 /** L'origine à poser dans le payload : de quoi refaire le même gabarit avec une autre graine. */
 export function originOf(kind: string, ctx: GameContext): GameOrigin {
   return ctx.vocabulary ? { kind, level: ctx.level, vocabulary: ctx.vocabulary } : { kind, level: ctx.level };
+}
+
+/**
+ * La question qu'un tirage pose : son énoncé et sa bonne réponse. Les mauvais choix, tirés au hasard
+ * et mélangés, ne font pas une autre question : « Quel nombre vient juste avant 14 ? » avec d'autres
+ * distracteurs reste la même question.
+ */
+const questionOf = (game: GeneratedGame) => `${game.prompt}|${game.answerKey}`;
+
+/** Les options d'un tirage, triées : deux QCM aux mêmes choix dans un autre ordre sont le même exercice. */
+export const sortedOptions = (game: GeneratedGame) =>
+  `${game.prompt}|${JSON.stringify([...((game.payload.options ?? game.payload.correctSequence ?? []) as string[])].sort())}`;
+
+/**
+ * Un tirage jamais vu dans ce palier : la même question deux fois se remarquerait. On refait
+ * jusqu'à huit tirages ; au-delà, le dernier est servi (l'espace des questions est épuisé).
+ * `keyOf` dit ce qui fait l'identité d'un tirage : par défaut l'énoncé et la bonne réponse ; pour
+ * un énoncé qui ne change jamais (« Lequel n'est pas comme les autres ? »), les choix triés.
+ */
+export function fresh(
+  ctx: GameContext,
+  kind: string,
+  build: () => GeneratedGame,
+  keyOf: (game: GeneratedGame) => string = questionOf,
+): GeneratedGame {
+  let game = build();
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const key = `${kind}:${keyOf(game)}`;
+    if (!ctx.used.has(key)) {
+      ctx.used.add(key);
+      return game;
+    }
+    game = build();
+  }
+  return game;
 }
 
 export function randomInt(rng: () => number, min: number, max: number): number {
