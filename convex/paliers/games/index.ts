@@ -26,6 +26,7 @@ import {
 import { makeFreshFrise, makeNumberSuite } from "./patterns";
 import {
   makeFirstLetter,
+  makeCapitalMatch,
   makeFirstSyllable,
   makeLastSyllable,
   makeLetterCount,
@@ -103,6 +104,7 @@ export const GAME_KINDS = {
   "phrase-trou": { label: "Phrase à trou", type: "fill-blank", make: makeSentenceGap },
   "syllabe-mot": { label: "Relier une syllabe et un mot", type: "match", make: makeSyllableToWord },
   "mot-image": { label: "Relier un mot et son image", type: "match", make: makeWordToPicture },
+  "majuscule-minuscule": { label: "Relier une minuscule et sa majuscule", type: "match", make: makeCapitalMatch },
   "compter-emojis": { label: "Compter des dessins", type: "qcm", make: makeCountEmojis },
   "ajouter-emojis": { label: "Ajouter des dessins", type: "qcm", make: makeAddEmojis },
   "enlever-emojis": { label: "Enlever des dessins", type: "qcm", make: makeTakeAwayEmojis },
