@@ -7,7 +7,7 @@
  * elle-même, elle ne peut pas être fausse.
  */
 import type { PatternPayload } from "./types";
-import { pick, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { originOf, pick, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
 
 type Token = { glyph: string; name: string };
 
@@ -183,7 +183,10 @@ export function formatNumber(n: number): string {
 }
 
 export function makeNumberSuite(ctx: GameContext): GeneratedGame {
-  const range = NUMBER_RANGES[ctx.klass] ?? NUMBER_RANGES.CP;
+  const base = NUMBER_RANGES[ctx.klass] ?? NUMBER_RANGES.CP;
+  // « nombres-10 » : la fiche « Les nombres jusqu'à 10 » ne montre aucun nombre au-delà de 10.
+  const cap = /^nombres-(\d+)$/.exec(ctx.vocabulary ?? "");
+  const range = cap ? { ...base, max: Math.min(base.max, Number(cap[1])) } : base;
   const steps = range.steps.slice(0, Math.min(range.steps.length, ctx.level + 1));
   const step = pick(ctx.rng, steps);
   const length = 6;
@@ -205,9 +208,12 @@ export function makeNumberSuite(ctx: GameContext): GeneratedGame {
   // Les distracteurs sont les erreurs d'un enfant : un pas de trop, un pas
   // de moins, le pas oublié.
   const last = values[length - 1];
+  const first = values[0];
   const wrong = new Set<string>();
-  for (const candidate of [last + step, last - step, last + 1, last - 1, last + 2 * step]) {
-    if (candidate >= 0 && !values.includes(candidate)) wrong.add(formatNumber(candidate));
+  // Jamais plus grand que le plus grand nombre de la fiche (« jusqu'à 10 » ne montre pas 11) ; les deux derniers
+  // candidats sont de repli quand la suite touche le plafond.
+  for (const candidate of [last + step, last - step, last + 1, last - 1, last + 2 * step, first - 1, first - step, first - 2]) {
+    if (candidate >= 0 && candidate <= range.max && !values.includes(candidate)) wrong.add(formatNumber(candidate));
   }
   const options = shuffle(ctx.rng, [...new Set([...answers, ...Array.from(wrong).slice(0, 3)])]);
 
@@ -220,7 +226,7 @@ export function makeNumberSuite(ctx: GameContext): GeneratedGame {
     payload: {
       ...payload,
       concept: `suite de nombres de ${step} en ${step}`,
-      game: { kind: "suite-nombres", level: ctx.level },
+      game: originOf("suite-nombres", ctx),
     },
     answerKey: answers.join(" "),
     hints: [

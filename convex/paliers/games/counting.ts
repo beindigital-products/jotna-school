@@ -115,3 +115,58 @@ export function makeTakeAwayEmojis(ctx: GameContext): GeneratedGame {
     ],
   );
 }
+
+/** « Quelle rangée a le plus de mangues ? » : trois rangées de dessins, de nombres différents. */
+export function makeCompareRows(ctx: GameContext): GeneratedGame {
+  const thing = pickFresh(ctx, OBJECTS, (o) => o.emoji);
+  const max = MAX_BY_LEVEL[ctx.level];
+  const counts: number[] = [];
+  while (counts.length < 3) {
+    const n = randomInt(ctx.rng, 1, max);
+    if (!counts.includes(n)) counts.push(n);
+  }
+  const most = ctx.rng() < 0.6;
+  const answer = most ? Math.max(...counts) : Math.min(...counts);
+  const options = shuffle(
+    ctx.rng,
+    counts.map((n) => row(thing.emoji, n)),
+  );
+  const correct = options.indexOf(row(thing.emoji, answer));
+  return {
+    type: "qcm",
+    prompt: `Quelle rangée a le ${most ? "plus" : "moins"} ${thing.withDe} ?`,
+    payload: { options, correctIndex: correct, game: originOf("rangee-plus-moins", ctx), concept: "comparer des quantités" },
+    answerKey: options[correct],
+    hints: [
+      "Compte les dessins de chaque rangée avec le doigt.",
+      most
+        ? "La rangée qui en a le plus est celle où tu comptes le plus loin."
+        : "La rangée qui en a le moins est celle où tu t'arrêtes le plus tôt.",
+      "Compare les nombres que tu as comptés, deux par deux.",
+    ],
+  };
+}
+
+/** « Relie chaque nombre au bon groupe de mangues. » : trois groupes de dessins, trois nombres différents. */
+export function makeNumberGroups(ctx: GameContext): GeneratedGame {
+  const thing = pickFresh(ctx, OBJECTS, (o) => o.emoji);
+  const max = MAX_BY_LEVEL[ctx.level];
+  const counts: number[] = [];
+  while (counts.length < 3) {
+    const n = randomInt(ctx.rng, 1, max);
+    if (!counts.includes(n)) counts.push(n);
+  }
+  counts.sort((a, b) => a - b);
+  const pairs = counts.map((n) => ({ left: String(n), right: row(thing.emoji, n) }));
+  return {
+    type: "match",
+    prompt: `Relie chaque nombre au bon groupe ${thing.withDe}.`,
+    payload: { pairs, game: originOf("nombre-groupe", ctx), concept: "associer un nombre et une quantité" },
+    answerKey: pairs.map((p) => `${p.left} ~ ${p.right}`).join(" ; "),
+    hints: [
+      "Compte les dessins de chaque groupe avec le doigt.",
+      "Le dernier nombre que tu dis, en comptant, est le nombre du groupe.",
+      "Commence par le groupe le plus facile à compter.",
+    ],
+  };
+}

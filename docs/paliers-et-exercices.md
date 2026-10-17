@@ -169,7 +169,7 @@ paliers sont à refaire. `dryRun` compte et nomme les thématiques (et dit
 `truncated: true` si la base compte plus de paliers que la lecture) :
 
 ```bash
-npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10"],"dryRun":true}'
+npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10","ma-ci-nombres-20"],"dryRun":true}'
 ```
 
 Les élèves qui ont une tentative ouverte sur un palier invalidé la
@@ -584,6 +584,16 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `mot-image` | association | `poule~🐔…` |
 | `majuscule-minuscule` | association | « Relie chaque lettre minuscule à sa majuscule. » : `a~A ; m~M…` (quatre lettres du vocabulaire, sans accent ; « i » et « l » jamais ensemble : « I » ressemble à « l ») |
 | `compter-emojis`, `ajouter-emojis`, `enlever-emojis` | QCM | « Combien de mangues en tout ? 🥭🥭 + 🥭 » : 3 |
+| `rangee-plus-moins` | QCM | « Quelle rangée a le plus de fleurs ? » : trois rangées de dessins, de nombres différents |
+| `nombre-groupe` | association | `3~🌸🌸🌸 ; 5~🌸🌸🌸🌸🌸…` |
+| `nombre-voisin` | QCM | « Quel nombre vient juste après 7 ? » : 8 |
+| `nombre-plus-grand` | QCM | « Quel est le plus grand de ces nombres ? » : trois nombres différents |
+| `nombre-en-lettres` | QCM | « Quel nombre s'écrit « sept » ? » : 7 |
+| `nombres-ordre` | ordre | « Mets ces nombres dans l'ordre, du plus petit au plus grand. » : quatre nombres différents |
+| `double-moitie` | QCM | « Quel est le double de 3 ? » : 6 ; « Quelle est la moitié de 8 ? » : 4 |
+| `complement` | QCM | « Combien faut-il ajouter à 6 pour faire 10 ? » : 4 |
+| `calcul-ecrit` | QCM | « Combien font 4 + 3 ? » : 7 ; « Combien font 8 − 5 ? » : 3 |
+| `dizaine-unites` | QCM | « Dans 14, il y a une dizaine et combien d'unités ? » : 4 (de 11 à 19) |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -613,6 +623,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   chacun des mots du vocabulaire, à chaque palier de lecture, avec 25 graines.
 - **Le dénombrement** (`paliers/games/counting.ts`) compte les émojis qu'il
   écrit : jamais plus de 5 au premier palier, 10 au dernier.
+- **Les nombres** (`paliers/games/numbers.ts`) CALCULENT leur réponse, jamais
+  écrite : une seule option juste, les mauvais choix sont des erreurs d'enfant (le
+  nombre lui-même, un de plus, un de moins, l'autre opération) et ne valent jamais
+  la bonne réponse. Le plus grand nombre vient du champ `vocabulary` de la fiche :
+  « nombres-10 » ou « nombres-20 » (aussi pour `suite-nombres`, dont les mauvais
+  choix ne dépassent plus ce plafond). Aucun indice n'écrit un chiffre : un test
+  recalcule chaque réponse depuis l'énoncé.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
@@ -625,15 +642,16 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   par là, le contrôleur n'est pas fait pour eux. Un gabarit raté par l'enfant se
   refait de la même façon (`regenerateGame`).
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
-  `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10` et `ma-ci-calcul-10`
-  (`convex/programme`), dix exercices par palier en lecture (`fr-ci-sons-1` à
-  `fr-ci-sons-4`, `fr-ci-alphabet`, voir plus bas), sept en calcul ; le modèle
-  n'en écrit que trois en calcul.
-  Pour que ces trois-là ne fassent pas échouer le palier (le seuil de validation
-  exige 3 valides sur 3), le modèle en écrit deux de plus et on garde les premiers
-  valides (`scoring.exercisesToRequest`). Un palier déjà généré garde ses exercices : il faut l'invalider
+  `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
+  `ma-ci-nombres-20` (`convex/programme`), dix exercices par palier, voir plus
+  bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
+  modèle, le seuil de validation exige tous les exercices écrits : le modèle en
+  écrit deux de plus et on garde les premiers valides, `scoring.exercisesToRequest`.)
+  Un palier déjà généré garde ses exercices : il faut l'invalider
   (`pregen:auditExercises` ou une régénération) pour qu'il reçoive les gabarits.
-- **Dix gabarits, plus aucun appel au modèle en lecture du CI** (`fr-ci-sons-1` à
+- **Dix gabarits, plus aucun appel au modèle en lecture et en nombres du CI**
+  (`ma-ci-nombres-10`, `ma-ci-calcul-10` et `ma-ci-nombres-20`, en plus de la
+  lecture ci-dessous). **Lecture :** (`fr-ci-sons-1` à
   `fr-ci-sons-4` et `fr-ci-alphabet`). `fr-ci-sons-2` à `sons-4` portent les neuf
   d'avant et `mot-syllabe` ; `fr-ci-sons-1` ajoute `phrase-trou`, `syllabe-finale`
   et `lettres-compter` aux sept d'avant ; `fr-ci-alphabet` ajoute
@@ -641,7 +659,12 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   rien, le palier est un « palier tout en jeux ». Au premier palier de lecture
   (`fr-ci-sons-1`) le vocabulaire n'a que 7 mots pour 10 gabarits : au moins trois
   mots reviennent, dans des exercices différents (le test de variété borne ce
-  nombre à ce minimum). `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
+  nombre à ce minimum). **Nombres :** `ma-ci-nombres-10` = 2 suites, 3 dénombrements,
+  un nombre relié à son groupe, une rangée comparée, un voisin, le plus grand, un
+  nombre en lettres ; `ma-ci-calcul-10` = 3 additions et 2 soustractions
+  d'émojis, 2 calculs écrits, un double et une moitié, un complément ;
+  `ma-ci-nombres-20` = 2 suites, 2 dizaines et unités, 2 voisins, le plus grand,
+  un nombre en lettres, un rangement, un calcul écrit. `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
   `exercisesToRequest(0)` aussi), ne demande aucune réserve, n'échoue pas en
   `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices, tant que le contrôleur
   n'abandonne aucun gabarit (un gabarit refusé après les essais rouvre une place
@@ -654,9 +677,9 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
-  Les autres thématiques (calcul du CI, autres classes) gardent des exercices du
-  modèle, avec leurs défauts connus (voir plus haut) ; leur donner dix gabarits
-  demande des gabarits sûrs de plus.
+  Les autres thématiques (géométrie, mesures et problèmes du CI ; autres classes)
+  gardent des exercices du modèle, avec leurs défauts connus (voir plus haut) ;
+  leur donner dix gabarits demande des gabarits sûrs de plus.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
   associations et des phrases à trous, déjà montrés. Son test n'admet un exercice
   dans une thématique tout en jeux que si l'un de ses gabarits fabrique ce type
