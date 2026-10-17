@@ -95,7 +95,8 @@ export const COLORS: Record<string, readonly Thing[]> = {
   rouge: [thing("🍎", "la pomme"), thing("🍓", "la fraise"), thing("🍅", "la tomate")],
   jaune: [thing("🍌", "la banane"), thing("🍋", "le citron")],
   vert: [thing("🥒", "le concombre"), thing("🥦", "le brocoli")],
-  orange: [thing("🍊", "l'orange"), thing("🥕", "la carotte")],
+  // Pas « l'orange » : le mot de la question serait celui de la réponse (la couleur orange).
+  orange: [thing("🥕", "la carotte")],
   violet: [thing("🍆", "l'aubergine")],
 };
 
@@ -126,10 +127,14 @@ export const WEIGHT_SCALE: readonly Thing[] = [
 /** Les jours de la semaine, dans l'ordre. */
 export const DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"] as const;
 
-/** Les moments de la journée, chacun avec des indices qui ne vont à aucun autre. */
+/**
+ * Les moments de la journée, chacun avec des indices qui ne vont à aucun autre. Un indice ne contient
+ * jamais le nom d'un autre moment (« la nuit arrive » attirerait vers « la nuit »). Le soir et la nuit
+ * ne sont jamais proposés ensemble : une fois le soleil couché, il fait noir ET c'est encore le soir.
+ */
 export const MOMENTS: readonly { name: string; label: string; clues: readonly string[] }[] = [
   { name: "matin", label: "le matin", clues: ["Le soleil se lève.", "Le coq chante et le jour commence."] },
-  { name: "midi", label: "midi", clues: ["Le soleil est tout en haut du ciel.", "Les ombres sont toutes petites."] },
-  { name: "soir", label: "le soir", clues: ["Le soleil se couche.", "Le ciel devient rouge et la nuit arrive."] },
-  { name: "nuit", label: "la nuit", clues: ["Il fait noir et les étoiles brillent.", "Il fait noir, tout le monde dort."] },
+  { name: "midi", label: "midi", clues: ["Le soleil est tout en haut du ciel.", "Le soleil est haut et il fait très chaud."] },
+  { name: "soir", label: "le soir", clues: ["Le soleil se couche.", "Les enfants rentrent à la maison et le soleil descend."] },
+  { name: "nuit", label: "la nuit", clues: ["Il fait tout noir et tout le monde dort.", "La lune brille et on dort dans son lit."] },
 ];

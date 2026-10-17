@@ -57,7 +57,7 @@ export function makeShapeName(ctx: GameContext): GeneratedGame {
       hints: [
         "Regarde bien le contour de la forme.",
         "Compte les coins de la forme, un par un.",
-        "Une forme qui n'a aucun coin est toute ronde.",
+        "Dis à voix haute le nom de la forme que tu vois.",
       ],
     };
   });
@@ -66,11 +66,11 @@ export function makeShapeName(ctx: GameContext): GeneratedGame {
 /** « Combien de coins a un triangle ? » : un triangle en a trois, un carré et un rectangle quatre, un rond aucun. */
 export function makeCorners(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "forme-coins", () => {
+    // Au premier palier, les deux formes aux coins visibles ; ensuite le rond (aucun coin) et le rectangle.
     const forms = [
       { name: SHAPES.carre.name, corners: SHAPES.carre.corners },
       { name: SHAPES.triangle.name, corners: SHAPES.triangle.corners },
-      { name: SHAPES.rond.name, corners: SHAPES.rond.corners },
-      RECTANGLE,
+      ...(ctx.level >= 2 ? [{ name: SHAPES.rond.name, corners: SHAPES.rond.corners }, RECTANGLE] : []),
     ];
     const form = pick(ctx.rng, forms);
     const wrong = shuffle(
@@ -162,11 +162,11 @@ export function makeSortShapes(ctx: GameContext): GeneratedGame {
       answerKey: items.map((item) => `${item.text} → ${item.correctZone}`).join(" ; "),
       hints: [
         "Regarde le contour de chaque forme.",
-        "Compte les coins de la forme : une forme sans coin va avec les formes toutes rondes.",
+        "Compte les coins de chaque forme : trois, quatre ou aucun.",
         "Commence par la forme que tu reconnais le mieux.",
       ],
     };
-  });
+  }, (game) => JSON.stringify((game.payload.items as { text: string; correctZone: string }[]).map((item) => item.text + item.correctZone).sort()));
 }
 
 /** Les dessins d'une rangée : des animaux et des fruits, tous différents. */
@@ -177,27 +177,21 @@ function drawRow(ctx: GameContext, length: number): Thing[] {
 }
 
 /**
- * « Regarde la rangée 🐔 🍌 🐄. Qui est à gauche ? » : la gauche est du côté où l'on commence à lire,
- * la droite du côté où l'on finit ; « au milieu » et « entre » n'ont qu'un dessin.
+ * « Regarde la rangée 🐔 🍌 🐄. Lequel est à gauche ? » : la gauche est du côté où l'on commence à lire,
+ * la droite du côté où l'on finit. Au premier palier, la gauche et la droite ; ensuite aussi le milieu.
+ * Il n'y a PAS de « entre X et Y » : la voix de Pio ne dit pas les émojis (« Qui est entre et ? »), et
+ * les deux dessins nommés laissent le troisième par élimination.
  */
 export function makeRowPosition(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "rangee-position", () => {
     const row = drawRow(ctx, 3);
     const shown = row.map((t) => t.emoji).join(" ");
-    const question = pick(ctx.rng, ["gauche", "droite", "milieu", "entre"] as const);
+    const question = pick(ctx.rng, ctx.level >= 2 ? (["gauche", "droite", "milieu"] as const) : (["gauche", "droite"] as const));
     const target = question === "gauche" ? row[0] : question === "droite" ? row[2] : row[1];
-    const ask =
-      question === "gauche"
-        ? "Qui est à gauche ?"
-        : question === "droite"
-          ? "Qui est à droite ?"
-          : question === "milieu"
-            ? "Qui est au milieu ?"
-            : `Qui est entre ${row[0].emoji} et ${row[2].emoji} ?`;
     const options = shuffle(ctx.rng, row).map(optionOf);
     return {
       type: "qcm",
-      prompt: `Regarde la rangée ${shown}. ${ask}`,
+      prompt: `Regarde la rangée ${shown}. Lequel est ${question === "gauche" ? "à gauche" : question === "droite" ? "à droite" : "au milieu"} ?`,
       payload: {
         options,
         correctIndex: options.indexOf(optionOf(target)),
@@ -218,17 +212,25 @@ export function makeRowPosition(ctx: GameContext): GeneratedGame {
   });
 }
 
-const ORDINALS = ["premier", "deuxième", "troisième", "dernier"] as const;
-
-/** « Qui est le troisième, en lisant de gauche à droite ? » : quatre dessins différents. */
+/**
+ * « Lequel est le troisième, en lisant de gauche à droite ? » : trois dessins au premier palier (premier,
+ * deuxième, dernier), quatre ensuite ; au dernier palier, seulement les rangs du milieu.
+ */
 export function makeRowOrdinal(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "rangee-ordinal", () => {
-    const row = drawRow(ctx, 4);
-    const index = randomInt(ctx.rng, 0, 3);
+    const length = ctx.level === 1 ? 3 : 4;
+    const row = drawRow(ctx, length);
+    const asks: readonly (readonly [string, number])[] =
+      ctx.level === 1
+        ? [["premier", 0], ["deuxième", 1], ["dernier", 2]]
+        : ctx.level === 4
+          ? [["deuxième", 1], ["troisième", 2]]
+          : [["premier", 0], ["deuxième", 1], ["troisième", 2], ["dernier", 3]];
+    const [ordinal, index] = pick(ctx.rng, asks);
     const options = shuffle(ctx.rng, row).map(optionOf);
     return {
       type: "qcm",
-      prompt: `Regarde la rangée ${row.map((t) => t.emoji).join(" ")}. Qui est le ${ORDINALS[index]}, en lisant de gauche à droite ?`,
+      prompt: `Regarde la rangée ${row.map((t) => t.emoji).join(" ")}. Lequel est le ${ordinal}, en lisant de gauche à droite ?`,
       payload: {
         options,
         correctIndex: options.indexOf(optionOf(row[index])),

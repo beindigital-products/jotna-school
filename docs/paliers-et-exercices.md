@@ -645,9 +645,15 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   poule et un chien, se discutent) ; l'éléphant n'est pas dans l'échelle de taille (la girafe est
   plus haute) ; un carré est un rectangle particulier et un cube un pavé particulier, donc
   jamais « rectangle » pour un carré ni « pavé » pour le dé. Ajouter une chose : un émoji ancien,
-  une seule famille et une seule couleur sans doute possible. Les énoncés ne contiennent ni « : »
-  ni plus d'une apostrophe droite : l'écran (`ExercisePrompt`) coupe une consigne sur l'un
-  comme sur l'autre.
+  une seule famille et une seule couleur sans doute possible. Les énoncés des jeux ne contiennent
+  aucun « : » (l'écran, `ExercisePrompt`, coupe une consigne sur le deux-points) ni plus d'une
+  apostrophe droite (précaution du test des jeux : l'apostrophe droite ne coupe rien, seules les
+  guillemets le font). La voix de Pio ne dit pas les émojis : un énoncé ne doit jamais nommer un
+  dessin par son seul émoji (« Qui est entre 🐟 et 🐕 ? » devenait « Qui est entre et ? »), d'où
+  l'absence de « entre ». Un mot de la question n'est jamais celui de la réponse (« l'orange »
+  pour la couleur orange, le jour cité pour le jour d'avant). Le soir et la nuit ne se proposent
+  jamais ensemble. La difficulté monte avec le palier : rangées de trois puis de quatre dessins,
+  quatre puis cinq choix à l'intrus, quatre couleurs, deux animaux très différents puis trois.
 - **Les nombres** (`paliers/games/numbers.ts`) CALCULENT leur réponse, jamais
   écrite : une seule option juste, les mauvais choix sont des erreurs d'enfant (le
   nombre lui-même, un de plus, un de moins, l'autre opération) et ne valent jamais
@@ -712,11 +718,16 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
-  Les autres thématiques (petits problèmes, premières phrases et salutations du CI ;
-  autres classes) gardent des exercices du modèle, avec leurs défauts connus (voir plus haut) ;
-  leur donner dix gabarits demande des gabarits sûrs de plus.
+  Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
+  haut) : en CI, les petits problèmes, les premières phrases, les salutations, l'éveil, l'histoire, la
+  géographie, l'instruction civique, l'anglais et l'éducation artistique ; toutes les autres classes.
+  Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
+  dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
+  rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à
+  ajouter.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
   associations et des phrases à trous, déjà montrés. Son test n'admet un exercice
   dans une thématique tout en jeux que si l'un de ses gabarits fabrique ce type
-  (le glisser-déposer du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
-  modèle l'écrit).
+  (le glisser-déposer du français du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
+  modèle l'écrit ; celui des mathématiques à « Les formes et les solides », que `classer-formes`
+  fabrique).

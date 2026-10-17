@@ -16,7 +16,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { fresh, originOf, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
+import { fresh, originOf, randomInt, shuffle, sortedOptions, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 
 const NUMBER_WORDS = [
   "zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix",
@@ -128,7 +128,7 @@ export function makeBiggest(ctx: GameContext): GeneratedGame {
         "Compare deux nombres, garde le meilleur, puis compare avec le troisième.",
       ],
     };
-  });
+  }, sortedOptions);
 }
 
 /** « Quel nombre s'écrit « sept » ? » */
@@ -332,5 +332,5 @@ export function makeNumberOrder(ctx: GameContext): GeneratedGame {
         "Place les nombres un par un, en comparant avec celui d'avant.",
       ],
     };
-  });
+  }, sortedOptions);
 }

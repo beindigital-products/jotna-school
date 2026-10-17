@@ -10,7 +10,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { fresh, originOf, pick, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { fresh, originOf, pick, randomInt, shuffle, sortedOptions, type GameContext, type GeneratedGame } from "./shared";
 import {
   CATEGORIES,
   CATEGORY_KEYS,
@@ -28,7 +28,8 @@ import {
 export function makeOddOneOut(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "intrus", () => {
     const [main, other] = shuffle(ctx.rng, CATEGORY_KEYS);
-    const group = shuffle(ctx.rng, CATEGORIES[main].things).slice(0, 3);
+    // Trois dessins de la même famille et un intrus ; quatre et un aux paliers avancés (toutes les familles en ont quatre).
+    const group = shuffle(ctx.rng, CATEGORIES[main].things).slice(0, ctx.level >= 3 ? 4 : 3);
     const odd = pick(ctx.rng, CATEGORIES[other].things);
     const options = shuffle(ctx.rng, [...group, odd]).map(optionOf);
     return {
@@ -47,7 +48,7 @@ export function makeOddOneOut(ctx: GameContext): GeneratedGame {
         "Celui qui reste n'est pas de cette famille.",
       ],
     };
-  });
+  }, sortedOptions);
 }
 
 /** « Est-ce un fruit ? 🐔 » : oui ou non, d'après la catégorie écrite. */
@@ -82,7 +83,7 @@ export function makeBelongs(ctx: GameContext): GeneratedGame {
 /** « Qu'est-ce qui est jaune ? » : trois choses de trois couleurs différentes. */
 export function makeColorOfThing(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "couleur-objet", () => {
-    const colors = shuffle(ctx.rng, Object.keys(COLORS)).slice(0, 3);
+    const colors = shuffle(ctx.rng, Object.keys(COLORS)).slice(0, ctx.level >= 3 ? 4 : 3);
     const things: Thing[] = colors.map((color) => pick(ctx.rng, COLORS[color]));
     const target = things[0];
     const options = shuffle(ctx.rng, things).map(optionOf);
@@ -135,9 +136,10 @@ const DIMENSIONS = [
 export function makeCompareAnimals(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "comparer-mesure", () => {
     const dimension = pick(ctx.rng, DIMENSIONS);
-    const animals = spacedFrom(ctx, dimension.scale, 3, 2);
+    // Deux animaux très différents (trois crans d'écart) au premier palier, trois espacés de deux crans ensuite.
+    const animals = ctx.level === 1 ? spacedFrom(ctx, dimension.scale, 2, 3) : spacedFrom(ctx, dimension.scale, 3, 2);
     // `spacedFrom` rend les animaux du plus léger au plus lourd (ou du plus petit au plus grand).
-    const answer = dimension.max ? animals[2] : animals[0];
+    const answer = dimension.max ? animals[animals.length - 1] : animals[0];
     const options = shuffle(ctx.rng, animals).map(optionOf);
     return {
       type: "qcm",
@@ -183,18 +185,22 @@ export function makeOrderAnimals(ctx: GameContext): GeneratedGame {
         "Compare deux animaux, puis place le suivant.",
       ],
     };
-  });
+  }, sortedOptions);
 }
+
+const isEveningOrNight = (name: string) => name === "soir" || name === "nuit";
 
 /** « Le soleil se lève. Quel moment de la journée est-ce ? » : un indice qui ne va qu'à un moment. */
 export function makeMoment(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "moment-journee", () => {
     const moment = pick(ctx.rng, MOMENTS);
     const clue = pick(ctx.rng, moment.clues);
-    const wrong = shuffle(
-      ctx.rng,
-      MOMENTS.filter((m) => m.name !== moment.name),
-    ).slice(0, 2);
+    // Le soir et la nuit ne se proposent jamais ensemble : une fois le soleil couché, il fait noir et c'est encore le soir.
+    const pool = MOMENTS.filter((m) => m.name !== moment.name && !(isEveningOrNight(m.name) && isEveningOrNight(moment.name)));
+    let wrong = shuffle(ctx.rng, pool).slice(0, 2);
+    if (wrong.length === 2 && isEveningOrNight(wrong[0].name) && isEveningOrNight(wrong[1].name)) {
+      wrong = [wrong[0], pool.find((m) => !isEveningOrNight(m.name)) as (typeof MOMENTS)[number]];
+    }
     const options = shuffle(ctx.rng, [moment, ...wrong]).map((m) => m.label);
     return {
       type: "qcm",
@@ -219,11 +225,13 @@ export function makeMoment(ctx: GameContext): GeneratedGame {
 export function makeNeighbourDay(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "jour-voisin", () => {
     const index = randomInt(ctx.rng, 0, DAYS.length - 1);
-    const after = ctx.rng() < 0.5;
+    // Le jour d'après au premier palier ; le jour d'avant ensuite.
+    const after = ctx.level === 1 || ctx.rng() < 0.5;
     const answerIndex = (index + (after ? 1 : DAYS.length - 1)) % DAYS.length;
+    // Le jour de la question n'est jamais un mauvais choix : l'enfant le choisirait en reconnaissant le mot.
     const wrong = shuffle(
       ctx.rng,
-      DAYS.map((_, i) => i).filter((i) => i !== answerIndex),
+      DAYS.map((_, i) => i).filter((i) => i !== answerIndex && i !== index),
     ).slice(0, 2);
     const options = shuffle(ctx.rng, [answerIndex, ...wrong]).map((i) => DAYS[i]);
     return {
