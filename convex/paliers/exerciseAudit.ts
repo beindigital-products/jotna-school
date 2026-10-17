@@ -42,6 +42,7 @@ import { isGenericZoneLabel } from "./dragDropRepair";
 import { validateFillBlank } from "./fillBlank";
 import { displayedText, findMissingVisualOnScreen, withoutDanglingHints } from "./missingVisual";
 import { BLANK_MARK } from "./games/types";
+import { articleGenderMismatch } from "./genders";
 import { KNOWN_WORDS } from "./knownWords";
 import { bracketSounds, hasSound, knownSound } from "./sounds";
 
@@ -127,6 +128,7 @@ export const DEFECT_SEVERITY = {
   fill_blank_invalid: "blocking",
   fill_blank_off_limits: "warning",
   fill_blank_word_unknown: "blocking",
+  fill_blank_article_gender: "blocking",
   fill_blank_word_unreadable: "blocking",
   // --- Indices ------------------------------------------------------------
   hints_few: "warning",
@@ -465,6 +467,7 @@ function auditInto(found: Findings, input: AuditInput): void {
         case "fill-blank":
           auditFillBlank(found, payload);
           auditFillBlankWord(found, input, payload);
+          auditFillBlankGender(found, input, payload);
           break;
         default:
           break;
@@ -1308,6 +1311,25 @@ function auditFillBlankWord(found: Findings, input: AuditInput, payload: Record<
   const known = [candidate, candidate.replace(/[sx]$/, ""), candidate.replace(/e$/, "")].some((form) => KNOWN_WORDS.has(form));
   if (!known) {
     found.add("fill_blank_word_unknown", `le trou fait écrire « ${excerpt(filled, 30)} », un mot que la liste du CI et du CP ne connaît pas`);
+  }
+}
+
+/**
+ * « Le ___ est un animal qui dit 'cot cot' » avec « poule » : l'enfant lit « Le poule ».
+ * Seuls les noms dont le genre est sûr (`genders.ts`) sont jugés, et un seul trou.
+ */
+function auditFillBlankGender(found: Findings, input: AuditInput, payload: Record<string, unknown>): void {
+  if (input.subject && ANGLAIS.test(input.subject)) return;
+  const text = typeof payload.text === "string" ? payload.text.replace(/_{2,}/g, BLANK_MARK) : "";
+  const blanks = Array.isArray(payload.blanks) ? payload.blanks : [];
+  const answer = asRecord(blanks[0])?.answer;
+  if (blanks.length !== 1 || typeof answer !== "string" || text.split(BLANK_MARK).length !== 2) return;
+  const mismatch = articleGenderMismatch(text, answer.trim());
+  if (mismatch) {
+    found.add(
+      "fill_blank_article_gender",
+      `« ${mismatch.article} ${excerpt(answer, 25)} » : « ${excerpt(answer, 25)} » est ${mismatch.gender === "f" ? "féminin" : "masculin"}`,
+    );
   }
 }
 

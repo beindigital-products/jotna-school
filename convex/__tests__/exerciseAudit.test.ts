@@ -284,6 +284,10 @@ const CASES: Record<DefectCode, AuditInput> = {
     { text: "Complète avec la bonne lettre : ___ngue.", blanks: [{ options: ["m", "t", "s"], answer: "m" }] },
     { prompt: "Complète avec la bonne lettre.", class: "CI" },
   ),
+  fill_blank_article_gender: fillBlank(
+    { text: "Le ___ est un animal qui dit 'cot cot'.", blanks: [{ options: ["poule", "chien", "mouton"], answer: "poule" }] },
+    { prompt: "Complète la phrase.", class: "CI", subject: "Français" },
+  ),
   fill_blank_word_unreadable: fillBlank(
     { text: "Le mot est ___ (pa, ra, ni).", blanks: [{ options: ["pa", "ra", "ni"], answer: "pa" }] },
     { prompt: "Complète avec la bonne syllabe.", class: "CI" },
@@ -1270,6 +1274,36 @@ describe("les erreurs de contenu que la forme ne montrait pas (CI)", () => {
     expect(codesOf(sound("Quel mot a le son [ɛ] ?", ["père", "poule", "été"]))).not.toContain("qcm_sound_ambiguous");
     // Entre guillemets, « u » reste la lettre : « poule » et « foulard » n'ont pas de u.
     expect(codesOf(sound("Quel mot a le son « u » ?", ["foulard", "fumée", "poule"]))).not.toContain("qcm_sound_ambiguous");
+  });
+
+  it("l'article d'un trou s'accorde avec le mot de la réponse", () => {
+    const gap = (text: string, answer: string, subject = "Français") =>
+      fillBlank(
+        { text, blanks: [{ options: [answer, "chat", "lit"], answer }] },
+        { prompt: "Complète la phrase.", class: "CI", subject },
+      );
+    expect(codesOf(gap("Le ___ est jaune.", "poule"))).toContain("fill_blank_article_gender");
+    expect(codesOf(gap("Mon ___ est dans le jardin.", "mère"))).toContain("fill_blank_article_gender");
+    expect(codesOf(gap("La ___ est dans le jardin.", "chat"))).toContain("fill_blank_article_gender");
+    expect(codesOf(gap("Maman met une ___ sur sa tête.", "foulard"))).toContain("fill_blank_article_gender");
+    expect(codesOf(gap("Je bois du ___.", "eau"))).toContain("fill_blank_article_gender");
+    // Bien accordé.
+    expect(codesOf(gap("La ___ est jaune.", "poule"))).not.toContain("fill_blank_article_gender");
+    expect(codesOf(gap("Le ___ est jaune.", "chat"))).not.toContain("fill_blank_article_gender");
+    expect(codesOf(gap("Mon ___ est dans le jardin.", "papa"))).not.toContain("fill_blank_article_gender");
+    expect(codesOf(gap("Un ___ rouge.", "ballon"))).not.toContain("fill_blank_article_gender");
+    // « mon amie » : devant une voyelle, mon, ton et son vont aux deux genres.
+    expect(codesOf(gap("Mon ___ est gentille.", "école"))).not.toContain("fill_blank_article_gender");
+    // Un nom des deux genres ou absent de la liste : jamais jugé.
+    expect(codesOf(gap("Le ___ est gentil.", "élève"))).not.toContain("fill_blank_article_gender");
+    expect(codesOf(gap("La ___ est gentille.", "élève"))).not.toContain("fill_blank_article_gender");
+    expect(codesOf(gap("Le ___ est gentil.", "zèbre"))).not.toContain("fill_blank_article_gender");
+    // Pas d'article juste avant le trou, ou l'élision « l' » : rien à juger.
+    expect(codesOf(gap("Le petit ___ est jaune.", "poule"))).not.toContain("fill_blank_article_gender");
+    expect(codesOf(gap("Maman met une belle ___.", "foulard"))).not.toContain("fill_blank_article_gender");
+    expect(codesOf(gap("Je vois l'___.", "poule"))).not.toContain("fill_blank_article_gender");
+    // L'anglais n'est pas jugé.
+    expect(codesOf(gap("Le ___ est jaune.", "poule", "Anglais"))).not.toContain("fill_blank_article_gender");
   });
 
   it("le calcul dessiné en émojis doit valoir l'option juste", () => {
