@@ -32,6 +32,25 @@ export function knownSound(raw: string): KnownSound | null {
   return KNOWN_SOUNDS.includes(sound) ? (sound as KnownSound) : null;
 }
 
+/** L'alphabet phonétique des fiches du programme : [y] est le « u », [e] le « é », [ɛ] le « è ». */
+const IPA: Record<string, KnownSound> = { y: "u", e: "é", ɛ: "è", ʃ: "ch" };
+
+/**
+ * Le son écrit ENTRE CROCHETS dans une consigne. Les fiches du programme parlent
+ * en alphabet phonétique, où [u] est le son « ou » (poule, foulard) et [y] le son
+ * de la lettre « u » (fumée) ; le modèle écrit [u] pour l'un ou pour l'autre. On
+ * rend les deux lectures : une question qui a deux bonnes réponses dans l'une
+ * d'elles est ambiguë pour l'enfant qui la lit ainsi.
+ */
+export function bracketSounds(raw: string): KnownSound[] {
+  const sound = raw.normalize("NFC").trim().toLowerCase();
+  if (sound === "u") return ["u", "ou"];
+  const ipa = IPA[sound];
+  if (ipa) return [ipa];
+  const known = knownSound(sound);
+  return known ? [known] : [];
+}
+
 /**
  * Le « u » qui sonne [u] : ni dans « ou », « eu », « au », « eau », « œu », ni
  * dans « qu » (« que » : [k]), ni dans « gu » devant e, i, y (« guide »), ni

@@ -43,7 +43,7 @@ import { validateFillBlank } from "./fillBlank";
 import { displayedText, findMissingVisualOnScreen, withoutDanglingHints } from "./missingVisual";
 import { BLANK_MARK } from "./games/types";
 import { KNOWN_WORDS } from "./knownWords";
-import { hasSound, knownSound } from "./sounds";
+import { bracketSounds, hasSound, knownSound } from "./sounds";
 
 // ===========================================================================
 // LES CODES DE DÉFAUT ET LEUR GRAVITÉ
@@ -815,11 +815,15 @@ function auditSound(found: Findings, prompt: string, options: string[]): void {
 
   const asked = ASKED_SOUND.exec(prompt);
   if (!asked || !/(?<!\p{L})mots?(?!\p{L})/iu.test(prompt)) return;
-  const sound = knownSound(asked[1] ?? asked[2] ?? asked[3] ?? "");
-  if (!sound) return;
-  const having = filled.filter((option) => hasSound(option, sound));
-  if (having.length > 1) {
-    found.add("qcm_sound_ambiguous", `le son [${sound}] est dans ${having.map((option) => `« ${excerpt(option, 25)} »`).join(" et ")}`);
+  // Entre crochets, [u] se lit « u » ou « ou » : la question est ambiguë si l'une des lectures l'est.
+  const named = asked[2] ?? asked[3] ?? "";
+  const readings = asked[1] !== undefined ? bracketSounds(asked[1]) : [knownSound(named)].filter((sound) => sound !== null);
+  for (const sound of readings) {
+    const having = filled.filter((option) => hasSound(option, sound));
+    if (having.length > 1) {
+      found.add("qcm_sound_ambiguous", `le son [${sound}] est dans ${having.map((option) => `« ${excerpt(option, 25)} »`).join(" et ")}`);
+      return;
+    }
   }
 }
 
