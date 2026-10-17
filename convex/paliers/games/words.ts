@@ -353,6 +353,98 @@ export function makeMissingLetter(ctx: GameContext): GeneratedGame {
 }
 
 // ---------------------------------------------------------------------------
+// Compléter une phrase
+// ---------------------------------------------------------------------------
+
+type Sentence = {
+  /** Le mot du vocabulaire qui complète la phrase. */
+  word: string;
+  /** La phrase, avec un seul trou `___`. */
+  text: string;
+  /** Les mots du vocabulaire qui iraient AUSSI dans la phrase : jamais proposés comme mauvais choix. */
+  also?: string[];
+};
+
+/**
+ * LES PHRASES À TROU. Chacune est écrite et relue à la main pour qu'UN SEUL mot
+ * du vocabulaire la complète : « La ___ pond un œuf. » n'a que « poule ». Le
+ * modèle écrivait « Mon ___ est dans le jardin. » avec « père » : « mère », « ami »
+ * ou « bébé » allaient aussi, et l'enfant juste se faisait dire qu'il avait faux.
+ *
+ * Pour AJOUTER une phrase : le mot doit être dans `LEXICON`, une propriété
+ * propre à lui seul doit suffire à le trouver (ce qu'il fait, ce qu'on en fait),
+ * et tout autre mot du vocabulaire qui irait aussi va dans `also`. Aucune phrase
+ * ne dit le mot, ni ne le suggère par une lettre.
+ */
+export const SENTENCES: readonly Sentence[] = [
+  { word: "lit", text: "Je dors dans mon ___.", also: ["dodo"] },
+  { word: "moto", text: "Papa roule vite sur sa ___.", also: ["auto"] },
+  { word: "malade", text: "Penda tousse, elle est ___." },
+  { word: "midi", text: "À ___, le soleil est tout en haut du ciel." },
+  { word: "papa", text: "Mon ___ est le mari de maman.", also: ["père"] },
+  { word: "poule", text: "La ___ pond un œuf." },
+  { word: "loupe", text: "Avec la ___, je vois les très petites choses." },
+  { word: "fumée", text: "Le feu fait de la ___ grise." },
+  { word: "été", text: "En ___, il fait très chaud." },
+  {
+    word: "élève",
+    text: "À l'école, un ___ écoute la maîtresse.",
+    also: ["ami", "bébé", "papa", "père", "mère", "modou", "penda", "toto", "lola", "tata"],
+  },
+  { word: "café", text: "Papa boit un ___ bien chaud." },
+  { word: "bébé", text: "Le ___ n'a pas encore de dents et il pleure." },
+  { word: "foulard", text: "Maman met un ___ sur sa tête.", also: ["sac"] },
+  { word: "sac", text: "Je mets mes cahiers dans mon ___.", also: ["lit", "salon", "auto", "bateau", "radio"] },
+  { word: "robe", text: "Maman met une belle ___ pour la fête." },
+  { word: "sel", text: "Je mets du ___ dans la soupe.", also: ["savon", "café"] },
+  { word: "radio", text: "J'écoute de la musique à la ___." },
+  { word: "auto", text: "Papa roule dans son ___ rouge.", also: ["moto"] },
+  { word: "bateau", text: "Le pêcheur part en mer sur son ___." },
+  { word: "mouton", text: "Le ___ a de la laine sur le dos." },
+  { word: "savon", text: "Je lave mes mains avec du ___." },
+  { word: "ballon", text: "Les enfants jouent au ___ dans la cour." },
+  { word: "salon", text: "On regarde la télé dans le ___.", also: ["lit"] },
+];
+
+/** « Complète la phrase. » : `Je dors dans mon ___.` avec « lit », « tomate », « olive ». */
+export function makeSentenceGap(ctx: GameContext): GeneratedGame {
+  const entry = pickWord(
+    ctx,
+    "phrase-trou",
+    wordsOf(ctx, (e) => SENTENCES.some((s) => s.word === e.word)),
+  );
+  const sentence = SENTENCES.find((s) => s.word === entry.word) as Sentence;
+  // Un mot déjà écrit dans la phrase (« Papa boit un ___ ») ne se propose pas, ni un mot qui irait aussi.
+  const written = stripAccents(sentence.text.toLowerCase());
+  const wrong = shuffle(
+    ctx.rng,
+    wordsOf(ctx)
+      .map((e) => e.word)
+      .filter(
+        (word) =>
+          word !== sentence.word &&
+          !(sentence.also ?? []).includes(word) &&
+          !new RegExp(`(?<![a-z])${stripAccents(word)}(?![a-z])`).test(written),
+      ),
+  ).slice(0, 2);
+  const options = shuffle(ctx.rng, [sentence.word, ...wrong]);
+  return exercise(
+    "phrase-trou",
+    ctx,
+    "fill-blank",
+    "mot qui complète une phrase",
+    "Complète la phrase.",
+    { text: sentence.text, blanks: [{ options, answer: sentence.word }] },
+    sentence.word,
+    [
+      "Lis la phrase en entier, doucement.",
+      "Essaie chaque mot dans la phrase : un seul a du sens.",
+      "Dis la phrase à voix haute avec le mot que tu as choisi.",
+    ],
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Relier
 // ---------------------------------------------------------------------------
 

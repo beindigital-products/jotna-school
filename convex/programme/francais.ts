@@ -50,6 +50,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "syllabe-mot", count: 1, vocabulary: "mots-2" },
           { kind: "syllabes-ordre", count: 1, vocabulary: "mots-2" },
           { kind: "lettre-manquante", count: 1, vocabulary: "mots-2" },
+          { kind: "phrase-trou", count: 1, vocabulary: "mots-2" },
         ],
       },
       {
@@ -63,6 +64,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "syllabe-manquante", count: 2, vocabulary: "mots-3" },
           { kind: "syllabes-compter", count: 1, vocabulary: "mots-3" },
           { kind: "syllabes-ordre", count: 1, vocabulary: "mots-3" },
+          { kind: "phrase-trou", count: 1, vocabulary: "mots-3" },
         ],
       },
       {
@@ -77,6 +79,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "syllabe-manquante", count: 1, vocabulary: "mots-4" },
           { kind: "mot-image", count: 1, vocabulary: "mots-4" },
           { kind: "syllabe-mot", count: 1, vocabulary: "mots-4" },
+          { kind: "phrase-trou", count: 1, vocabulary: "mots-4" },
         ],
       },
       {
