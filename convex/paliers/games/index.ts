@@ -27,6 +27,8 @@ import { makeFreshFrise, makeNumberSuite } from "./patterns";
 import {
   makeFirstLetter,
   makeFirstSyllable,
+  makeLastSyllable,
+  makeLetterCount,
   makeLetterOrder,
   makeMissingLetter,
   makeMissingSyllable,
@@ -91,7 +93,9 @@ export const GAME_KINDS = {
   "lettres-ordre": { label: "Remettre des lettres dans l'ordre", type: "order", make: makeLetterOrder },
   "syllabe-initiale": { label: "Première syllabe d'un mot", type: "qcm", make: makeFirstSyllable },
   "lettre-initiale": { label: "Première lettre d'un mot", type: "qcm", make: makeFirstLetter },
+  "syllabe-finale": { label: "Dernière syllabe d'un mot", type: "qcm", make: makeLastSyllable },
   "syllabes-compter": { label: "Compter les syllabes", type: "qcm", make: makeSyllableCount },
+  "lettres-compter": { label: "Compter les lettres", type: "qcm", make: makeLetterCount },
   "syllabe-manquante": { label: "Syllabe qui manque", type: "fill-blank", make: makeMissingSyllable },
   "lettre-manquante": { label: "Lettre qui manque", type: "fill-blank", make: makeMissingLetter },
   "phrase-trou": { label: "Phrase à trou", type: "fill-blank", make: makeSentenceGap },

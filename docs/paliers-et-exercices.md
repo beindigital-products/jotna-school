@@ -569,6 +569,8 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `syllabes-ordre` | ordre | « Remets les syllabes dans l'ordre pour former un mot. 🍅 » : `to / ma / te` |
 | `lettres-ordre` | ordre | les lettres de « rat 🐀 » |
 | `syllabe-initiale` | QCM | « Par quelle syllabe commence « penda » ? » : `pen` |
+| `syllabe-finale` | QCM | « Par quelle syllabe finit « tomate » ? 🍅 » : `te` (aucun mauvais choix ne finit le mot) |
+| `lettres-compter` | QCM | « Combien de lettres compte « olive » ? » : 5 |
 | `lettre-initiale` | QCM | « Par quelle lettre commence « lit » ? 🛏️ » |
 | `syllabes-compter` | QCM | « Combien de syllabes entends-tu dans « mère » ? » : 2 |
 | `syllabe-manquante` | phrase à trous | `to___te` : `ma` |
@@ -597,8 +599,8 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   écrit : jamais plus de 5 au premier palier, 10 au dernier.
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10` et `ma-ci-calcul-10`
-  (`convex/programme`), sept exercices par palier (huit en `fr-ci-sons-2` à `fr-ci-sons-4`, avec la
-  phrase à trou) ; le modèle n'en écrit que trois (deux dans ces trois-là).
+  (`convex/programme`), sept exercices par palier (neuf en `fr-ci-sons-2` à `fr-ci-sons-4`, avec la
+  phrase à trou et un gabarit de fin de mot ou de lettres) ; le modèle n'en écrit que trois (un seul dans ces trois-là).
   Pour que ces trois-là ne fassent pas échouer le palier (le seuil de validation
   exige 3 valides sur 3), le modèle en écrit deux de plus et on garde les premiers
   valides (`scoring.exercisesToRequest`). Un palier déjà généré garde ses exercices : il faut l'invalider
