@@ -587,6 +587,37 @@ export function makeSyllableToWord(ctx: GameContext): GeneratedGame {
   );
 }
 
+/**
+ * Relier chaque lettre minuscule à sa majuscule : quatre lettres du vocabulaire du
+ * palier, sans accent. « i » et « l » ne vont jamais ensemble : la majuscule « I »
+ * ressemble au « l » minuscule dans bien des polices, l'association serait
+ * ambiguë à l'écran.
+ */
+export function makeCapitalMatch(ctx: GameContext): GeneratedGame {
+  const letters = piecesSeen(ctx, (e) => Array.from(e.word), 6).filter((l) => /^[a-z]$/.test(l));
+  const chosen: string[] = [];
+  for (const letter of shuffle(ctx.rng, letters)) {
+    const clashes = (letter === "i" && chosen.includes("l")) || (letter === "l" && chosen.includes("i"));
+    if (!clashes) chosen.push(letter);
+    if (chosen.length === 4) break;
+  }
+  const pairs = chosen.map((letter) => ({ left: letter, right: letter.toUpperCase() }));
+  return exercise(
+    "majuscule-minuscule",
+    ctx,
+    "match",
+    "lettre minuscule et sa majuscule",
+    "Relie chaque lettre minuscule à sa majuscule.",
+    { pairs },
+    pairs.map((p) => `${p.left} ~ ${p.right}`).join(" ; "),
+    [
+      "Regarde la forme de chaque lettre.",
+      "La majuscule est la grande lettre, la minuscule est la petite.",
+      "Commence par la lettre que tu reconnais le mieux.",
+    ],
+  );
+}
+
 /** Relier chaque mot à son image : des émojis tous différents. */
 export function makeWordToPicture(ctx: GameContext): GeneratedGame {
   const candidates = shuffle(

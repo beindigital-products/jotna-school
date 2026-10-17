@@ -581,6 +581,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `phrase-trou` | phrase à trous | « Complète la phrase. » : `La ___ pond un œuf.` : `poule` |
 | `syllabe-mot` | association | `ba~bateau ; sa~savon…` |
 | `mot-image` | association | `poule~🐔…` |
+| `majuscule-minuscule` | association | « Relie chaque lettre minuscule à sa majuscule. » : `a~A ; m~M…` (quatre lettres du vocabulaire, sans accent ; « i » et « l » jamais ensemble : « I » ressemble à « l ») |
 | `compter-emojis`, `ajouter-emojis`, `enlever-emojis` | QCM | « Combien de mangues en tout ? 🥭🥭 + 🥭 » : 3 |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
@@ -621,28 +622,37 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   refait de la même façon (`regenerateGame`).
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10` et `ma-ci-calcul-10`
-  (`convex/programme`), sept exercices par palier (dix en `fr-ci-sons-2` à
-  `fr-ci-sons-4`, voir plus bas) ; le modèle n'en écrit que trois.
+  (`convex/programme`), dix exercices par palier en lecture (`fr-ci-sons-1` à
+  `fr-ci-sons-4`, `fr-ci-alphabet`, voir plus bas), sept en calcul ; le modèle
+  n'en écrit que trois en calcul.
   Pour que ces trois-là ne fassent pas échouer le palier (le seuil de validation
   exige 3 valides sur 3), le modèle en écrit deux de plus et on garde les premiers
   valides (`scoring.exercisesToRequest`). Un palier déjà généré garde ses exercices : il faut l'invalider
   (`pregen:auditExercises` ou une régénération) pour qu'il reçoive les gabarits.
-- **Dix gabarits, plus aucun appel au modèle en `fr-ci-sons-2` à `fr-ci-sons-4`.**
-  Ces trois fiches portent dix gabarits par palier (les neuf d'avant et
-  `mot-syllabe`) : le modèle n'écrit plus rien, le palier est un « palier tout en
-  jeux ». `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
+- **Dix gabarits, plus aucun appel au modèle en lecture du CI** (`fr-ci-sons-1` à
+  `fr-ci-sons-4` et `fr-ci-alphabet`). `fr-ci-sons-2` à `sons-4` portent les neuf
+  d'avant et `mot-syllabe` ; `fr-ci-sons-1` ajoute `phrase-trou`, `syllabe-finale`
+  et `lettres-compter` aux sept d'avant ; `fr-ci-alphabet` ajoute
+  `majuscule-minuscule`, `phrase-trou` et `lettres-compter`. Le modèle n'écrit plus
+  rien, le palier est un « palier tout en jeux ». Au premier palier de lecture
+  (`fr-ci-sons-1`) le vocabulaire n'a que 7 mots pour 10 gabarits : au moins trois
+  mots reviennent, dans des exercices différents (le test de variété borne ce
+  nombre à ce minimum). `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
   `exercisesToRequest(0)` aussi), ne demande aucune réserve, ne peut pas échouer
   en `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices. La pré-génération le
   sait (`pregen:run` annonce ces paliers dans `withoutModel`, hors du coût estimé :
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces trois thématiques contre un faux modèle qui lève une
+  chaque palier de ces cinq thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
-  Les autres thématiques gardent trois exercices du modèle, avec leurs défauts
-  connus (voir plus haut) ; leur donner dix gabarits demande dix gabarits sûrs de
-  plus, pas seulement un.
+  Les autres thématiques (calcul du CI, autres classes) gardent des exercices du
+  modèle, avec leurs défauts connus (voir plus haut) ; leur donner dix gabarits
+  demande des gabarits sûrs de plus.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
-  associations et des phrases à trous, déjà montrés.
+  associations et des phrases à trous, déjà montrés. Son test n'admet un exercice
+  dans une thématique tout en jeux que si l'un de ses gabarits fabrique ce type
+  (le glisser-déposer du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
+  modèle l'écrit).

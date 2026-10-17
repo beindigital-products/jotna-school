@@ -39,6 +39,7 @@ const TEMPLATES = [
   "mot-syllabe",
   "syllabe-mot",
   "mot-image",
+  "majuscule-minuscule",
   "compter-emojis",
   "ajouter-emojis",
   "enlever-emojis",
@@ -398,8 +399,8 @@ describe("les gabarits dans le programme du CI", () => {
     );
   });
 
-  it("ne demande que des jeux connus, et sept gabarits par palier (dix en fr-ci-sons-2 à 4)", () => {
-    const withoutModel = ["fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4"];
+  it("ne demande que des jeux connus, et dix gabarits par palier en lecture (sept en calcul)", () => {
+    const withoutModel = ["fr-ci-sons-1", "fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4", "fr-ci-alphabet"];
     for (const entry of entries) {
       for (const spec of entry.topic.games ?? []) {
         expect(isGameKind(spec.kind), `${entry.topic.key} : ${spec.kind}`).toBe(true);
@@ -508,17 +509,20 @@ function wordsOfPalier(games: ReturnType<typeof generateGames>): string[] {
   });
 }
 
-describe("dix gabarits dans un palier : plus aucun exercice du modèle en fr-ci-sons-2 à 4", () => {
-  const keys = ["fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4"];
+describe("dix gabarits dans un palier : plus aucun exercice du modèle en lecture du CI (sons 1 à 4, alphabet)", () => {
+  const keys = ["fr-ci-sons-1", "fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4", "fr-ci-alphabet"];
   const topicOf = (key: string) => allProgrammeEntries().find((e) => e.topic.key === key)!.topic;
 
-  it("remplit les dix places du palier avec dix gabarits, dont « mot-syllabe »", () => {
+  it("remplit les dix places du palier avec dix gabarits (« mot-syllabe » en fr-ci-sons-2 à 4)", () => {
     for (const key of keys) {
       const specs = topicOf(key).games ?? [];
       expect(gameCount(specs), key).toBe(PALIER_SIZE);
-      expect(specs.filter((spec) => spec.kind === "mot-syllabe"), key).toEqual([
-        { kind: "mot-syllabe", count: 1, vocabulary: `mots-${key.slice(-1)}` },
-      ]);
+      const wordStart = specs.filter((spec) => spec.kind === "mot-syllabe");
+      if (["fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4"].includes(key)) {
+        expect(wordStart, key).toEqual([{ kind: "mot-syllabe", count: 1, vocabulary: `mots-${key.slice(-1)}` }]);
+      } else {
+        expect(wordStart, key).toEqual([]);
+      }
       for (const palierIndex of [1, 2, 3]) {
         const games = generateGames(specs, { klass: "CI", palierIndex, palierCount: 3, seed: `${key}:${palierIndex}` });
         expect(games, `${key} palier ${palierIndex}`).toHaveLength(PALIER_SIZE);
@@ -539,8 +543,9 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en fr-ci-
   it("annonce ces paliers comme gratuits à la pré-génération, et les autres comme payants", () => {
     for (const key of keys) expect(topicUsesModel(key), key).toBe(false);
     expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
-    expect(topicUsesModel("fr-ci-sons-1")).toBe(true);
-    expect(topicUsesModel("fr-ci-alphabet")).toBe(true);
+    expect(topicUsesModel("ma-ci-nombres-10")).toBe(true);
+    expect(topicUsesModel("ma-ci-calcul-10")).toBe(true);
+    expect(topicUsesModel("fr-ci-phrases")).toBe(true);
     expect(topicUsesModel("hi-cm2-empires")).toBe(true);
     // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.
     expect(topicUsesModel(null)).toBe(true);
@@ -625,7 +630,7 @@ describe("sept gabarits dans un palier de dix", () => {
     expect(hasEnoughValidExercises(3, 3)).toBe(true);
   });
 
-  it("varie les mots d'un palier : sept à dix gabarits, au plus un mot en double", () => {
+  it("varie les mots d'un palier : au plus un mot en double, autant que le vocabulaire l'impose au premier palier", () => {
     // Les mots comptés sont ceux de l'énoncé ET ceux de la réponse (`wordsOfPalier`) : « mot-syllabe »
     // cache son mot dans les options, un trou ne l'écrit pas dans l'énoncé.
     for (const key of ["fr-ci-sons-1", "fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4", "fr-ci-alphabet"]) {
@@ -635,7 +640,12 @@ describe("sept gabarits dans un palier de dix", () => {
           const games = generateGames(entry.topic.games ?? [], { klass: "CI", palierIndex, palierCount: 3, seed: `${key}:${n}:${palierIndex}` });
           const words = wordsOfPalier(games);
           const duplicates = words.length - new Set(words).size;
-          expect(duplicates, `${key} #${n} palier ${palierIndex} : ${words.join(", ")}`).toBeLessThanOrEqual(1);
+          // Au premier palier de lecture le vocabulaire n'a que 7 mots pour 10 gabarits : au moins 3 doublons, pas un de plus.
+          const stage = stageOf(entry.topic.games?.[0]?.vocabulary);
+          const vocabulary = LEXICON.filter((word) => word.stage <= stage).length;
+          expect(duplicates, `${key} #${n} palier ${palierIndex} : ${words.join(", ")}`).toBeLessThanOrEqual(
+            Math.max(1, words.length - vocabulary),
+          );
         }
       }
     }
