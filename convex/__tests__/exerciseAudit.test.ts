@@ -1233,6 +1233,29 @@ describe("les erreurs de contenu que la forme ne montrait pas (CI)", () => {
     expect(codesOf(sound("Quel est le son du mot « fumée » ?", ["f", "u", "fumée"]))).not.toContain("qcm_sound_ambiguous");
   });
 
+  it("un son demandé sur un mot entre guillemets, ou sur des paires mot-son", () => {
+    const sound = (prompt: string, options: string[], correctIndex = 0) =>
+      qcm({ prompt, class: "CI", subject: "Français", answerKey: options[correctIndex] }, { options, correctIndex });
+    // Sans le mot « mot » : « fumée » fait entendre [f], [u] et [é].
+    expect(codesOf(sound("Quel son entends-tu dans 'fumée' ?", ["f", "u", "é"], 2))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel son entends-tu dans 'fumée' ?", ["ch", "ou", "é"], 2))).not.toContain("qcm_sound_ambiguous");
+    // Un son entre guillemets n'est pas un mot : la forme « quel mot a le son » reste jouée.
+    expect(codesOf(sound("Quel mot a le son « é » ?", ["été", "poule", "fumée"]))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel mot a le son « é » ?", ["été", "poule", "tomate"]))).not.toContain("qcm_sound_ambiguous");
+    // Un énoncé sans « son » : un mot entre guillemets ne dit rien du son.
+    expect(codesOf(sound("Quel est le mot « fumée » ?", ["f", "u", "é"], 2))).not.toContain("qcm_sound_ambiguous");
+
+    const pairs = (prompt: string, list: [string, string][]) =>
+      match(list, { prompt, class: "CI", subject: "Français" });
+    expect(codesOf(pairs("Associe les mots avec le bon son.", [["fumée", "f"], ["poule", "ou"], ["été", "é"]]))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(pairs("Associe les mots avec le bon son.", [["f", "fumée"], ["ou", "poule"], ["é", "été"]]))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(pairs("Associe les mots avec le bon son.", [["fumée", "u"], ["poule", "ou"], ["chat", "ch"]]))).not.toContain("qcm_sound_ambiguous");
+    // Un côté n'est pas un son connu : on laisse.
+    expect(codesOf(pairs("Associe les mots avec le bon son.", [["fumée", "f"], ["poule", "ou"], ["maman", "an"]]))).not.toContain("qcm_sound_ambiguous");
+    // L'énoncé ne parle pas du son : on laisse.
+    expect(codesOf(pairs("Associe chaque mot à sa lettre.", [["fumée", "f"], ["poule", "ou"], ["été", "é"]]))).not.toContain("qcm_sound_ambiguous");
+  });
+
   it("le calcul dessiné en émojis doit valoir l'option juste", () => {
     const sum = (prompt: string, options: string[], correctIndex: number) =>
       qcm({ prompt, class: "CI", subject: "Mathématiques", answerKey: options[correctIndex] }, { options, correctIndex });

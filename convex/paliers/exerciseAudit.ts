@@ -786,8 +786,8 @@ const SOUND_POSITION =
 const ASKED_SOUND =
   /(?<!\p{L})son\s+(?:de\s+la\s+lettre\s+)?(?:\[\s*(\p{L}{1,2})\s*\]|[«"“']\s*(\p{L}{1,2})\s*[»"”']|(\p{L}{1,2})(?!\p{L}))/iu;
 
-/** Le mot dont on demande le son : « Quel est le son du mot « fumée » ? ». */
-const WORD_ASKED = /(?<!\p{L})mot\s*[«"“']\s*(\p{L}+)\s*[»"”']/iu;
+/** Le mot dont on demande le son : « Quel est le son du mot « fumée » ? », « Quel son entends-tu dans 'fumée' ? ». */
+const WORD_ASKED = /(?:(?<!\p{L})mot\s*)?[«"“']\s*(\p{L}+)\s*[»"”']/iu;
 
 /**
  * UN SON, UNE SEULE BONNE RÉPONSE. « Quel mot a le son [é] ? » avec « été » et
@@ -800,7 +800,9 @@ function auditSound(found: Findings, prompt: string, options: string[]): void {
   if (SOUND_POSITION.test(prompt)) return;
   const filled = options.filter((option) => collapse(option) !== "");
 
-  const word = WORD_ASKED.exec(prompt)?.[1];
+  // « le son « é » » nomme un son, pas un mot : la forme « quel mot a le son » s'en occupe.
+  const quoted = WORD_ASKED.exec(prompt)?.[1];
+  const word = quoted && knownSound(quoted) === null && /(?<!\p{L})sons?(?!\p{L})/iu.test(prompt) ? quoted : undefined;
   if (word) {
     const sounds = filled.map((option) => knownSound(option));
     if (sounds.length < 2 || sounds.some((sound) => sound === null)) return;
@@ -824,6 +826,27 @@ function auditSound(found: Findings, prompt: string, options: string[]): void {
 // ---------------------------------------------------------------------------
 // Association
 // ---------------------------------------------------------------------------
+
+/**
+ * « Associe les mots avec le bon son » : fumée-f, poule-ou, été-é. « fumée » fait
+ * aussi entendre [é], donc « fumée-é » est juste aussi. Chaque paire doit avoir un
+ * côté qui est un son connu, toujours le même côté, et l'énoncé doit parler du son.
+ */
+function auditSoundPairs(found: Findings, prompt: string, pairs: { left: string; right: string }[]): void {
+  if (!/(?<!\p{L})sons?(?!\p{L})/iu.test(prompt) || SOUND_POSITION.test(prompt)) return;
+  for (const soundSide of ["left", "right"] as const) {
+    const wordSide = soundSide === "left" ? "right" : "left";
+    const entries = pairs.map((pair) => ({ word: pair[wordSide], sound: knownSound(pair[soundSide]) }));
+    if (entries.some((entry) => entry.sound === null || collapse(entry.word) === "")) continue;
+    for (const entry of entries) {
+      const other = entries.find((candidate) => candidate.sound !== entry.sound && hasSound(entry.word, candidate.sound!));
+      if (other) {
+        found.add("qcm_sound_ambiguous", `« ${excerpt(entry.word, 25)} » fait entendre [${entry.sound}] et [${other.sound}] : deux paires lui conviennent`);
+        return;
+      }
+    }
+  }
+}
 
 function auditMatch(found: Findings, prompt: string, payload: Record<string, unknown>, subject: string | null): void {
   // « moto ~ moto » dans « Relie chaque mot à son image » : l'image est le mot lui-même, il
@@ -864,6 +887,7 @@ function auditMatch(found: Findings, prompt: string, payload: Record<string, unk
   if (pairs.length < MIN_MATCH_PAIRS || pairs.length > MAX_MATCH_PAIRS) {
     found.add("match_pairs_count", `${pairs.length} paires, entre ${MIN_MATCH_PAIRS} et ${MAX_MATCH_PAIRS} attendues`);
   }
+  auditSoundPairs(found, prompt, pairs);
   if (pairs.some((pair) => collapse(pair.left) === "" || collapse(pair.right) === "")) {
     found.add("match_side_empty", "une paire a un côté vide");
   }
