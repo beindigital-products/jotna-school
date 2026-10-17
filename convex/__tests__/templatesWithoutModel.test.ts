@@ -17,7 +17,16 @@ import { programmeTopic } from "../programme";
  * prouve que la preuve n'est pas vide.
  */
 
-const WITHOUT_MODEL = ["fr-ci-sons-1", "fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4", "fr-ci-alphabet"] as const;
+const WITHOUT_MODEL = [
+  "fr-ci-sons-1",
+  "fr-ci-sons-2",
+  "fr-ci-sons-3",
+  "fr-ci-sons-4",
+  "fr-ci-alphabet",
+  "ma-ci-nombres-10",
+  "ma-ci-calcul-10",
+  "ma-ci-nombres-20",
+] as const;
 const MODEL_CALLED = "LE MODÈLE A ÉTÉ APPELÉ";
 
 type Written = {
@@ -97,6 +106,8 @@ function rightAnswer(exo: Written): string {
       return JSON.stringify(p.correctSequence);
     case "match":
       return JSON.stringify(p.pairs);
+    case "pattern":
+      return JSON.stringify(p.answers);
     default:
       return JSON.stringify((p.blanks as { answer: string }[]).map((b) => b.answer));
   }
@@ -139,7 +150,7 @@ describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) =>
       made[origin!.kind] = (made[origin!.kind] ?? 0) + 1;
     }
     expect(made).toEqual(wanted);
-    if (key !== "fr-ci-sons-1" && key !== "fr-ci-alphabet") expect(made["mot-syllabe"]).toBe(1);
+    if (["fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4"].includes(key)) expect(made["mot-syllabe"]).toBe(1);
 
     // Aucun défaut, et la bonne réponse est juste, la fausse ne l'est pas.
     for (const exo of exercises) {
@@ -165,8 +176,8 @@ describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) =>
 });
 
 describe("le faux modèle ne laisse rien passer", () => {
-  it("fait échouer un palier qui a besoin du modèle (ma-ci-nombres-10 : trois exercices à écrire)", async () => {
-    const { ctx, modelCalls, upserts } = fakeConvex("ma-ci-nombres-10");
+  it("fait échouer un palier qui a besoin du modèle (ma-ci-mesures : dix exercices à écrire)", async () => {
+    const { ctx, modelCalls, upserts } = fakeConvex("ma-ci-mesures");
     await expect(generateBucketCore(ctx, bucket(1))).rejects.toThrow(MODEL_CALLED);
     expect(modelCalls).toEqual(["aiGateway/index:generate"]);
     // Rien n'est écrit : le palier reste « generating », sans exercice.

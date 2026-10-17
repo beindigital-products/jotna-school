@@ -44,13 +44,16 @@ const isShownGame = (kind: GameKind) => (GAME_EXERCISE_TYPES as readonly string[
 
 /** Les jeux d'une classe, refaits depuis le programme : par type, dans l'ordre où le programme les cite. */
 function gamesOfProgramme(subject: (typeof PROGRAMME)[number], klass: (typeof DEMO_CLASSES)[number]): GameOffer[] {
-  const offers = new Map<GameOffer["type"], { kind: GameKind; topic: string }[]>();
+  const offers = new Map<GameOffer["type"], GameOffer["options"]>();
   for (const topic of subject.classes[klass]) {
     for (const spec of topic.games ?? []) {
       if (!isShownGame(spec.kind)) continue;
       const type = GAME_KINDS[spec.kind].type as GameOffer["type"];
       const options = offers.get(type) ?? [];
-      if (!options.some((option) => option.kind === spec.kind)) options.push({ kind: spec.kind, topic: topic.name });
+      // Le plafond de la fiche (« nombres-10 ») voyage avec l'offre : la vitrine fabrique le jeu que l'application fabrique.
+      if (!options.some((option) => option.kind === spec.kind)) {
+        options.push({ kind: spec.kind, topic: topic.name, ...(spec.vocabulary ? { vocabulary: spec.vocabulary } : {}) });
+      }
       offers.set(type, options);
     }
   }

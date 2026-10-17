@@ -62,8 +62,9 @@ const SCAN_LIMIT = 5000;
 /**
  * Un palier de cette thématique appelle-t-il le modèle ? Pas quand sa fiche du
  * programme le remplit de jeux et de gabarits (`paliers/games`) : « Grave ou
- * aigu ? », « Long ou fort », et toute la lecture du CI (« Les sons… », « Les lettres et les mots ») depuis le dixième gabarit. Son palier se
- * fabrique sans un jeton, donc sans dépense à confirmer.
+ * aigu ? », « Long ou fort », et la lecture et les nombres du CI (« Les sons… »,
+ * « Les lettres et les mots », « Les nombres jusqu'à 10 »…) depuis le dixième gabarit.
+ * Son palier se fabrique sans un jeton, donc sans dépense à confirmer.
  */
 export function topicUsesModel(programmeKey: string | null | undefined): boolean {
   return gameCount(programmeTopic(programmeKey)?.topic.games) < PALIER_SIZE;

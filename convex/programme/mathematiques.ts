@@ -37,8 +37,13 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         description:
           "Palier 2 du CI : dénombrer une collection dessinée en émojis dans l'énoncé (🥭🥭🥭, 🔵🔵, 🐟🐟🐟🐟) jusqu'à 10, lire et écrire les chiffres, associer un nombre et une quantité, comparer (plus que, moins que, autant que), ranger. Aucun nombre au-delà de 10.",
         games: [
-          { kind: "suite-nombres", count: 2 },
-          { kind: "compter-emojis", count: 5 },
+          { kind: "suite-nombres", count: 2, vocabulary: "nombres-10" },
+          { kind: "compter-emojis", count: 3 },
+          { kind: "nombre-groupe", count: 1 },
+          { kind: "rangee-plus-moins", count: 1 },
+          { kind: "nombre-voisin", count: 1, vocabulary: "nombres-10" },
+          { kind: "nombre-plus-grand", count: 1, vocabulary: "nombres-10" },
+          { kind: "nombre-en-lettres", count: 1, vocabulary: "nombres-10" },
         ],
       },
       {
@@ -47,8 +52,11 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         description:
           "Palier 2 du CI : additions et soustractions dont le résultat ne dépasse pas 10, en situation (« J'ai 3 mangues, on m'en donne 2 »), le double et la moitié des petits nombres (le double de 3, la moitié de 8).",
         games: [
-          { kind: "ajouter-emojis", count: 4 },
-          { kind: "enlever-emojis", count: 3 },
+          { kind: "ajouter-emojis", count: 3 },
+          { kind: "enlever-emojis", count: 2 },
+          { kind: "calcul-ecrit", count: 2, vocabulary: "nombres-10" },
+          { kind: "double-moitie", count: 2, vocabulary: "nombres-10" },
+          { kind: "complement", count: 1, vocabulary: "nombres-10" },
         ],
       },
       {
@@ -56,7 +64,15 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Les nombres de 11 à 20",
         description:
           "Palier 3 du CI : lire, écrire et dénombrer jusqu'à 20 ; une dizaine et des unités (14 = 10 + 4) ; composer et décomposer ; comparer et ranger. Aucun nombre au-delà de 20.",
-        games: [{ kind: "suite-nombres", count: 2 }],
+        games: [
+          { kind: "suite-nombres", count: 2, vocabulary: "nombres-20" },
+          { kind: "dizaine-unites", count: 2, vocabulary: "nombres-20" },
+          { kind: "nombre-voisin", count: 2, vocabulary: "nombres-20" },
+          { kind: "nombre-plus-grand", count: 1, vocabulary: "nombres-20" },
+          { kind: "nombre-en-lettres", count: 1, vocabulary: "nombres-20" },
+          { kind: "nombres-ordre", count: 1, vocabulary: "nombres-20" },
+          { kind: "calcul-ecrit", count: 1, vocabulary: "nombres-20" },
+        ],
       },
       {
         key: "ma-ci-espace",

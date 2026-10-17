@@ -26,7 +26,8 @@ import type { ClassicType, DemoClass, DemoSubject, GameType } from "./demo-types
 /** Un jeu d'une classe : ses variantes, chacune avec la thématique qui la demande. */
 export type GameOffer = {
   type: GameType;
-  options: { kind: GameKind; topic: string }[];
+  /** `vocabulary` : le plafond de la fiche (« nombres-10 »), le même que dans le programme. */
+  options: { kind: GameKind; topic: string; vocabulary?: string }[];
 };
 
 const ALL_CLASSIC: readonly ClassicType[] = [
@@ -57,7 +58,7 @@ export const GAMES_BY_SUBJECT: Record<DemoSubject, Partial<Record<DemoClass, Gam
   francais: {},
   mathematiques: {
     CI: [
-      { type: "pattern", options: [{ kind: "frise-formes", topic: "Trier et ranger" }, { kind: "frise-couleurs", topic: "Trier et ranger" }, { kind: "suite-nombres", topic: "Les nombres jusqu'à 10" }] },
+      { type: "pattern", options: [{ kind: "frise-formes", topic: "Trier et ranger" }, { kind: "frise-couleurs", topic: "Trier et ranger" }, { kind: "suite-nombres", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }] },
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Gauche, droite, dessus, dessous" }] },
     ],
     CP: [

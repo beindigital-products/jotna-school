@@ -13,7 +13,17 @@
 import type { VisibleClassName } from "../../curriculum";
 import { PALIER_SIZE } from "../scoring";
 import { makeColorPair, makeColorPick, makeColorResult, makeWarmCold } from "./colors";
-import { makeAddEmojis, makeCountEmojis, makeTakeAwayEmojis } from "./counting";
+import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
+import {
+  makeBiggest,
+  makeComplement,
+  makeDoubleHalf,
+  makeNeighbour,
+  makeNumberInWords,
+  makeNumberOrder,
+  makeTensAndUnits,
+  makeWrittenCalc,
+} from "./numbers";
 import {
   makeBeatCount,
   makeDuration,
@@ -108,6 +118,16 @@ export const GAME_KINDS = {
   "compter-emojis": { label: "Compter des dessins", type: "qcm", make: makeCountEmojis },
   "ajouter-emojis": { label: "Ajouter des dessins", type: "qcm", make: makeAddEmojis },
   "enlever-emojis": { label: "Enlever des dessins", type: "qcm", make: makeTakeAwayEmojis },
+  "rangee-plus-moins": { label: "La rangée qui en a le plus ou le moins", type: "qcm", make: makeCompareRows },
+  "nombre-groupe": { label: "Relier un nombre et un groupe de dessins", type: "match", make: makeNumberGroups },
+  "nombres-ordre": { label: "Ranger des nombres", type: "order", make: makeNumberOrder },
+  "nombre-voisin": { label: "Le nombre juste avant ou après", type: "qcm", make: makeNeighbour },
+  "nombre-plus-grand": { label: "Le plus grand ou le plus petit nombre", type: "qcm", make: makeBiggest },
+  "nombre-en-lettres": { label: "Lire un nombre écrit en lettres", type: "qcm", make: makeNumberInWords },
+  "double-moitie": { label: "Le double ou la moitié", type: "qcm", make: makeDoubleHalf },
+  "complement": { label: "Combien faut-il ajouter", type: "qcm", make: makeComplement },
+  "calcul-ecrit": { label: "Une addition ou une soustraction écrite", type: "qcm", make: makeWrittenCalc },
+  "dizaine-unites": { label: "Une dizaine et des unités", type: "qcm", make: makeTensAndUnits },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
