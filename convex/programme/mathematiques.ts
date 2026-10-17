@@ -29,6 +29,10 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         games: [
           { kind: "frise-formes", count: 2 },
           { kind: "frise-couleurs", count: 2 },
+          { kind: "intrus", count: 2 },
+          { kind: "appartient", count: 1 },
+          { kind: "couleur-objet", count: 1 },
+          { kind: "animaux-ordre", count: 2 },
         ],
       },
       {
@@ -79,20 +83,35 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Gauche, droite, dessus, dessous",
         description:
           "Activités géométriques, paliers 1 et 3 du CI : latéralisation (gauche, droite), topologie (dans, hors de, devant, derrière, sur, sous, entre, près, loin), lignes ouvertes et fermées, se repérer sur un quadrillage, suivre un itinéraire.",
-        games: [{ kind: "pixel-copie", count: 2 }],
+        games: [
+          { kind: "pixel-copie", count: 2 },
+          { kind: "rangee-position", count: 4 },
+          { kind: "rangee-ordinal", count: 4 },
+        ],
       },
       {
         key: "ma-ci-formes",
         name: "Les formes et les solides",
         description:
           "Activités géométriques, palier 2 du CI : reconnaître le carré, le rectangle, le triangle et le rond ; les solides familiers (le cube comme un dé, le pavé comme une boîte de sucre, le cylindre comme une boîte de tomate).",
-        games: [{ kind: "frise-formes", count: 2 }],
+        games: [
+          { kind: "frise-formes", count: 2 },
+          { kind: "forme-nom", count: 2 },
+          { kind: "forme-coins", count: 2 },
+          { kind: "solide-nom", count: 2 },
+          { kind: "classer-formes", count: 2 },
+        ],
       },
       {
         key: "ma-ci-mesures",
         name: "Plus long, plus lourd, plus tard",
         description:
           "Activités de mesure, paliers 1 à 3 du CI : comparer des longueurs et des contenances sans instrument (plus long, plus court, plus plein), comparer des masses (plus lourd, plus léger), les moments de la journée (matin, midi, soir), les jours de la semaine.",
+        games: [
+          { kind: "comparer-mesure", count: 4 },
+          { kind: "moment-journee", count: 3 },
+          { kind: "jour-voisin", count: 3 },
+        ],
       },
       {
         key: "ma-ci-problemes",

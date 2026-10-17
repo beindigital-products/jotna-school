@@ -16,7 +16,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { originOf, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
+import { fresh, originOf, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 
 const NUMBER_WORDS = [
   "zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix",
@@ -74,20 +74,6 @@ function qcm(
     answerKey: String(answer),
     hints,
   };
-}
-
-/** Un tirage jamais vu dans ce palier : la même question deux fois se remarquerait. */
-function fresh(ctx: GameContext, kind: string, build: () => GeneratedGame): GeneratedGame {
-  let game = build();
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const key = `${kind}:${game.prompt}`;
-    if (!ctx.used.has(key)) {
-      ctx.used.add(key);
-      return game;
-    }
-    game = build();
-  }
-  return game;
 }
 
 /** « Quel nombre vient juste après 7 ? » */

@@ -53,6 +53,19 @@ const TEMPLATES = [
   "complement",
   "calcul-ecrit",
   "dizaine-unites",
+  "forme-nom",
+  "forme-coins",
+  "solide-nom",
+  "classer-formes",
+  "rangee-position",
+  "rangee-ordinal",
+  "intrus",
+  "appartient",
+  "couleur-objet",
+  "comparer-mesure",
+  "animaux-ordre",
+  "moment-journee",
+  "jour-voisin",
 ] as const satisfies readonly GameKind[];
 
 /** Les gabarits de calcul : leur matière est « Mathématiques ». */
@@ -70,9 +83,22 @@ const MATH_KINDS = new Set<string>([
   "complement",
   "calcul-ecrit",
   "dizaine-unites",
+  "forme-nom",
+  "forme-coins",
+  "solide-nom",
+  "classer-formes",
+  "rangee-position",
+  "rangee-ordinal",
+  "intrus",
+  "appartient",
+  "couleur-objet",
+  "comparer-mesure",
+  "animaux-ordre",
+  "moment-journee",
+  "jour-voisin",
 ]);
 
-const CLASSIC_TYPES = new Set<string>(["qcm", "order", "match", "fill-blank"]);
+const CLASSIC_TYPES = new Set<string>(["qcm", "order", "match", "drag-drop", "fill-blank"]);
 
 const LEVELS: GameLevel[] = [1, 2, 3, 4];
 const VOCABULARIES = [undefined, "mots-1", "mots-2", "mots-3", "mots-4"] as const;
@@ -91,6 +117,8 @@ function rightAnswer(exo: { type: string; payload: Record<string, unknown> }): s
       return JSON.stringify(p.pairs);
     case "fill-blank":
       return JSON.stringify((p.blanks as { answer: string }[]).map((b) => b.answer));
+    case "drag-drop":
+      return JSON.stringify(Object.fromEntries((p.items as { text: string; correctZone: string }[]).map((item) => [item.text, item.correctZone])));
     default:
       throw new Error(`type inattendu : ${exo.type}`);
   }
@@ -649,6 +677,155 @@ describe("les paliers de nombres du CI tiennent leur fiche", () => {
   });
 });
 
+describe("les gabarits de géométrie, de tri et de mesure recalculent juste, depuis une table de faits écrite à part", () => {
+  const SHAPE_OF: Record<string, string> = { "⬛": "carré", "⬜": "carré", "🔲": "carré", "🔳": "carré", "🔴": "rond", "🔵": "rond", "⚫": "rond", "⚪": "rond", "🔺": "triangle", "🔻": "triangle" };
+  const SOLID_OF: Record<string, string> = { "🎲": "cube", "🧱": "pavé", "🥫": "cylindre", "🧻": "cylindre", "🔋": "cylindre", "⚽": "boule", "🏀": "boule", "⚾": "boule", "🎾": "boule" };
+  const FAMILY_OF: Record<string, string> = {
+    ...Object.fromEntries(["🥭", "🍌", "🍉", "🍍", "🍎", "🍊", "🍋"].map((e) => [e, "fruit"])),
+    ...Object.fromEntries(["🐔", "🐑", "🐄", "🐟", "🐈", "🐕", "🐘", "🦒"].map((e) => [e, "animal"])),
+    ...Object.fromEntries(["👗", "👕", "👖", "👒", "🧦"].map((e) => [e, "vêtement"])),
+    ...Object.fromEntries(["🚗", "🚌", "🚲", "⛵", "🛵"].map((e) => [e, "véhicule"])),
+    ...Object.fromEntries(["📏", "📚", "🎒", "📒"].map((e) => [e, "école"])),
+  };
+  const COLOR_OF: Record<string, string> = { "🍎": "rouge", "🍓": "rouge", "🍅": "rouge", "🍌": "jaune", "🍋": "jaune", "🥒": "vert", "🥦": "vert", "🍊": "orange", "🥕": "orange", "🍆": "violet" };
+  const WEIGHT_RANK: Record<string, number> = { "🐜": 0, "🐭": 1, "🐔": 2, "🐕": 3, "🐑": 4, "🐄": 5, "🐘": 6 };
+  const SIZE_RANK: Record<string, number> = { "🐜": 0, "🐭": 1, "🐔": 2, "🐕": 3, "🐄": 4, "🦒": 5 };
+  const DAYS_ORDER = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+  const MOMENT_OF_CLUE: [string, string][] = [
+    ["se lève", "le matin"], ["coq chante", "le matin"], ["tout en haut du ciel", "midi"], ["ombres", "midi"],
+    ["se couche", "le soir"], ["devient rouge", "le soir"], ["étoiles", "la nuit"], ["tout le monde dort", "la nuit"],
+  ];
+
+  const pictographs = (text: string) => Array.from(text.matchAll(/\p{Extended_Pictographic}/gu)).map((m) => m[0]);
+  const optionsOf = (exo: { payload: Record<string, unknown> }) => exo.payload.options as string[];
+  const rightOption = (exo: { payload: Record<string, unknown> }) => optionsOf(exo)[exo.payload.correctIndex as number];
+  const emojiOfOption = (option: string) => pictographs(option)[0];
+  const draws = LEVELS.flatMap((level) => Array.from({ length: 80 }, (_, n) => ({ level, seed: `fait:${level}:${n}` })));
+  const make = (kind: GameKind, d: (typeof draws)[number]) => GAME_KINDS[kind].make(makeContext("CI", d.level, `${kind}:${d.seed}`));
+  const ARTICLE = (word: string) => (word === "boule" ? "la boule" : `le ${word}`);
+
+  it("le nom d'une forme, ses coins et le nom d'un solide sont ceux de l'objet dessiné", () => {
+    const CORNERS: Record<string, number> = { carré: 4, rectangle: 4, triangle: 3, rond: 0 };
+    for (const d of draws) {
+      const name = make("forme-nom", d);
+      const shape = SHAPE_OF[pictographs(name.prompt)[0]];
+      expect(rightOption(name), name.prompt).toBe(`le ${shape}`);
+      expect(new Set(optionsOf(name)).size, name.prompt).toBe(3);
+      // Un carré est un rectangle particulier : « rectangle » ne se propose jamais pour lui.
+      if (shape === "carré") expect(optionsOf(name).join(), name.prompt).not.toContain("rectangle");
+
+      const corners = make("forme-coins", d);
+      const form = /a un (\p{L}+) \?/u.exec(corners.prompt)![1];
+      expect(Number(rightOption(corners)), corners.prompt).toBe(CORNERS[form]);
+      expect(new Set(optionsOf(corners)).size, corners.prompt).toBe(3);
+
+      const solid = make("solide-nom", d);
+      const kind = SOLID_OF[pictographs(solid.prompt)[0]];
+      expect(rightOption(solid), solid.prompt).toBe(ARTICLE(kind));
+      expect(new Set(optionsOf(solid)).size, solid.prompt).toBe(3);
+      // Un cube est un pavé particulier : ni « le pavé » pour le dé, ni « le cube » pour la brique.
+      if (kind === "cube") expect(optionsOf(solid).join(), solid.prompt).not.toContain("pavé");
+      if (kind === "pavé") expect(optionsOf(solid).join(), solid.prompt).not.toContain("cube");
+    }
+  });
+
+  it("classe chaque forme dans la case de son nom, et aucune case n'est vide", () => {
+    const PLURAL: Record<string, string> = { carré: "Carrés", rond: "Ronds", triangle: "Triangles" };
+    for (const d of draws) {
+      const exo = make("classer-formes", d);
+      const items = exo.payload.items as { text: string; correctZone: string }[];
+      const zones = exo.payload.zones as string[];
+      expect(new Set(items.map((item) => item.text)).size, exo.answerKey).toBe(items.length);
+      for (const item of items) expect(item.correctZone, item.text).toBe(PLURAL[SHAPE_OF[item.text]]);
+      for (const zone of zones) expect(items.some((item) => item.correctZone === zone), `${zone} : ${exo.answerKey}`).toBe(true);
+      expect(new Set(zones).size).toBe(zones.length);
+      expect(zones.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("repère le bon dessin dans une rangée : gauche, droite, milieu, entre, et le rang", () => {
+    const RANK: Record<string, number> = { premier: 0, deuxième: 1, troisième: 2, dernier: 3 };
+    for (const d of draws) {
+      const position = make("rangee-position", d);
+      const row = pictographs(/Regarde la rangée (.*?)\. /u.exec(position.prompt)![1]);
+      expect(new Set(row).size, position.prompt).toBe(3);
+      const target = /à gauche/.test(position.prompt) ? row[0] : /à droite/.test(position.prompt) ? row[2] : row[1];
+      expect(emojiOfOption(rightOption(position)), position.prompt).toBe(target);
+      expect(optionsOf(position).map(emojiOfOption).sort(), position.prompt).toEqual([...row].sort());
+
+      const ordinal = make("rangee-ordinal", d);
+      const row4 = pictographs(/Regarde la rangée (.*?)\. /u.exec(ordinal.prompt)![1]);
+      expect(new Set(row4).size, ordinal.prompt).toBe(4);
+      const rank = RANK[/le (premier|deuxième|troisième|dernier),/u.exec(ordinal.prompt)![1]];
+      expect(emojiOfOption(rightOption(ordinal)), ordinal.prompt).toBe(row4[rank]);
+      expect(optionsOf(ordinal).map(emojiOfOption).sort(), ordinal.prompt).toEqual([...row4].sort());
+    }
+  });
+
+  it("l'intrus est le seul d'une autre famille, « est-ce un fruit ? » dit la vérité, la couleur est celle du dessin", () => {
+    const QUESTION: Record<string, string> = { "un fruit": "fruit", "un animal": "animal", "un vêtement": "vêtement", "un véhicule": "véhicule", "un objet de l'école": "école" };
+    for (const d of draws) {
+      const odd = make("intrus", d);
+      const families = optionsOf(odd).map((option) => FAMILY_OF[emojiOfOption(option)]);
+      const odds = optionsOf(odd).filter((_, i) => families.filter((f) => f === families[i]).length === 1);
+      expect(odds, odd.prompt).toHaveLength(1);
+      expect(rightOption(odd), odd.prompt).toBe(odds[0]);
+      expect(new Set(families).size, odd.prompt).toBe(2);
+
+      const belongs = make("appartient", d);
+      const asked = QUESTION[/Est-ce (.*?) \?/u.exec(belongs.prompt)![1]];
+      expect(rightOption(belongs), belongs.prompt).toBe(FAMILY_OF[pictographs(belongs.prompt)[0]] === asked ? "Oui" : "Non");
+      expect(new Set(optionsOf(belongs)).size).toBe(2);
+
+      const color = make("couleur-objet", d);
+      const wanted = /Qu'est-ce qui est (\p{L}+) \?/u.exec(color.prompt)![1];
+      const colors = optionsOf(color).map((option) => COLOR_OF[emojiOfOption(option)]);
+      expect(COLOR_OF[emojiOfOption(rightOption(color))], color.prompt).toBe(wanted);
+      expect(colors.filter((c) => c === wanted), color.prompt).toHaveLength(1);
+      expect(new Set(colors).size, color.prompt).toBe(3);
+    }
+  });
+
+  it("le plus lourd, le plus léger, le plus grand, le plus petit et le rangement suivent les rangs, espacés d'au moins deux crans", () => {
+    const spaced = (ranks: number[]) => [...ranks].sort((a, b) => a - b).every((r, i, all) => i === 0 || r - all[i - 1] >= 2);
+    for (const d of draws) {
+      const exo = make("comparer-mesure", d);
+      const adjective = /le plus (\p{L}+) \?/u.exec(exo.prompt)![1];
+      const rankOf = adjective === "lourd" || adjective === "léger" ? WEIGHT_RANK : SIZE_RANK;
+      const ranks = optionsOf(exo).map((option) => rankOf[emojiOfOption(option)]);
+      expect(ranks.every((r) => r !== undefined), exo.prompt).toBe(true);
+      expect(spaced(ranks), `${exo.prompt} ${optionsOf(exo).join(", ")}`).toBe(true);
+      const chosen = rankOf[emojiOfOption(rightOption(exo))];
+      expect(chosen, exo.prompt).toBe(adjective === "lourd" || adjective === "grand" ? Math.max(...ranks) : Math.min(...ranks));
+
+      const order = make("animaux-ordre", d);
+      const sequence = (order.payload.correctSequence as string[]).map((item) => rankOf2(order.prompt)[emojiOfOption(item)]);
+      expect(sequence.every((r) => r !== undefined), order.prompt).toBe(true);
+      expect(sequence, order.prompt).toEqual([...sequence].sort((a, b) => a - b));
+      expect(spaced(sequence), order.prompt).toBe(true);
+    }
+    function rankOf2(prompt: string) {
+      return /léger/.test(prompt) ? WEIGHT_RANK : SIZE_RANK;
+    }
+  });
+
+  it("le moment de la journée va avec l'indice, le jour voisin est celui de la semaine", () => {
+    for (const d of draws) {
+      const moment = make("moment-journee", d);
+      const expected = MOMENT_OF_CLUE.filter(([clue]) => moment.prompt.includes(clue)).map(([, label]) => label);
+      expect(new Set(expected).size, moment.prompt).toBe(1);
+      expect(rightOption(moment), moment.prompt).toBe(expected[0]);
+      expect(new Set(optionsOf(moment)).size, moment.prompt).toBe(3);
+
+      const day = make("jour-voisin", d);
+      const [, which, name] = /juste (après|avant) (\p{L}+) \?/u.exec(day.prompt)!;
+      const i = DAYS_ORDER.indexOf(name);
+      expect(rightOption(day), day.prompt).toBe(DAYS_ORDER[(i + (which === "après" ? 1 : 6)) % 7]);
+      expect(new Set(optionsOf(day)).size, day.prompt).toBe(3);
+    }
+  });
+});
+
 describe("les gabarits de dénombrement comptent juste", () => {
   it("fait compter exactement autant d'émojis que la réponse", () => {
     for (let n = 0; n < 40; n++) {
@@ -684,7 +861,7 @@ describe("les gabarits dans le programme du CI", () => {
     e.topic.games?.some((g) => (TEMPLATES as readonly string[]).includes(g.kind)),
   );
 
-  it("est branché sur huit thématiques du CI", () => {
+  it("est branché sur douze thématiques du CI", () => {
     expect(entries.map((e) => e.topic.key).sort()).toEqual(
       [
         "fr-ci-alphabet",
@@ -695,6 +872,10 @@ describe("les gabarits dans le programme du CI", () => {
         "ma-ci-calcul-10",
         "ma-ci-nombres-10",
         "ma-ci-nombres-20",
+        "ma-ci-trier",
+        "ma-ci-espace",
+        "ma-ci-formes",
+        "ma-ci-mesures",
       ].sort(),
     );
   });
@@ -709,6 +890,10 @@ describe("les gabarits dans le programme du CI", () => {
       "ma-ci-nombres-10",
       "ma-ci-calcul-10",
       "ma-ci-nombres-20",
+      "ma-ci-trier",
+      "ma-ci-espace",
+      "ma-ci-formes",
+      "ma-ci-mesures",
     ];
     for (const entry of entries) {
       for (const spec of entry.topic.games ?? []) {
@@ -830,6 +1015,10 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     "ma-ci-nombres-10",
     "ma-ci-calcul-10",
     "ma-ci-nombres-20",
+    "ma-ci-trier",
+    "ma-ci-espace",
+    "ma-ci-formes",
+    "ma-ci-mesures",
   ];
   const topicOf = (key: string) => allProgrammeEntries().find((e) => e.topic.key === key)!.topic;
 
@@ -863,8 +1052,8 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
   it("annonce ces paliers comme gratuits à la pré-génération, et les autres comme payants", () => {
     for (const key of keys) expect(topicUsesModel(key), key).toBe(false);
     expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
-    expect(topicUsesModel("ma-ci-mesures")).toBe(true);
     expect(topicUsesModel("ma-ci-problemes")).toBe(true);
+    expect(topicUsesModel("fr-cp-lecture")).toBe(true);
     expect(topicUsesModel("fr-ci-phrases")).toBe(true);
     expect(topicUsesModel("hi-cm2-empires")).toBe(true);
     // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.

@@ -24,6 +24,7 @@ export type GameExerciseType =
   | "qcm"
   | "order"
   | "match"
+  | "drag-drop"
   | "fill-blank";
 
 /** Un exercice fabriqué, prêt à rejoindre les exercices du palier. */
@@ -96,6 +97,23 @@ export function makeContext(
 /** L'origine à poser dans le payload : de quoi refaire le même gabarit avec une autre graine. */
 export function originOf(kind: string, ctx: GameContext): GameOrigin {
   return ctx.vocabulary ? { kind, level: ctx.level, vocabulary: ctx.vocabulary } : { kind, level: ctx.level };
+}
+
+/**
+ * Un tirage jamais vu dans ce palier : la même question deux fois se remarquerait. On refait
+ * jusqu'à huit tirages ; au-delà, le dernier est servi (l'espace des questions est épuisé).
+ */
+export function fresh(ctx: GameContext, kind: string, build: () => GeneratedGame): GeneratedGame {
+  let game = build();
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const key = `${kind}:${game.prompt}:${JSON.stringify(game.payload.options ?? game.payload.correctSequence ?? game.payload.items ?? "")}`;
+    if (!ctx.used.has(key)) {
+      ctx.used.add(key);
+      return game;
+    }
+    game = build();
+  }
+  return game;
 }
 
 export function randomInt(rng: () => number, min: number, max: number): number {

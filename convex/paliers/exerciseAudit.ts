@@ -933,7 +933,7 @@ const ORDER_SAYS =
  */
 const SHAPE_OF_EMOJI: Record<string, string> = {
   "🟥": "carre", "🟦": "carre", "🟩": "carre", "🟨": "carre", "🟧": "carre", "🟪": "carre", "🟫": "carre",
-  "⬛": "carre", "⬜": "carre", "◼": "carre", "◻": "carre", "■": "carre", "□": "carre",
+  "⬛": "carre", "⬜": "carre", "🔲": "carre", "🔳": "carre", "◼": "carre", "◻": "carre", "■": "carre", "□": "carre",
   "🔴": "cercle", "🔵": "cercle", "🟠": "cercle", "🟡": "cercle", "🟢": "cercle", "🟣": "cercle", "🟤": "cercle",
   "⚫": "cercle", "⚪": "cercle", "●": "cercle", "○": "cercle", "⬤": "cercle",
   "🔺": "triangle", "🔻": "triangle", "▲": "triangle", "▼": "triangle", "△": "triangle",

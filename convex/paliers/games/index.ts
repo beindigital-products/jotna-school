@@ -14,6 +14,16 @@ import type { VisibleClassName } from "../../curriculum";
 import { PALIER_SIZE } from "../scoring";
 import { makeColorPair, makeColorPick, makeColorResult, makeWarmCold } from "./colors";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
+import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
+import {
+  makeBelongs,
+  makeColorOfThing,
+  makeCompareAnimals,
+  makeMoment,
+  makeNeighbourDay,
+  makeOddOneOut,
+  makeOrderAnimals,
+} from "./sorting";
 import {
   makeBiggest,
   makeComplement,
@@ -119,6 +129,19 @@ export const GAME_KINDS = {
   "ajouter-emojis": { label: "Ajouter des dessins", type: "qcm", make: makeAddEmojis },
   "enlever-emojis": { label: "Enlever des dessins", type: "qcm", make: makeTakeAwayEmojis },
   "rangee-plus-moins": { label: "La rangée qui en a le plus ou le moins", type: "qcm", make: makeCompareRows },
+  "forme-nom": { label: "Le nom d'une forme", type: "qcm", make: makeShapeName },
+  "forme-coins": { label: "Les coins d'une forme", type: "qcm", make: makeCorners },
+  "solide-nom": { label: "Le nom d'un solide", type: "qcm", make: makeSolidName },
+  "classer-formes": { label: "Classer des formes", type: "drag-drop", make: makeSortShapes },
+  "rangee-position": { label: "Gauche, droite, milieu dans une rangée", type: "qcm", make: makeRowPosition },
+  "rangee-ordinal": { label: "Le rang dans une rangée", type: "qcm", make: makeRowOrdinal },
+  "intrus": { label: "Celui qui n'est pas comme les autres", type: "qcm", make: makeOddOneOut },
+  "appartient": { label: "Est-ce un fruit, un animal…", type: "qcm", make: makeBelongs },
+  "couleur-objet": { label: "Qu'est-ce qui est de cette couleur", type: "qcm", make: makeColorOfThing },
+  "comparer-mesure": { label: "Le plus lourd, le plus léger, le plus grand, le plus petit", type: "qcm", make: makeCompareAnimals },
+  "animaux-ordre": { label: "Ranger des animaux", type: "order", make: makeOrderAnimals },
+  "moment-journee": { label: "Le moment de la journée", type: "qcm", make: makeMoment },
+  "jour-voisin": { label: "Le jour d'avant ou d'après", type: "qcm", make: makeNeighbourDay },
   "nombre-groupe": { label: "Relier un nombre et un groupe de dessins", type: "match", make: makeNumberGroups },
   "nombres-ordre": { label: "Ranger des nombres", type: "order", make: makeNumberOrder },
   "nombre-voisin": { label: "Le nombre juste avant ou après", type: "qcm", make: makeNeighbour },
@@ -161,7 +184,7 @@ export function gameCount(specs: readonly GameSpec[] | undefined): number {
 export type GameAccept = (game: GeneratedGame) => boolean;
 
 /** Les types des gabarits : le contrôleur est fait pour eux, pas pour les quatre jeux (frise, dessin, écoute, couleurs). */
-const TEMPLATE_TYPES: readonly GameExerciseType[] = ["qcm", "order", "match", "fill-blank"];
+const TEMPLATE_TYPES: readonly GameExerciseType[] = ["qcm", "order", "match", "drag-drop", "fill-blank"];
 
 /** Combien de fois refaire un gabarit refusé, avec une autre graine, avant de l'abandonner. */
 export const TEMPLATE_RETRIES = 4;
