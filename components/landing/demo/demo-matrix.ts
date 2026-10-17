@@ -9,7 +9,9 @@
  *   mathématiques n'ont pas de phrase à trous : un calcul à trou s'y écrit en
  *   réponse courte, que le serveur vérifie par le calcul.
  * - LES JEUX : ceux que le programme demande aux thématiques de CETTE classe
- *   (`games`, `convex/programme`). Un jeu qui n'existe pas à une classe ne se
+ *   (`games`, `convex/programme`) : les quatre jeux (frises, dessin, écoute,
+ *   couleurs) ET les gabarits du code, ces exercices à vocabulaire fermé que le
+ *   modèle ne sait pas écrire sans erreur (syllabes, lettres, dessins à compter). Un jeu qui n'existe pas à une classe ne se
  *   montre pas à cette classe : un CM1 n'a pas de frise de nombres, un
  *   élève de géographie n'a de dessin sur quadrillage qu'au CI.
  *
@@ -21,12 +23,13 @@
  * MODULE LÉGER (voir `demo-types.ts`).
  */
 import type { GameKind } from "@/convex/paliers/games";
-import type { ClassicType, DemoClass, DemoSubject, GameType } from "./demo-types";
+import type { ClassicType, DemoClass, DemoSubject, GameType, TemplateType } from "./demo-types";
 
 /** Un jeu d'une classe : ses variantes, chacune avec la thématique qui la demande. */
 export type GameOffer = {
-  type: GameType;
-  options: { kind: GameKind; topic: string }[];
+  type: GameType | TemplateType;
+  /** `vocabulary` : pour un gabarit de mots, les mots vus à ce palier de lecture (« mots-2 »). */
+  options: { kind: GameKind; topic: string; vocabulary?: string }[];
 };
 
 const ALL_CLASSIC: readonly ClassicType[] = [
@@ -54,10 +57,46 @@ export const CLASSIC_BY_SUBJECT: Record<DemoSubject, readonly ClassicType[]> = {
 
 /** Les jeux de chaque matière et de chaque classe. Une classe absente n'en a pas. */
 export const GAMES_BY_SUBJECT: Record<DemoSubject, Partial<Record<DemoClass, GameOffer[]>>> = {
-  francais: {},
+  francais: {
+    CI: [
+      {
+        type: "qcm",
+        options: [
+          { kind: "lettre-initiale", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
+          { kind: "syllabes-compter", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
+          { kind: "syllabe-initiale", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
+          { kind: "syllabe-finale", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
+          { kind: "lettres-compter", topic: "Les sons f, u, ou, é, è", vocabulary: "mots-3" },
+        ],
+      },
+      {
+        type: "fill-blank",
+        options: [
+          { kind: "syllabe-manquante", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
+          { kind: "lettre-manquante", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
+          { kind: "phrase-trou", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
+        ],
+      },
+      {
+        type: "order",
+        options: [
+          { kind: "lettres-ordre", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
+          { kind: "syllabes-ordre", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
+        ],
+      },
+      {
+        type: "match",
+        options: [
+          { kind: "syllabe-mot", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
+          { kind: "mot-image", topic: "Les sons s, r, au, eau, on, om", vocabulary: "mots-4" },
+        ],
+      },
+    ],
+  },
   mathematiques: {
     CI: [
       { type: "pattern", options: [{ kind: "frise-formes", topic: "Trier et ranger" }, { kind: "frise-couleurs", topic: "Trier et ranger" }, { kind: "suite-nombres", topic: "Les nombres jusqu'à 10" }] },
+      { type: "qcm", options: [{ kind: "compter-emojis", topic: "Les nombres jusqu'à 10" }, { kind: "ajouter-emojis", topic: "Ajouter et enlever jusqu'à 10" }, { kind: "enlever-emojis", topic: "Ajouter et enlever jusqu'à 10" }] },
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Gauche, droite, dessus, dessous" }] },
     ],
     CP: [

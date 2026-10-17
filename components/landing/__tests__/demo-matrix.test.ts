@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { VISIBLE_CLASSES } from "@/convex/curriculum";
-import { AI_EXERCISE_TYPES, EXERCISE_TYPES, GAME_EXERCISE_TYPES, type ExerciseType } from "@/convex/exerciseTypes";
+import { AI_EXERCISE_TYPES, EXERCISE_TYPES, type ExerciseType } from "@/convex/exerciseTypes";
 import { GAME_KINDS, type GameKind } from "@/convex/paliers/games";
 import { buildPalierBasePrompt } from "@/convex/paliers/prompts";
 import { PROGRAMME } from "@/convex/programme";
@@ -36,21 +36,28 @@ function authorizedFor(subjectName: string): ExerciseType[] {
 }
 
 /**
- * Les gabarits (`paliers/games/words.ts`, `counting.ts`) fabriquent des
- * exercices CLASSIQUES : la vitrine les montre déjà avec leur type (QCM, ordre,
- * association, phrase à trous). Seuls les quatre jeux ont leur carte.
+ * Chaque jeu du catalogue a sa carte : les quatre jeux (frises, dessin, écoute,
+ * couleurs) et les gabarits (`paliers/games/words.ts`, `counting.ts`), qui
+ * rendent un exercice classique (QCM, ordre, association, phrase à trous) à
+ * partir d'un vocabulaire fermé.
  */
-const isShownGame = (kind: GameKind) => (GAME_EXERCISE_TYPES as readonly string[]).includes(GAME_KINDS[kind].type);
+const isShownGame = (kind: GameKind) => kind in GAME_KINDS;
 
 /** Les jeux d'une classe, refaits depuis le programme : par type, dans l'ordre où le programme les cite. */
 function gamesOfProgramme(subject: (typeof PROGRAMME)[number], klass: (typeof DEMO_CLASSES)[number]): GameOffer[] {
-  const offers = new Map<GameOffer["type"], { kind: GameKind; topic: string }[]>();
+  const offers = new Map<GameOffer["type"], GameOffer["options"]>();
   for (const topic of subject.classes[klass]) {
     for (const spec of topic.games ?? []) {
       if (!isShownGame(spec.kind)) continue;
-      const type = GAME_KINDS[spec.kind].type as GameOffer["type"];
+      const type = GAME_KINDS[spec.kind].type;
       const options = offers.get(type) ?? [];
-      if (!options.some((option) => option.kind === spec.kind)) options.push({ kind: spec.kind, topic: topic.name });
+      if (!options.some((option) => option.kind === spec.kind)) {
+        options.push(
+          spec.vocabulary
+            ? { kind: spec.kind, topic: topic.name, vocabulary: spec.vocabulary }
+            : { kind: spec.kind, topic: topic.name },
+        );
+      }
       offers.set(type, options);
     }
   }
@@ -97,7 +104,7 @@ describe("la vitrine : les exercices de chaque classe sont ceux que l'applicatio
           const games = gamesFor(subject.key, klass);
           expect(games).toEqual(gamesOfProgramme(subject, klass));
           for (const offer of games) {
-            expect(GAME_EXERCISE_TYPES).toContain(offer.type);
+            expect(EXERCISE_TYPES).toContain(offer.type);
             for (const option of offer.options) expect(GAME_KINDS[option.kind].type).toBe(offer.type);
           }
         });
