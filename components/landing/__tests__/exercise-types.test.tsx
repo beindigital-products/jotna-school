@@ -123,8 +123,10 @@ describe("la section « Exercices » : une matière, une classe, des exercices �
   it("retire la réponse courte au CI : l'enfant n'écrit pas encore au clavier", async () => {
     render(<ExerciseTypes />);
     await chooseClass("CI");
-    expect(cardTitles()).toEqual(NO_SHORT_ANSWER);
-    expect(countPill()).toBe("En CI : 5 types d'exercices");
+    // Le français du CI a aussi ses gabarits (syllabes, lettres) : quatre cartes de jeu, après les cinq exercices.
+    expect(cardTitles().slice(0, NO_SHORT_ANSWER.length)).toEqual(NO_SHORT_ANSWER);
+    expect(cardTitles()).toHaveLength(NO_SHORT_ANSWER.length + 4);
+    expect(countPill()).toBe("En CI : 5 types d'exercices · 4 types de jeux");
     await chooseClass("CP");
     expect(cardTitles()).toEqual(ALL_SIX);
   });
