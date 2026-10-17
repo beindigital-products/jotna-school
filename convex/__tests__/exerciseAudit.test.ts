@@ -1256,6 +1256,22 @@ describe("les erreurs de contenu que la forme ne montrait pas (CI)", () => {
     expect(codesOf(pairs("Associe chaque mot à sa lettre.", [["fumée", "f"], ["poule", "ou"], ["été", "é"]]))).not.toContain("qcm_sound_ambiguous");
   });
 
+  it("un son entre crochets se lit comme la lettre et comme l'alphabet phonétique", () => {
+    const sound = (prompt: string, options: string[], correctIndex = 0) =>
+      qcm({ prompt, class: "CI", subject: "Français", answerKey: options[correctIndex] }, { options, correctIndex });
+    // [u] est « ou » en alphabet phonétique : « poule » et « foulard ».
+    expect(codesOf(sound("Quel mot a le son [u] ?", ["foulard", "fumée", "poule"]))).toContain("qcm_sound_ambiguous");
+    // Une seule bonne réponse dans chaque lecture : « fou » pour « ou », « lune » pour « u ».
+    expect(codesOf(sound("Quel mot a le son [u] ?", ["lune", "fou", "rat"]))).not.toContain("qcm_sound_ambiguous");
+    // [y] est la lettre u, [e] le é, [ɛ] le è.
+    expect(codesOf(sound("Quel mot a le son [y] ?", ["fumée", "lune", "poule"]))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel mot a le son [e] ?", ["été", "fumée", "poule"]))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel mot a le son [ɛ] ?", ["père", "mère", "poule"]))).toContain("qcm_sound_ambiguous");
+    expect(codesOf(sound("Quel mot a le son [ɛ] ?", ["père", "poule", "été"]))).not.toContain("qcm_sound_ambiguous");
+    // Entre guillemets, « u » reste la lettre : « poule » et « foulard » n'ont pas de u.
+    expect(codesOf(sound("Quel mot a le son « u » ?", ["foulard", "fumée", "poule"]))).not.toContain("qcm_sound_ambiguous");
+  });
+
   it("le calcul dessiné en émojis doit valoir l'option juste", () => {
     const sum = (prompt: string, options: string[], correctIndex: number) =>
       qcm({ prompt, class: "CI", subject: "Mathématiques", answerKey: options[correctIndex] }, { options, correctIndex });
