@@ -147,7 +147,9 @@ est comptée dans le budget mensuel de la passerelle IA, imputée à personne.
 Le résumé rendu liste `failed` (à relancer), `pendingHuman` (un exercice de
 mathématiques dont la réponse diverge de l'expression vérifiée ; le palier est
 servi, mais mérite un regard dans l'administration) et `topicsWithoutClass`
-(thématiques ignorées faute de niveau).
+(thématiques ignorées faute de niveau). `withoutModel` compte, parmi les paliers
+à faire, ceux que le code fabrique seul (dix gabarits ou jeux, voir « Les gabarits ») :
+ils ne coûtent rien et sont retirés de `estimatedCostUsd`.
 
 Les paliers expirent après un trimestre (`PALIER_TTL_MS`) et se régénèrent à
 la demande ; relancer la pré-génération avant la rentrée suffit.
@@ -163,10 +165,11 @@ npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine
 
 `programmeKeys` vise des thématiques précises, par la clé de leur fiche du
 programme : quand une fiche gagne des gabarits (voir plus bas), seuls ses
-paliers sont à refaire. `dryRun` compte et nomme les thématiques :
+paliers sont à refaire. `dryRun` compte et nomme les thématiques (et dit
+`truncated: true` si la base compte plus de paliers que la lecture) :
 
 ```bash
-npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10"],"dryRun":true}'
+npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10","ma-ci-nombres-20"],"dryRun":true}'
 ```
 
 Les élèves qui ont une tentative ouverte sur un palier invalidé la
@@ -367,7 +370,7 @@ les `blocking` d'abord :
 | Ordre | `order_too_few` (moins de 2), `order_item_empty`, `order_spells_other_word` (« pour écrire 'poule' » avec les lettres e-l-o-p-u : la suite doit écrire le mot cité), `order_syllable_without_vowel` (« ng », « ss », « p » donnés comme syllabes), `order_without_criterion` (« Mets ces animaux dans l'ordre » : des animaux, fruits, couleurs, formes, villes, objets, lieux n'ont pas d'ordre naturel ; il faut un critère : « alphabétique », « du plus petit au plus grand », « de l'ouest à l'est »), `order_words_without_criterion` (« Mets ces mots dans l'ordre : ear, hand, eye » : une liste de mots sans phrase à former ni critère), `order_spatial_without_scene` (« Range ces objets de gauche à droite : Livre, Crayon, Cahier » sans scène à l'écran), `order_shapes_by_size` (des formes rangées par taille : un cercle ou un carré n'ont pas de taille), `order_proximity_without_reference` (« du plus proche au plus loin » sans dire de quoi), `order_syllables_without_word` (« Mets ces syllabes dans l'ordre : ma, pa, na » : aucun mot à former ; levé par « pour former un mot », « pour écrire », une image ou un critère), `order_prompt_mentions_zones` (« Place chaque syllabe dans la bonne zone » pour un ordre : l'écran n'a pas de zones) | `order_few` (2), `order_item_duplicated`, `order_already_sorted` (suite déjà rangée alphabétiquement ou par ordre croissant, sans que l'énoncé dise quel ordre) |
 | Glisser-déposer | `dragdrop_zones_few`, `dragdrop_items_few`, `dragdrop_generic_zone` (« Zone A »), `dragdrop_zone_duplicated`, `dragdrop_zone_missing`, `dragdrop_label_without_zone` | `dragdrop_empty_zone`, `dragdrop_item_empty` |
 | Réponse courte | `short_answer_no_answer` | `short_answer_empty_accepted`, `short_answer_answer_in_prompt` (hors nombres : « 10 − 3 + 3 » a pour réponse 10) |
-| Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots), `fill_blank_word_unknown` (CI et CP : le trou d'une lettre ou d'une syllabe écrit un mot absent de `paliers/knownWords.ts`, « ___ngue » avec « m »), `fill_blank_word_unreadable` (« Le mot est ___ (pa, ra, ni) » : le mot n'est écrit nulle part) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
+| Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots), `fill_blank_word_unknown` (CI et CP : le trou d'une lettre ou d'une syllabe écrit un mot absent de `paliers/knownWords.ts`, « ___ngue » avec « m »), `fill_blank_word_unreadable` (« Le mot est ___ (pa, ra, ni) » : le mot n'est écrit nulle part), `fill_blank_article_gender` (« Le ___ » avec « poule », « Un ___ » avec « mangue » : l'article collé au trou n'est pas du genre du mot ; seuls les noms de `paliers/genders.ts`, dont le genre est sûr, sont jugés ; « mon, ton, son » devant une voyelle sont laissés) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
 | Indices | | `hints_few` (moins de 2), `hint_empty`, `hints_duplicated`, `hint_gives_answer` (le 1er écrit le bon choix sans parler des autres), `hint_dangling_visual` |
 | Texte | `text_placeholder` (« undefined », « null », « NaN »), `text_replacement_char` (�) | `text_double_space`, `text_markup` (`**`, `#`, backtick, balise), `text_english_in_young_class` (anglais dans un énoncé de CI ou de CP hors Anglais), `text_foreign_currency` (euros, dollars : FCFA seul) |
 
@@ -571,6 +574,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `syllabe-initiale` | QCM | « Par quelle syllabe commence « penda » ? » : `pen` |
 | `syllabe-finale` | QCM | « Par quelle syllabe finit « tomate » ? 🍅 » : `te` (aucun mauvais choix ne finit le mot) |
 | `lettres-compter` | QCM | « Combien de lettres compte « olive » ? » : 5 |
+| `mot-syllabe` | QCM | « Quel mot commence par la syllabe « pa » ? » : `papa`, avec `lit` et `midi` (le sens inverse de `syllabe-initiale`, à ne pas confondre avec `syllabe-mot`, qui relie) |
 | `lettre-initiale` | QCM | « Par quelle lettre commence « lit » ? 🛏️ » |
 | `syllabes-compter` | QCM | « Combien de syllabes entends-tu dans « mère » ? » : 2 |
 | `syllabe-manquante` | phrase à trous | `to___te` : `ma` |
@@ -578,7 +582,18 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `phrase-trou` | phrase à trous | « Complète la phrase. » : `La ___ pond un œuf.` : `poule` |
 | `syllabe-mot` | association | `ba~bateau ; sa~savon…` |
 | `mot-image` | association | `poule~🐔…` |
+| `majuscule-minuscule` | association | « Relie chaque lettre minuscule à sa majuscule. » : `a~A ; m~M…` (quatre lettres du vocabulaire, sans accent ; « i » et « l » jamais ensemble : « I » ressemble à « l ») |
 | `compter-emojis`, `ajouter-emojis`, `enlever-emojis` | QCM | « Combien de mangues en tout ? 🥭🥭 + 🥭 » : 3 |
+| `rangee-plus-moins` | QCM | « Quelle rangée a le plus de fleurs ? » : trois rangées de dessins, de nombres différents |
+| `nombre-groupe` | association | `3~🌸🌸🌸 ; 5~🌸🌸🌸🌸🌸…` |
+| `nombre-voisin` | QCM | « Quel nombre vient juste après 7 ? » : 8 |
+| `nombre-plus-grand` | QCM | « Quel est le plus grand de ces nombres ? » : trois nombres différents |
+| `nombre-en-lettres` | QCM | « Quel nombre s'écrit « sept » ? » : 7 |
+| `nombres-ordre` | ordre | « Mets ces nombres dans l'ordre, du plus petit au plus grand. » : quatre nombres différents |
+| `double-moitie` | QCM | « Quel est le double de 3 ? » : 6 ; « Quelle est la moitié de 8 ? » : 4 |
+| `complement` | QCM | « Combien faut-il ajouter à 6 pour faire 10 ? » : 4 |
+| `calcul-ecrit` | QCM | « Combien font 4 + 3 ? » : 7 ; « Combien font 8 − 5 ? » : 3 |
+| `dizaine-unites` | QCM | « Dans 14, il y a une dizaine et combien d'unités ? » : 4 (de 11 à 19) |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -594,16 +609,83 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   plus. Le modèle écrivait « Mon ___ est dans le jardin » avec « père » : « mère »,
   « ami » ou « bébé » allaient aussi. Pour ajouter une phrase : le mot est dans
   `LEXICON`, une propriété à lui seul le désigne, et tout autre mot qui irait aussi
-  est dans `also`.
+  est dans `also`, des DEUX côtés (« Je dors dans mon ___ » liste « salon » et « sac »,
+  et leurs phrases listent « lit »). Au premier palier de lecture, quatre phrases
+  (lit, olive, tomate, tata) pour que les trois paliers de `fr-ci-sons-1` ne
+  rejouent pas la même.
+- **Le mot qui commence par une syllabe** (`mot-syllabe`) n'a qu'une bonne
+  réponse par construction : les deux mauvais mots ne commencent par la syllabe ni
+  à l'écrit, sans accents (« ballon » pour « ba », « loupe » pour « lo », « penda »
+  pour « pè »), ni à l'oreille (« au » et « eau » disent « o » : « auto » et « eau »
+  ne sont jamais proposés pour « olive »). On écarte trop plutôt que pas assez : il
+  reste toujours deux mots vus à proposer. L'énoncé n'a pas d'émoji (le dessin
+  donnerait le mot) et aucun des trois indices n'écrit un des choix. Le test rejoue
+  chacun des mots du vocabulaire, à chaque palier de lecture, avec 25 graines.
 - **Le dénombrement** (`paliers/games/counting.ts`) compte les émojis qu'il
   écrit : jamais plus de 5 au premier palier, 10 au dernier.
+- **Les nombres** (`paliers/games/numbers.ts`) CALCULENT leur réponse, jamais
+  écrite : une seule option juste, les mauvais choix sont des erreurs d'enfant (le
+  nombre lui-même, un de plus, un de moins, l'autre opération) et ne valent jamais
+  la bonne réponse. Le plus grand nombre vient du champ `vocabulary` de la fiche :
+  « nombres-10 » ou « nombres-20 » (aussi pour `suite-nombres`, dont les mauvais
+  choix ne dépassent plus ce plafond). Aucun indice n'écrit un chiffre : un test
+  recalcule chaque réponse depuis l'énoncé.
+- **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
+  défaut, mais une thématique sans exercice du modèle n'a plus personne pour
+  relire son palier. `generateBucketCore` passe donc chaque gabarit à
+  `auditExercise` (`gameAcceptor`) : sur un défaut `blocking`, il est refait avec
+  une autre graine (4 fois au plus, `TEMPLATE_RETRIES`), puis abandonné ; le modèle
+  écrirait alors la place laissée vide, comme pour un exercice écarté. Les refus
+  s'ajoutent à `auditRejected`. Ce n'est PAS `toPersistedShape` : celui-ci reconstruit
+  le payload et en retire `game`, l'origine qui permet de refaire un gabarit raté
+  sans le modèle. Les quatre jeux (frise, dessin, écoute, couleurs) ne passent pas
+  par là, le contrôleur n'est pas fait pour eux. Un gabarit raté par l'enfant se
+  refait de la même façon (`regenerateGame`).
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
-  `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10` et `ma-ci-calcul-10`
-  (`convex/programme`), sept exercices par palier (neuf en `fr-ci-sons-2` à `fr-ci-sons-4`, avec la
-  phrase à trou et un gabarit de fin de mot ou de lettres) ; le modèle n'en écrit que trois (un seul dans ces trois-là).
-  Pour que ces trois-là ne fassent pas échouer le palier (le seuil de validation
-  exige 3 valides sur 3), le modèle en écrit deux de plus et on garde les premiers
-  valides (`scoring.exercisesToRequest`). Un palier déjà généré garde ses exercices : il faut l'invalider
+  `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
+  `ma-ci-nombres-20` (`convex/programme`), dix exercices par palier, voir plus
+  bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
+  modèle, le seuil de validation exige tous les exercices écrits : le modèle en
+  écrit deux de plus et on garde les premiers valides, `scoring.exercisesToRequest`.)
+  Un palier déjà généré garde ses exercices : il faut l'invalider
   (`pregen:auditExercises` ou une régénération) pour qu'il reçoive les gabarits.
+- **Dix gabarits, plus aucun appel au modèle en lecture et en nombres du CI**
+  (`ma-ci-nombres-10`, `ma-ci-calcul-10` et `ma-ci-nombres-20`, en plus de la
+  lecture ci-dessous). **Lecture :** (`fr-ci-sons-1` à
+  `fr-ci-sons-4` et `fr-ci-alphabet`). `fr-ci-sons-2` à `sons-4` portent les neuf
+  d'avant et `mot-syllabe` ; `fr-ci-sons-1` ajoute `phrase-trou`, `syllabe-finale`
+  et `lettres-compter` aux sept d'avant ; `fr-ci-alphabet` ajoute
+  `majuscule-minuscule`, `phrase-trou` et `lettres-compter`. Le modèle n'écrit plus
+  rien, le palier est un « palier tout en jeux ». Au premier palier de lecture
+  (`fr-ci-sons-1`) le vocabulaire n'a que 7 mots pour 10 gabarits : au moins trois
+  mots reviennent, dans des exercices différents (le test de variété borne ce
+  nombre à ce minimum). **Nombres :** `ma-ci-nombres-10` = 2 suites, 3 dénombrements,
+  un nombre relié à son groupe, une rangée comparée, un voisin, le plus grand, un
+  nombre en lettres ; `ma-ci-calcul-10` = 3 additions et 2 soustractions
+  d'émojis, 2 calculs écrits, 2 doubles ou moitiés (tirés au hasard), un complément ;
+  `ma-ci-nombres-20` = 2 suites, 2 dizaines et unités, 2 voisins, le plus grand,
+  un nombre en lettres, un rangement, un calcul de composition (« 10 + 4 »,
+  « 14 − 10 » : jamais un passage de la dizaine). Les suites de nombres suivent la
+  plage de leur fiche (de 0 à 10, puis de 10 à 20, qui monte avec le palier), ne
+  servent jamais deux fois la même dans un palier et gardent toujours au moins deux
+  mauvais choix, jamais au-dessus du plafond. `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
+  `exercisesToRequest(0)` aussi), ne demande aucune réserve, n'échoue pas en
+  `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices, tant que le contrôleur
+  n'abandonne aucun gabarit (un gabarit refusé après les essais rouvre une place
+  au modèle ; aucun refus sur 24 000 paliers simulés). La pré-génération le
+  sait (`pregen:run` annonce ces paliers dans `withoutModel`, hors du coût estimé :
+  `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
+  (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
+  `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
+  chaque palier de ces huit thématiques contre un faux modèle qui lève une
+  exception au moindre appel. Il reste un appel au modèle pour ces paliers :
+  l'explication pas à pas qu'un enfant demande après cinq essais ratés
+  (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
+  Les autres thématiques (trier, espace, formes, mesures et problèmes du CI ; autres classes)
+  gardent des exercices du modèle, avec leurs défauts connus (voir plus haut) ;
+  leur donner dix gabarits demande des gabarits sûrs de plus.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
-  associations et des phrases à trous, déjà montrés.
+  associations et des phrases à trous, déjà montrés. Son test n'admet un exercice
+  dans une thématique tout en jeux que si l'un de ses gabarits fabrique ce type
+  (le glisser-déposer du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
+  modèle l'écrit).

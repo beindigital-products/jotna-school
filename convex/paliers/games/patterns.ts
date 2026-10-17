@@ -7,7 +7,7 @@
  * elle-même, elle ne peut pas être fausse.
  */
 import type { PatternPayload } from "./types";
-import { pick, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { originOf, pick, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 
 type Token = { glyph: string; name: string };
 
@@ -182,34 +182,94 @@ export function formatNumber(n: number): string {
   return sign + digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
+/**
+ * LA PLAGE DES SUITES D'UNE FICHE « nombres-10 » OU « nombres-20 » (champ `vocabulary`
+ * de la fiche du programme). « Les nombres jusqu'à 10 » compte de 0 à 10 ; « Les nombres
+ * de 11 à 20 » de 10 à 20 : une suite y passe la dizaine. Le haut de la plage monte avec
+ * le palier, mais une suite de six termes tient dans au moins sept nombres.
+ */
+const CAPPED_RANGES: Record<10 | 20, { lo: number; hi: Record<GameLevel, number> }> = {
+  10: { lo: 0, hi: { 1: 7, 2: 9, 3: 10, 4: 10 } },
+  20: { lo: 10, hi: { 1: 16, 2: 18, 3: 20, 4: 20 } },
+};
+
+/**
+ * Une suite de nombres qui avance ou recule toujours du même pas. Sans `vocabulary`, la
+ * plage est celle de la classe (`NUMBER_RANGES`). La même suite deux fois dans un palier
+ * se remarquerait : on en tire une autre (jusqu'à dix tirages).
+ */
 export function makeNumberSuite(ctx: GameContext): GeneratedGame {
-  const range = NUMBER_RANGES[ctx.klass] ?? NUMBER_RANGES.CP;
-  const steps = range.steps.slice(0, Math.min(range.steps.length, ctx.level + 1));
-  const step = pick(ctx.rng, steps);
+  let game = drawNumberSuite(ctx);
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const key = `suite:${JSON.stringify(game.payload.sequence)}:${game.prompt}`;
+    if (!ctx.used.has(key)) {
+      ctx.used.add(key);
+      return game;
+    }
+    game = drawNumberSuite(ctx);
+  }
+  return game;
+}
+
+function drawNumberSuite(ctx: GameContext): GeneratedGame {
+  const base = NUMBER_RANGES[ctx.klass] ?? NUMBER_RANGES.CP;
+  const capMatch = /^nombres-(10|20)$/.exec(ctx.vocabulary ?? "");
+  const cap = capMatch ? (Number(capMatch[1]) as 10 | 20) : null;
   const length = 6;
+  const classSteps = base.steps.slice(0, Math.min(base.steps.length, ctx.level + 1));
+
+  // La plage de la fiche, ou celle de la classe.
+  const lo = cap ? CAPPED_RANGES[cap].lo : 0;
+  const hi = cap ? Math.min(base.max, CAPPED_RANGES[cap].hi[ctx.level]) : base.max;
+  // Un pas dont six termes ne tiennent pas dans la plage est écarté (« 0, 2, 4, 6, 8, 10 » veut 11 nombres).
+  const steps = cap ? classSteps.filter((step) => (length - 1) * step <= hi - lo) : classSteps;
+  const step = pick(ctx.rng, steps.length > 0 ? steps : [1]);
+
   // À partir de la consolidation, la suite peut descendre.
   const descending = ctx.level >= 2 && ctx.rng() < 0.4;
-  // Le départ est un multiple du pas : « 15, 20, 25 » se lit mieux que
-  // « 17, 22, 27 » quand on apprend à compter de 5 en 5. Toute la suite
-  // reste entre 0 et le plus grand nombre de la classe.
-  const maxK = Math.floor(range.max / step);
-  const k = descending
-    ? randomInt(ctx.rng, length - 1, Math.max(length - 1, maxK))
-    : randomInt(ctx.rng, 0, Math.max(0, maxK - (length - 1)));
-  const start = k * step;
+  let start: number;
+  if (cap) {
+    // Le départ est dans la plage : toute la suite aussi.
+    const span = (length - 1) * step;
+    start = descending ? randomInt(ctx.rng, lo + span, hi) : randomInt(ctx.rng, lo, hi - span);
+  } else {
+    // Le départ est un multiple du pas : « 15, 20, 25 » se lit mieux que
+    // « 17, 22, 27 » quand on apprend à compter de 5 en 5. Toute la suite
+    // reste entre 0 et le plus grand nombre de la classe.
+    const maxK = Math.floor(base.max / step);
+    const k = descending
+      ? randomInt(ctx.rng, length - 1, Math.max(length - 1, maxK))
+      : randomInt(ctx.rng, 0, Math.max(0, maxK - (length - 1)));
+    start = k * step;
+  }
   const values = Array.from({ length }, (_, i) => (descending ? start - i * step : start + i * step));
   const blanks = ctx.level >= 3 ? [randomInt(ctx.rng, 1, length - 2), length - 1] : [length - 1];
   const sequence = values.map((n, i) => (blanks.includes(i) ? null : formatNumber(n)));
   const answers = blanks.map((i) => formatNumber(values[i]));
 
   // Les distracteurs sont les erreurs d'un enfant : un pas de trop, un pas
-  // de moins, le pas oublié.
+  // de moins, le pas oublié. Jamais plus grand que le plus grand nombre de la fiche ou de la
+  // classe (« jusqu'à 10 » ne montre pas 11), jamais dans la suite.
+  const ceiling = cap ?? base.max;
   const last = values[length - 1];
-  const wrong = new Set<string>();
-  for (const candidate of [last + step, last - step, last + 1, last - 1, last + 2 * step]) {
-    if (candidate >= 0 && !values.includes(candidate)) wrong.add(formatNumber(candidate));
+  const first = values[0];
+  const typical = [last + step, last - step, last + 1, last - 1, last + 2 * step, first - 1, first - step, first - 2];
+  const wrong = new Set<number>();
+  for (const candidate of typical) {
+    if (candidate >= 0 && candidate <= ceiling && !values.includes(candidate)) wrong.add(candidate);
   }
-  const options = shuffle(ctx.rng, [...new Set([...answers, ...Array.from(wrong).slice(0, 3)])]);
+  if (cap && wrong.size < 3) {
+    // Une suite qui touche 0 ou le plafond n'a plus d'erreur typique : les nombres les plus proches de la bonne réponse,
+    // pour qu'un exercice garde toujours au moins deux mauvais choix.
+    const near = Array.from({ length: cap + 1 }, (_, n) => n)
+      .filter((n) => !values.includes(n) && !wrong.has(n))
+      .sort((a, b) => Math.abs(a - last) - Math.abs(b - last) || a - b);
+    for (const n of near) {
+      if (wrong.size >= 3) break;
+      wrong.add(n);
+    }
+  }
+  const options = shuffle(ctx.rng, [...new Set([...answers, ...Array.from(wrong).slice(0, 3).map(formatNumber)])]);
 
   const payload: PatternPayload = { sequence, options, answers };
   return {
@@ -220,7 +280,7 @@ export function makeNumberSuite(ctx: GameContext): GeneratedGame {
     payload: {
       ...payload,
       concept: `suite de nombres de ${step} en ${step}`,
-      game: { kind: "suite-nombres", level: ctx.level },
+      game: originOf("suite-nombres", ctx),
     },
     answerKey: answers.join(" "),
     hints: [

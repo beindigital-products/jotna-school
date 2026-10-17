@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { validateFillBlank } from "@/convex/paliers";
-import { gameCount } from "@/convex/paliers/games";
+import { GAME_KINDS, gameCount } from "@/convex/paliers/games";
 import { PALIER_SIZE } from "@/convex/paliers/scoring";
 import { isGenericZoneLabel, repairDragDrop } from "@/convex/paliers/dragDropRepair";
 import { verifyAnswer } from "@/convex/paliers/exerciseRules";
@@ -174,12 +174,16 @@ for (const subject of PROGRAMME) {
       for (const { klass, item } of everyItem) {
         const topics = programmeOf(subject.key).classes[klass];
         expect(topics.map((topic) => topic.name), `${klass} / ${item.type} : « ${item.topic} »`).toContain(item.topic);
-        // Une thématique tout en jeux (« Grave ou aigu ? ») n'appelle jamais le modèle : aucun exercice classique n'y naît.
+        // Une thématique tout en jeux (« Grave ou aigu ? », « Les sons… ») n'appelle jamais le modèle : seuls les
+        // exercices que ses gabarits fabriquent y naissent (un QCM, un ordre, un appariement, une phrase à trous).
         const topic = topics.find((entry) => entry.name === item.topic);
-        expect(
-          gameCount(topic?.games),
-          `${klass} / ${item.type} : « ${item.topic} » est une thématique tout en jeux`,
-        ).toBeLessThan(PALIER_SIZE);
+        const games = topic?.games ?? [];
+        if (gameCount(games) >= PALIER_SIZE) {
+          expect(
+            games.some((game) => GAME_KINDS[game.kind].type === item.type),
+            `${klass} / ${item.type} : « ${item.topic} » est tout en jeux et aucun de ses gabarits ne fabrique ce type`,
+          ).toBe(true);
+        }
       }
     });
 

@@ -28,7 +28,7 @@ import type { ClassicType, DemoClass, DemoSubject, GameType, TemplateType } from
 /** Un jeu d'une classe : ses variantes, chacune avec la thématique qui la demande. */
 export type GameOffer = {
   type: GameType | TemplateType;
-  /** `vocabulary` : pour un gabarit de mots, les mots vus à ce palier de lecture (« mots-2 »). */
+  /** `vocabulary` : le vocabulaire ou le plafond de la fiche (« mots-2 », « nombres-10 »), le même que dans le programme. */
   options: { kind: GameKind; topic: string; vocabulary?: string }[];
 };
 
@@ -59,44 +59,18 @@ export const CLASSIC_BY_SUBJECT: Record<DemoSubject, readonly ClassicType[]> = {
 export const GAMES_BY_SUBJECT: Record<DemoSubject, Partial<Record<DemoClass, GameOffer[]>>> = {
   francais: {
     CI: [
-      {
-        type: "qcm",
-        options: [
-          { kind: "lettre-initiale", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
-          { kind: "syllabes-compter", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
-          { kind: "syllabe-initiale", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
-          { kind: "syllabe-finale", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
-          { kind: "lettres-compter", topic: "Les sons f, u, ou, é, è", vocabulary: "mots-3" },
-        ],
-      },
-      {
-        type: "fill-blank",
-        options: [
-          { kind: "syllabe-manquante", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
-          { kind: "lettre-manquante", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
-          { kind: "phrase-trou", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
-        ],
-      },
-      {
-        type: "order",
-        options: [
-          { kind: "lettres-ordre", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" },
-          { kind: "syllabes-ordre", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
-        ],
-      },
-      {
-        type: "match",
-        options: [
-          { kind: "syllabe-mot", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" },
-          { kind: "mot-image", topic: "Les sons s, r, au, eau, on, om", vocabulary: "mots-4" },
-        ],
-      },
+      { type: "qcm", options: [{ kind: "lettre-initiale", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" }, { kind: "syllabes-compter", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" }, { kind: "syllabe-initiale", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" }, { kind: "syllabe-finale", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" }, { kind: "lettres-compter", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" }, { kind: "mot-syllabe", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" }] },
+      { type: "fill-blank", options: [{ kind: "syllabe-manquante", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" }, { kind: "phrase-trou", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" }, { kind: "lettre-manquante", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" }] },
+      { type: "order", options: [{ kind: "lettres-ordre", topic: "Les sons a, i, o, l, t", vocabulary: "mots-1" }, { kind: "syllabes-ordre", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" }] },
+      { type: "match", options: [{ kind: "syllabe-mot", topic: "Les sons n, e, p, d, m, b", vocabulary: "mots-2" }, { kind: "mot-image", topic: "Les sons s, r, au, eau, on, om", vocabulary: "mots-4" }, { kind: "majuscule-minuscule", topic: "Les lettres et les mots", vocabulary: "mots-4" }] },
     ],
   },
   mathematiques: {
     CI: [
-      { type: "pattern", options: [{ kind: "frise-formes", topic: "Trier et ranger" }, { kind: "frise-couleurs", topic: "Trier et ranger" }, { kind: "suite-nombres", topic: "Les nombres jusqu'à 10" }] },
-      { type: "qcm", options: [{ kind: "compter-emojis", topic: "Les nombres jusqu'à 10" }, { kind: "ajouter-emojis", topic: "Ajouter et enlever jusqu'à 10" }, { kind: "enlever-emojis", topic: "Ajouter et enlever jusqu'à 10" }] },
+      { type: "pattern", options: [{ kind: "frise-formes", topic: "Trier et ranger" }, { kind: "frise-couleurs", topic: "Trier et ranger" }, { kind: "suite-nombres", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }] },
+      { type: "qcm", options: [{ kind: "compter-emojis", topic: "Les nombres jusqu'à 10" }, { kind: "rangee-plus-moins", topic: "Les nombres jusqu'à 10" }, { kind: "nombre-voisin", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }, { kind: "nombre-plus-grand", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }, { kind: "nombre-en-lettres", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }, { kind: "ajouter-emojis", topic: "Ajouter et enlever jusqu'à 10" }, { kind: "enlever-emojis", topic: "Ajouter et enlever jusqu'à 10" }, { kind: "calcul-ecrit", topic: "Ajouter et enlever jusqu'à 10", vocabulary: "nombres-10" }, { kind: "double-moitie", topic: "Ajouter et enlever jusqu'à 10", vocabulary: "nombres-10" }, { kind: "complement", topic: "Ajouter et enlever jusqu'à 10", vocabulary: "nombres-10" }, { kind: "dizaine-unites", topic: "Les nombres de 11 à 20", vocabulary: "nombres-20" }] },
+      { type: "match", options: [{ kind: "nombre-groupe", topic: "Les nombres jusqu'à 10" }] },
+      { type: "order", options: [{ kind: "nombres-ordre", topic: "Les nombres de 11 à 20", vocabulary: "nombres-20" }] },
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Gauche, droite, dessus, dessous" }] },
     ],
     CP: [
@@ -118,11 +92,14 @@ export const GAMES_BY_SUBJECT: Record<DemoSubject, Partial<Record<DemoClass, Gam
       { type: "pixel-art", options: [{ kind: "pixel-symetrie", topic: "Symétrie et translation" }] },
     ],
   },
+  "eveil-scientifique": {},
+  histoire: {},
   geographie: {
     CI: [
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Se repérer sur un quadrillage" }] },
     ],
   },
+  "instruction-civique": {},
   "education-artistique": {
     CI: [
       { type: "color-mix", options: [{ kind: "couleurs-reconnaitre", topic: "Les couleurs" }] },
@@ -155,9 +132,6 @@ export const GAMES_BY_SUBJECT: Record<DemoSubject, Partial<Record<DemoClass, Gam
       { type: "listen", options: [{ kind: "ecoute-melodie", topic: "Les instruments à vent" }, { kind: "ecoute-pareil", topic: "Les instruments à vent" }, { kind: "ecoute-intensite", topic: "Chanter et accompagner" }, { kind: "ecoute-motif-rythmique", topic: "Chanter et accompagner" }] },
     ],
   },
-  "eveil-scientifique": {},
-  histoire: {},
-  "instruction-civique": {},
   anglais: {},
 };
 

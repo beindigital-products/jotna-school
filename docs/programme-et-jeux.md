@@ -252,7 +252,8 @@ arrivent plus tard.
   - **Les exercices classiques** sont écrits à la main dans
     `components/landing/demo/bank/<matière>.ts` : un par type et par classe,
     dans une thématique du programme de la classe (jamais une thématique
-    tout en jeux), avec deux indices et un niveau. Le test
+    tout en jeux dont aucun gabarit ne fabrique ce type d'exercice), avec
+    deux indices et un niveau. Le test
     `__tests__/demo-bank.test.ts` joue chacun avec la vraie règle de
     correction et recalcule chaque réponse en mathématiques ; il ne juge ni
     un fait ni une règle de grammaire : **toute modification de la banque se

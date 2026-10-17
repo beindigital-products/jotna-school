@@ -37,6 +37,9 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "syllabes-compter", count: 1, vocabulary: "mots-1" },
           { kind: "lettres-ordre", count: 1, vocabulary: "mots-1" },
           { kind: "syllabe-initiale", count: 1, vocabulary: "mots-1" },
+          { kind: "phrase-trou", count: 1, vocabulary: "mots-1" },
+          { kind: "syllabe-finale", count: 1, vocabulary: "mots-1" },
+          { kind: "lettres-compter", count: 1, vocabulary: "mots-1" },
         ],
       },
       {
@@ -52,6 +55,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "lettre-manquante", count: 1, vocabulary: "mots-2" },
           { kind: "phrase-trou", count: 1, vocabulary: "mots-2" },
           { kind: "syllabe-finale", count: 1, vocabulary: "mots-2" },
+          { kind: "mot-syllabe", count: 1, vocabulary: "mots-2" },
         ],
       },
       {
@@ -67,6 +71,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "syllabes-ordre", count: 1, vocabulary: "mots-3" },
           { kind: "phrase-trou", count: 1, vocabulary: "mots-3" },
           { kind: "lettres-compter", count: 1, vocabulary: "mots-3" },
+          { kind: "mot-syllabe", count: 1, vocabulary: "mots-3" },
         ],
       },
       {
@@ -83,6 +88,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "syllabe-mot", count: 1, vocabulary: "mots-4" },
           { kind: "phrase-trou", count: 1, vocabulary: "mots-4" },
           { kind: "syllabe-finale", count: 1, vocabulary: "mots-4" },
+          { kind: "mot-syllabe", count: 1, vocabulary: "mots-4" },
         ],
       },
       {
@@ -96,6 +102,9 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "mot-image", count: 1, vocabulary: "mots-4" },
           { kind: "lettre-manquante", count: 1, vocabulary: "mots-4" },
           { kind: "syllabes-compter", count: 1, vocabulary: "mots-4" },
+          { kind: "majuscule-minuscule", count: 1, vocabulary: "mots-4" },
+          { kind: "phrase-trou", count: 1, vocabulary: "mots-4" },
+          { kind: "lettres-compter", count: 1, vocabulary: "mots-4" },
         ],
       },
       {

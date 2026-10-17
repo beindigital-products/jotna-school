@@ -51,12 +51,9 @@ function gamesOfProgramme(subject: (typeof PROGRAMME)[number], klass: (typeof DE
       if (!isShownGame(spec.kind)) continue;
       const type = GAME_KINDS[spec.kind].type;
       const options = offers.get(type) ?? [];
+      // Le plafond de la fiche (« nombres-10 ») voyage avec l'offre : la vitrine fabrique le jeu que l'application fabrique.
       if (!options.some((option) => option.kind === spec.kind)) {
-        options.push(
-          spec.vocabulary
-            ? { kind: spec.kind, topic: topic.name, vocabulary: spec.vocabulary }
-            : { kind: spec.kind, topic: topic.name },
-        );
+        options.push({ kind: spec.kind, topic: topic.name, ...(spec.vocabulary ? { vocabulary: spec.vocabulary } : {}) });
       }
       offers.set(type, options);
     }

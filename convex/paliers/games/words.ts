@@ -103,7 +103,7 @@ function piecesSeen(ctx: GameContext, piecesOf: (entry: LexiconWord) => string[]
 }
 
 /**
- * Un mot pour ce gabarit. Sept gabarits par palier piochent dans 7 à 37 mots :
+ * Un mot pour ce gabarit. Dix gabarits par palier piochent dans 7 à 37 mots :
  * on prend d'abord un mot qu'AUCUN gabarit n'a pris dans ce palier ; sinon un mot que CE
  * gabarit n'a pas pris (« tomate » en première lettre puis en syllabes, deux exercices
  * différents) ; sinon, tout a servi et on recommence.
@@ -221,7 +221,10 @@ export function makeFirstSyllable(ctx: GameContext): GeneratedGame {
     [
       "Dis le mot lentement, en frappant dans tes mains.",
       "La première syllabe est le premier bruit que tu entends.",
-      `Le mot « ${entry.word} » finit par « ${entry.syllables[entry.syllables.length - 1]} ».`,
+      // « tata » finit par « ta » : l'indice donnerait la réponse, on donne le nombre de syllabes.
+      stripAccents(entry.syllables[entry.syllables.length - 1]) === stripAccents(answer)
+        ? `Le mot « ${entry.word} » compte ${entry.syllables.length} syllabes.`
+        : `Le mot « ${entry.word} » finit par « ${entry.syllables[entry.syllables.length - 1]} ».`,
     ],
   );
 }
@@ -247,7 +250,10 @@ export function makeFirstLetter(ctx: GameContext): GeneratedGame {
     [
       "Dis le mot et écoute le premier son.",
       "Le premier son est celui que tu dis avant tous les autres.",
-      `Le mot « ${entry.word} » finit par « ${Array.from(entry.word).slice(-1)[0]} ».`,
+      // « été » finit par « é » : l'indice donnerait la réponse, on donne le nombre de lettres.
+      stripAccents(Array.from(entry.word).slice(-1)[0]) === stripAccents(answer)
+        ? `Le mot « ${entry.word} » a ${Array.from(entry.word).length} lettres.`
+        : `Le mot « ${entry.word} » finit par « ${Array.from(entry.word).slice(-1)[0]} ».`,
     ],
   );
 }
@@ -333,6 +339,52 @@ export function makeLetterCount(ctx: GameContext): GeneratedGame {
       "Épelle le mot, lettre après lettre.",
       "Touche une lettre du doigt chaque fois que tu dis son nom.",
       "Compte les lettres, puis choisis le nombre.",
+    ],
+  );
+}
+
+/**
+ * Comment un mot s'entend au début, pour comparer sans se fier à l'écriture :
+ * sans accents ni majuscules, et « au », « eau » disent le même son que « o »
+ * (« auto » commence comme « olive »). Elle ne sert qu'à ÉCARTER des mauvais
+ * choix : en écarter un de trop ne coûte rien, en garder un de trop casse l'exercice.
+ */
+const startSound = (text: string) => stripAccents(text.toLowerCase()).replace(/^(?:eau|au)/, "o");
+
+/**
+ * « Quel mot commence par la syllabe « pa » ? » : le sens inverse de
+ * `makeFirstSyllable`. Un seul des trois mots commence par la syllabe : les deux
+ * autres ne la portent ni à l'écrit (« bal » commence par « ba », « loupe » par
+ * « lo ») ni à l'oreille (« auto » commence comme « olive »). Les mauvais choix
+ * viennent des mots du palier de lecture ; s'il en restait moins de deux, on
+ * piocherait dans tout le vocabulaire (le test des 37 mots montre que ça n'arrive pas).
+ *
+ * Pas d'émoji dans l'énoncé : le dessin du mot donnerait la réponse. Les indices
+ * n'écrivent aucun des trois mots.
+ */
+export function makeWordFromSyllable(ctx: GameContext): GeneratedGame {
+  const entry = pickWord(ctx, "mot-syllabe", wordsOf(ctx, (e) => e.syllables.length >= 2));
+  const syllable = entry.syllables[0];
+  const wouldFit = (word: string) =>
+    stripAccents(word.toLowerCase()).startsWith(stripAccents(syllable.toLowerCase())) ||
+    startSound(word).startsWith(startSound(syllable));
+  const fits = (e: LexiconWord) => e.word !== entry.word && !wouldFit(e.word);
+  const seen = wordsOf(ctx).filter(fits);
+  const wrong = shuffle(ctx.rng, seen.length >= 2 ? seen : LEXICON.filter(fits)).map((e) => e.word);
+  const { options, correctIndex } = choices(ctx, entry.word, wrong);
+  const count = entry.syllables.length;
+  return exercise(
+    "mot-syllabe",
+    ctx,
+    "qcm",
+    "mot qui commence par une syllabe",
+    `Quel mot commence par la syllabe « ${syllable} » ?`,
+    { options, correctIndex },
+    entry.word,
+    [
+      `Dis la syllabe « ${syllable} » à voix haute.`,
+      "Dis chaque mot lentement et écoute son premier bruit.",
+      `Le mot que tu cherches compte ${count} syllabes.`,
     ],
   );
 }
@@ -437,36 +489,39 @@ type Sentence = {
  * ne dit le mot, ni ne le suggère par une lettre.
  */
 export const SENTENCES: readonly Sentence[] = [
-  { word: "lit", text: "Je dors dans mon ___.", also: ["dodo"] },
+  { word: "lit", text: "Je dors dans mon ___.", also: ["dodo", "salon", "sac", "auto", "bateau"] },
+  { word: "olive", text: "Cette ___ est un petit fruit vert ou noir.", also: ["tomate"] },
+  { word: "tomate", text: "La ___ est rouge, on la mange en salade.", also: ["olive", "poule"] },
+  { word: "tata", text: "Ma ___ est la sœur de ma maman." },
   { word: "moto", text: "Papa roule vite sur sa ___.", also: ["auto"] },
-  { word: "malade", text: "Penda tousse, elle est ___." },
+  { word: "malade", text: "Penda tousse, elle est ___.", also: ["élève", "mère", "tata", "bébé"] },
   { word: "midi", text: "À ___, le soleil est tout en haut du ciel." },
   { word: "papa", text: "Mon ___ est le mari de maman.", also: ["père"] },
   { word: "poule", text: "La ___ pond un œuf." },
   { word: "loupe", text: "Avec la ___, je vois les très petites choses." },
   { word: "fumée", text: "Le feu fait de la ___ grise." },
-  { word: "été", text: "En ___, il fait très chaud." },
+  { word: "été", text: "En ___, il fait très chaud.", also: ["auto", "bateau", "moto", "robe", "foulard", "ballon"] },
   {
     word: "élève",
     text: "À l'école, un ___ écoute la maîtresse.",
-    also: ["ami", "bébé", "papa", "père", "mère", "modou", "penda", "toto", "lola", "tata"],
+    also: ["ami", "bébé", "papa", "père", "mère", "malade", "modou", "penda", "toto", "lola", "tata"],
   },
   { word: "café", text: "Papa boit un ___ bien chaud." },
   { word: "bébé", text: "Le ___ n'a pas encore de dents et il pleure." },
-  { word: "foulard", text: "Maman met un ___ sur sa tête.", also: ["sac"] },
-  { word: "sac", text: "Je mets mes cahiers dans mon ___.", also: ["lit", "salon", "auto", "bateau", "radio"] },
-  { word: "robe", text: "Maman met une belle ___ pour la fête." },
-  { word: "sel", text: "Je mets du ___ dans la soupe.", also: ["savon", "café"] },
+  { word: "foulard", text: "Maman met un ___ sur sa tête.", also: ["sac", "ballon"] },
+  { word: "sac", text: "Je mets mes cahiers dans mon ___.", also: ["lit", "salon", "auto", "bateau", "radio", "foulard"] },
+  { word: "robe", text: "Maman met une belle ___ pour la fête.", also: ["radio"] },
+  { word: "sel", text: "Je mets du ___ dans la soupe.", also: ["savon", "café", "eau", "mouton"] },
   { word: "radio", text: "J'écoute de la musique à la ___." },
   { word: "auto", text: "Papa roule dans son ___ rouge.", also: ["moto"] },
   { word: "bateau", text: "Le pêcheur part en mer sur son ___." },
   { word: "mouton", text: "Le ___ a de la laine sur le dos." },
-  { word: "savon", text: "Je lave mes mains avec du ___." },
+  { word: "savon", text: "Je lave mes mains avec du ___.", also: ["eau"] },
   { word: "ballon", text: "Les enfants jouent au ___ dans la cour." },
-  { word: "salon", text: "On regarde la télé dans le ___.", also: ["lit"] },
+  { word: "salon", text: "On regarde la télé dans le ___.", also: ["lit", "café"] },
 ];
 
-/** « Complète la phrase. » : `Je dors dans mon ___.` avec « lit », « tomate », « olive ». */
+/** « Complète la phrase. » : `Je dors dans mon ___.` avec « lit », « ami », « toto ». */
 export function makeSentenceGap(ctx: GameContext): GeneratedGame {
   const entry = pickWord(
     ctx,
@@ -537,6 +592,37 @@ export function makeSyllableToWord(ctx: GameContext): GeneratedGame {
       "Lis la syllabe, puis cherche le mot qui commence par ce son.",
       "Dis chaque mot lentement et écoute son premier son.",
       "Commence par la syllabe qui te semble la plus facile.",
+    ],
+  );
+}
+
+/**
+ * Relier chaque lettre minuscule à sa majuscule : quatre lettres du vocabulaire du
+ * palier, sans accent. « i » et « l » ne vont jamais ensemble : la majuscule « I »
+ * ressemble au « l » minuscule dans bien des polices, l'association serait
+ * ambiguë à l'écran.
+ */
+export function makeCapitalMatch(ctx: GameContext): GeneratedGame {
+  const letters = piecesSeen(ctx, (e) => Array.from(e.word), 6).filter((l) => /^[a-z]$/.test(l));
+  const chosen: string[] = [];
+  for (const letter of shuffle(ctx.rng, letters)) {
+    const clashes = (letter === "i" && chosen.includes("l")) || (letter === "l" && chosen.includes("i"));
+    if (!clashes) chosen.push(letter);
+    if (chosen.length === 4) break;
+  }
+  const pairs = chosen.map((letter) => ({ left: letter, right: letter.toUpperCase() }));
+  return exercise(
+    "majuscule-minuscule",
+    ctx,
+    "match",
+    "lettre minuscule et sa majuscule",
+    "Relie chaque lettre minuscule à sa majuscule.",
+    { pairs },
+    pairs.map((p) => `${p.left} ~ ${p.right}`).join(" ; "),
+    [
+      "Regarde la forme de chaque lettre.",
+      "La majuscule est la grande lettre, la minuscule est la petite.",
+      "Commence par la lettre que tu reconnais le mieux.",
     ],
   );
 }
