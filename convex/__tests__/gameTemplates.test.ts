@@ -24,6 +24,8 @@ const TEMPLATES = [
   "syllabe-manquante",
   "lettre-manquante",
   "phrase-trou",
+  "syllabe-finale",
+  "lettres-compter",
   "syllabe-mot",
   "mot-image",
   "compter-emojis",
@@ -225,6 +227,30 @@ describe("la phrase à trou n'a qu'une bonne réponse", () => {
   });
 });
 
+describe("les gabarits de fin de mot et de lettres comptent juste", () => {
+  it("ne propose jamais, comme mauvais choix, une syllabe qui finit le mot", () => {
+    for (let n = 0; n < 80; n++) {
+      const exo = GAME_KINDS["syllabe-finale"].make(makeContext("CI", 2, `fin:${n}`, undefined, ["mots-2", "mots-3", "mots-4"][n % 3]));
+      const word = /« ([^»]+) »/.exec(exo.prompt)![1];
+      const entry = LEXICON.find((e) => e.word === word)!;
+      const options = exo.payload.options as string[];
+      expect(options, word).toHaveLength(3);
+      expect(options.filter((s) => word.endsWith(s)), `${word} : ${options.join(", ")}`).toEqual([entry.syllables[entry.syllables.length - 1]]);
+      // L'indice nomme la première syllabe : elle ne doit pas être la réponse.
+      expect(entry.syllables[0], word).not.toBe(exo.answerKey);
+    }
+  });
+
+  it("compte les lettres du mot, accents compris", () => {
+    for (let n = 0; n < 60; n++) {
+      const exo = GAME_KINDS["lettres-compter"].make(makeContext("CI", 2, `lettres:${n}`, undefined, "mots-4"));
+      const word = /« ([^»]+) »/.exec(exo.prompt)![1];
+      expect(Number(exo.answerKey), word).toBe(Array.from(word).length);
+      expect((exo.payload.options as string[]).every((o) => Number(o) >= 1)).toBe(true);
+    }
+  });
+});
+
 describe("les gabarits de dénombrement comptent juste", () => {
   it("fait compter exactement autant d'émojis que la réponse", () => {
     for (let n = 0; n < 40; n++) {
@@ -274,14 +300,14 @@ describe("les gabarits dans le programme du CI", () => {
     );
   });
 
-  it("ne demande que des jeux connus, et sept gabarits par palier (huit avec la phrase à trou)", () => {
+  it("ne demande que des jeux connus, et sept gabarits par palier (neuf en fr-ci-sons-2 à 4)", () => {
     const withSentence = ["fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4"];
     for (const entry of entries) {
       for (const spec of entry.topic.games ?? []) {
         expect(isGameKind(spec.kind), `${entry.topic.key} : ${spec.kind}`).toBe(true);
       }
       const total = (entry.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0);
-      expect(total, entry.topic.key).toBe(withSentence.includes(entry.topic.key) ? 8 : 7);
+      expect(total, entry.topic.key).toBe(withSentence.includes(entry.topic.key) ? 9 : 7);
     }
   });
 

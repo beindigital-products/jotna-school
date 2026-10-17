@@ -277,6 +277,66 @@ export function makeSyllableCount(ctx: GameContext): GeneratedGame {
   );
 }
 
+/**
+ * « Par quelle syllabe finit ce mot ? » Le pendant de `makeFirstSyllable`. Un mot dont la
+ * première et la dernière syllabes sont les mêmes (« papa ») est écarté : l'indice
+ * « le mot commence par pa » donnerait la réponse.
+ */
+export function makeLastSyllable(ctx: GameContext): GeneratedGame {
+  const entry = pickWord(
+    ctx,
+    "syllabe-finale",
+    wordsOf(ctx, (e) => e.syllables.length >= 2 && e.syllables[0] !== e.syllables[e.syllables.length - 1]),
+  );
+  const answer = entry.syllables[entry.syllables.length - 1];
+  const pool = piecesSeen(ctx, (e) => e.syllables.slice(-1));
+  // Un distracteur qui finit le mot serait une deuxième bonne réponse (« é » pour « fumée »).
+  const wrong = shuffle(
+    ctx.rng,
+    pool.filter((s) => s !== answer && !entry.word.endsWith(s) && stripAccents(s) !== stripAccents(answer)),
+  );
+  const { options, correctIndex } = choices(ctx, answer, wrong);
+  return exercise(
+    "syllabe-finale",
+    ctx,
+    "qcm",
+    "dernière syllabe d'un mot",
+    `Par quelle syllabe finit « ${entry.word} » ?${picture(entry)}`,
+    { options, correctIndex },
+    answer,
+    [
+      "Dis le mot lentement, en frappant dans tes mains.",
+      "La dernière syllabe est le dernier bruit que tu entends.",
+      `Le mot « ${entry.word} » commence par « ${entry.syllables[0]} ».`,
+    ],
+  );
+}
+
+/** « Combien de lettres compte ce mot ? » : trois nombres voisins, jamais nuls. */
+export function makeLetterCount(ctx: GameContext): GeneratedGame {
+  const entry = pickWord(ctx, "lettres-compter", wordsOf(ctx));
+  const answer = Array.from(entry.word).length;
+  const near = shuffle(
+    ctx.rng,
+    [answer - 2, answer - 1, answer + 1, answer + 2].filter((n) => n >= 1 && n !== answer),
+  ).slice(0, 2);
+  const { options, correctIndex } = choices(ctx, String(answer), near.map(String));
+  return exercise(
+    "lettres-compter",
+    ctx,
+    "qcm",
+    "nombre de lettres d'un mot",
+    `Combien de lettres compte « ${entry.word} » ?${picture(entry)}`,
+    { options, correctIndex },
+    String(answer),
+    [
+      "Épelle le mot, lettre après lettre.",
+      "Touche une lettre du doigt chaque fois que tu dis son nom.",
+      "Compte les lettres, puis choisis le nombre.",
+    ],
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Compléter un mot
 // ---------------------------------------------------------------------------
