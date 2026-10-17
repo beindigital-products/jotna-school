@@ -127,16 +127,16 @@ lames lampe lances langue langues lapin lapins laquelle large largeurs larmes la
 laver laves le lecons lecture left legende leger legers legumes lent lente lents leopold lequel les
 lettre lettres leur leurs leve lever li liaison lieu lieux ligne lignes like lilas linge lion lions
 liquefaction liquide lire lis liste listen lit livre livres lo local loger loi loin lois lola long
-longs longtemps longue longueur longueurs look louga louis loupe lourd lourde lourds lu lui lumiere
+longs longtemps longue longueur longueurs look loto louga louis loupe lourd lourde lourds lu lui lumiere
 lundi lune lunettes lutter ma maba mafe magique mai maigre mailles main mains maintenant maire
 mairie mais maison maisons maitre maitresse majuscule mal malade maladie maladies mali mama maman
-mame mange mangeant mangee mangees manger manges mango mangoes mangue mangues manguier maniere
+mame mami mange mangeant mangee mangees manger manges mango mangoes mangue mangues manguier maniere
 manque manquent mansa many mar marchands marchant marche marcher marches mardi mares mariama marines
 market marmite marron mars marteau masculin massar masses mat matam match materiel matin matinee
 mauritanie mbour me mecque mediateur mediation medicament meilleur melangeant melanger melodie
 melodies membre meme memes memoire menace mene menent mental mentalement mer merci mercredi mere mes
 message messages mesure mesurent mesurer mesures met metier metiers metre mets mettre mi midi mieux
-mil milieu milk mille milliard milliards milliers millions mimer mimes min mini ministres minute
+mil milieu milk mille milliard milliards milliers millions mimer mimes mimi min mini ministres minute
 miroir mise mission mo mobile modele modeler modou moi moins mois moisi moitie moities molle moment
 moments mon monday monde monkey monnaie monsieur montagne monte montent montre montrent montrer
 moque moqueries morceau more morning mort mosquee mot mother motif motifs moto motos mots mouches
@@ -223,7 +223,7 @@ un une unesco unhcr uni unicef unie union unite unites universel uns usage usine
 utiles utilise utiliser va vacances vaccin vacciner vaccins vache vaches vagues vais vaisseaux
 vaisselle valeur valeurs vallee vapeur vas ve vecu vegetation veines velo velos venaient vend
 vendent vendre vendredi vendue venir vent vente ventre verbe verbes verdure verifie verifier verre
-vers vert verte verticales verts vetements veulent veut veux vi viande vide vie vieillard viendra
+vers vert verte verticales verts vetements veto veulent veut veux vi viande vide vie vieillard viendra
 viennent viens vient vih village ville villes vingt violence violet virgule visage visible visit
 visite visited visites visiting visits vit vitamines vite vitesse vivaient vivants vivent vivipare
 vivipares vivre vo voici voies voila voile voir vois voisin voisine voisins voit voiture voitures

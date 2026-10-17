@@ -221,7 +221,10 @@ export function makeFirstSyllable(ctx: GameContext): GeneratedGame {
     [
       "Dis le mot lentement, en frappant dans tes mains.",
       "La première syllabe est le premier bruit que tu entends.",
-      `Le mot « ${entry.word} » finit par « ${entry.syllables[entry.syllables.length - 1]} ».`,
+      // « tata » finit par « ta » : l'indice donnerait la réponse, on donne le nombre de syllabes.
+      stripAccents(entry.syllables[entry.syllables.length - 1]) === stripAccents(answer)
+        ? `Le mot « ${entry.word} » compte ${entry.syllables.length} syllabes.`
+        : `Le mot « ${entry.word} » finit par « ${entry.syllables[entry.syllables.length - 1]} ».`,
     ],
   );
 }
@@ -247,7 +250,10 @@ export function makeFirstLetter(ctx: GameContext): GeneratedGame {
     [
       "Dis le mot et écoute le premier son.",
       "Le premier son est celui que tu dis avant tous les autres.",
-      `Le mot « ${entry.word} » finit par « ${Array.from(entry.word).slice(-1)[0]} ».`,
+      // « été » finit par « é » : l'indice donnerait la réponse, on donne le nombre de lettres.
+      stripAccents(Array.from(entry.word).slice(-1)[0]) === stripAccents(answer)
+        ? `Le mot « ${entry.word} » a ${Array.from(entry.word).length} lettres.`
+        : `Le mot « ${entry.word} » finit par « ${Array.from(entry.word).slice(-1)[0]} ».`,
     ],
   );
 }
@@ -483,36 +489,39 @@ type Sentence = {
  * ne dit le mot, ni ne le suggère par une lettre.
  */
 export const SENTENCES: readonly Sentence[] = [
-  { word: "lit", text: "Je dors dans mon ___.", also: ["dodo"] },
+  { word: "lit", text: "Je dors dans mon ___.", also: ["dodo", "salon", "sac", "auto", "bateau"] },
+  { word: "olive", text: "Cette ___ est un petit fruit vert ou noir.", also: ["tomate"] },
+  { word: "tomate", text: "La ___ est rouge, on la mange en salade.", also: ["olive", "poule"] },
+  { word: "tata", text: "Ma ___ est la sœur de ma maman." },
   { word: "moto", text: "Papa roule vite sur sa ___.", also: ["auto"] },
-  { word: "malade", text: "Penda tousse, elle est ___." },
+  { word: "malade", text: "Penda tousse, elle est ___.", also: ["élève", "mère", "tata", "bébé"] },
   { word: "midi", text: "À ___, le soleil est tout en haut du ciel." },
   { word: "papa", text: "Mon ___ est le mari de maman.", also: ["père"] },
   { word: "poule", text: "La ___ pond un œuf." },
   { word: "loupe", text: "Avec la ___, je vois les très petites choses." },
   { word: "fumée", text: "Le feu fait de la ___ grise." },
-  { word: "été", text: "En ___, il fait très chaud." },
+  { word: "été", text: "En ___, il fait très chaud.", also: ["auto", "bateau", "moto", "robe", "foulard", "ballon"] },
   {
     word: "élève",
     text: "À l'école, un ___ écoute la maîtresse.",
-    also: ["ami", "bébé", "papa", "père", "mère", "modou", "penda", "toto", "lola", "tata"],
+    also: ["ami", "bébé", "papa", "père", "mère", "malade", "modou", "penda", "toto", "lola", "tata"],
   },
   { word: "café", text: "Papa boit un ___ bien chaud." },
   { word: "bébé", text: "Le ___ n'a pas encore de dents et il pleure." },
-  { word: "foulard", text: "Maman met un ___ sur sa tête.", also: ["sac"] },
-  { word: "sac", text: "Je mets mes cahiers dans mon ___.", also: ["lit", "salon", "auto", "bateau", "radio"] },
-  { word: "robe", text: "Maman met une belle ___ pour la fête." },
-  { word: "sel", text: "Je mets du ___ dans la soupe.", also: ["savon", "café"] },
+  { word: "foulard", text: "Maman met un ___ sur sa tête.", also: ["sac", "ballon"] },
+  { word: "sac", text: "Je mets mes cahiers dans mon ___.", also: ["lit", "salon", "auto", "bateau", "radio", "foulard"] },
+  { word: "robe", text: "Maman met une belle ___ pour la fête.", also: ["radio"] },
+  { word: "sel", text: "Je mets du ___ dans la soupe.", also: ["savon", "café", "eau", "mouton"] },
   { word: "radio", text: "J'écoute de la musique à la ___." },
   { word: "auto", text: "Papa roule dans son ___ rouge.", also: ["moto"] },
   { word: "bateau", text: "Le pêcheur part en mer sur son ___." },
   { word: "mouton", text: "Le ___ a de la laine sur le dos." },
-  { word: "savon", text: "Je lave mes mains avec du ___." },
+  { word: "savon", text: "Je lave mes mains avec du ___.", also: ["eau"] },
   { word: "ballon", text: "Les enfants jouent au ___ dans la cour." },
-  { word: "salon", text: "On regarde la télé dans le ___.", also: ["lit"] },
+  { word: "salon", text: "On regarde la télé dans le ___.", also: ["lit", "café"] },
 ];
 
-/** « Complète la phrase. » : `Je dors dans mon ___.` avec « lit », « tomate », « olive ». */
+/** « Complète la phrase. » : `Je dors dans mon ___.` avec « lit », « ami », « toto ». */
 export function makeSentenceGap(ctx: GameContext): GeneratedGame {
   const entry = pickWord(
     ctx,

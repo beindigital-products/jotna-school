@@ -165,7 +165,8 @@ npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine
 
 `programmeKeys` vise des thématiques précises, par la clé de leur fiche du
 programme : quand une fiche gagne des gabarits (voir plus bas), seuls ses
-paliers sont à refaire. `dryRun` compte et nomme les thématiques :
+paliers sont à refaire. `dryRun` compte et nomme les thématiques (et dit
+`truncated: true` si la base compte plus de paliers que la lecture) :
 
 ```bash
 npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10"],"dryRun":true}'
@@ -598,7 +599,10 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   plus. Le modèle écrivait « Mon ___ est dans le jardin » avec « père » : « mère »,
   « ami » ou « bébé » allaient aussi. Pour ajouter une phrase : le mot est dans
   `LEXICON`, une propriété à lui seul le désigne, et tout autre mot qui irait aussi
-  est dans `also`.
+  est dans `also`, des DEUX côtés (« Je dors dans mon ___ » liste « salon » et « sac »,
+  et leurs phrases listent « lit »). Au premier palier de lecture, quatre phrases
+  (lit, olive, tomate, tata) pour que les trois paliers de `fr-ci-sons-1` ne
+  rejouent pas la même.
 - **Le mot qui commence par une syllabe** (`mot-syllabe`) n'a qu'une bonne
   réponse par construction : les deux mauvais mots ne commencent par la syllabe ni
   à l'écrit, sans accents (« ballon » pour « ba », « loupe » pour « lo », « penda »
@@ -638,8 +642,10 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   (`fr-ci-sons-1`) le vocabulaire n'a que 7 mots pour 10 gabarits : au moins trois
   mots reviennent, dans des exercices différents (le test de variété borne ce
   nombre à ce minimum). `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
-  `exercisesToRequest(0)` aussi), ne demande aucune réserve, ne peut pas échouer
-  en `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices. La pré-génération le
+  `exercisesToRequest(0)` aussi), ne demande aucune réserve, n'échoue pas en
+  `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices, tant que le contrôleur
+  n'abandonne aucun gabarit (un gabarit refusé après les essais rouvre une place
+  au modèle ; aucun refus sur 24 000 paliers simulés). La pré-génération le
   sait (`pregen:run` annonce ces paliers dans `withoutModel`, hors du coût estimé :
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.

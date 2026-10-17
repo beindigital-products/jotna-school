@@ -56,10 +56,13 @@ import { PALIER_SIZE } from "./scoring";
  */
 const ESTIMATED_COST_PER_BUCKET_USD = 0.0015;
 
+/** Combien de paliers `invalidate` lit : de quoi tous les voir, et assez peu pour tenir dans une mutation. */
+const SCAN_LIMIT = 5000;
+
 /**
  * Un palier de cette thématique appelle-t-il le modèle ? Pas quand sa fiche du
  * programme le remplit de jeux et de gabarits (`paliers/games`) : « Grave ou
- * aigu ? », et les « Les sons… » du CI depuis le dixième gabarit. Son palier se
+ * aigu ? », « Long ou fort », et toute la lecture du CI (« Les sons… », « Les lettres et les mots ») depuis le dixième gabarit. Son palier se
  * fabrique sans un jeton, donc sans dépense à confirmer.
  */
 export function topicUsesModel(programmeKey: string | null | undefined): boolean {
@@ -375,7 +378,8 @@ export const invalidate = internalMutation({
       subjects: args.subjectIds ? new Set<string>(args.subjectIds) : null,
       topics: args.programmeKeys ? new Set(topicNames.keys()) : null,
     };
-    const paliers = await ctx.db.query("paliers").take(1000);
+    // Bien plus que le nombre de paliers (1 028 en prod) : `take(1000)` laissait les 28 derniers hors de vue.
+    const paliers = await ctx.db.query("paliers").take(SCAN_LIMIT);
     let invalidated = 0;
     const touched: string[] = [];
     for (const palier of paliers) {
@@ -390,6 +394,8 @@ export const invalidate = internalMutation({
     return {
       dryRun: args.dryRun === true,
       paliersScanned: paliers.length,
+      // Vrai quand la base compte plus de paliers que la lecture : relancer après avoir relevé SCAN_LIMIT.
+      truncated: paliers.length === SCAN_LIMIT,
       topicsMatched: topicNames.size,
       invalidated,
       ...(args.programmeKeys ? { byTopic: countByTopic(touched) } : {}),

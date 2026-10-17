@@ -214,7 +214,7 @@ describe("la phrase à trou n'a qu'une bonne réponse", () => {
 
   it("ne propose jamais un mot qui irait aussi, ni un mot déjà écrit dans la phrase", () => {
     for (let n = 0; n < 200; n++) {
-      const vocabulary = ["mots-2", "mots-3", "mots-4"][n % 3];
+      const vocabulary = ["mots-1", "mots-2", "mots-3", "mots-4"][n % 4];
       const exo = GAME_KINDS["phrase-trou"].make(makeContext("CI", 2, `phrase:${n}`, undefined, vocabulary));
       const text = exo.payload.text as string;
       const sentence = SENTENCES.find((s) => s.text === text)!;
@@ -241,8 +241,8 @@ describe("la phrase à trou n'a qu'une bonne réponse", () => {
 
 describe("les gabarits de fin de mot et de lettres comptent juste", () => {
   it("ne propose jamais, comme mauvais choix, une syllabe qui finit le mot", () => {
-    for (let n = 0; n < 80; n++) {
-      const exo = GAME_KINDS["syllabe-finale"].make(makeContext("CI", 2, `fin:${n}`, undefined, ["mots-2", "mots-3", "mots-4"][n % 3]));
+    for (let n = 0; n < 200; n++) {
+      const exo = GAME_KINDS["syllabe-finale"].make(makeContext("CI", 2, `fin:${n}`, undefined, ["mots-1", "mots-2", "mots-3", "mots-4"][n % 4]));
       const word = /« ([^»]+) »/.exec(exo.prompt)![1];
       const entry = LEXICON.find((e) => e.word === word)!;
       const options = exo.payload.options as string[];
@@ -255,7 +255,7 @@ describe("les gabarits de fin de mot et de lettres comptent juste", () => {
 
   it("compte les lettres du mot, accents compris", () => {
     for (let n = 0; n < 60; n++) {
-      const exo = GAME_KINDS["lettres-compter"].make(makeContext("CI", 2, `lettres:${n}`, undefined, "mots-4"));
+      const exo = GAME_KINDS["lettres-compter"].make(makeContext("CI", 2, `lettres:${n}`, undefined, ["mots-1", "mots-4"][n % 2]));
       const word = /« ([^»]+) »/.exec(exo.prompt)![1];
       expect(Number(exo.answerKey), word).toBe(Array.from(word).length);
       expect((exo.payload.options as string[]).every((o) => Number(o) >= 1)).toBe(true);
@@ -347,6 +347,51 @@ describe("le gabarit « mot-syllabe » n'a qu'une bonne réponse", () => {
       answers.add(GAME_KINDS["mot-syllabe"].make(makeContext("CI", 2, `varie:${n}`, undefined, "mots-4")).answerKey);
     }
     expect(answers.size).toBeGreaterThanOrEqual(8);
+  });
+});
+
+describe("le gabarit « majuscule-minuscule » relie chaque lettre à SA majuscule", () => {
+  it("donne quatre paires distinctes, sans accent, dont chaque majuscule est celle de sa minuscule", () => {
+    for (let n = 0; n < 300; n++) {
+      const vocabulary = [undefined, "mots-1", "mots-2", "mots-3", "mots-4"][n % 5];
+      const exo = GAME_KINDS["majuscule-minuscule"].make(makeContext("CI", ((n % 4) + 1) as GameLevel, `maj:${n}`, undefined, vocabulary));
+      const pairs = exo.payload.pairs as { left: string; right: string }[];
+      expect(pairs, exo.answerKey).toHaveLength(4);
+      expect(new Set(pairs.map((p) => p.left)).size, exo.answerKey).toBe(4);
+      expect(new Set(pairs.map((p) => p.right)).size, exo.answerKey).toBe(4);
+      for (const pair of pairs) {
+        expect(pair.left, exo.answerKey).toMatch(/^[a-z]$/);
+        expect(pair.right, exo.answerKey).toBe(pair.left.toUpperCase());
+      }
+    }
+  });
+
+  it("ne met jamais « i » et « l » ensemble : la majuscule « I » ressemble au « l »", () => {
+    for (let n = 0; n < 400; n++) {
+      const exo = GAME_KINDS["majuscule-minuscule"].make(makeContext("CI", 2, `il:${n}`, undefined, "mots-1"));
+      const lefts = (exo.payload.pairs as { left: string }[]).map((p) => p.left);
+      expect(lefts.includes("i") && lefts.includes("l"), lefts.join(", ")).toBe(false);
+    }
+  });
+});
+
+describe("les indices ne donnent jamais la réponse", () => {
+  it("n'écrit pas la première pièce comme dernière pièce quand elle est la réponse (tata, toto, été)", () => {
+    for (const kind of ["syllabe-initiale", "lettre-initiale"] as const) {
+      for (let n = 0; n < 200; n++) {
+        const exo = GAME_KINDS[kind].make(makeContext("CI", 2, `indice:${kind}:${n}`, undefined, ["mots-1", "mots-3", "mots-4"][n % 3]));
+        for (const hint of exo.hints) {
+          expect(hint, `${exo.prompt} : ${hint}`).not.toContain(`« ${exo.answerKey} »`);
+        }
+      }
+    }
+  });
+});
+
+describe("la phrase à trou a de quoi varier au premier palier", () => {
+  it("compte au moins trois phrases dont le mot est vu dès le premier palier de lecture", () => {
+    const stageOne = SENTENCES.filter((s) => LEXICON.find((e) => e.word === s.word)!.stage === 1);
+    expect(stageOne.length).toBeGreaterThanOrEqual(3);
   });
 });
 
