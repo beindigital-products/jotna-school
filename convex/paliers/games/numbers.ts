@@ -28,10 +28,10 @@ export function numberCap(vocabulary: string | undefined): 10 | 20 {
   return /^nombres-20$/.test(vocabulary ?? "") ? 20 : 10;
 }
 
-/** Le plus grand nombre d'un palier, selon sa position : de 5 à 10, ou de 14 à 20. */
+/** Le plus grand nombre d'un palier, selon sa position : de 5 à 10, ou de 15 à 20. */
 const TOP_BY_LEVEL: Record<10 | 20, Record<GameLevel, number>> = {
   10: { 1: 5, 2: 7, 3: 9, 4: 10 },
-  20: { 1: 14, 2: 16, 3: 18, 4: 20 },
+  20: { 1: 15, 2: 17, 3: 19, 4: 20 },
 };
 
 type Range = { cap: 10 | 20; lo: number; top: number };
@@ -228,11 +228,32 @@ export function makeComplement(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Combien font 4 + 3 ? », « Combien font 8 − 5 ? » : le résultat ne dépasse jamais le plus grand nombre. */
+/**
+ * « Combien font 4 + 3 ? », « Combien font 8 − 5 ? » : le résultat ne dépasse jamais 10 (fiche « jusqu'à 10 »).
+ * Dans la fiche « de 11 à 20 », on COMPOSE et on DÉCOMPOSE la dizaine : « Combien font 10 + 4 ? »,
+ * « Combien font 14 − 10 ? ». Aucun calcul ne passe la dizaine, le programme n'en demande pas.
+ */
 export function makeWrittenCalc(ctx: GameContext): GeneratedGame {
   const { cap, top } = rangeOf(ctx);
   return fresh(ctx, "calcul-ecrit", () => {
     const plus = ctx.rng() < 0.55;
+    if (cap === 20) {
+      const units = randomInt(ctx.rng, 1, Math.min(top, 19) - 10);
+      return qcm(
+        "calcul-ecrit",
+        ctx,
+        plus ? "composer une dizaine et des unités" : "décomposer un nombre",
+        plus ? `Combien font 10 + ${units} ?` : `Combien font ${10 + units} − 10 ?`,
+        plus ? 10 + units : units,
+        cap,
+        [
+          "Une dizaine, c'est dix.",
+          plus ? "Pars de dix et avance autant de pas que le deuxième nombre." : "Enlève la dizaine : ce qui reste, ce sont les unités.",
+          plus ? "Compte en avançant, un par un." : "Compte ce qu'il y a après dix.",
+        ],
+        plus ? [units, 10] : [10 + units, 10],
+      );
+    }
     if (plus) {
       const total = randomInt(ctx.rng, 2, top);
       const a = randomInt(ctx.rng, 1, total - 1);

@@ -33,7 +33,7 @@ export function makeGame(
   const option = offer.options[round % offer.options.length];
   const level = LEVELS[round % LEVELS.length];
   const id = `demo:${subject}:${klass}:${option.kind}:${round}`;
-  const made = GAME_KINDS[option.kind].make(makeContext(klass, level, id));
+  const made = GAME_KINDS[option.kind].make(makeContext(klass, level, id, undefined, option.vocabulary));
   return {
     id,
     type: made.type,

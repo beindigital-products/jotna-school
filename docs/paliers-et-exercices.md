@@ -662,9 +662,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   nombre à ce minimum). **Nombres :** `ma-ci-nombres-10` = 2 suites, 3 dénombrements,
   un nombre relié à son groupe, une rangée comparée, un voisin, le plus grand, un
   nombre en lettres ; `ma-ci-calcul-10` = 3 additions et 2 soustractions
-  d'émojis, 2 calculs écrits, un double et une moitié, un complément ;
+  d'émojis, 2 calculs écrits, 2 doubles ou moitiés (tirés au hasard), un complément ;
   `ma-ci-nombres-20` = 2 suites, 2 dizaines et unités, 2 voisins, le plus grand,
-  un nombre en lettres, un rangement, un calcul écrit. `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
+  un nombre en lettres, un rangement, un calcul de composition (« 10 + 4 »,
+  « 14 − 10 » : jamais un passage de la dizaine). Les suites de nombres suivent la
+  plage de leur fiche (de 0 à 10, puis de 10 à 20, qui monte avec le palier), ne
+  servent jamais deux fois la même dans un palier et gardent toujours au moins deux
+  mauvais choix, jamais au-dessus du plafond. `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
   `exercisesToRequest(0)` aussi), ne demande aucune réserve, n'échoue pas en
   `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices, tant que le contrôleur
   n'abandonne aucun gabarit (un gabarit refusé après les essais rouvre une place
@@ -673,11 +677,11 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces cinq thématiques contre un faux modèle qui lève une
+  chaque palier de ces huit thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
-  Les autres thématiques (géométrie, mesures et problèmes du CI ; autres classes)
+  Les autres thématiques (trier, espace, formes, mesures et problèmes du CI ; autres classes)
   gardent des exercices du modèle, avec leurs défauts connus (voir plus haut) ;
   leur donner dix gabarits demande des gabarits sûrs de plus.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des

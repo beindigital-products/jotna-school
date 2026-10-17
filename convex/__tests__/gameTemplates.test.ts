@@ -524,6 +524,131 @@ describe("les gabarits de nombres recalculent juste, depuis l'énoncé", () => {
   });
 });
 
+describe("les paliers de nombres du CI tiennent leur fiche", () => {
+  const TOPICS = [
+    { key: "ma-ci-nombres-10", cap: 10 },
+    { key: "ma-ci-calcul-10", cap: 10 },
+    { key: "ma-ci-nombres-20", cap: 20 },
+  ] as const;
+  /** Les gabarits qui lisent le plafond de la fiche : sans `vocabulary`, ils retomberaient sur 10 ou sur la classe. */
+  const NEEDS_CAP = ["suite-nombres", "nombre-voisin", "nombre-plus-grand", "nombre-en-lettres", "nombres-ordre", "double-moitie", "complement", "calcul-ecrit", "dizaine-unites"];
+  const topicOf = (key: string) => allProgrammeEntries().find((e) => e.topic.key === key)!.topic;
+  const numbersIn = (text: string) => Array.from(text.matchAll(/\d+/g)).map(Number);
+  const palier = (key: string, palierIndex: number, palierCount: number, n: number) =>
+    generateGames(topicOf(key).games ?? [], { klass: "CI", palierIndex, palierCount, seed: `fiche:${key}:${palierIndex}:${palierCount}:${n}` });
+
+  it("donne à chaque gabarit de nombres le plafond de sa fiche", () => {
+    for (const { key, cap } of TOPICS) {
+      for (const spec of topicOf(key).games ?? []) {
+        if (NEEDS_CAP.includes(spec.kind)) expect(spec.vocabulary, `${key} : ${spec.kind}`).toBe(`nombres-${cap}`);
+      }
+    }
+  });
+
+  it("ne montre aucun nombre au-delà du plafond de la fiche, ni en énoncé, ni en options, ni en suite", () => {
+    for (const { key, cap } of TOPICS) {
+      for (const [palierIndex, palierCount] of [[1, 3], [2, 3], [3, 3], [4, 5], [1, 5]] as const) {
+        for (let n = 0; n < 80; n++) {
+          for (const exo of palier(key, palierIndex, palierCount, n)) {
+            const shown = [
+              ...numbersIn(exo.prompt),
+              ...(Array.isArray(exo.payload.options) ? (exo.payload.options as string[]).flatMap((o) => numbersIn(o)) : []),
+              ...(Array.isArray(exo.payload.sequence) ? (exo.payload.sequence as (string | null)[]).flatMap((x) => (x ? numbersIn(x) : [])) : []),
+              ...(Array.isArray(exo.payload.pairs) ? (exo.payload.pairs as { left: string }[]).flatMap((p) => numbersIn(p.left)) : []),
+              ...(Array.isArray(exo.payload.correctSequence) ? (exo.payload.correctSequence as string[]).flatMap((x) => numbersIn(x)) : []),
+            ];
+            for (const value of shown) expect(value, `${key} p${palierIndex}/${palierCount} : ${exo.prompt}`).toBeLessThanOrEqual(cap);
+          }
+        }
+      }
+    }
+  });
+
+  it("garde dans chaque suite de nombres la plage de sa fiche, au moins deux options et une seule bonne réponse par case", () => {
+    for (const { key, cap } of TOPICS.filter((t) => t.key !== "ma-ci-calcul-10")) {
+      for (const [palierIndex, palierCount] of [[1, 3], [2, 3], [3, 3], [4, 5], [1, 5]] as const) {
+        for (let n = 0; n < 150; n++) {
+          for (const exo of palier(key, palierIndex, palierCount, n).filter((g) => g.type === "pattern")) {
+            const sequence = exo.payload.sequence as (string | null)[];
+            const options = exo.payload.options as string[];
+            const answers = exo.payload.answers as string[];
+            const where = `${key} p${palierIndex}/${palierCount} : ${JSON.stringify(sequence)} ${options.join("/")}`;
+            expect(options.length, where).toBeGreaterThanOrEqual(2);
+            expect(new Set(options).size, where).toBe(options.length);
+            expect(answers.every((answer) => options.includes(answer)), where).toBe(true);
+            // Une option qui n'est pas une réponse n'est ni dans la suite montrée, ni une autre réponse.
+            for (const option of options.filter((o) => !answers.includes(o))) expect(sequence, where).not.toContain(option);
+            const values = [...sequence.filter((x): x is string => x !== null), ...answers].map(Number);
+            expect(Math.min(...values), where).toBeGreaterThanOrEqual(cap === 20 ? 10 : 0);
+            expect(Math.max(...values), where).toBeLessThanOrEqual(cap);
+          }
+        }
+      }
+    }
+  });
+
+  it("ne sert jamais deux exercices identiques dans un palier, ni deux suites identiques", () => {
+    for (const { key } of TOPICS) {
+      for (const [palierIndex, palierCount] of [[1, 3], [2, 3], [3, 3]] as const) {
+        for (let n = 0; n < 200; n++) {
+          const games = palier(key, palierIndex, palierCount, n);
+          const keys = games.map((g) => `${g.prompt}|${JSON.stringify(g.payload.sequence ?? g.payload.pairs ?? g.payload.correctSequence ?? g.payload.options)}`);
+          expect(new Set(keys).size, `${key} p${palierIndex} #${n} : ${keys.join(" ## ")}`).toBe(keys.length);
+        }
+      }
+    }
+  });
+
+  it("donne à chaque QCM de nombres au moins deux options distinctes, dont une seule vaut la bonne réponse", () => {
+    for (const { key } of TOPICS) {
+      for (let n = 0; n < 150; n++) {
+        for (const exo of palier(key, 2, 3, n).filter((g) => g.type === "qcm")) {
+          const options = exo.payload.options as string[];
+          expect(options.length, exo.prompt).toBeGreaterThanOrEqual(2);
+          expect(new Set(options).size, exo.prompt).toBe(options.length);
+          expect(options.filter((o) => o === exo.answerKey), exo.prompt).toHaveLength(1);
+        }
+      }
+    }
+  });
+
+  it("compose la dizaine dans « de 11 à 20 » (10 + n, n − 10) sans jamais passer la dizaine", () => {
+    for (let n = 0; n < 300; n++) {
+      const level = ((n % 4) + 1) as GameLevel;
+      const exo = GAME_KINDS["calcul-ecrit"].make(makeContext("CI", level, `compose:${n}`, undefined, "nombres-20"));
+      const [a, b] = numbersIn(exo.prompt);
+      if (exo.prompt.includes("+")) {
+        expect([a, b], exo.prompt).toEqual([10, b]);
+        expect(b, exo.prompt).toBeLessThan(10);
+        expect(exo.answerKey, exo.prompt).toBe(String(10 + b));
+      } else {
+        expect(b, exo.prompt).toBe(10);
+        expect(a, exo.prompt).toBeGreaterThan(10);
+        expect(a, exo.prompt).toBeLessThan(20);
+        expect(exo.answerKey, exo.prompt).toBe(String(a - 10));
+      }
+    }
+  });
+
+  it("garde « une dizaine et des unités » entre onze et dix-neuf", () => {
+    for (let n = 0; n < 400; n++) {
+      const exo = GAME_KINDS["dizaine-unites"].make(makeContext("CI", ((n % 4) + 1) as GameLevel, `dizaine:${n}`, undefined, "nombres-20"));
+      const [shown] = numbersIn(exo.prompt);
+      expect(shown, exo.prompt).toBeGreaterThanOrEqual(11);
+      expect(shown, exo.prompt).toBeLessThanOrEqual(19);
+    }
+  });
+
+  it("ne propose jamais, dans un dénombrement d'émojis, un mauvais choix au-delà de 10", () => {
+    for (const kind of ["compter-emojis", "ajouter-emojis", "enlever-emojis"] as const) {
+      for (let n = 0; n < 300; n++) {
+        const exo = GAME_KINDS[kind].make(makeContext("CI", ((n % 4) + 1) as GameLevel, `emojis:${kind}:${n}`));
+        for (const option of exo.payload.options as string[]) expect(Number(option), exo.prompt).toBeLessThanOrEqual(10);
+      }
+    }
+  });
+});
+
 describe("les gabarits de dénombrement comptent juste", () => {
   it("fait compter exactement autant d'émojis que la réponse", () => {
     for (let n = 0; n < 40; n++) {
@@ -574,7 +699,7 @@ describe("les gabarits dans le programme du CI", () => {
     );
   });
 
-  it("ne demande que des jeux connus, et dix gabarits par palier en lecture et en nombres", () => {
+  it("ne demande que des jeux connus, et dix gabarits par palier en lecture et en nombres du CI", () => {
     const withoutModel = [
       "fr-ci-sons-1",
       "fr-ci-sons-2",
@@ -590,8 +715,10 @@ describe("les gabarits dans le programme du CI", () => {
         expect(isGameKind(spec.kind), `${entry.topic.key} : ${spec.kind}`).toBe(true);
       }
       const total = (entry.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0);
-      expect(total, entry.topic.key).toBe(withoutModel.includes(entry.topic.key) ? PALIER_SIZE : 7);
+      expect(total, entry.topic.key).toBe(PALIER_SIZE);
     }
+    // Toutes les thématiques branchées sur des gabarits sont celles-là : dix gabarits, plus aucun exercice du modèle.
+    expect(entries.map((entry) => entry.topic.key).sort()).toEqual([...withoutModel].sort());
   });
 
   it("fabrique des paliers entiers qui passent le contrôleur", () => {

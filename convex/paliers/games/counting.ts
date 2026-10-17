@@ -36,7 +36,8 @@ const row = (emoji: string, count: number) => emoji.repeat(count);
 function numberChoices(ctx: GameContext, answer: number): { options: string[]; correctIndex: number } {
   const near = shuffle(
     ctx.rng,
-    [answer - 2, answer - 1, answer + 1, answer + 2].filter((n) => n >= 1 && n !== answer),
+    // Jamais plus de 10 : les fiches de CI « jusqu'à 10 » ne montrent aucun nombre au-delà.
+    [answer - 2, answer - 1, answer + 1, answer + 2].filter((n) => n >= 1 && n <= 10 && n !== answer),
   ).slice(0, 2);
   const options = shuffle(ctx.rng, [answer, ...near]).map(String);
   return { options, correctIndex: options.indexOf(String(answer)) };
