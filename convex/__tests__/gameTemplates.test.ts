@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { auditExercise } from "../paliers/exerciseAudit";
 import { verifyAnswer } from "../paliers/exerciseRules";
-import { GAME_KINDS, gameOriginOf, generateGames, isGameKind, regenerateGame, type GameKind } from "../paliers/games";
+import {
+  GAME_KINDS,
+  TEMPLATE_RETRIES,
+  gameCount,
+  gameOriginOf,
+  generateGames,
+  isGameKind,
+  regenerateGame,
+  type GameKind,
+} from "../paliers/games";
 import { makeContext, type GameLevel } from "../paliers/games/shared";
+import { shapeBatch } from "../paliers";
 import { LEXICON, SENTENCES, stageOf } from "../paliers/games/words";
 import { KNOWN_WORDS } from "../paliers/knownWords";
-import { SPARE_AI_EXERCISES, exercisesToRequest, hasEnoughValidExercises } from "../paliers/scoring";
-import { countByTopic, shouldInvalidate } from "../paliers/pregen";
+import { PALIER_SIZE, SPARE_AI_EXERCISES, exercisesToRequest, hasEnoughValidExercises } from "../paliers/scoring";
+import { countByTopic, shouldInvalidate, topicUsesModel } from "../paliers/pregen";
 import { allProgrammeEntries } from "../programme";
 
 /**
@@ -26,6 +36,7 @@ const TEMPLATES = [
   "phrase-trou",
   "syllabe-finale",
   "lettres-compter",
+  "mot-syllabe",
   "syllabe-mot",
   "mot-image",
   "compter-emojis",
@@ -251,6 +262,93 @@ describe("les gabarits de fin de mot et de lettres comptent juste", () => {
   });
 });
 
+describe("le gabarit « mot-syllabe » n'a qu'une bonne réponse", () => {
+  /** Ce qu'un mot fait entendre au début : sans accents, et « au », « eau » comme « o ». */
+  const sound = (text: string) => fold(text).replace(/^(?:eau|au)/, "o");
+  const begins = (word: string, syllable: string) =>
+    fold(word).startsWith(fold(syllable)) || sound(word).startsWith(sound(syllable));
+  const syllableOf = (prompt: string) => /« ([^»]+) »/.exec(prompt)![1];
+  const targets = LEXICON.filter((entry) => entry.syllables.length >= 2);
+
+  /** Impose le mot cherché : tous les autres ont déjà servi, `pickWord` ne laisse que lui. */
+  function forced(target: string, seed: string, vocabulary: string | undefined) {
+    const used = new Set(LEXICON.map((entry) => entry.word).filter((word) => word !== target));
+    return GAME_KINDS["mot-syllabe"].make(makeContext("CI", 2, seed, used, vocabulary));
+  }
+
+  it("n'a qu'un mot qui commence par la syllabe, pour chaque mot du vocabulaire et chaque palier de lecture", () => {
+    for (const target of targets) {
+      for (const vocabulary of VOCABULARIES.filter((v) => stageOf(v) >= target.stage)) {
+        for (let n = 0; n < 25; n++) {
+          const exo = forced(target.word, `unique:${target.word}:${n}`, vocabulary);
+          const label = `${target.word} (${vocabulary ?? "tous"}) : ${exo.prompt}`;
+          expect(exo.answerKey, label).toBe(target.word);
+          const syllable = syllableOf(exo.prompt);
+          expect(syllable, label).toBe(target.syllables[0]);
+          const options = exo.payload.options as string[];
+          expect(new Set(options).size, label).toBe(3);
+          expect(options[exo.payload.correctIndex as number], label).toBe(target.word);
+          expect(
+            options.filter((option) => begins(option, syllable)),
+            `${label} : ${options.join(", ")}`,
+          ).toEqual([target.word]);
+          // Les mauvais choix sont des mots que l'enfant a déjà vus.
+          for (const option of options) {
+            expect(LEXICON.find((entry) => entry.word === option)?.stage, `${label} : ${option}`).toBeLessThanOrEqual(
+              stageOf(vocabulary),
+            );
+          }
+        }
+      }
+    }
+  });
+
+  it("écarte « ballon » pour « ba », « loupe » pour « lo », « olive » pour « au » : à l'écrit comme à l'oreille", () => {
+    const lookAlikes: Record<string, string[]> = {
+      bateau: ["ballon"],
+      lola: ["loupe"],
+      auto: ["olive", "eau"],
+      olive: ["auto", "eau"],
+      été: ["élève", "eau"],
+      élève: ["été", "eau"],
+      savon: ["salon"],
+      salon: ["savon"],
+      tomate: ["toto"],
+      toto: ["tomate"],
+    };
+    for (const [target, never] of Object.entries(lookAlikes)) {
+      for (let n = 0; n < 60; n++) {
+        const options = forced(target, `ressemble:${target}:${n}`, "mots-4").payload.options as string[];
+        for (const word of never) expect(options, `${target} : ${options.join(", ")}`).not.toContain(word);
+      }
+    }
+  });
+
+  it("ne dessine pas la réponse et ne l'écrit dans aucun indice", () => {
+    for (let n = 0; n < 200; n++) {
+      const vocabulary = VOCABULARIES[n % VOCABULARIES.length];
+      const level = (1 + (n % 4)) as GameLevel;
+      const exo = GAME_KINDS["mot-syllabe"].make(makeContext("CI", level, `indices:${n}`, undefined, vocabulary));
+      expect(emojisIn(exo.prompt), exo.prompt).toBe(0);
+      for (const hint of exo.hints) {
+        for (const option of exo.payload.options as string[]) {
+          expect(fold(hint), `${exo.prompt} : « ${hint} » écrit « ${option} »`).not.toMatch(
+            new RegExp(`(?<![a-z])${fold(option)}(?![a-z])`),
+          );
+        }
+      }
+    }
+  });
+
+  it("varie le mot cherché d'un tirage à l'autre", () => {
+    const answers = new Set<string>();
+    for (let n = 0; n < 60; n++) {
+      answers.add(GAME_KINDS["mot-syllabe"].make(makeContext("CI", 2, `varie:${n}`, undefined, "mots-4")).answerKey);
+    }
+    expect(answers.size).toBeGreaterThanOrEqual(8);
+  });
+});
+
 describe("les gabarits de dénombrement comptent juste", () => {
   it("fait compter exactement autant d'émojis que la réponse", () => {
     for (let n = 0; n < 40; n++) {
@@ -300,14 +398,14 @@ describe("les gabarits dans le programme du CI", () => {
     );
   });
 
-  it("ne demande que des jeux connus, et sept gabarits par palier (neuf en fr-ci-sons-2 à 4)", () => {
-    const withSentence = ["fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4"];
+  it("ne demande que des jeux connus, et sept gabarits par palier (dix en fr-ci-sons-2 à 4)", () => {
+    const withoutModel = ["fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4"];
     for (const entry of entries) {
       for (const spec of entry.topic.games ?? []) {
         expect(isGameKind(spec.kind), `${entry.topic.key} : ${spec.kind}`).toBe(true);
       }
       const total = (entry.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0);
-      expect(total, entry.topic.key).toBe(withSentence.includes(entry.topic.key) ? 9 : 7);
+      expect(total, entry.topic.key).toBe(withoutModel.includes(entry.topic.key) ? PALIER_SIZE : 7);
     }
   });
 
@@ -398,6 +496,124 @@ describe("le résumé de pregen:invalidate", () => {
   });
 });
 
+/** Le mot que chaque exercice fabriqué fait travailler, énoncé ou réponse : de quoi compter les répétitions d'un palier. */
+function wordsOfPalier(games: ReturnType<typeof generateGames>): string[] {
+  return games.flatMap((game) => {
+    const kind = gameOriginOf(game.payload)?.kind;
+    if (kind === "mot-syllabe" || kind === "phrase-trou" || kind === "syllabe-manquante" || kind === "lettre-manquante") {
+      return [game.answerKey];
+    }
+    if (kind === "syllabes-ordre" || kind === "lettres-ordre") return [(game.payload.correctSequence as string[]).join("")];
+    return /« ([^»]+) »/.exec(game.prompt)?.[1] ?? [];
+  });
+}
+
+describe("dix gabarits dans un palier : plus aucun exercice du modèle en fr-ci-sons-2 à 4", () => {
+  const keys = ["fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4"];
+  const topicOf = (key: string) => allProgrammeEntries().find((e) => e.topic.key === key)!.topic;
+
+  it("remplit les dix places du palier avec dix gabarits, dont « mot-syllabe »", () => {
+    for (const key of keys) {
+      const specs = topicOf(key).games ?? [];
+      expect(gameCount(specs), key).toBe(PALIER_SIZE);
+      expect(specs.filter((spec) => spec.kind === "mot-syllabe"), key).toEqual([
+        { kind: "mot-syllabe", count: 1, vocabulary: `mots-${key.slice(-1)}` },
+      ]);
+      for (const palierIndex of [1, 2, 3]) {
+        const games = generateGames(specs, { klass: "CI", palierIndex, palierCount: 3, seed: `${key}:${palierIndex}` });
+        expect(games, `${key} palier ${palierIndex}`).toHaveLength(PALIER_SIZE);
+      }
+    }
+  });
+
+  it("ne demande rien au modèle : zéro exercice à écrire, zéro réserve, aucun palier refusé faute d'exercices valides", () => {
+    for (const key of keys) {
+      const aiCount = PALIER_SIZE - gameCount(topicOf(key).games);
+      expect(aiCount, key).toBe(0);
+      expect(exercisesToRequest(aiCount), key).toBe(0);
+      // `hasEnoughValidExercises` n'est jamais appelée (le bloc du modèle est sauté), mais elle le tolérerait.
+      expect(hasEnoughValidExercises(0, aiCount), key).toBe(true);
+    }
+  });
+
+  it("annonce ces paliers comme gratuits à la pré-génération, et les autres comme payants", () => {
+    for (const key of keys) expect(topicUsesModel(key), key).toBe(false);
+    expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
+    expect(topicUsesModel("fr-ci-sons-1")).toBe(true);
+    expect(topicUsesModel("fr-ci-alphabet")).toBe(true);
+    expect(topicUsesModel("hi-cm2-empires")).toBe(true);
+    // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.
+    expect(topicUsesModel(null)).toBe(true);
+    expect(topicUsesModel(undefined)).toBe(true);
+    expect(topicUsesModel("inconnue")).toBe(true);
+  });
+
+  it("tire un autre exercice quand le contrôleur en refuse un, et abandonne le gabarit après les essais", () => {
+    for (const key of keys) {
+      const specs = topicOf(key).games ?? [];
+      const options = { klass: "CI" as const, palierIndex: 2, palierCount: 3, seed: key };
+
+      // Le premier tirage de chaque gabarit est refusé, le second accepté.
+      let calls = 0;
+      const retried = generateGames(specs, { ...options, accept: () => ++calls % 2 === 0 });
+      expect(retried, key).toHaveLength(PALIER_SIZE);
+      expect(calls, key).toBe(2 * PALIER_SIZE);
+
+      // Un contrôleur qui refuse tout : aucun gabarit servi, le modèle écrirait le palier.
+      calls = 0;
+      const none = generateGames(specs, { ...options, accept: () => (calls++, false) });
+      expect(none, key).toEqual([]);
+      expect(calls, key).toBe((TEMPLATE_RETRIES + 1) * PALIER_SIZE);
+
+      // Sans refus, les exercices sont ceux d'avant : la première graine est inchangée.
+      expect(generateGames(specs, { ...options, accept: () => true }), key).toEqual(generateGames(specs, options));
+    }
+  });
+
+  it("ne soumet pas au contrôleur les quatre jeux (frise, dessin, écoute, couleurs)", () => {
+    const listen = topicOf("ar-ci-grave-aigu");
+    let calls = 0;
+    const games = generateGames(listen.games ?? [], {
+      klass: "CI",
+      palierIndex: 1,
+      palierCount: 3,
+      seed: "ecoute",
+      accept: () => (calls++, false),
+    });
+    expect(games).toHaveLength(PALIER_SIZE);
+    expect(calls).toBe(0);
+  });
+
+  it("refait un gabarit raté avec le contrôleur, et rend null quand il refuse tous les tirages", () => {
+    const origin = { kind: "mot-syllabe", level: 2, vocabulary: "mots-3" };
+    const again = regenerateGame(origin, "CI", "reprise", () => true);
+    expect(again?.type).toBe("qcm");
+    expect(gameOriginOf(again!.payload)).toEqual(origin);
+    let calls = 0;
+    expect(regenerateGame(origin, "CI", "reprise", () => (calls++, false))).toBeNull();
+    expect(calls).toBe(TEMPLATE_RETRIES + 1);
+  });
+
+  it("garde ses dix exercices après le filtre de toPersistedShape, comme ceux du modèle", () => {
+    for (const key of keys) {
+      for (const palierIndex of [1, 2, 3]) {
+        const games = generateGames(topicOf(key).games ?? [], { klass: "CI", palierIndex, palierCount: 3, seed: `${key}:p${palierIndex}` });
+        const raw = games.map((game) => ({
+          type: game.type,
+          statement: game.prompt,
+          payload: game.payload,
+          correctAnswer: game.answerKey,
+          hints: game.hints,
+        }));
+        const batch = shapeBatch(raw as Parameters<typeof shapeBatch>[0], { class: "CI", subject: "Français" });
+        expect(batch.exos, `${key} palier ${palierIndex}`).toHaveLength(PALIER_SIZE);
+        expect(batch.audit.rejected, key).toBe(0);
+        expect(batch.audit.warned, key).toBe(0);
+      }
+    }
+  });
+});
+
 describe("sept gabarits dans un palier de dix", () => {
   it("demande au modèle deux exercices de réserve, jamais pour un palier tout écrit par lui", () => {
     expect(exercisesToRequest(3)).toBe(3 + SPARE_AI_EXERCISES);
@@ -409,14 +625,18 @@ describe("sept gabarits dans un palier de dix", () => {
     expect(hasEnoughValidExercises(3, 3)).toBe(true);
   });
 
-  it("varie les mots d'un palier : sept gabarits, au plus un mot en double", () => {
+  it("varie les mots d'un palier : sept à dix gabarits, au plus un mot en double", () => {
+    // Les mots comptés sont ceux de l'énoncé ET ceux de la réponse (`wordsOfPalier`) : « mot-syllabe »
+    // cache son mot dans les options, un trou ne l'écrit pas dans l'énoncé.
     for (const key of ["fr-ci-sons-1", "fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4", "fr-ci-alphabet"]) {
       const entry = allProgrammeEntries().find((e) => e.topic.key === key)!;
-      for (let n = 0; n < 20; n++) {
-        const games = generateGames(entry.topic.games ?? [], { klass: "CI", palierIndex: 2, palierCount: 3, seed: `${key}:${n}` });
-        const words = games.flatMap((g) => /« ([^»]+) »/.exec(g.prompt)?.[1] ?? []);
-        const duplicates = words.length - new Set(words).size;
-        expect(duplicates, `${key} #${n} : ${words.join(", ")}`).toBeLessThanOrEqual(1);
+      for (let n = 0; n < 40; n++) {
+        for (const palierIndex of [1, 2, 3]) {
+          const games = generateGames(entry.topic.games ?? [], { klass: "CI", palierIndex, palierCount: 3, seed: `${key}:${n}:${palierIndex}` });
+          const words = wordsOfPalier(games);
+          const duplicates = words.length - new Set(words).size;
+          expect(duplicates, `${key} #${n} palier ${palierIndex} : ${words.join(", ")}`).toBeLessThanOrEqual(1);
+        }
       }
     }
   });

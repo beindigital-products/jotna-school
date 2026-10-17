@@ -36,6 +36,7 @@ import {
   makeSyllableCount,
   makeSyllableOrder,
   makeSyllableToWord,
+  makeWordFromSyllable,
   makeWordToPicture,
 } from "./words";
 import { makeColorByNumber, makePixelCopy, makePixelMemory, makePixelSymmetry } from "./pixel";
@@ -94,6 +95,7 @@ export const GAME_KINDS = {
   "syllabe-initiale": { label: "Première syllabe d'un mot", type: "qcm", make: makeFirstSyllable },
   "lettre-initiale": { label: "Première lettre d'un mot", type: "qcm", make: makeFirstLetter },
   "syllabe-finale": { label: "Dernière syllabe d'un mot", type: "qcm", make: makeLastSyllable },
+  "mot-syllabe": { label: "Mot qui commence par une syllabe", type: "qcm", make: makeWordFromSyllable },
   "syllabes-compter": { label: "Compter les syllabes", type: "qcm", make: makeSyllableCount },
   "lettres-compter": { label: "Compter les lettres", type: "qcm", make: makeLetterCount },
   "syllabe-manquante": { label: "Syllabe qui manque", type: "fill-blank", make: makeMissingSyllable },
@@ -129,13 +131,47 @@ export function gameCount(specs: readonly GameSpec[] | undefined): number {
   return Math.min(PALIER_SIZE, total);
 }
 
+/**
+ * Le contrôle d'un gabarit avant de le servir : `true` quand l'exercice peut
+ * partir. Posé par la génération d'un palier (`paliers/index.ts`), qui y met le
+ * contrôleur structurel (`exerciseAudit.ts`).
+ */
+export type GameAccept = (game: GeneratedGame) => boolean;
+
+/** Les types des gabarits : le contrôleur est fait pour eux, pas pour les quatre jeux (frise, dessin, écoute, couleurs). */
+const TEMPLATE_TYPES: readonly GameExerciseType[] = ["qcm", "order", "match", "fill-blank"];
+
+/** Combien de fois refaire un gabarit refusé, avec une autre graine, avant de l'abandonner. */
+export const TEMPLATE_RETRIES = 4;
+
 export type GameRunOptions = {
   klass: VisibleClassName;
   palierIndex: number;
   palierCount: number;
   /** La graine : la même graine refait les mêmes exercices. */
   seed: string;
+  /**
+   * Refuse un gabarit fautif : il est refait avec une autre graine
+   * (`TEMPLATE_RETRIES` fois au plus), puis abandonné. Un palier peut alors
+   * compter moins de jeux que demandé, et le modèle écrit la différence. Ne juge
+   * que les gabarits : les quatre jeux ne passent pas par là.
+   */
+  accept?: GameAccept;
 };
+
+/**
+ * Fabrique un exercice, et le refait avec une autre graine tant que `accept`
+ * le refuse. La première graine est celle d'avant : sans refus, rien ne change.
+ */
+function makeAccepted(make: (suffix: string) => GeneratedGame, accept: GameAccept | undefined): GeneratedGame | null {
+  let game = make("");
+  if (!accept || !TEMPLATE_TYPES.includes(game.type) || accept(game)) return game;
+  for (let retry = 1; retry <= TEMPLATE_RETRIES; retry++) {
+    game = make(`:r${retry}`);
+    if (accept(game)) return game;
+  }
+  return null;
+}
 
 /**
  * Les exercices de jeu d'un palier, dans l'ordre des jeux demandés. Le palier
@@ -149,8 +185,12 @@ export function generateGames(specs: readonly GameSpec[], opts: GameRunOptions):
   for (const spec of specs) {
     if (!isGameKind(spec.kind)) continue;
     for (let i = 0; i < spec.count && out.length < PALIER_SIZE; i++) {
-      const ctx = makeContext(opts.klass, level, `${opts.seed}:${spec.kind}:${n++}`, used, spec.vocabulary);
-      out.push(GAME_KINDS[spec.kind].make(ctx));
+      const seed = `${opts.seed}:${spec.kind}:${n++}`;
+      const game = makeAccepted(
+        (suffix) => GAME_KINDS[spec.kind].make(makeContext(opts.klass, level, `${seed}${suffix}`, used, spec.vocabulary)),
+        opts.accept,
+      );
+      if (game) out.push(game);
     }
   }
   return out;
@@ -159,16 +199,22 @@ export function generateGames(specs: readonly GameSpec[], opts: GameRunOptions):
 /**
  * UNE VARIATION D'UN JEU RATÉ, sans le modèle : le même jeu, au même
  * niveau, avec une autre graine. `null` quand l'exercice ne vient pas d'un
- * jeu (le modèle s'en charge alors) ou d'un jeu disparu du catalogue.
+ * jeu (le modèle s'en charge alors), d'un jeu disparu du catalogue, ou d'un
+ * gabarit que `accept` a refusé à chaque tirage.
  */
 export function regenerateGame(
   origin: GameOrigin | null | undefined,
   klass: VisibleClassName,
   seed: string,
+  accept?: GameAccept,
 ): GeneratedGame | null {
   if (!origin || !isGameKind(origin.kind)) return null;
+  const kind = origin.kind;
   const level = Math.min(4, Math.max(1, Math.round(origin.level))) as GameLevel;
-  return GAME_KINDS[origin.kind].make(makeContext(klass, level, seed, undefined, origin.vocabulary));
+  return makeAccepted(
+    (suffix) => GAME_KINDS[kind].make(makeContext(klass, level, `${seed}${suffix}`, undefined, origin.vocabulary)),
+    accept,
+  );
 }
 
 /** Le jeu d'origine d'un exercice, lu dans son payload. */

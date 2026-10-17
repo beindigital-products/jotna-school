@@ -16,6 +16,8 @@ import {
 import { effectivePalierCount } from "../palierRules";
 import { assertTargetedDeployment } from "../testSeedsSchool";
 import { generateBucketCore, isBaseExercise } from "./index";
+import { gameCount } from "./games";
+import { programmeTopic } from "../programme";
 import { repairMathExercise } from "./mathRepair";
 import { repairDragDrop as repairDragDropExercise } from "./dragDropRepair";
 import { auditExercise, isBlocking } from "./exerciseAudit";
@@ -41,10 +43,10 @@ import { PALIER_SIZE } from "./scoring";
 // `classes`, tout l'élémentaire. `limit` borne une exécution (une action
 // Convex vit dix minutes au plus) : relancer jusqu'à `remaining: 0`.
 //
-// LA DÉPENSE EST RÉELLE : chaque palier est un appel au modèle, imputé à
-// personne (`userId` absent : appel système) et compté dans le budget mensuel
-// de la passerelle. D'où `confirmDeployment`, la même garde que les jeux de
-// données de test.
+// LA DÉPENSE EST RÉELLE : chaque palier, sauf ceux que le code fabrique seul
+// (`topicUsesModel`), est un appel au modèle, imputé à personne (`userId`
+// absent : appel système) et compté dans le budget mensuel de la passerelle.
+// D'où `confirmDeployment`, la même garde que les jeux de données de test.
 // ---------------------------------------------------------------------------
 
 /**
@@ -54,6 +56,16 @@ import { PALIER_SIZE } from "./scoring";
  */
 const ESTIMATED_COST_PER_BUCKET_USD = 0.0015;
 
+/**
+ * Un palier de cette thématique appelle-t-il le modèle ? Pas quand sa fiche du
+ * programme le remplit de jeux et de gabarits (`paliers/games`) : « Grave ou
+ * aigu ? », et les « Les sons… » du CI depuis le dixième gabarit. Son palier se
+ * fabrique sans un jeton, donc sans dépense à confirmer.
+ */
+export function topicUsesModel(programmeKey: string | null | undefined): boolean {
+  return gameCount(programmeTopic(programmeKey)?.topic.games) < PALIER_SIZE;
+}
+
 type PlanItem = {
   subjectId: Id<"subjects">;
   subjectName: string;
@@ -62,6 +74,8 @@ type PlanItem = {
   class: VisibleClassName;
   palierIndex: number;
   palierCount: number;
+  /** Faux pour un palier tout en gabarits ou en jeux : il ne coûte rien. */
+  usesModel: boolean;
 };
 
 type Plan = {
@@ -131,6 +145,7 @@ export const listPlan = internalQuery({
             class: cls,
             palierIndex,
             palierCount,
+            usesModel: topicUsesModel(topic.programmeKey),
           });
         }
       }
@@ -149,6 +164,8 @@ type BucketOutcome = PlanItem & {
 type RunSummary = {
   dryRun: boolean;
   toGenerate: number;
+  /** Parmi eux, les paliers que le code fabrique seul, sans appel au modèle. */
+  withoutModel: number;
   alreadyCached: number;
   estimatedCostUsd: number;
   topicsWithoutClass: string[];
@@ -178,13 +195,15 @@ export const run = internalAction({
       internal.paliers.pregen.listPlan,
       { classes, subjectIds: args.subjectIds },
     );
+    const withoutModel = plan.filter((item) => !item.usesModel).length;
     const estimatedCostUsd =
-      Math.round(plan.length * ESTIMATED_COST_PER_BUCKET_USD * 100) / 100;
+      Math.round((plan.length - withoutModel) * ESTIMATED_COST_PER_BUCKET_USD * 100) / 100;
 
     if (args.dryRun) {
       return {
         dryRun: true,
         toGenerate: plan.length,
+        withoutModel,
         alreadyCached,
         estimatedCostUsd,
         topicsWithoutClass,
@@ -231,6 +250,7 @@ export const run = internalAction({
     return {
       dryRun: false,
       toGenerate: plan.length,
+      withoutModel,
       alreadyCached,
       estimatedCostUsd,
       topicsWithoutClass,

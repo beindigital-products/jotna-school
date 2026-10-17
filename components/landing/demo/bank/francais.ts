@@ -56,7 +56,7 @@ export const BANK: SubjectBank = {
       ],
     }),
     order({
-      topic: "Les sons n, e, p, d, m, b",
+      topic: "Les lettres et les mots",
       stage: 3,
       prompt: "Remets les syllabes dans l'ordre pour écrire « tomate » 🍅.",
       sequence: ["to", "ma", "te"],

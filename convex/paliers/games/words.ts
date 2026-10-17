@@ -103,7 +103,7 @@ function piecesSeen(ctx: GameContext, piecesOf: (entry: LexiconWord) => string[]
 }
 
 /**
- * Un mot pour ce gabarit. Sept gabarits par palier piochent dans 7 à 37 mots :
+ * Un mot pour ce gabarit. Dix gabarits par palier piochent dans 7 à 37 mots :
  * on prend d'abord un mot qu'AUCUN gabarit n'a pris dans ce palier ; sinon un mot que CE
  * gabarit n'a pas pris (« tomate » en première lettre puis en syllabes, deux exercices
  * différents) ; sinon, tout a servi et on recommence.
@@ -333,6 +333,52 @@ export function makeLetterCount(ctx: GameContext): GeneratedGame {
       "Épelle le mot, lettre après lettre.",
       "Touche une lettre du doigt chaque fois que tu dis son nom.",
       "Compte les lettres, puis choisis le nombre.",
+    ],
+  );
+}
+
+/**
+ * Comment un mot s'entend au début, pour comparer sans se fier à l'écriture :
+ * sans accents ni majuscules, et « au », « eau » disent le même son que « o »
+ * (« auto » commence comme « olive »). Elle ne sert qu'à ÉCARTER des mauvais
+ * choix : en écarter un de trop ne coûte rien, en garder un de trop casse l'exercice.
+ */
+const startSound = (text: string) => stripAccents(text.toLowerCase()).replace(/^(?:eau|au)/, "o");
+
+/**
+ * « Quel mot commence par la syllabe « pa » ? » : le sens inverse de
+ * `makeFirstSyllable`. Un seul des trois mots commence par la syllabe : les deux
+ * autres ne la portent ni à l'écrit (« bal » commence par « ba », « loupe » par
+ * « lo ») ni à l'oreille (« auto » commence comme « olive »). Les mauvais choix
+ * viennent des mots du palier de lecture ; s'il en restait moins de deux, on
+ * piocherait dans tout le vocabulaire (le test des 37 mots montre que ça n'arrive pas).
+ *
+ * Pas d'émoji dans l'énoncé : le dessin du mot donnerait la réponse. Les indices
+ * n'écrivent aucun des trois mots.
+ */
+export function makeWordFromSyllable(ctx: GameContext): GeneratedGame {
+  const entry = pickWord(ctx, "mot-syllabe", wordsOf(ctx, (e) => e.syllables.length >= 2));
+  const syllable = entry.syllables[0];
+  const wouldFit = (word: string) =>
+    stripAccents(word.toLowerCase()).startsWith(stripAccents(syllable.toLowerCase())) ||
+    startSound(word).startsWith(startSound(syllable));
+  const fits = (e: LexiconWord) => e.word !== entry.word && !wouldFit(e.word);
+  const seen = wordsOf(ctx).filter(fits);
+  const wrong = shuffle(ctx.rng, seen.length >= 2 ? seen : LEXICON.filter(fits)).map((e) => e.word);
+  const { options, correctIndex } = choices(ctx, entry.word, wrong);
+  const count = entry.syllables.length;
+  return exercise(
+    "mot-syllabe",
+    ctx,
+    "qcm",
+    "mot qui commence par une syllabe",
+    `Quel mot commence par la syllabe « ${syllable} » ?`,
+    { options, correctIndex },
+    entry.word,
+    [
+      `Dis la syllabe « ${syllable} » à voix haute.`,
+      "Dis chaque mot lentement et écoute son premier bruit.",
+      `Le mot que tu cherches compte ${count} syllabes.`,
     ],
   );
 }

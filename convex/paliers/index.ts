@@ -36,7 +36,7 @@ import { exerciseImageIdOf } from "../../lib/exercise-images";
 import { validateFillBlank } from "./fillBlank";
 import { auditExercise, blockingDefects, tallyCodes } from "./exerciseAudit";
 import { computeExerciseScore, exercisesToRequest, hasEnoughValidExercises, PALIER_SIZE } from "./scoring";
-import { gameOriginOf, generateGames, interleave, regenerateGame } from "./games";
+import { gameOriginOf, generateGames, interleave, regenerateGame, type GameAccept } from "./games";
 import { programmeTopic } from "../programme";
 import type { GameOrigin } from "./games/types";
 import {
@@ -744,13 +744,21 @@ export async function generateBucketCore(
   // reste du palier, et rien du tout quand la thématique est tout en jeux.
   // La graine porte l'heure de génération : un palier régénéré change de
   // jeux, comme il change d'exercices du modèle.
+  //
+  // LE CONTRÔLEUR JUGE AUSSI LES GABARITS (`gameAcceptor`) : un exercice fabriqué
+  // avec un défaut `blocking` est refait avec une autre graine, puis abandonné.
+  // Les tests n'en trouvent aucun ; c'est le filet d'une thématique sans exercice
+  // du modèle, où rien d'autre ne relit le palier. Un gabarit abandonné laisse sa
+  // place au modèle (`aiCount`), comme un exercice du modèle écarté.
   const programme = programmeTopic(subject.topic.programmeKey);
   const games = programme?.topic.games ?? [];
+  const gameAudit = emptyAuditTally();
   const gameExos: PersistedShape[] = generateGames(games, {
     klass: args.class,
     palierIndex: args.palierIndex,
     palierCount,
     seed: `${args.topicId}:${args.palierIndex}:${now}`,
+    accept: gameAcceptor({ class: args.class, subject: subject.subjectName, tally: gameAudit }),
   }).map((game) => ({
     type: game.type,
     prompt: game.prompt,
@@ -868,8 +876,8 @@ export async function generateBucketCore(
         totalChecked: factCheck.totalChecked,
         divergences: factCheck.divergences,
         repaired: factCheck.repaired,
-        auditRejected: factCheck.audit.rejected,
-        auditWarnings: factCheck.audit.warned,
+        auditRejected: factCheck.audit.rejected + gameAudit.rejected,
+        auditWarnings: factCheck.audit.warned + gameAudit.warned,
       },
     },
   );
@@ -1004,7 +1012,12 @@ export const regenerateFailedExercises = action({
     const aiFailed = failed.filter((f) => f.game === null);
     const regenSeed = `${args.palierAttemptId}:${Date.now()}`;
     const gameVariations = gameFailed.flatMap((f) => {
-      const game = regenerateGame(f.game, klass, `${regenSeed}:${f.exerciseId}`);
+      const game = regenerateGame(
+        f.game,
+        klass,
+        `${regenSeed}:${f.exerciseId}`,
+        gameAcceptor({ class: klass, subject: subject.name }),
+      );
       if (!game) return [];
       return [
         {
@@ -1540,6 +1553,19 @@ function auditShape(shape: PersistedShape, ctx: ShapeContext | undefined): boole
     return false;
   }
   return true;
+}
+
+/**
+ * Le contrôleur au service des gabarits (`paliers/games`) : accepte un exercice
+ * fabriqué quand il n'a aucun défaut `blocking`. Rien à réparer ici, le code ne
+ * se trompe pas de réponse : un défaut est un bug du gabarit, à refaire ou à taire.
+ */
+function gameAcceptor(ctx: ShapeContext): GameAccept {
+  return (game) =>
+    auditShape(
+      { type: game.type, prompt: game.prompt, payload: game.payload, answerKey: game.answerKey, hints: game.hints, order: 0 },
+      ctx,
+    );
 }
 
 function toPersistedShape(ex: RawGenExercise, idx?: number, ctx?: ShapeContext): PersistedShape | null {
