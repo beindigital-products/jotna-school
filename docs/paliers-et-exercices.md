@@ -147,7 +147,9 @@ est comptée dans le budget mensuel de la passerelle IA, imputée à personne.
 Le résumé rendu liste `failed` (à relancer), `pendingHuman` (un exercice de
 mathématiques dont la réponse diverge de l'expression vérifiée ; le palier est
 servi, mais mérite un regard dans l'administration) et `topicsWithoutClass`
-(thématiques ignorées faute de niveau).
+(thématiques ignorées faute de niveau). `withoutModel` compte, parmi les paliers
+à faire, ceux que le code fabrique seul (dix gabarits ou jeux, voir « Les gabarits ») :
+ils ne coûtent rien et sont retirés de `estimatedCostUsd`.
 
 Les paliers expirent après un trimestre (`PALIER_TTL_MS`) et se régénèrent à
 la demande ; relancer la pré-génération avant la rentrée suffit.
@@ -571,6 +573,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `syllabe-initiale` | QCM | « Par quelle syllabe commence « penda » ? » : `pen` |
 | `syllabe-finale` | QCM | « Par quelle syllabe finit « tomate » ? 🍅 » : `te` (aucun mauvais choix ne finit le mot) |
 | `lettres-compter` | QCM | « Combien de lettres compte « olive » ? » : 5 |
+| `mot-syllabe` | QCM | « Quel mot commence par la syllabe « pa » ? » : `papa`, avec `lit` et `midi` (le sens inverse de `syllabe-initiale`, à ne pas confondre avec `syllabe-mot`, qui relie) |
 | `lettre-initiale` | QCM | « Par quelle lettre commence « lit » ? 🛏️ » |
 | `syllabes-compter` | QCM | « Combien de syllabes entends-tu dans « mère » ? » : 2 |
 | `syllabe-manquante` | phrase à trous | `to___te` : `ma` |
@@ -595,15 +598,51 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   « ami » ou « bébé » allaient aussi. Pour ajouter une phrase : le mot est dans
   `LEXICON`, une propriété à lui seul le désigne, et tout autre mot qui irait aussi
   est dans `also`.
+- **Le mot qui commence par une syllabe** (`mot-syllabe`) n'a qu'une bonne
+  réponse par construction : les deux mauvais mots ne commencent par la syllabe ni
+  à l'écrit, sans accents (« ballon » pour « ba », « loupe » pour « lo », « penda »
+  pour « pè »), ni à l'oreille (« au » et « eau » disent « o » : « auto » et « eau »
+  ne sont jamais proposés pour « olive »). On écarte trop plutôt que pas assez : il
+  reste toujours deux mots vus à proposer. L'énoncé n'a pas d'émoji (le dessin
+  donnerait le mot) et aucun des trois indices n'écrit un des choix. Le test rejoue
+  chacun des mots du vocabulaire, à chaque palier de lecture, avec 25 graines.
 - **Le dénombrement** (`paliers/games/counting.ts`) compte les émojis qu'il
   écrit : jamais plus de 5 au premier palier, 10 au dernier.
+- **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
+  défaut, mais une thématique sans exercice du modèle n'a plus personne pour
+  relire son palier. `generateBucketCore` passe donc chaque gabarit à
+  `auditExercise` (`gameAcceptor`) : sur un défaut `blocking`, il est refait avec
+  une autre graine (4 fois au plus, `TEMPLATE_RETRIES`), puis abandonné ; le modèle
+  écrirait alors la place laissée vide, comme pour un exercice écarté. Les refus
+  s'ajoutent à `auditRejected`. Ce n'est PAS `toPersistedShape` : celui-ci reconstruit
+  le payload et en retire `game`, l'origine qui permet de refaire un gabarit raté
+  sans le modèle. Les quatre jeux (frise, dessin, écoute, couleurs) ne passent pas
+  par là, le contrôleur n'est pas fait pour eux. Un gabarit raté par l'enfant se
+  refait de la même façon (`regenerateGame`).
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10` et `ma-ci-calcul-10`
-  (`convex/programme`), sept exercices par palier (neuf en `fr-ci-sons-2` à `fr-ci-sons-4`, avec la
-  phrase à trou et un gabarit de fin de mot ou de lettres) ; le modèle n'en écrit que trois (un seul dans ces trois-là).
+  (`convex/programme`), sept exercices par palier (dix en `fr-ci-sons-2` à
+  `fr-ci-sons-4`, voir plus bas) ; le modèle n'en écrit que trois.
   Pour que ces trois-là ne fassent pas échouer le palier (le seuil de validation
   exige 3 valides sur 3), le modèle en écrit deux de plus et on garde les premiers
   valides (`scoring.exercisesToRequest`). Un palier déjà généré garde ses exercices : il faut l'invalider
   (`pregen:auditExercises` ou une régénération) pour qu'il reçoive les gabarits.
+- **Dix gabarits, plus aucun appel au modèle en `fr-ci-sons-2` à `fr-ci-sons-4`.**
+  Ces trois fiches portent dix gabarits par palier (les neuf d'avant et
+  `mot-syllabe`) : le modèle n'écrit plus rien, le palier est un « palier tout en
+  jeux ». `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
+  `exercisesToRequest(0)` aussi), ne demande aucune réserve, ne peut pas échouer
+  en `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices. La pré-génération le
+  sait (`pregen:run` annonce ces paliers dans `withoutModel`, hors du coût estimé :
+  `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
+  (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
+  `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
+  chaque palier de ces trois thématiques contre un faux modèle qui lève une
+  exception au moindre appel. Il reste un appel au modèle pour ces paliers :
+  l'explication pas à pas qu'un enfant demande après cinq essais ratés
+  (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
+  Les autres thématiques gardent trois exercices du modèle, avec leurs défauts
+  connus (voir plus haut) ; leur donner dix gabarits demande dix gabarits sûrs de
+  plus, pas seulement un.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
   associations et des phrases à trous, déjà montrés.
