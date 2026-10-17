@@ -3,7 +3,7 @@ import { auditExercise } from "../paliers/exerciseAudit";
 import { verifyAnswer } from "../paliers/exerciseRules";
 import { GAME_KINDS, gameOriginOf, generateGames, isGameKind, regenerateGame, type GameKind } from "../paliers/games";
 import { makeContext, type GameLevel } from "../paliers/games/shared";
-import { LEXICON, stageOf } from "../paliers/games/words";
+import { LEXICON, SENTENCES, stageOf } from "../paliers/games/words";
 import { KNOWN_WORDS } from "../paliers/knownWords";
 import { SPARE_AI_EXERCISES, exercisesToRequest, hasEnoughValidExercises } from "../paliers/scoring";
 import { countByTopic, shouldInvalidate } from "../paliers/pregen";
@@ -23,6 +23,7 @@ const TEMPLATES = [
   "syllabes-compter",
   "syllabe-manquante",
   "lettre-manquante",
+  "phrase-trou",
   "syllabe-mot",
   "mot-image",
   "compter-emojis",
@@ -183,6 +184,47 @@ describe("les gabarits de mots tiennent leur vocabulaire", () => {
   });
 });
 
+describe("la phrase à trou n'a qu'une bonne réponse", () => {
+  it("écrit chaque phrase avec un seul trou, pour un mot du vocabulaire", () => {
+    for (const sentence of SENTENCES) {
+      expect(LEXICON.some((e) => e.word === sentence.word), sentence.word).toBe(true);
+      expect(sentence.text.split("___").length - 1, sentence.text).toBe(1);
+      for (const other of sentence.also ?? []) {
+        expect(LEXICON.some((e) => e.word === other), `${sentence.word} : ${other}`).toBe(true);
+        expect(other, sentence.word).not.toBe(sentence.word);
+      }
+    }
+    const words = SENTENCES.map((s) => s.word);
+    expect(new Set(words).size).toBe(words.length);
+  });
+
+  it("ne propose jamais un mot qui irait aussi, ni un mot déjà écrit dans la phrase", () => {
+    for (let n = 0; n < 200; n++) {
+      const vocabulary = ["mots-2", "mots-3", "mots-4"][n % 3];
+      const exo = GAME_KINDS["phrase-trou"].make(makeContext("CI", 2, `phrase:${n}`, undefined, vocabulary));
+      const text = exo.payload.text as string;
+      const sentence = SENTENCES.find((s) => s.text === text)!;
+      const blank = (exo.payload.blanks as { options: string[]; answer: string }[])[0];
+      expect(blank.answer, text).toBe(sentence.word);
+      expect(blank.options, text).toHaveLength(3);
+      for (const option of blank.options.filter((o) => o !== sentence.word)) {
+        expect(sentence.also ?? [], `${text} avec ${option}`).not.toContain(option);
+        expect(fold(text), `${text} avec ${option}`).not.toMatch(new RegExp(`(?<![a-z])${fold(option)}(?![a-z])`));
+      }
+    }
+  });
+
+  it("ne cite que des mots du palier de lecture demandé", () => {
+    for (let n = 0; n < 60; n++) {
+      const exo = GAME_KINDS["phrase-trou"].make(makeContext("CI", 2, `stade:${n}`, undefined, "mots-2"));
+      const blank = (exo.payload.blanks as { options: string[]; answer: string }[])[0];
+      for (const option of blank.options) {
+        expect(LEXICON.find((e) => e.word === option)?.stage, `${exo.payload.text} : ${option}`).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+});
+
 describe("les gabarits de dénombrement comptent juste", () => {
   it("fait compter exactement autant d'émojis que la réponse", () => {
     for (let n = 0; n < 40; n++) {
@@ -232,13 +274,14 @@ describe("les gabarits dans le programme du CI", () => {
     );
   });
 
-  it("ne demande que des jeux connus, et exactement sept gabarits par palier", () => {
+  it("ne demande que des jeux connus, et sept gabarits par palier (huit avec la phrase à trou)", () => {
+    const withSentence = ["fr-ci-sons-2", "fr-ci-sons-3", "fr-ci-sons-4"];
     for (const entry of entries) {
       for (const spec of entry.topic.games ?? []) {
         expect(isGameKind(spec.kind), `${entry.topic.key} : ${spec.kind}`).toBe(true);
       }
       const total = (entry.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0);
-      expect(total, entry.topic.key).toBe(7);
+      expect(total, entry.topic.key).toBe(withSentence.includes(entry.topic.key) ? 8 : 7);
     }
   });
 

@@ -573,6 +573,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `syllabes-compter` | QCM | « Combien de syllabes entends-tu dans « mère » ? » : 2 |
 | `syllabe-manquante` | phrase à trous | `to___te` : `ma` |
 | `lettre-manquante` | phrase à trous | `m___to` : `o` |
+| `phrase-trou` | phrase à trous | « Complète la phrase. » : `La ___ pond un œuf.` : `poule` |
 | `syllabe-mot` | association | `ba~bateau ; sa~savon…` |
 | `mot-image` | association | `poule~🐔…` |
 | `compter-emojis`, `ajouter-emojis`, `enlever-emojis` | QCM | « Combien de mangues en tout ? 🥭🥭 + 🥭 » : 3 |
@@ -585,11 +586,19 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 - **Les mauvais choix d'un trou ne forment aucun mot** (`KNOWN_WORDS`), sinon
   l'exercice aurait deux bonnes réponses. Une syllabe donnée comme mauvais choix
   ne commence jamais le mot (« ba » pour « ballon »).
+- **La phrase à trou** (`SENTENCES` dans `words.ts`) : chaque phrase est écrite à la
+  main pour qu'UN SEUL mot du vocabulaire la complète. Les mots qui iraient aussi
+  vont dans `also` et ne sont jamais proposés ; un mot déjà écrit dans la phrase non
+  plus. Le modèle écrivait « Mon ___ est dans le jardin » avec « père » : « mère »,
+  « ami » ou « bébé » allaient aussi. Pour ajouter une phrase : le mot est dans
+  `LEXICON`, une propriété à lui seul le désigne, et tout autre mot qui irait aussi
+  est dans `also`.
 - **Le dénombrement** (`paliers/games/counting.ts`) compte les émojis qu'il
   écrit : jamais plus de 5 au premier palier, 10 au dernier.
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10` et `ma-ci-calcul-10`
-  (`convex/programme`), sept exercices par palier ; le modèle n'en écrit que trois.
+  (`convex/programme`), sept exercices par palier (huit en `fr-ci-sons-2` à `fr-ci-sons-4`, avec la
+  phrase à trou) ; le modèle n'en écrit que trois (deux dans ces trois-là).
   Pour que ces trois-là ne fassent pas échouer le palier (le seuil de validation
   exige 3 valides sur 3), le modèle en écrit deux de plus et on garde les premiers
   valides (`scoring.exercisesToRequest`). Un palier déjà généré garde ses exercices : il faut l'invalider
