@@ -5,9 +5,12 @@
  * - LES EXERCICES CLASSIQUES : ceux que le modèle a le droit d'écrire pour la
  *   matière (la ligne « Types autorisés » de sa consigne,
  *   `convex/paliers/prompts.ts`), sauf la réponse courte au CI, où l'enfant ne
- *   sait pas encore écrire au clavier (`readingLearnerRules`). Les
- *   mathématiques n'ont pas de phrase à trous : un calcul à trou s'y écrit en
- *   réponse courte, que le serveur vérifie par le calcul.
+ *   sait pas encore écrire au clavier (`readingLearnerRules`). Le modèle n'écrit
+ *   pas de phrase à trous en mathématiques : un calcul à trou s'y écrit en
+ *   réponse courte, que le serveur vérifie par le calcul. Un gabarit n'est pas
+ *   le modèle : les petits problèmes du CI en servent une (`probleme-question`,
+ *   le trou est un mot), que la vitrine ne montre pas, puisqu'elle liste ce que
+ *   le modèle écrit.
  * - LES JEUX : ceux que le programme demande aux thématiques de CETTE classe
  *   (`games`, `convex/programme`) : les quatre jeux (frises, dessin, écoute,
  *   couleurs) ET les gabarits du code, ces exercices à vocabulaire fermé que le
@@ -68,10 +71,11 @@ export const GAMES_BY_SUBJECT: Record<DemoSubject, Partial<Record<DemoClass, Gam
   mathematiques: {
     CI: [
       { type: "pattern", options: [{ kind: "frise-formes", topic: "Trier et ranger" }, { kind: "frise-couleurs", topic: "Trier et ranger" }, { kind: "suite-nombres", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }] },
-      { type: "qcm", options: [{ kind: "compter-emojis", topic: "Les nombres jusqu'à 10" }, { kind: "rangee-plus-moins", topic: "Les nombres jusqu'à 10" }, { kind: "nombre-voisin", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }, { kind: "nombre-plus-grand", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }, { kind: "nombre-en-lettres", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }, { kind: "ajouter-emojis", topic: "Ajouter et enlever jusqu'à 10" }, { kind: "enlever-emojis", topic: "Ajouter et enlever jusqu'à 10" }, { kind: "calcul-ecrit", topic: "Ajouter et enlever jusqu'à 10", vocabulary: "nombres-10" }, { kind: "double-moitie", topic: "Ajouter et enlever jusqu'à 10", vocabulary: "nombres-10" }, { kind: "complement", topic: "Ajouter et enlever jusqu'à 10", vocabulary: "nombres-10" }, { kind: "dizaine-unites", topic: "Les nombres de 11 à 20", vocabulary: "nombres-20" }] },
+      { type: "qcm", options: [{ kind: "intrus", topic: "Trier et ranger" }, { kind: "appartient", topic: "Trier et ranger" }, { kind: "couleur-objet", topic: "Trier et ranger" }, { kind: "compter-emojis", topic: "Les nombres jusqu'à 10" }, { kind: "rangee-plus-moins", topic: "Les nombres jusqu'à 10" }, { kind: "nombre-voisin", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }, { kind: "nombre-plus-grand", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }, { kind: "nombre-en-lettres", topic: "Les nombres jusqu'à 10", vocabulary: "nombres-10" }, { kind: "ajouter-emojis", topic: "Ajouter et enlever jusqu'à 10" }, { kind: "enlever-emojis", topic: "Ajouter et enlever jusqu'à 10" }, { kind: "calcul-ecrit", topic: "Ajouter et enlever jusqu'à 10", vocabulary: "nombres-10" }, { kind: "double-moitie", topic: "Ajouter et enlever jusqu'à 10", vocabulary: "nombres-10" }, { kind: "complement", topic: "Ajouter et enlever jusqu'à 10", vocabulary: "nombres-10" }, { kind: "dizaine-unites", topic: "Les nombres de 11 à 20", vocabulary: "nombres-20" }, { kind: "rangee-position", topic: "Gauche, droite, dessus, dessous" }, { kind: "rangee-ordinal", topic: "Gauche, droite, dessus, dessous" }, { kind: "forme-nom", topic: "Les formes et les solides" }, { kind: "forme-coins", topic: "Les formes et les solides" }, { kind: "solide-nom", topic: "Les formes et les solides" }, { kind: "comparer-mesure", topic: "Plus long, plus lourd, plus tard" }, { kind: "moment-journee", topic: "Plus long, plus lourd, plus tard" }, { kind: "jour-voisin", topic: "Plus long, plus lourd, plus tard" }, { kind: "image-compter", topic: "Petits problèmes", vocabulary: "nombres-20" }, { kind: "image-qui", topic: "Petits problèmes", vocabulary: "nombres-20" }, { kind: "tableau-case", topic: "Petits problèmes" }, { kind: "tableau-nombre", topic: "Petits problèmes", vocabulary: "nombres-20" }, { kind: "image-donnee", topic: "Petits problèmes", vocabulary: "nombres-20" }, { kind: "probleme-donnee", topic: "Petits problèmes", vocabulary: "nombres-20" }, { kind: "donnee-inutile", topic: "Petits problèmes", vocabulary: "nombres-20" }, { kind: "probleme-inutile", topic: "Petits problèmes", vocabulary: "nombres-20" }] },
+      { type: "order", options: [{ kind: "animaux-ordre", topic: "Trier et ranger" }, { kind: "nombres-ordre", topic: "Les nombres de 11 à 20", vocabulary: "nombres-20" }] },
       { type: "match", options: [{ kind: "nombre-groupe", topic: "Les nombres jusqu'à 10" }] },
-      { type: "order", options: [{ kind: "nombres-ordre", topic: "Les nombres de 11 à 20", vocabulary: "nombres-20" }] },
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Gauche, droite, dessus, dessous" }] },
+      { type: "drag-drop", options: [{ kind: "classer-formes", topic: "Les formes et les solides" }, { kind: "donnee-ou-question", topic: "Petits problèmes", vocabulary: "nombres-20" }] },
     ],
     CP: [
       { type: "pattern", options: [{ kind: "suite-nombres", topic: "Les nombres jusqu'à 50" }, { kind: "frise-formes", topic: "Lignes, frises et figures" }] },

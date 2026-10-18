@@ -169,7 +169,7 @@ paliers sont à refaire. `dryRun` compte et nomme les thématiques (et dit
 `truncated: true` si la base compte plus de paliers que la lecture) :
 
 ```bash
-npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10","ma-ci-nombres-20"],"dryRun":true}'
+npx convex run paliers/pregen:invalidate '{"confirmDeployment":"impartial-ermine-150","programmeKeys":["fr-ci-sons-1","fr-ci-sons-2","fr-ci-sons-3","fr-ci-sons-4","fr-ci-alphabet","ma-ci-nombres-10","ma-ci-calcul-10","ma-ci-nombres-20","ma-ci-trier","ma-ci-espace","ma-ci-formes","ma-ci-mesures","ma-ci-problemes"],"dryRun":true}'
 ```
 
 Les élèves qui ont une tentative ouverte sur un palier invalidé la
@@ -594,6 +594,29 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `complement` | QCM | « Combien faut-il ajouter à 6 pour faire 10 ? » : 4 |
 | `calcul-ecrit` | QCM | « Combien font 4 + 3 ? » : 7 ; « Combien font 8 − 5 ? » : 3 |
 | `dizaine-unites` | QCM | « Dans 14, il y a une dizaine et combien d'unités ? » : 4 (de 11 à 19) |
+| `forme-nom` | QCM | « Quel est le nom de cette forme ? ⬛ » : `le carré` (jamais « le rectangle » pour un carré) |
+| `forme-coins` | QCM | « Combien de coins a un triangle ? » : 3 (carré et rectangle 4, rond 0) |
+| `solide-nom` | QCM | « Quel est le nom du solide qui ressemble à cet objet ? 🎲 » : `le cube` (jamais « le pavé » pour le dé) |
+| `classer-formes` | glisser-déposer | « Glisse chaque forme dans la bonne case. » : `⬛🔲` dans Carrés, `🔴` dans Ronds |
+| `rangee-position` | QCM | « Regarde la rangée 🐔 🍌 🐄. Qui est à gauche ? » : `🐔 la poule` |
+| `rangee-ordinal` | QCM | « …Qui est le troisième, en lisant de gauche à droite ? » |
+| `intrus` | QCM | « Lequel n'est pas comme les autres ? » : trois fruits et un animal |
+| `appartient` | QCM | « Est-ce un fruit ? 🐔 » : Non |
+| `couleur-objet` | QCM | « Qu'est-ce qui est jaune ? » : `🍌 la banane`, parmi trois couleurs |
+| `comparer-mesure` | QCM | « Quel animal est le plus lourd ? » : trois animaux espacés d'au moins deux crans |
+| `animaux-ordre` | ordre | « Mets ces animaux dans l'ordre, du plus léger au plus lourd. » |
+| `moment-journee` | QCM | « Le soleil se couche. Quel moment de la journée est-ce ? » : `le soir` |
+| `jour-voisin` | QCM | « Quel jour vient juste après mardi ? » : mercredi |
+| `image-compter` | QCM | « Combien de poules vois-tu dans la cour ? 🐔 🐑 🐔 🐔 🐑 » : 3 (deux sortes, puis trois) |
+| `image-qui` | QCM | « Voici les billes de Moussa 🔵🔵, de Fatou 🔵🔵🔵🔵🔵 et de Cheikh 🔵. Qui a le plus de billes ? » : `Fatou` ; au dernier palier « Qui a autant de billes que Moussa ? » avec quatre enfants |
+| `tableau-case` | QCM | « Regarde le tableau. » puis la grille `💚 💙 🧡` / `📗 ❔ 📙` sur deux lignes, « Quel dessin manque dans le tableau ? » : `📘` |
+| `tableau-nombre` | QCM | « Awa a 3 mangues 🥭🥭🥭 et 1 banane 🍌, » / « Moussa a 2 mangues 🥭🥭 et 4 bananes 🍌🍌🍌🍌. Combien de bananes a Moussa ? » : 4 (chiffres seuls au dernier palier) |
+| `image-donnee` | QCM | « Awa cueille ces mangues 🥭🥭🥭🥭 et en mange 1. Combien lui en reste-t-il ? » : 3 (le premier nombre se compte dans l'image) |
+| `probleme-donnee` | QCM | « Fatou a 4 bananes, elle en donne 1 à Moussa. Combien de bananes Fatou a-t-elle au début ? » : 4 (le résultat du calcul est le mauvais choix) |
+| `donnee-ou-question` | glisser-déposer | « Glisse chaque phrase du problème dans la bonne case, ce que je sais ou ce que je cherche. » : `Awa a 3 mangues 🥭🥭🥭.` et `Awa mange 1 mangue 🥭.` dans Ce que je sais, `Combien de mangues reste-t-il à Awa ?` dans Ce que je cherche ; au dernier palier, les cases deviennent « Ce qui sert », « Ce qui ne sert pas » (qui reçoit `Awa a 7 ans.`) et « Ce que je cherche » : l'âge est aussi « ce que je sais », les cases ne doivent pas se recouvrir |
+| `probleme-question` | phrase à trous | « Awa a 4 mangues 🥭🥭🥭🥭 et elle en mange 1. Complète la question du problème. » : `Combien de ___ lui reste-t-il ?` avec `mangues 🥭`, `poules 🐔`, `ballons ⚽` |
+| `donnee-inutile` | QCM | « Awa, 7 ans, a 3 mangues et en mange 1. Quel nombre est inutile pour les mangues qui restent ? » : 7 (les trois options sont les trois nombres) |
+| `probleme-inutile` | QCM | « Cheikh a 17 moutons et 3 poules, il vend 5 moutons. Combien de moutons lui reste-t-il ? » : 12 (14 et 17 sont les calculs faits avec la donnée inutile, ou sans calcul) |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -623,6 +646,24 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   chacun des mots du vocabulaire, à chaque palier de lecture, avec 25 graines.
 - **Le dénombrement** (`paliers/games/counting.ts`) compte les émojis qu'il
   écrit : jamais plus de 5 au premier palier, 10 au dernier.
+- **Les choses du monde de l'enfant** (`paliers/games/things.ts`) : chaque animal, fruit,
+  vêtement, véhicule ou objet d'école est écrit UNE fois, avec son émoji ancien (Unicode 11
+  au plus, sans sélecteur de variation), sa famille, sa couleur et son rang de taille et de
+  poids. `geometry.ts` (formes, coins, solides, classement, rangées) et `sorting.ts` (intrus,
+  famille, couleur, comparaisons, rangement, moments, jours) n'inventent rien. Une comparaison
+  espace toujours les choses d'au moins deux crans de l'échelle (un chien et un mouton, une
+  poule et un chien, se discutent) ; l'éléphant n'est pas dans l'échelle de taille (la girafe est
+  plus haute) ; un carré est un rectangle particulier et un cube un pavé particulier, donc
+  jamais « rectangle » pour un carré ni « pavé » pour le dé. Ajouter une chose : un émoji ancien,
+  une seule famille et une seule couleur sans doute possible. Les énoncés des jeux ne contiennent
+  aucun « : » (l'écran, `ExercisePrompt`, coupe une consigne sur le deux-points) ni plus d'une
+  apostrophe droite (précaution du test des jeux : l'apostrophe droite ne coupe rien, seules les
+  guillemets le font). La voix de Pio ne dit pas les émojis : un énoncé ne doit jamais nommer un
+  dessin par son seul émoji (« Qui est entre 🐟 et 🐕 ? » devenait « Qui est entre et ? »), d'où
+  l'absence de « entre ». Un mot de la question n'est jamais celui de la réponse (« l'orange »
+  pour la couleur orange, le jour cité pour le jour d'avant). Le soir et la nuit ne se proposent
+  jamais ensemble. La difficulté monte avec le palier : rangées de trois puis de quatre dessins,
+  quatre puis cinq choix à l'intrus, quatre couleurs, deux animaux très différents puis trois.
 - **Les nombres** (`paliers/games/numbers.ts`) CALCULENT leur réponse, jamais
   écrite : une seule option juste, les mauvais choix sont des erreurs d'enfant (le
   nombre lui-même, un de plus, un de moins, l'autre opération) et ne valent jamais
@@ -630,6 +671,31 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   « nombres-10 » ou « nombres-20 » (aussi pour `suite-nombres`, dont les mauvais
   choix ne dépassent plus ce plafond). Aucun indice n'écrit un chiffre : un test
   recalcule chaque réponse depuis l'énoncé.
+- **Les petits problèmes** (`paliers/games/problems.ts`, lexique dans `stories.ts`) : dix gabarits
+  pour « Petits problèmes » (`ma-ci-problemes`), trois sur l'image, deux sur le tableau à double
+  entrée, trois sur la donnée et la question, deux sur la donnée inutile. Les prénoms (vingt, avec
+  leur genre et leur voyelle initiale), les objets (avec genre, pluriel, famille, émoji et verbes
+  qui leur vont : on ne mange pas une bille) et chaque forme interrogative (« vend-il », « mange-t-elle »)
+  sont écrits une fois. La réponse se calcule ou se lit dans ce que l'énoncé montre ; les mauvais
+  choix sont les erreurs d'enfant (tout compter, oublier de calculer, prendre la donnée inutile).
+  Le plafond monte avec le palier (5, 10, puis 20), une rangée d'émojis ne dépasse jamais dix,
+  aucun calcul ne passe la dizaine (10 + 6 et 17 − 4, jamais 8 + 5), et l'énoncé tient en deux
+  phrases et vingt mots, avec une apostrophe au plus. Le tableau à double entrée n'a pas de rendu
+  de grille : `tableau-case` écrit la grille d'émojis sur plusieurs lignes de l'énoncé (un `\n`
+  devient un vrai retour à la ligne sur l'écran de l'élève, `ExercisePrompt` est en
+  `whitespace-pre-line` ; les aperçus enseignants et la voix l'aplatissent), chaque ligne n'a
+  qu'une sorte de dessin et chaque colonne qu'une couleur, et une case manque (❔) : la question
+  ne nomme ni la ligne ni la colonne, il faut lire les deux. `tableau-nombre` dit un tableau de
+  deux enfants et deux objets en deux lignes. Ce que cela ne couvre pas : les en-têtes écrits, la
+  lecture inverse (de la case vers son en-tête), le remplissage d'un tableau d'effectifs ; il
+  faudrait un champ de tableau dans le payload, rendu par l'écran et lu par la voix.
+  `probleme-question` est la première phrase à trous des mathématiques : le modèle n'y a pas droit
+  (`demo-matrix.ts`, « un calcul à trou s'y écrit en réponse courte »), mais un gabarit n'est pas
+  le modèle, et le trou est un mot, pas un nombre. Le glisser-déposer `donnee-ou-question` écrit
+  des étiquettes qui se comprennent seules (l'écran les mélange : ni pronom, ni « en ») ; la voix
+  ne les lit pas, lire est l'exercice, les émojis des deux premiers paliers aident.
+  Les paliers déjà générés de cette thématique gardent les exercices du modèle jusqu'à leur
+  invalidation (`pregen:invalidate`, voir plus haut).
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
@@ -643,8 +709,9 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   refait de la même façon (`regenerateGame`).
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
-  `ma-ci-nombres-20` (`convex/programme`), dix exercices par palier, voir plus
-  bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
+  `ma-ci-nombres-20`, `ma-ci-trier`, `ma-ci-espace`, `ma-ci-formes`, `ma-ci-mesures` et
+  `ma-ci-problemes` (`convex/programme`), dix exercices par palier, voir plus bas ; le modèle n'écrit plus
+  rien. (Quand une fiche garde des exercices du
   modèle, le seuil de validation exige tous les exercices écrits : le modèle en
   écrit deux de plus et on garde les premiers valides, `scoring.exercisesToRequest`.)
   Un palier déjà généré garde ses exercices : il faut l'invalider
@@ -668,7 +735,15 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   « 14 − 10 » : jamais un passage de la dizaine). Les suites de nombres suivent la
   plage de leur fiche (de 0 à 10, puis de 10 à 20, qui monte avec le palier), ne
   servent jamais deux fois la même dans un palier et gardent toujours au moins deux
-  mauvais choix, jamais au-dessus du plafond. `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
+  mauvais choix, jamais au-dessus du plafond. **Géométrie et mesures :**
+  `ma-ci-trier` = 2 frises de formes, 2 frises de couleurs, 2 intrus, un « est-ce un
+  fruit ? », une couleur, 2 rangements d'animaux ; `ma-ci-espace` = 2 dessins à copier, 4
+  repérages dans une rangée, 4 rangs ; `ma-ci-formes` = 2 frises de formes, 2 noms de forme,
+  2 coins, 2 solides, 2 classements de formes ; `ma-ci-mesures` = 4 comparaisons d'animaux,
+  3 moments de la journée, 3 jours voisins. **Problèmes :** `ma-ci-problemes` = les dix gabarits
+  de petits problèmes, un de chaque, dans l'ordre de la fiche (l'image, le tableau, la donnée et
+  la question, la donnée inutile) ; la difficulté vient du palier, pas du nombre d'exemplaires.
+  `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
   `exercisesToRequest(0)` aussi), ne demande aucune réserve, n'échoue pas en
   `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices, tant que le contrôleur
   n'abandonne aucun gabarit (un gabarit refusé après les essais rouvre une place
@@ -677,15 +752,20 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces huit thématiques contre un faux modèle qui lève une
+  chaque palier de ces treize thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
-  Les autres thématiques (trier, espace, formes, mesures et problèmes du CI ; autres classes)
-  gardent des exercices du modèle, avec leurs défauts connus (voir plus haut) ;
-  leur donner dix gabarits demande des gabarits sûrs de plus.
+  Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
+  haut) : en CI, les premières phrases, les salutations, l'éveil, l'histoire, la
+  géographie, l'instruction civique, l'anglais et l'éducation artistique ; toutes les autres classes.
+  Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
+  dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
+  rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à
+  ajouter.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
   associations et des phrases à trous, déjà montrés. Son test n'admet un exercice
   dans une thématique tout en jeux que si l'un de ses gabarits fabrique ce type
-  (le glisser-déposer du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
-  modèle l'écrit).
+  (le glisser-déposer du français du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
+  modèle l'écrit ; celui des mathématiques à « Les formes et les solides », que `classer-formes`
+  fabrique).

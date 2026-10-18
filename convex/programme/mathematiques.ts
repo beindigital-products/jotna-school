@@ -29,6 +29,10 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         games: [
           { kind: "frise-formes", count: 2 },
           { kind: "frise-couleurs", count: 2 },
+          { kind: "intrus", count: 2 },
+          { kind: "appartient", count: 1 },
+          { kind: "couleur-objet", count: 1 },
+          { kind: "animaux-ordre", count: 2 },
         ],
       },
       {
@@ -79,26 +83,55 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Gauche, droite, dessus, dessous",
         description:
           "Activités géométriques, paliers 1 et 3 du CI : latéralisation (gauche, droite), topologie (dans, hors de, devant, derrière, sur, sous, entre, près, loin), lignes ouvertes et fermées, se repérer sur un quadrillage, suivre un itinéraire.",
-        games: [{ kind: "pixel-copie", count: 2 }],
+        games: [
+          { kind: "pixel-copie", count: 2 },
+          { kind: "rangee-position", count: 4 },
+          { kind: "rangee-ordinal", count: 4 },
+        ],
       },
       {
         key: "ma-ci-formes",
         name: "Les formes et les solides",
         description:
           "Activités géométriques, palier 2 du CI : reconnaître le carré, le rectangle, le triangle et le rond ; les solides familiers (le cube comme un dé, le pavé comme une boîte de sucre, le cylindre comme une boîte de tomate).",
-        games: [{ kind: "frise-formes", count: 2 }],
+        games: [
+          { kind: "frise-formes", count: 2 },
+          { kind: "forme-nom", count: 2 },
+          { kind: "forme-coins", count: 2 },
+          { kind: "solide-nom", count: 2 },
+          { kind: "classer-formes", count: 2 },
+        ],
       },
       {
         key: "ma-ci-mesures",
         name: "Plus long, plus lourd, plus tard",
         description:
           "Activités de mesure, paliers 1 à 3 du CI : comparer des longueurs et des contenances sans instrument (plus long, plus court, plus plein), comparer des masses (plus lourd, plus léger), les moments de la journée (matin, midi, soir), les jours de la semaine.",
+        games: [
+          { kind: "comparer-mesure", count: 4 },
+          { kind: "moment-journee", count: 3 },
+          { kind: "jour-voisin", count: 3 },
+        ],
       },
       {
         key: "ma-ci-problemes",
         name: "Petits problèmes",
         description:
           "Résolution de problèmes, paliers 1 à 3 du CI : trouver un indice dans une image, lire un tableau à double entrée, repérer la donnée et la question d'un petit problème, les données utiles et inutiles. Énoncés de deux phrases au plus, nombres jusqu'à 20.",
+        // Dix gabarits, dans l'ordre de la fiche : l'image, le tableau, la donnée et la question, la donnée inutile.
+        // `vocabulary` donne le plafond de la fiche (20) ; le tableau de dessins n'écrit aucun nombre.
+        games: [
+          { kind: "image-compter", count: 1, vocabulary: "nombres-20" },
+          { kind: "image-qui", count: 1, vocabulary: "nombres-20" },
+          { kind: "tableau-case", count: 1 },
+          { kind: "tableau-nombre", count: 1, vocabulary: "nombres-20" },
+          { kind: "image-donnee", count: 1, vocabulary: "nombres-20" },
+          { kind: "probleme-donnee", count: 1, vocabulary: "nombres-20" },
+          { kind: "donnee-ou-question", count: 1, vocabulary: "nombres-20" },
+          { kind: "probleme-question", count: 1, vocabulary: "nombres-20" },
+          { kind: "donnee-inutile", count: 1, vocabulary: "nombres-20" },
+          { kind: "probleme-inutile", count: 1, vocabulary: "nombres-20" },
+        ],
       },
     ],
     CP: [

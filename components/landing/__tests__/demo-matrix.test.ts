@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { VISIBLE_CLASSES } from "@/convex/curriculum";
-import { AI_EXERCISE_TYPES, EXERCISE_TYPES, type ExerciseType } from "@/convex/exerciseTypes";
+import { AI_EXERCISE_TYPES, EXERCISE_TYPES, GAME_EXERCISE_TYPES, type ExerciseType } from "@/convex/exerciseTypes";
 import { GAME_KINDS, type GameKind } from "@/convex/paliers/games";
 import { buildPalierBasePrompt } from "@/convex/paliers/prompts";
 import { PROGRAMME } from "@/convex/programme";
@@ -37,18 +37,24 @@ function authorizedFor(subjectName: string): ExerciseType[] {
 
 /**
  * Chaque jeu du catalogue a sa carte : les quatre jeux (frises, dessin, écoute,
- * couleurs) et les gabarits (`paliers/games/words.ts`, `counting.ts`), qui
- * rendent un exercice classique (QCM, ordre, association, phrase à trous) à
- * partir d'un vocabulaire fermé.
+ * couleurs) et les gabarits (`paliers/games/words.ts`, `counting.ts`,
+ * `problems.ts`…), qui rendent un exercice classique (QCM, ordre, association,
+ * phrase à trous) à partir d'un vocabulaire fermé. Un gabarit n'a pas sa carte
+ * quand son type est un de ceux que le modèle n'a pas le droit d'écrire pour la
+ * matière : la vitrine ne montre pas la phrase à trous des mathématiques du CI,
+ * que seul un gabarit sert (`probleme-question`).
  */
-const isShownGame = (kind: GameKind) => kind in GAME_KINDS;
+const isShownGame = (subject: (typeof PROGRAMME)[number], kind: GameKind) => {
+  const type = GAME_KINDS[kind].type;
+  return (GAME_EXERCISE_TYPES as readonly string[]).includes(type) || (CLASSIC_BY_SUBJECT[subject.key] as readonly string[]).includes(type);
+};
 
 /** Les jeux d'une classe, refaits depuis le programme : par type, dans l'ordre où le programme les cite. */
 function gamesOfProgramme(subject: (typeof PROGRAMME)[number], klass: (typeof DEMO_CLASSES)[number]): GameOffer[] {
   const offers = new Map<GameOffer["type"], GameOffer["options"]>();
   for (const topic of subject.classes[klass]) {
     for (const spec of topic.games ?? []) {
-      if (!isShownGame(spec.kind)) continue;
+      if (!isShownGame(subject, spec.kind)) continue;
       const type = GAME_KINDS[spec.kind].type;
       const options = offers.get(type) ?? [];
       // Le plafond de la fiche (« nombres-10 ») voyage avec l'offre : la vitrine fabrique le jeu que l'application fabrique.
@@ -129,7 +135,7 @@ describe("la vitrine : les exercices de chaque classe sont ceux que l'applicatio
     const shown = new Set<GameKind>();
     for (const subject of PROGRAMME) {
       for (const klass of DEMO_CLASSES) {
-        for (const topic of subject.classes[klass]) for (const spec of topic.games ?? []) if (isShownGame(spec.kind)) cited.add(spec.kind);
+        for (const topic of subject.classes[klass]) for (const spec of topic.games ?? []) if (isShownGame(subject, spec.kind)) cited.add(spec.kind);
         for (const offer of gamesFor(subject.key, klass)) for (const option of offer.options) shown.add(option.kind);
       }
     }

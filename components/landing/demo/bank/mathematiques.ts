@@ -28,7 +28,7 @@ export const BANK: SubjectBank = {
     }),
     dragDrop({
       topic: "Les formes et les solides",
-      stage: 1,
+      stage: 2,
       prompt: "Glisse chaque forme dans la bonne case.",
       zones: ["Ronds", "Carrés", "Triangles"],
       items: { Ronds: ["🔴", "🔵"], Carrés: ["⬛", "🔲"], Triangles: ["🔺"] },

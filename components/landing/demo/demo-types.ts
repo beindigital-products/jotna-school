@@ -52,9 +52,9 @@ export type GameType = Extract<ExerciseType, "pattern" | "pixel-art" | "listen" 
 /**
  * Les gabarits du code (`paliers/games/words.ts`, `counting.ts`) : des
  * exercices classiques fabriqués à partir d'un vocabulaire fermé. Ils rendent
- * un QCM, une mise en ordre, une association ou une phrase à trous.
+ * un QCM, une mise en ordre, une association, un classement ou une phrase à trous.
  */
-export type TemplateType = Extract<ExerciseType, "qcm" | "order" | "match" | "fill-blank">;
+export type TemplateType = Extract<ExerciseType, "qcm" | "order" | "match" | "fill-blank" | "drag-drop">;
 
 /**
  * La difficulté d'un exercice, sur l'échelle des paliers (`difficultyStage`,
