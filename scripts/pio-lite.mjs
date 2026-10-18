@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Les affiches de Pio pour la page d'accueil : des WebP légers, à partir des PNG d'origine.
 //
-// Usage : node scripts/pio-lite.mjs
+// Usage : node scripts/pio-lite.mjs [pose...]   (sans pose : toutes)
 //
 // Les PNG de `public/images/pio/` pèsent 500 à 600 Ko chacun : trop pour une
 // page d'accueil que l'on ouvre sur un téléphone, avec une donnée chère. Ce
@@ -23,15 +23,16 @@
 // bouge pas : le canal alpha est intact) avant de passer l'image à ffmpeg.
 //
 // Seule la tenue de tous les jours en a besoin : la page d'accueil ne montre
-// pas le boubou. Il faut ffmpeg avec libwebp (celui de `scripts/pio-encode.sh`).
+// pas le boubou. Il faut ffmpeg (celui de `scripts/pio-encode.sh`) et, s'il n'a
+// pas libwebp (le ffmpeg 9 de Homebrew), `cwebp` (`brew install webp`).
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, statSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const out = path.join(root, "public/images/pio/lite");
-const POSES = ["idle", "hello", "cheer", "sad", "amazed", "encourage", "think", "sleep"];
+const POSES = ["idle", "hello", "cheer", "sad", "amazed", "encourage", "think", "sleep", "ask"];
 const HEIGHT = 640;
 
 /** Ce qu'on croit d'un pixel : sa couleur est sûre à partir de cette opacité. */
@@ -85,15 +86,53 @@ export function bleedEdges(rgba, width, height) {
   return rgba;
 }
 
+function run(command, args, input) {
+  const result = spawnSync(command, args, { input, maxBuffer: 1 << 28 });
+  if (result.status !== 0) throw new Error(`${command} a échoué : ${result.stderr?.toString() ?? result.error}`);
+  return result.stdout;
+}
+
 function ffmpeg(args, input) {
-  const run = spawnSync("ffmpeg", ["-v", "error", "-y", ...args], { input, maxBuffer: 1 << 28 });
-  if (run.status !== 0) throw new Error(`ffmpeg a échoué : ${run.stderr?.toString() ?? run.error}`);
-  return run.stdout;
+  return run("ffmpeg", ["-v", "error", "-y", ...args], input);
+}
+
+/** L'encodeur WebP de cet ffmpeg, s'il en a un (le ffmpeg 9 de Homebrew n'a plus libwebp). */
+function ffmpegHasWebp() {
+  const list = spawnSync("ffmpeg", ["-hide_banner", "-encoders"]);
+  return list.status === 0 && /\blibwebp\b/.test(list.stdout.toString());
+}
+
+/**
+ * Écrit le WebP de `rgba` (déjà nettoyé) à `HEIGHT` pixels de haut : par
+ * libwebp quand ffmpeg l'a, sinon par `cwebp` (paquet `webp` de Homebrew)
+ * après une mise à l'échelle en PNG par ffmpeg. Même qualité dans les deux cas.
+ */
+function writeWebp(rgba, width, height, target, viaFfmpeg) {
+  const decode = ["-f", "rawvideo", "-pix_fmt", "rgba", "-s", `${width}x${height}`, "-i", "-"];
+  const scale = ["-vf", `scale=-2:${HEIGHT}:flags=lanczos`];
+  if (viaFfmpeg) {
+    ffmpeg([...decode, ...scale, "-c:v", "libwebp", "-quality", "82", "-compression_level", "6", "-pix_fmt", "yuva420p", target], rgba);
+    return;
+  }
+  const scaledPng = ffmpeg([...decode, ...scale, "-f", "image2pipe", "-c:v", "png", "-"], rgba);
+  const tmp = `${target}.tmp.png`;
+  writeFileSync(tmp, scaledPng);
+  try {
+    run("cwebp", ["-quiet", "-q", "82", "-m", "6", "-alpha_q", "100", tmp, "-o", target]);
+  } finally {
+    rmSync(tmp, { force: true });
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  // Des poses en argument : seulement celles-là (une pose neuve, sans
+  // réencoder les autres). Sans argument : toutes.
+  const wanted = process.argv.slice(2);
+  const unknown = wanted.filter((pose) => !POSES.includes(pose));
+  if (unknown.length > 0) throw new Error(`Pose inconnue : ${unknown.join(", ")} (connues : ${POSES.join(", ")})`);
   mkdirSync(out, { recursive: true });
-  for (const pose of POSES) {
+  const viaFfmpeg = ffmpegHasWebp();
+  for (const pose of wanted.length > 0 ? wanted : POSES) {
     const source = path.join(root, `public/images/pio/${pose}.png`);
     const png = readFileSync(source);
     // L'en-tête d'un PNG dit sa taille : octets 16 à 23.
@@ -102,15 +141,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const raw = ffmpeg(["-i", source, "-f", "rawvideo", "-pix_fmt", "rgba", "-"]);
     const cleaned = bleedEdges(Buffer.from(raw), width, height);
     const target = path.join(out, `${pose}.webp`);
-    ffmpeg(
-      [
-        "-f", "rawvideo", "-pix_fmt", "rgba", "-s", `${width}x${height}`, "-i", "-",
-        "-vf", `scale=-2:${HEIGHT}:flags=lanczos`,
-        "-c:v", "libwebp", "-quality", "82", "-compression_level", "6", "-pix_fmt", "yuva420p",
-        target,
-      ],
-      cleaned,
-    );
+    writeWebp(cleaned, width, height, target, viaFfmpeg);
     console.log(`${pose} : ${statSync(target).size} octets`);
   }
 }

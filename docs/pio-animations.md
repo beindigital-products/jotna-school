@@ -15,7 +15,7 @@ page que l'on ouvre sur un téléphone avec une donnée chère : voir plus bas.
 
 Ce document dit comment les clips ont été faits et comment en refaire un.
 
-## Les neuf clips
+## Les dix clips
 
 | Pose | Ce que fait Pio | Où on le voit |
 | --- | --- | --- |
@@ -27,7 +27,20 @@ Ce document dit comment les clips ont été faits et comment en refaire un.
 | `encourage` | pouce levé, hoche la tête | mauvaise réponse, palier manqué |
 | `think` | réfléchit, regarde en l'air | chargement |
 | `sleep` | dort, respire lentement | disponible |
+| `ask` | montre l'énoncé du doigt, la loupe dans l'autre patte ; respire, cligne, regarde autour de lui, le bras reste tendu (10 s) | la question, dans la séance d'exercices |
 | `walk` | marche sur place | trajet sur la carte |
+
+**La pose `ask` (18 octobre 2026) a été faite avec le studio, pas sur OpenArt.**
+L'image fixe vient de gpt-image-2, en image vers image depuis les poses `idle`
+et `hello` (même personnage, même tenue, même rendu, le bras tendu vers la
+droite). Le clip est un Kling 3.0 de 5 secondes ; cette voie ne permet pas de
+donner la dernière image, donc la boucle est faite en aller-retour avec ffmpeg
+(le clip, puis le clip à l'envers : 10 secondes, raccord invisible), puis
+encodée par `scripts/pio-encode.sh` comme les autres. La première image du
+clip est celle de l'affiche : passer de l'image au clip, ou l'inverse, ne se
+voit pas. Au passage, `scripts/pio-still.sh` détoure désormais avec `bbox` et
+non `cropdetect`, qui rognait le bout du doigt tendu. L'affiche légère
+(`lite/ask.webp`) est faite par `node scripts/pio-lite.mjs ask`.
 
 Chaque clip existe en deux formats dans `public/videos/pio/` :
 
@@ -101,7 +114,8 @@ encourage après une erreur, rassure quand il n'y a plus d'essais.
 - **Une affiche légère d'abord.** `<Pio lite />` sert les WebP de
   `public/images/pio/lite/` (640 pixels de haut, 40 à 47 Ko) au lieu des PNG
   d'origine (500 à 600 Ko). `node scripts/pio-lite.mjs` les refait à partir des
-  PNG. Il reprend la couleur des bords opaques sous les pixels transparents avant
+  PNG (`node scripts/pio-lite.mjs ask` : une seule pose ; sans libwebp dans
+  ffmpeg, il passe par `cwebp`). Il reprend la couleur des bords opaques sous les pixels transparents avant
   l'encodage : détourées d'un fond bleu, les poses gardaient du bleu sous leur
   contour, et le WebP avec perte le faisait couler dans la crinière (un liseré
   violet sur fond clair). Seule la tenue de tous les jours en a : le boubou garde
@@ -204,4 +218,68 @@ que le visage et les broderies restent les mêmes. Pour une nouvelle pose :
 **Pendant qu'un son joue ou que le micro écoute, le coach montre la pose en
 image fixe** (`animated={false}`, `components/arabic/pronounce-coach.tsx`). Sur
 iOS, la voix et le micro interrompent la vidéo muette de Pio, qui disparaissait
-le temps d'un mot.
+le temps d'un mot. La scène de la question (`components/student/game/session-stage.tsx`)
+fait de même : pendant que Pio lit l'énoncé, et pendant la réaction à la
+réponse (son, scène de réponse), le grand Pio « ask » est son affiche ; le clip
+reprend quand la voix se tait, et seulement sur un appareil « full »
+(`hooks/use-device-tier.ts`).
+
+## L'affiche sous le clip : pour les poses quasi immobiles seulement
+
+**Le trou au verdict (18 octobre 2026).** Au moment où la réponse est jugée,
+la scène de la question passe du clip « ask » à l'affiche de la réaction, et
+le son du verdict part dans la même tâche. Sur le simulateur iPhone 17, la
+couche vidéo du clip HEVC s'éteignait avant que la page ait repeint : 200 à
+300 ms de ciel vide à la place de Pio (film image par image). Ni précharger
+l'affiche, ni retarder le démontage de la `<video>` n'y changeaient rien.
+Depuis, l'affiche de la pose « ask » est montée SOUS la `<video>`, décodée sur
+place (`decoding="sync"`) : elle prend le relais dans l'image même où la
+vidéo s'éteint, sans passer par la page ; la scène demande en plus les
+affiches des poses de la réaction dès que la carte est posée
+(`preloadPioPosters`).
+
+**Le Pio en double (même jour).** Ce correctif valait d'abord pour toutes
+les poses, et l'écran de fin de palier a montré Pio EN DOUBLE sur l'iPhone :
+le clip « cheer » saute, son affiche restait debout derrière lui. La règle
+est donc : **l'affiche ne reste sous le clip que pour les poses déclarées
+quasi immobiles** (`still` dans `OUTFITS`, `pio.tsx` ; `isPioStill()`),
+aujourd'hui « ask » seule. Sous un clip qui bouge, rien : la `<video>` garde
+son `poster` le temps du chargement, comme avant.
+
+La mesure qui décide, pour chaque pose, est **la part de l'affiche que le
+clip laisse à découvert** (alpha de l'affiche > 128 et alpha du clip ≤ 128),
+image par image, en fraction de la silhouette : c'est ce que l'enfant verrait
+en double. Avec ffmpeg, pour une pose :
+
+```bash
+ffmpeg -c:v libvpx-vp9 -i public/videos/pio/ask.webm -i public/images/pio/ask.png -filter_complex \
+  "[0:v]alphaextract,format=gray,lut=y='if(gt(val,128),255,0)'[a];\
+   [1:v]alphaextract,scale=572:800,pad=576:1024:2:128:black,format=gray,lut=y='if(gt(val,128),255,0)'[p];\
+   [p][a]blend=all_mode=subtract,signalstats,metadata=print:key=lavfi.signalstats.YAVG" -f null -
+# YAVG / 255 par image, à diviser par la silhouette de l'affiche (même chaîne sur le PNG seul).
+```
+
+Au pire de chaque clip (18 octobre 2026) : `hello` 1,2 %, `sleep` 3,8 %,
+`ask` 5,7 % (la tête qui tourne : un à deux pixels de bord à la taille de la
+scène), `idle` 6 %, `sad` 8 %, `encourage` 8 %, `amazed` 13,5 %, `think` 14 %,
+`walk` 17 %, `cheer` 37 % ; boubou : `encourage` 1,9 %, `recite` 1,7 %,
+`idle` 2,9 %, `salam` 7,8 %, `bravo` 13,7 %, `listen` 13 %, les marches 13 %.
+Une pose ne passe dans `still` que si cette mesure reste de l'ordre de celle
+d'« ask » ET qu'un écran en a besoin (un son part pendant que son clip joue
+dans une tâche lourde) ; « ask » est la seule aujourd'hui.
+
+**Pourquoi pas masquer l'affiche pendant que le clip joue** (événement
+`playing`) et la remontrer quand il s'arrête : parce que la vidéo ne dit rien.
+Mesuré sur l'iPhone 17 avec la sonde (`/dev/seance/?scene=fin-validee&sonde=1&son=1`,
+un son qui part 2,5 s après l'écran de fin, sous le clip « cheer » monté) :
+`[son] joue`, puis aucun `pause`, `suspend`, `waiting`, `stalled` ni `ended`
+sur la vidéo, et le film ne montre ni vide ni arrêt du clip. Il n'y a donc
+rien à quoi accrocher un retour de l'affiche ; et au verdict, le fil principal
+est pris 250 ms (`[raf] max=248` au toucher de Valider), un retour par la page
+arriverait de toute façon après le trou. Le trou du verdict est lié au
+démontage du clip dans une tâche lourde, pas au son seul.
+
+Vérifié après la correction (films sur le simulateur iPhone 17, images
+extraites à 10 et 20 i/s) : fin de palier, « cheer » saute sans double ;
+verdict d'une bonne réponse avec la voix (`?voix=1`, Valider pendant que le
+clip « ask » joue), aucune image vide entre le clip et la scène de réponse.

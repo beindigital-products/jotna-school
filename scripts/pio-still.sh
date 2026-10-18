@@ -36,12 +36,18 @@ trap 'rm -rf "$tmp"' EXIT
 key="format=rgba,colorkey=0x000FFC:0.28:0.12,despill=type=blue:mix=0.7:expand=0.4:green=0:blue=-1"
 ffmpeg -v error -y -i "$input" -vf "$key" "$tmp/keyed.png"
 
-# La boîte de Pio : cropdetect sur la couche alpha (noir = transparent).
-crop=$(ffmpeg -v info -i "$tmp/keyed.png" \
-  -vf "alphaextract,cropdetect=limit=24:round=2:reset=0:skip=0" -f null - 2>&1 \
-  | grep -o 'crop=[0-9:]*' | tail -1)
-[ -n "$crop" ] || { echo "Pio introuvable dans $input" >&2; exit 1; }
-IFS=: read -r cw ch _ _ <<<"${crop#crop=}"
+# La boîte de Pio : `bbox` sur la couche alpha (noir = transparent). Pas
+# `cropdetect` : il rogne un bras tendu (le bout du doigt de la pose « ask »
+# disparaissait), `bbox` rend la boîte exacte de tout ce qui est opaque.
+box=$(ffmpeg -v info -i "$tmp/keyed.png" \
+  -vf "alphaextract,format=gray,bbox=min_val=24" -f null - 2>&1 \
+  | grep -o 'x1:[0-9]* x2:[0-9]* y1:[0-9]* y2:[0-9]* w:[0-9]* h:[0-9]*' | tail -1)
+[ -n "$box" ] || { echo "Pio introuvable dans $input" >&2; exit 1; }
+bx=$(grep -o 'x1:[0-9]*' <<<"$box" | cut -d: -f2)
+by=$(grep -o 'y1:[0-9]*' <<<"$box" | cut -d: -f2)
+cw=$(grep -o 'w:[0-9]*' <<<"$box" | cut -d: -f2)
+ch=$(grep -o 'h:[0-9]*' <<<"$box" | cut -d: -f2)
+crop="crop=$cw:$ch:$bx:$by"
 
 # Cadre ×2 : 1144 × 1600, Pio à 1500 px de haut au plus et 1120 px de large
 # au plus, pattes à 40 px du bas.
