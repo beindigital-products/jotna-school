@@ -70,9 +70,11 @@ export function GameButton({
   disabled = false,
 }: Props) {
   const t = TONES[tone];
-  const classes = `btn-chunky inline-flex items-center justify-center gap-2 rounded-2xl font-display font-extrabold tracking-wide select-none ${t.face} ${SIZES[size]} ${
-    disabled ? "opacity-60 pointer-events-none" : ""
-  } ${className}`;
+  // Le focus clavier se voit (anneau ciel, comme les tuiles de la boîte à
+  // outils) ; le libellé porte un léger relief sombre pour tenir sur l'orange.
+  const classes = `btn-chunky inline-flex items-center justify-center gap-2 rounded-2xl font-display font-extrabold tracking-wide select-none gk-focus ${t.face} ${SIZES[size]} ${
+    tone === "white" ? "" : "[text-shadow:0_1px_0_rgb(0_0_0_/_0.22)]"
+  } ${disabled ? "opacity-60 pointer-events-none" : ""} ${className}`;
   const style = { "--btn-depth": t.depth } as React.CSSProperties;
 
   if (href && !disabled) {

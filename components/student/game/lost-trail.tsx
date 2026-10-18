@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { Map as MapIcon, Tent } from "lucide-react";
 import { Pio } from "@/components/student/pio";
-import { GameButton } from "@/components/student/game/game-button";
+import { ActionButton3D } from "@/components/student/game-kit";
 import { pioSays } from "@/lib/pioCopy";
 
 /**
@@ -16,6 +16,12 @@ import { pioSays } from "@/lib/pioCopy";
  * une thématique absente). Dans tous les cas, il faut lui rendre un chemin,
  * pas un code d'erreur : un bout de carte au trésor où le sentier s'efface,
  * Pio qui cherche à la loupe, et deux sorties vers le camp et la carte.
+ *
+ * La carte est POSÉE, comme les autres cartes du jeu : un flanc crème de
+ * 8 px sous son cadre, l'ombre sur la table ; les deux sorties sont les
+ * boutons d'action épais de la séance. Le « ? » qui flotte et l'entrée à
+ * ressort ne bougent qu'en `transform`, et se taisent sous
+ * `prefers-reduced-motion`.
  *
  * Les anciens écrans n'avaient qu'un titre et, pour la séance, aucun bouton :
  * l'enfant restait coincé, sans autre issue que le retour du téléphone.
@@ -30,10 +36,11 @@ export function LostTrail({ kind }: { kind: "world" | "topic" }) {
         initial={reducedMotion ? false : { opacity: 0, y: 16, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 22 }}
-        className="relative w-full overflow-hidden rounded-[2rem] border-4 border-amber-200 bg-[#fff8e6] shadow-xl"
+        className="relative w-full rounded-[2rem] border-4 border-amber-200 bg-[#fff8e6] shadow-[0_8px_0_#d6c39a,0_24px_40px_-20px_rgba(60,30,0,0.5)]"
+        data-lost-trail={kind}
       >
-        {/* Le bout de carte : ciel, collines, sentier qui s'efface, « ? » au bout. */}
-        <div className="relative h-48 overflow-hidden border-b-4 border-dashed border-amber-200 bg-[linear-gradient(180deg,#bfe6fb_0%,#f9efd2_75%)]">
+        {/* Le bout de carte : ciel, collines, sentier qui s'efface, « ? » au bout. Rogné à part, sans toucher au relief de la carte. */}
+        <div className="relative h-48 overflow-hidden rounded-t-[1.75rem] border-b-4 border-dashed border-amber-200 bg-[linear-gradient(180deg,#bfe6fb_0%,#f9efd2_75%)]">
           <svg
             aria-hidden
             viewBox="0 0 320 192"
@@ -73,10 +80,10 @@ export function LostTrail({ kind }: { kind: "world" | "topic" }) {
             </g>
           </svg>
 
-          {/* Le « ? » au bout du sentier */}
+          {/* Le « ? » au bout du sentier : un jeton posé, qui flotte. */}
           <motion.div
             aria-hidden
-            className="absolute left-[72%] top-[28%] flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-gradient-to-b from-sky-300 to-sky-500 font-display text-2xl font-extrabold text-white shadow-lg"
+            className="absolute left-[72%] top-[28%] flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-gradient-to-b from-sky-300 to-sky-500 font-display text-2xl font-extrabold text-white shadow-[0_4px_0_#0369a1,0_10px_16px_-8px_rgba(60,30,0,0.5)]"
             animate={reducedMotion ? undefined : { y: [0, -6, 0], rotate: [0, -6, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
@@ -93,7 +100,7 @@ export function LostTrail({ kind }: { kind: "world" | "topic" }) {
             initial={reducedMotion ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.25, ease: "easeOut" }}
-            className="absolute left-3 top-3 max-w-[62%] rounded-2xl border-2 border-amber-200 bg-white px-3.5 py-2 font-display text-sm font-bold leading-snug text-amber-950 shadow-md"
+            className="absolute left-3 top-3 max-w-[62%] rounded-2xl border-2 border-amber-200 bg-white px-3.5 py-2 font-display text-sm font-bold leading-snug text-amber-950 shadow-[0_3px_0_#d6c39a,0_8px_16px_-8px_rgba(0,0,0,0.35)]"
           >
             {copy.bubble}
             <span
@@ -105,30 +112,16 @@ export function LostTrail({ kind }: { kind: "world" | "topic" }) {
 
         {/* Le texte et les deux sorties */}
         <div className="px-6 pb-7 pt-5 text-center">
-          <h2 className="font-display text-2xl font-extrabold text-amber-950">
-            {copy.title}
-          </h2>
-          <p className="mx-auto mt-2 max-w-xs text-sm font-semibold text-amber-900/75">
-            {pioSays.lostTrail.body}
-          </p>
+          <h2 className="font-display text-2xl font-extrabold text-amber-950">{copy.title}</h2>
+          <p className="mx-auto mt-2 max-w-xs text-sm font-semibold text-amber-900/75">{pioSays.lostTrail.body}</p>
 
           <div className="mt-6 flex flex-col gap-4">
-            <GameButton
-              href="/student/map"
-              size="lg"
-              icon={<MapIcon className="h-5 w-5" aria-hidden />}
-              className="w-full"
-            >
+            <ActionButton3D href="/student/map" size="lg" icon={<MapIcon className="h-6 w-6" aria-hidden />}>
               {pioSays.lostTrail.toMap}
-            </GameButton>
-            <GameButton
-              href="/student/home"
-              tone="white"
-              icon={<Tent className="h-5 w-5" aria-hidden />}
-              className="w-full border-2 border-amber-200"
-            >
+            </ActionButton3D>
+            <ActionButton3D href="/student/home" tone="white" size="md" icon={<Tent className="h-5 w-5" aria-hidden />}>
               {pioSays.lostTrail.toCamp}
-            </GameButton>
+            </ActionButton3D>
           </div>
         </div>
       </motion.div>

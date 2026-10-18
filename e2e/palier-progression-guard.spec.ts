@@ -165,7 +165,7 @@ test.describe("Palier progression guard", () => {
       page.getByRole("heading", { name: /Tu veux quitter/i }),
     ).toBeHidden();
 
-    await page.locator("button.border-3").first().click();
+    await page.locator("button[data-option]").first().click();
     await page.getByRole("button", { name: /^Valider$/ }).click();
     await expect(page.getByText(/Question 2\/10/i)).toBeVisible({
       timeout: 10_000,

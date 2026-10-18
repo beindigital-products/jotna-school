@@ -280,3 +280,143 @@
     "Traditional Arabic", serif;
   font-feature-settings: "liga" 1, "calt" 1;
 }
+
+/* ── La boîte à outils du jeu (`components/student/game-kit/`) ──────────────
+   Tout ce qui bouge ici bouge en `transform` et en `opacity`, rien d'autre :
+   pas de filtre, pas de couleur, pas d'ombre animée (une ombre de profondeur
+   est une COUCHE dont on déplace le transform). Chaque racine de brique porte
+   `.gk-motion` : sous `prefers-reduced-motion`, tout s'arrête net, animations
+   comme transitions, et la profondeur reste peinte.
+   Voir `docs/direction-jeu-exercices.md`. */
+
+/* Le ressort : une courbe qui dépasse un peu puis se pose. Même sensation que
+   `stiffness: 340, damping: 22` côté framer-motion. */
+@utility gk-spring {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* Un parent qui donne de la perspective à ses enfants inclinés ou tournés. */
+@utility gk-perspective {
+  perspective: 700px;
+}
+/* Un élément dont les enfants vivent dans le même espace 3D (solides). */
+@utility gk-3d {
+  transform-style: preserve-3d;
+}
+/* La face d'un objet épais : un filet de lumière en haut, une ligne d'ombre
+   en bas. Statique : la lumière vient toujours d'en haut à gauche. */
+@utility gk-face-light {
+  box-shadow:
+    inset 0 2px 0 0 rgb(255 255 255 / 0.75),
+    inset 0 -2px 0 0 rgb(0 0 0 / 0.08);
+}
+/* L'anneau de focus clavier des briques du jeu : un contour ciel-600
+   (`#0284c7`, 4,1:1 sur la carte crème : un indicateur d'état veut 3:1) tenu
+   à 2 px de l'objet, le fond faisant le filet clair. Un anneau ciel-300 à
+   80 % ne contrastait qu'à 1,56:1 sur la crème (relu le 18 octobre 2026). Un
+   `outline`, pas une ombre : les racines des briques n'ont pas d'ombre à
+   écraser, et le contour suit l'arrondi sur les moteurs récents. Deux règles
+   plates, pas un `@utility` imbriqué : l'imbrication CSS native manque aux
+   WebView d'avant 2023, et le serveur de développement ne relit pas un
+   `@utility` ajouté en cours de route. */
+.gk-focus {
+  outline: none;
+}
+.gk-focus:focus-visible {
+  outline: 4px solid #0284c7;
+  outline-offset: 2px;
+}
+/* L'horizon de la savane (`stage-backdrop.tsx`), mesuré depuis le haut de la
+   scène. Calé sur l'écran (`data-horizon="screen"`, la coque de la séance),
+   il vaut le pourcentage demandé de `100svh` quand le moteur le sait, de
+   `100vh` sinon : la page qui grandit d'une question à l'autre (une carte
+   plus haute, un indice) ne fait plus sauter le sol, les collines ni le
+   soleil. */
+.gk-stage[data-horizon="screen"] {
+  --gk-horizon: var(--gk-horizon-vh);
+}
+@supports (height: 1svh) {
+  .gk-stage[data-horizon="screen"] {
+    --gk-horizon: var(--gk-horizon-svh);
+  }
+}
+
+/* Une bonne réponse : la tuile gonfle un peu et se pose. Part de 0,96, jamais
+   de 0 : un émoji dans un élément qui part de `scale(0)` peut rester vide sur
+   iOS. */
+@keyframes gk-pop {
+  0% { transform: scale(0.96); }
+  55% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+/* Une mauvaise réponse : la tuile dit non, doucement. Cinq millimètres, pas
+   une gifle : à six ans, l'erreur est une étape, pas une punition. */
+@keyframes gk-shake-soft {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px) rotate(-0.6deg); }
+  50% { transform: translateX(5px) rotate(0.6deg); }
+  75% { transform: translateX(-3px); }
+}
+/* Le reflet qui balaie un bouton prêt à être appuyé. */
+@keyframes gk-shine {
+  from { transform: translateX(-160%) skewX(-18deg); }
+  to { transform: translateX(260%) skewX(-18deg); }
+}
+/* Un solide sur son tourne-disque : incliné de 22° vers le regard, un tour en
+   quatorze secondes. L'inclinaison est dans chaque image pour que rien ne
+   saute à la reprise. */
+@keyframes gk-turntable {
+  from { transform: rotateX(-22deg) rotateY(0deg); }
+  to { transform: rotateX(-22deg) rotateY(360deg); }
+}
+/* Une boule qui roule : ses quartiers tournent, la lumière reste. */
+@keyframes gk-roll {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* Les étoiles de la récompense (`--a` l'angle, `--d` la distance). */
+@keyframes gk-star-fly {
+  0% { transform: rotate(var(--a)) translateX(0) scale(0.5); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: rotate(var(--a)) translateX(var(--d)) scale(1.1); opacity: 0; }
+}
+/* L'anneau de lumière qui s'ouvre au centre de la récompense. */
+@keyframes gk-ring {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+/* Une pièce qui s'élève puis s'efface (`--x`, `--y` son point d'arrivée). */
+@keyframes gk-coin-rise {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) scale(1); opacity: 0; }
+}
+/* Une pièce qui tourne sur son axe. */
+@keyframes gk-spin-y {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+/* Un nuage, une lueur, qui dérive d'un bord à l'autre de sa place. */
+@keyframes gk-drift {
+  from { transform: translate3d(-3%, 0, 0); }
+  to { transform: translate3d(3%, 0, 0); }
+}
+/* Le jeton de progression qui flotte en attendant la question suivante. */
+@keyframes gk-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+/* La voix qui joue, sur le bouton « Écouter » : des barres qui battent depuis
+   leur pied. Un `scaleY`, rien d'autre. */
+@keyframes gk-voice {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gk-motion,
+  .gk-motion * {
+    animation: none !important;
+    transition-duration: 0ms !important;
+  }
+}
+

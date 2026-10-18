@@ -44,7 +44,10 @@ import { useEffect, useRef } from "react";
  * LA HAUTEUR EST LA MESURE. `size` est la hauteur de Pio debout, en pixels,
  * comme avec les anciens PNG (572 × 800). Le clip a de l'air au-dessus de sa
  * tête pour qu'il puisse sauter : la vidéo déborde donc du cadre vers le haut,
- * sans changer la place que Pio occupe dans la mise en page.
+ * sans changer la place que Pio occupe dans la mise en page. Depuis octobre
+ * 2026, `size` accepte aussi une LONGUEUR CSS (`"clamp(132px, 27svh, 250px)"`) :
+ * la scène de la question (`session-stage.tsx`) le taille d'après la hauteur
+ * de l'écran, et la largeur comme la géométrie du clip suivent en `calc()`.
  *
  * PIO A DES TENUES. `classic` est le Pio de tous les jours (tunique, loupe,
  * sacoche) ; `boubou` est sa tenue du module Arabe & Coran : grand boubou
@@ -63,6 +66,8 @@ export type PioState =
   | "encourage"
   | "think"
   | "sleep"
+  /** La question : Pio montre l'énoncé du doigt, la loupe dans l'autre patte. */
+  | "ask"
   /** La marche sur la carte : Pio marche sur place, la carte le déplace. */
   | "walk"
   /** La marche qui s'éloigne, vue de dos : Pio monte le chemin. */
@@ -89,6 +94,7 @@ const POSES: readonly PioState[] = [
   "encourage",
   "think",
   "sleep",
+  "ask",
   "walk",
   "walkAway",
   "walkToward",
@@ -101,6 +107,18 @@ const POSES: readonly PioState[] = [
 type OutfitSpec = {
   /** Les poses qui existent vraiment dans cette tenue : un PNG et un clip chacune. */
   poses: readonly PioState[];
+  /**
+   * LES POSES QUASI IMMOBILES, dont le clip reste dans le contour de son
+   * affiche. Pour elles SEULES, l'affiche reste peinte sous le clip (voir
+   * `Pio`) : sur iOS, la couche vidéo du clip HEVC s'éteint d'elle-même dès
+   * qu'un son part, et l'affiche prend le relais sans attendre la page. Sous
+   * un clip qui bouge, la même affiche ferait un Pio EN DOUBLE (vu le
+   * 18 octobre 2026 sur l'iPhone 17 : « cheer » saute, son affiche restait
+   * debout derrière lui). La mesure qui décide (`docs/pio-animations.md`) :
+   * la part de l'affiche que le clip laisse à découvert, image par image ;
+   * « ask » 5,7 % au pire (la tête qui tourne), « cheer » 37 %.
+   */
+  still: readonly PioState[];
   /** Pour une pose absente, la plus proche qui existe dans la même tenue. */
   fallback: Partial<Record<PioState, PioState>>;
   images: string;
@@ -115,7 +133,9 @@ type OutfitSpec = {
 
 const OUTFITS: Record<PioOutfit, OutfitSpec> = {
   classic: {
-    poses: ["idle", "hello", "cheer", "sad", "amazed", "encourage", "think", "sleep", "walk"],
+    poses: ["idle", "hello", "cheer", "sad", "amazed", "encourage", "think", "sleep", "ask", "walk"],
+    // La question : un son (la voix, le verdict) part toujours pendant qu'il joue.
+    still: ["ask"],
     // « sad » applicatif = pose douce, Pio serre ses livres — jamais moqueur.
     fallback: {
       salam: "hello",
@@ -132,6 +152,8 @@ const OUTFITS: Record<PioOutfit, OutfitSpec> = {
   },
   boubou: {
     poses: ["idle", "salam", "listen", "recite", "bravo", "encourage", "walkAway", "walkToward"],
+    // Le coach montre déjà l'affiche pendant la voix et le micro (`pronounce-coach.tsx`).
+    still: [],
     fallback: {
       hello: "salam",
       cheer: "bravo",
@@ -139,6 +161,8 @@ const OUTFITS: Record<PioOutfit, OutfitSpec> = {
       sad: "encourage",
       think: "idle",
       sleep: "idle",
+      // Pas de doigt tendu en boubou : il attend, calme, dans la même tenue.
+      ask: "idle",
       walk: "walkToward",
     },
     images: "/images/pio/boubou",
@@ -160,6 +184,15 @@ function resolvePose(outfit: PioOutfit, state: PioState): PioState {
   return spec.fallback[state] ?? "idle";
 }
 
+/**
+ * La pose est-elle quasi immobile dans cette tenue (`still`) : son affiche
+ * reste alors peinte sous le clip. Résolue comme `Pio` la joue (une pose
+ * absente retombe sur une autre, qui a sa propre réponse).
+ */
+export function isPioStill(state: PioState, outfit: PioOutfit = "classic"): boolean {
+  return OUTFITS[outfit].still.includes(resolvePose(outfit, state));
+}
+
 /** L'affiche et l'image de repli d'un clip. La marche part de la pose calme. */
 function posterFor(outfit: PioOutfit, pose: PioState, lite = false): string {
   const name = pose === "walk" ? "idle" : pose;
@@ -173,6 +206,40 @@ export function pioPosterSrc(state: PioState, outfit: PioOutfit = "classic", lit
   return posterFor(outfit, resolvePose(outfit, state), lite);
 }
 
+/** Les affiches déjà demandées : une seule requête par URL et par page. */
+const requestedPosters = new Set<string>();
+
+/**
+ * PRÉCHARGE LES AFFICHES de poses à venir, pour qu'un changement de pose ne
+ * laisse jamais un trou à la place de Pio. Vu sur le simulateur iPhone 17
+ * (18 octobre 2026, film du verdict image par image) : au moment où la
+ * réponse est jugée, la scène de la question passe du clip « ask » à
+ * l'affiche « cheer », que le webview n'avait jamais chargée ; pendant
+ * 300 ms (trois images à 10 i/s), le ciel était vide à la place de Pio, la
+ * bulle encore à « C'est parti ! ». Une `Image` par URL, demandée une fois
+ * par page (le cache HTTP garde le reste) ; rien côté serveur. Rend les URL
+ * demandées cette fois-ci (vide quand tout l'était déjà) : les tests le lisent.
+ */
+export function preloadPioPosters(
+  states: readonly PioState[],
+  { outfit = "classic", lite = false }: { outfit?: PioOutfit; lite?: boolean } = {},
+): string[] {
+  if (typeof window === "undefined") return [];
+  const requested: string[] = [];
+  for (const state of states) {
+    const src = pioPosterSrc(state, outfit, lite);
+    if (requestedPosters.has(src)) continue;
+    requestedPosters.add(src);
+    const image = new window.Image();
+    image.src = src;
+    // Décodée tout de suite aussi : le bitmap attend dans le cache du moteur,
+    // et l'affiche se peint dans l'image même où elle est demandée.
+    if (typeof image.decode === "function") image.decode().catch(() => {});
+    requested.push(src);
+  }
+  return requested;
+}
+
 const LABELS: Record<PioState, string> = {
   idle: "Pio te regarde",
   hello: "Pio te dit bonjour",
@@ -182,6 +249,7 @@ const LABELS: Record<PioState, string> = {
   encourage: "Pio t'encourage",
   think: "Pio réfléchit",
   sleep: "Pio se repose",
+  ask: "Pio te montre la question",
   walk: "Pio marche",
   walkAway: "Pio marche",
   walkToward: "Pio marche",
@@ -200,6 +268,18 @@ const CLIP = { width: 576, height: 1024, pioHeight: 800, bottomGap: 96 } as cons
 
 /** 572 × 800 : la largeur de Pio découle de sa hauteur, comme avant. */
 const ASPECT = 572 / 800;
+
+/** La hauteur de Pio debout : des pixels, ou une longueur CSS. */
+export type PioSize = number | string;
+
+/**
+ * Une dimension dérivée de la hauteur : `size × factor`, en pixels arrondis
+ * quand `size` est un nombre, en `calc()` quand c'est une longueur CSS.
+ */
+function scaled(size: PioSize, factor: number): number | string {
+  if (typeof size === "number") return Math.round(size * factor);
+  return factor === 1 ? size : `calc(${size} * ${factor})`;
+}
 
 export function pioClipSources(
   state: PioState,
@@ -221,8 +301,8 @@ type PioProps = {
   state?: PioState;
   /** La tenue. `boubou` : le module Arabe & Coran. */
   outfit?: PioOutfit;
-  /** Hauteur de Pio debout, en pixels. La largeur suit le ratio de l'image. */
-  size?: number;
+  /** Hauteur de Pio debout, en pixels ou en longueur CSS. La largeur suit le ratio de l'image. */
+  size?: PioSize;
   className?: string;
   /** `false` : l'image fixe de la pose, sans vidéo. Pour les dialogs. */
   animated?: boolean;
@@ -242,9 +322,13 @@ export function Pio({
   lite = false,
 }: PioProps) {
   const reducedMotion = useReducedMotion();
-  const width = Math.round(size * ASPECT);
+  const width = scaled(size, ASPECT);
   const playing = animated && !reducedMotion;
   const pose = resolvePose(outfit, state);
+  // L'affiche : seule quand le clip ne joue pas ; SOUS le clip d'une pose
+  // quasi immobile ; absente sous un clip qui bouge (la `<video>` garde son
+  // `poster` le temps du chargement, comme avant).
+  const poster = !playing || OUTFITS[outfit].still.includes(pose);
 
   return (
     <div
@@ -253,9 +337,31 @@ export function Pio({
       className={`pio relative inline-block shrink-0 select-none ${className}`}
       style={{ width, height: size }}
     >
-      {playing ? (
-        <PioClip key={`${outfit}:${pose}`} state={pose} outfit={outfit} size={size} priority={priority} lite={lite} />
-      ) : (
+      {/* L'AFFICHE RESTE SOUS LE CLIP D'UNE POSE QUASI IMMOBILE (`still`).
+          Sur iOS, un son qui part (la voix de l'énoncé, le « bravo » du
+          verdict) fait DISPARAÎTRE la couche vidéo du clip HEVC muet
+          sur-le-champ, avant que la page ait repeint quoi que ce soit : avec le
+          remplacement du clip par l'affiche dans la même tâche, il restait 200
+          à 300 ms de ciel vide à la place de Pio (film du verdict du
+          18 octobre 2026, iPhone 17 ; retarder le démontage de la vidéo n'y
+          changeait rien). Remontrer l'affiche sur un événement de la vidéo ne
+          marcherait pas : un son qui part sous un clip monté ne lui fait rien
+          dire (aucun `pause`, `suspend` ni `waiting` : sonde `[video]` de
+          `app/dev/session-shell.tsx`, écran de fin avec `?son=1`), et au
+          verdict le fil principal est pris 250 ms, un retour par la page
+          arriverait après le trou. Peinte sous la vidéo, l'affiche de la pose
+          prend le relais à l'image même où la vidéo s'éteint, sans passer par
+          la page. Le clip « ask » part de cette affiche et en reste
+          très proche : ce qu'il en laisse à découvert quand la tête tourne
+          tient dans un à deux pixels de bord à la taille de la scène (5,7 % de
+          la silhouette au pire, à pleine résolution). Sous un clip qui BOUGE,
+          la même affiche ferait un Pio en double (« cheer » saute, son affiche
+          restait debout derrière lui : écran de fin de palier, iPhone 17,
+          18 octobre 2026) : pour ces poses, rien sous le clip.
+          `decoding="sync"`, pas l'`async` de next/image : quand la pose change
+          (ask puis cheer) dans une tâche déjà lourde, une affiche en cache
+          (`preloadPioPosters`) se peint dans la même image. */}
+      {poster && (
         <Image
           src={posterFor(outfit, pose, lite)}
           alt=""
@@ -264,9 +370,11 @@ export function Pio({
           priority={priority}
           draggable={false}
           unoptimized
+          decoding="sync"
           className="h-full w-full object-contain"
         />
       )}
+      {playing && <PioClip key={`${outfit}:${pose}`} state={pose} outfit={outfit} size={size} priority={priority} lite={lite} />}
     </div>
   );
 }
@@ -284,17 +392,17 @@ function PioClip({
 }: {
   state: PioState;
   outfit: PioOutfit;
-  size: number;
+  size: PioSize;
   priority: boolean;
   lite: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
-  const scale = size / CLIP.pioHeight;
-  const height = Math.round(CLIP.height * scale);
-  const width = Math.round(CLIP.width * scale);
+  // Tout est à l'échelle de la hauteur de Pio dans le clip (800 px).
+  const height = scaled(size, CLIP.height / CLIP.pioHeight);
+  const width = scaled(size, CLIP.width / CLIP.pioHeight);
   // Les pattes de Pio au bas du cadre de mise en page : le clip déborde en haut.
   const headroom = CLIP.height - CLIP.pioHeight - CLIP.bottomGap;
-  const top = Math.round(-headroom * scale);
+  const top = scaled(size, -headroom / CLIP.pioHeight);
   // L'affiche est le PNG 572 × 800 de la pose ; `contain` le pose dans le cadre
   // du clip. On la cale à la hauteur exacte de Pio dans la vidéo, pour que le
   // premier plan n'ait pas de sursaut quand la lecture démarre.

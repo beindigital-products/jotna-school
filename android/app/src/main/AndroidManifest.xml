@@ -41,4 +41,8 @@
     <!-- Le module Arabe & Coran fait répéter les lettres : l'enfant parle au micro. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Le jeu fait vibrer le téléphone au bon et au mauvais geste (navigator.vibrate dans le
+         WebView) : sans cette permission Android l'ignore sans bruit. Permission « normale » :
+         aucune demande à l'enfant. iOS n'a pas navigator.vibrate, le jeu s'en passe là-bas. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

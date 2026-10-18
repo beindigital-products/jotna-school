@@ -7,6 +7,17 @@ import DemoPlayer from "../demo/demo-player";
 import { BANK } from "../demo/bank/mathematiques";
 import { toPlayable } from "../demo/playable";
 
+/**
+ * La consigne, par le texte entier de son paragraphe : un mot à trait d'union
+ * (« a-t-elle ») y est tenu en `nowrap` dans un `span` (`ExercisePrompt`), et
+ * `getByText` ne lit que les nœuds de texte propres d'un élément.
+ */
+const byPrompt = (text: string) => (_: string, element: Element | null) =>
+  element?.tagName === "P" && squeeze(element.textContent ?? "") === squeeze(text);
+/** Le normaliseur de Testing Library : espaces (insécables comprises) repliées, bords rognés. */
+const squeeze = (text: string) => text.trim().replace(/\s+/g, " ");
+
+
 // Les confettis dessinent sur un canvas : jsdom n'en a pas.
 vi.mock("canvas-confetti", () => ({ default: vi.fn() }));
 
@@ -42,7 +53,7 @@ const waitForDismiss = () =>
 describe("le lecteur de la vitrine : un exercice de l'élève, sans compte", () => {
   it("montre la consigne et les quatre propositions, sans indice ni « Réessayer »", () => {
     render(<DemoPlayer exercise={exercise} />);
-    expect(screen.getByText(item.prompt)).toBeTruthy();
+    expect(screen.getByText(byPrompt(item.prompt))).toBeTruthy();
     for (const option of ["7", "49", "9", "8"]) expect(screen.getByRole("button", { name: new RegExp(`^[A-D]${option}$`) })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Voir un indice" })).toBeNull();
     expect(screen.queryByRole("button", { name: /Réessayer/ })).toBeNull();

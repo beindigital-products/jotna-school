@@ -8,7 +8,9 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { Eraser, Eye, RotateCcw } from "lucide-react";
+import { Eraser, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { Reward, useGameFeel } from "@/components/student/game-kit";
+import { PaintBlob, PillButton3D } from "@/components/student/game-kit/ecrans-decor";
 import ExercisePrompt from "./ExercisePrompt";
 import { BrokenExercise, SubmitButton, type ExerciseScreenProps } from "./game-parts";
 import { FRAME, fitGrid } from "./pixel-grid-fit";
@@ -17,18 +19,34 @@ import { EMPTY_CELL, type PixelArtView, type PixelPaint } from "@/convex/paliers
 /** L'air laissé sous « Valider », pour qu'il ne colle pas au bas de l'écran. */
 const BOTTOM_SLACK = 12;
 
+/** Le sable d'une case vide, et le même à l'ombre pour la moitié verrouillée d'une symétrie. */
+const CELL_EMPTY = "#fffdf7";
+const CELL_LOCKED = "#f3ead3";
+
 /**
- * LE DESSIN SUR QUADRILLAGE — reproduire un modèle, le redessiner de
- * mémoire, compléter une symétrie, faire un coloriage magique.
+ * LE DESSIN SUR QUADRILLAGE — une table de pixels et des pastilles de
+ * peinture épaisses. Reproduire un modèle, le redessiner de mémoire, compléter
+ * une symétrie, faire un coloriage magique.
  *
- * L'enfant choisit une couleur, puis touche les cases — ou glisse le doigt
- * pour en peindre plusieurs. Toucher une case déjà de cette couleur l'efface,
- * comme la gomme. En symétrie, la moitié donnée est verrouillée, un peu
- * pâlie tant que l'enfant dessine, et le miroir est tracé en rouge.
+ * L'enfant choisit une pastille (elle se soulève, cerclée de rose, l'accent
+ * « dessiner »), puis touche les cases — ou glisse le doigt pour en peindre
+ * plusieurs. Chaque case peinte reçoit une touche de peinture en relief qui
+ * se pose d'un petit rebond (`gk-pop`, seulement pour les cases que l'enfant
+ * vient de peindre : la moitié donnée d'une symétrie ne saute pas à l'écran).
+ * Toucher une case déjà de cette couleur l'efface, comme la gomme. En
+ * symétrie, la moitié donnée est verrouillée, un peu pâlie tant que l'enfant
+ * dessine, et le miroir est tracé en rouge (la consigne le nomme ainsi).
+ *
+ * Juste : la table passe au vert et gonfle, la récompense jaillit du dessin.
+ * Faux : elle passe à l'ambre et dit non, sans rouge.
  *
  * TOUT TIENT DANS L'ÉCRAN, « Valider » compris : la taille des cases se
  * calcule sur la place libre (`pixel-grid-fit.ts`), mesurée avant le premier
- * affichage.
+ * affichage. L'épaisseur des cadres est peinte en ombre, pas en marge : les
+ * mesures de `pixel-grid-fit.ts` (bordure de 3 px, marge de 4 px) sont les
+ * mêmes qu'avant. La barre d'action (« Écouter » puis « Valider », par
+ * `SubmitButton`) fait partie de ce qui suit les quadrillages : la mesure la
+ * compte, les cases rétrécissent d'autant pour un enfant qui apprend à lire.
  */
 export default function PixelArtExercise({
   prompt,
@@ -71,13 +89,21 @@ export default function PixelArtExercise({
     Array.from({ length: height }, (_, r) =>
       Array.from({ length: width }, (_, c) => (given ? (given[r]?.[c] ?? EMPTY_CELL) : EMPTY_CELL)),
     );
-  const [grid, setGrid] = useState<string[][]>(initial);
+  // Le dessin, et les touches de peinture posées par l'enfant
+  // (« ligne-colonne:couleur ») : elles seules rebondissent en apparaissant,
+  // pas la moitié donnée au départ. Les deux changent d'un seul coup.
+  const [board, setBoard] = useState<{ grid: string[][]; fresh: ReadonlySet<string> }>(() => ({
+    grid: initial(),
+    fresh: new Set(),
+  }));
+  const grid = board.grid;
   const [selected, setSelected] = useState<string>(palette[0]?.key ?? EMPTY_CELL);
   const showSeconds = Math.max(2, Math.min(15, payload?.showSeconds ?? 5));
   const [phase, setPhase] = useState<"show" | "draw">(mode === "memory" ? "show" : "draw");
   const [remaining, setRemaining] = useState(showSeconds);
   const [peeking, setPeeking] = useState(false);
   const [peeksLeft, setPeeksLeft] = useState(1);
+  const feel = useGameFeel();
   const gridRef = useRef<HTMLDivElement>(null);
   const stroke = useRef<"paint" | "erase" | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -172,11 +198,12 @@ export default function PixelArtExercise({
   const apply = (r: number, c: number, action: "paint" | "erase") => {
     if (isLocked(r, c)) return;
     const value = action === "erase" ? EMPTY_CELL : selected;
-    setGrid((prev) => {
-      if (prev[r][c] === value) return prev;
-      const next = prev.map((row) => [...row]);
+    setBoard((prev) => {
+      if (prev.grid[r][c] === value) return prev;
+      const next = prev.grid.map((row) => [...row]);
       next[r][c] = value;
-      return next;
+      const fresh = value === EMPTY_CELL ? prev.fresh : new Set(prev.fresh).add(`${r}-${c}:${value}`);
+      return { grid: next, fresh };
     });
   };
 
@@ -188,6 +215,7 @@ export default function PixelArtExercise({
     if (isLocked(r, c)) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture?.(e.pointerId);
+    feel.vibrate("tap");
     // Toucher une case déjà de la couleur choisie l'efface : le trait
     // entier devient alors un coup de gomme.
     stroke.current = selected === EMPTY_CELL || grid[r][c] === selected ? "erase" : "paint";
@@ -207,8 +235,14 @@ export default function PixelArtExercise({
   const showModel = model && (mode === "copy" || phase === "show" || peeking);
   const painted = grid.some((row, r) => row.some((cell, c) => cell !== EMPTY_CELL && !isLocked(r, c)));
 
+  const frame = solved
+    ? "border-lime-300 bg-[#f7fee7] shadow-[0_5px_0_#16a34a,0_14px_24px_-14px_rgba(60,30,0,0.5)] animate-[gk-pop_0.45s_ease-out]"
+    : isCorrect === false
+      ? "border-amber-300 bg-[#fffbeb] shadow-[0_5px_0_#ea580c,0_14px_24px_-14px_rgba(60,30,0,0.5)] animate-[gk-shake-soft_0.45s_ease-in-out]"
+      : "border-white bg-[#fff8e6] shadow-[0_5px_0_#d6c39a,0_14px_24px_-14px_rgba(60,30,0,0.5)]";
+
   return (
-    <div ref={rootRef} className="space-y-4 sm:space-y-5">
+    <div ref={rootRef} className="gk-motion space-y-4 sm:space-y-5">
       <ExercisePrompt prompt={prompt} />
 
       <div
@@ -223,17 +257,15 @@ export default function PixelArtExercise({
                 <MiniGrid rows={model} width={width} cell={modelCell} colorOf={colorOf} />
               ) : (
                 <div
-                  className="flex flex-col items-center justify-center gap-1 rounded-xl border-3 border-dashed border-gray-300 bg-gray-50 text-center"
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl border-3 border-dashed border-[#e9a83a] bg-[#fff7e0] text-center"
                   style={{ width: modelCell * width + FRAME, height: modelCell * height + FRAME }}
                 >
-                  <span className="text-3xl" aria-hidden>
-                    🙈
-                  </span>
-                  <span className="px-2 text-xs font-bold text-gray-500">Caché !</span>
+                  <EyeOff className="h-7 w-7 text-[#e9a83a]" aria-hidden />
+                  <span className="px-2 font-display text-xs font-extrabold text-amber-900">Caché&nbsp;!</span>
                 </div>
               )}
               {mode === "memory" && phase === "show" && (
-                <span className="absolute -right-3 -top-3 flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-lg font-extrabold text-white shadow-lg">
+                <span className="absolute -right-3 -top-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[linear-gradient(180deg,#fbbf24_0%,#ea580c_100%)] font-display text-lg font-extrabold text-white shadow-[0_3px_0_#b45309,0_6px_10px_-4px_rgba(60,30,0,0.5)]">
                   {remaining}
                 </span>
               )}
@@ -243,25 +275,22 @@ export default function PixelArtExercise({
               // pas d'une phase à l'autre.
               <div className="flex w-28 flex-col items-center gap-2 text-center">
                 {phase === "show" && (
-                  <button
-                    type="button"
-                    onClick={() => setPhase("draw")}
-                    className="min-h-11 rounded-xl bg-orange-100 px-3 py-2 text-sm font-bold leading-tight text-orange-800 hover:bg-orange-200"
-                  >
-                    J&apos;ai retenu !
-                  </button>
+                  <PillButton3D tone="orange" onClick={() => setPhase("draw")} className="w-full">
+                    J&apos;ai retenu&nbsp;!
+                  </PillButton3D>
                 )}
                 {phase === "draw" && peeksLeft > 0 && !disabled && (
-                  <button
-                    type="button"
+                  <PillButton3D
+                    tone="sky"
+                    icon={<Eye className="h-4 w-4 shrink-0" aria-hidden />}
                     onClick={() => {
                       setPeeksLeft((n) => n - 1);
                       setPeeking(true);
                     }}
-                    className="inline-flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl bg-sky-100 px-3 py-2 text-sm font-bold leading-tight text-sky-800 hover:bg-sky-200"
+                    className="w-full"
                   >
-                    <Eye className="h-4 w-4" aria-hidden /> Revoir 3 secondes
-                  </button>
+                    Revoir 3&nbsp;secondes
+                  </PillButton3D>
                 )}
               </div>
             )}
@@ -270,15 +299,7 @@ export default function PixelArtExercise({
 
         <div className="relative">
           {model && <FrameLabel>Ton dessin</FrameLabel>}
-          <div
-            className={`relative rounded-xl border-3 p-1 ${
-              solved
-                ? "border-green-400 animate-[pop-in_0.45s_ease-out]"
-                : isCorrect === false
-                  ? "border-red-400 animate-[shake_0.5s_ease-in-out]"
-                  : "border-gray-300"
-            } ${canPaint || solved ? "" : "opacity-80"}`}
-          >
+          <div className={`relative rounded-xl border-3 p-1 ${frame} ${canPaint || solved ? "" : "opacity-80"}`}>
             <div
               ref={gridRef}
               role="grid"
@@ -300,22 +321,35 @@ export default function PixelArtExercise({
                   const pale = isLocked(r, c) && !solved;
                   const color = cell === EMPTY_CELL ? undefined : colorOf(cell);
                   const digit = numbers?.[r]?.[c];
+                  const bounce = board.fresh.has(`${r}-${c}:${cell}`);
                   return (
                     <div
                       key={`${r}-${c}`}
                       role="gridcell"
                       aria-label={`Ligne ${r + 1}, colonne ${c + 1}${color ? `, ${palette.find((p) => p.key === cell)?.name}` : ", vide"}`}
-                      className={`relative flex items-center justify-center border border-gray-200 text-[11px] font-bold ${
-                        pale ? "after:absolute after:inset-0 after:bg-white/25" : ""
+                      className={`relative flex items-center justify-center border border-[#efe3c3] text-[11px] font-bold ${
+                        pale ? "after:absolute after:inset-0 after:z-10 after:bg-white/25" : ""
                       }`}
                       style={{
                         width: cellSize,
                         height: cellSize,
-                        backgroundColor: color ?? (pale ? "#f3f4f6" : "#ffffff"),
+                        backgroundColor: pale ? CELL_LOCKED : CELL_EMPTY,
                       }}
                     >
+                      {/* La touche de peinture : en relief, posée d'un rebond quand l'enfant vient de la mettre. */}
+                      {color && (
+                        <span
+                          key={cell}
+                          aria-hidden
+                          data-paint={cell}
+                          className={`absolute inset-px rounded-[3px] shadow-[inset_0_2px_0_rgb(255_255_255_/_0.4),inset_0_-2px_0_rgb(0_0_0_/_0.14)] ${
+                            bounce ? "animate-[gk-pop_0.3s_ease-out]" : ""
+                          }`}
+                          style={{ backgroundColor: color }}
+                        />
+                      )}
                       {digit && digit !== "0" && (
-                        <span className={color ? "text-white/90 drop-shadow" : "text-gray-400"}>{digit}</span>
+                        <span className={`relative ${color ? "text-white/90 [text-shadow:0_1px_0_rgba(0,0,0,0.35)]" : "text-amber-900/50"}`}>{digit}</span>
                       )}
                     </div>
                   );
@@ -333,46 +367,53 @@ export default function PixelArtExercise({
                 }
               />
             )}
+            <Reward fire={solved ? "juste" : null} />
           </div>
         </div>
       </div>
 
-      {/* Une seule rangée sur téléphone : quatre couleurs au plus, la gomme
-          et « Tout effacer » en icônes, nommés sur grand écran. Les numéros
-          du coloriage magique sont sur les pastilles : elles font légende. */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      {/* Les pastilles de peinture, la gomme et « Tout effacer », en disques
+          épais de 56 px. Les numéros du coloriage magique sont sur les
+          pastilles : elles font légende. */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
         {palette.map((paint, i) => (
           <button
             key={paint.key}
             type="button"
-            onClick={() => setSelected(paint.key)}
+            onClick={() => {
+              feel.vibrate("tap");
+              setSelected(paint.key);
+            }}
             disabled={!canPaint}
             aria-pressed={selected === paint.key}
             aria-label={numbers ? `${i + 1} : ${paint.name}` : paint.name}
             title={numbers ? `${i + 1} : ${paint.name}` : paint.name}
-            className={`flex h-11 min-w-11 items-center justify-center rounded-full border-3 px-0.5 transition-all ${
-              selected === paint.key ? "scale-110 border-gray-900 shadow-lg" : "border-white shadow"
-            } disabled:opacity-60`}
-            style={{ backgroundColor: paint.color }}
+            className="group relative flex h-14 w-14 items-center justify-center rounded-full gk-focus disabled:opacity-60"
           >
-            {numbers && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/85 text-[11px] font-extrabold text-gray-900">
-                {i + 1}
-              </span>
-            )}
+            <PaintBlob color={paint.color} size={44} selected={selected === paint.key}>
+              {numbers && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/90 font-display text-[11px] font-extrabold text-gray-900 shadow-[0_1px_0_rgb(0_0_0_/_0.2)]">
+                  {i + 1}
+                </span>
+              )}
+            </PaintBlob>
           </button>
         ))}
-        <ToolButton
-          label="Gomme"
-          icon={<Eraser className="h-4 w-4 shrink-0" aria-hidden />}
+        <PillButton3D
+          round
+          ariaLabel="Gomme"
+          title="Gomme"
+          icon={<Eraser className="h-5 w-5 shrink-0" aria-hidden />}
           onClick={() => setSelected(EMPTY_CELL)}
           disabled={!canPaint}
           pressed={selected === EMPTY_CELL}
         />
-        <ToolButton
-          label="Tout effacer"
-          icon={<RotateCcw className="h-4 w-4 shrink-0" aria-hidden />}
-          onClick={() => setGrid(initial())}
+        <PillButton3D
+          round
+          ariaLabel="Tout effacer"
+          title="Tout effacer"
+          icon={<RotateCcw className="h-5 w-5 shrink-0" aria-hidden />}
+          onClick={() => setBoard({ grid: initial(), fresh: new Set() })}
           disabled={!canPaint || !painted}
         />
       </div>
@@ -406,45 +447,13 @@ function screenHeight(): number {
 /** Le nom d'un cadre, posé sur sa bordure comme une étiquette : il ne prend pas de hauteur. */
 function FrameLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="pointer-events-none absolute -top-3 left-2.5 z-10 rounded-full bg-white px-1.5 text-[11px] font-bold leading-[18px] text-gray-500">
+    <span className="pointer-events-none absolute -top-3 left-2.5 z-10 rounded-full border border-[#d6c39a] bg-[#fff8e6] px-2 font-display text-[11px] font-extrabold leading-[18px] text-amber-900">
       {children}
     </span>
   );
 }
 
-/** Gomme, « Tout effacer » : une icône sur téléphone, l'icône et son nom sur grand écran. */
-function ToolButton({
-  label,
-  icon,
-  onClick,
-  disabled,
-  pressed,
-}: {
-  label: string;
-  icon: ReactNode;
-  onClick: () => void;
-  disabled: boolean;
-  pressed?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={pressed}
-      aria-label={label}
-      title={label}
-      className={`inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border-3 bg-white px-2 text-sm font-bold text-gray-700 transition-all sm:px-4 ${
-        pressed ? "scale-105 border-gray-900 shadow-lg" : "border-gray-200 shadow"
-      } disabled:opacity-50`}
-    >
-      {icon}
-      <span className="hidden sm:inline">{label}</span>
-    </button>
-  );
-}
-
-/** Le modèle, petit et en lecture seule. */
+/** Le modèle, petit et en lecture seule, sur sa carte crème. */
 function MiniGrid({
   rows,
   width,
@@ -458,7 +467,7 @@ function MiniGrid({
 }) {
   return (
     <div
-      className="grid rounded-xl border-3 border-amber-300 bg-white p-1"
+      className="grid rounded-xl border-3 border-white bg-[#fff8e6] p-1 shadow-[0_4px_0_#d6c39a,0_10px_16px_-12px_rgba(60,30,0,0.45)]"
       style={{ gridTemplateColumns: `repeat(${width}, ${cell}px)` }}
       aria-label="Le modèle à reproduire"
     >
@@ -468,8 +477,8 @@ function MiniGrid({
           return (
             <div
               key={`${r}-${c}`}
-              className="border border-gray-100"
-              style={{ width: cell, height: cell, backgroundColor: key === EMPTY_CELL ? "#ffffff" : (colorOf(key) ?? "#ffffff") }}
+              className="border border-[#f3e7c6]"
+              style={{ width: cell, height: cell, backgroundColor: key === EMPTY_CELL ? CELL_EMPTY : (colorOf(key) ?? CELL_EMPTY) }}
             />
           );
         }),

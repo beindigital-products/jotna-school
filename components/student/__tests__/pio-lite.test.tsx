@@ -2,7 +2,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MotionGlobalConfig } from "framer-motion";
 
-import { Pio, pioPosterSrc, type PioState } from "../pio";
+import { isPioState, isPioStill, Pio, pioClipSources, pioPosterSrc, preloadPioPosters, type PioState } from "../pio";
 import { SpeechBubble } from "../game/speech-bubble";
 import { SavannaBackdrop } from "../world/savanna-backdrop";
 
@@ -19,7 +19,34 @@ beforeAll(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   device.tier = "full";
+});
+
+describe("preloadPioPosters — les affiches demandées en avance", () => {
+  it("demande une `Image` par pose, une seule fois par URL, avec l'affiche de la tenue", () => {
+    const requested: string[] = [];
+    vi.stubGlobal(
+      "Image",
+      class {
+        set src(value: string) {
+          requested.push(value);
+        }
+      },
+    );
+    expect(preloadPioPosters(["cheer", "encourage", "sad"], { lite: true })).toEqual([
+      "/images/pio/lite/cheer.webp",
+      "/images/pio/lite/encourage.webp",
+      "/images/pio/lite/sad.webp",
+    ]);
+    expect(requested).toHaveLength(3);
+    // Déjà demandées : rien ne repart, même d'un autre écran.
+    expect(preloadPioPosters(["cheer", "sad"], { lite: true })).toEqual([]);
+    expect(requested).toHaveLength(3);
+    // Une autre affiche (le PNG d'origine, la marche qui part de la pose calme) : une requête de plus.
+    expect(preloadPioPosters(["walk"])).toEqual(["/images/pio/idle.png"]);
+    expect(requested).toHaveLength(4);
+  });
 });
 
 describe("les affiches légères de Pio (`lite`)", () => {
@@ -57,10 +84,12 @@ describe("les affiches légères de Pio (`lite`)", () => {
     expect(document.querySelector("img")?.getAttribute("src")).toBe("/images/pio/cheer.png");
   });
 
-  it("pose l'affiche légère sur le clip, le temps de son chargement", () => {
+  it("pose l'affiche légère sur le clip, le temps de son chargement, et RIEN sous un clip qui bouge", () => {
     render(<Pio state="hello" lite />);
     const video = document.querySelector("video");
     expect(video?.getAttribute("poster")).toBe("/images/pio/lite/hello.webp");
+    // « hello » fait coucou : une affiche peinte sous lui ferait un Pio en double.
+    expect(document.querySelector("img")).toBeNull();
     // Les clips, eux, ne changent pas.
     expect([...document.querySelectorAll("source")].map((source) => source.getAttribute("src"))).toEqual([
       "/videos/pio/hello.mov",
@@ -68,9 +97,88 @@ describe("les affiches légères de Pio (`lite`)", () => {
     ]);
   });
 
+  it("garde l'affiche SOUS le clip d'une pose quasi immobile (« ask »), décodée sur place", () => {
+    render(<Pio state="ask" lite />);
+    const video = document.querySelector("video")!;
+    expect(video.getAttribute("poster")).toBe("/images/pio/lite/ask.webp");
+    // Sur iOS, la couche vidéo du clip HEVC s'éteint d'elle-même dès qu'un son
+    // part : l'affiche, montée sous la vidéo, prend le relais dans la même image.
+    const image = document.querySelector("img")!;
+    expect(image.getAttribute("src")).toBe("/images/pio/lite/ask.webp");
+    expect(image.getAttribute("decoding")).toBe("sync");
+    expect(image.compareDocumentPosition(video) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("a une affiche légère pour chaque pose de la tenue de tous les jours", () => {
-    const poses: PioState[] = ["idle", "hello", "cheer", "sad", "amazed", "encourage", "think", "sleep", "walk"];
+    const poses: PioState[] = ["idle", "hello", "cheer", "sad", "amazed", "encourage", "think", "sleep", "ask", "walk"];
     for (const pose of poses) expect(pioPosterSrc(pose, "classic", true), pose).toMatch(/^\/images\/pio\/lite\/\w+\.webp$/);
+  });
+});
+
+describe("les poses quasi immobiles (`still`) : l'affiche sous le clip, pour elles seules", () => {
+  it("« ask » l'est ; les poses qui bougent (cheer, hello, walk) ne le sont pas", () => {
+    expect(isPioStill("ask")).toBe(true);
+    for (const pose of ["cheer", "hello", "walk", "idle", "encourage", "sad"] as const) expect(isPioStill(pose), pose).toBe(false);
+  });
+
+  it("se décide sur la pose réellement jouée : « ask » en boubou est « idle », qui bouge", () => {
+    expect(isPioStill("ask", "boubou")).toBe(false);
+  });
+
+  it("une pose qui bouge n'a pas d'affiche sous son clip, même en pleine taille", () => {
+    render(<Pio state="cheer" size={190} />);
+    expect(document.querySelector("video")).not.toBeNull();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("sans clip (animated={false}), l'affiche est là quelle que soit la pose", () => {
+    render(<Pio state="cheer" animated={false} />);
+    expect(document.querySelector("video")).toBeNull();
+    expect(document.querySelector("img")?.getAttribute("src")).toBe("/images/pio/cheer.png");
+  });
+});
+
+describe("la pose « ask » : Pio montre la question", () => {
+  it("existe dans la tenue de tous les jours, affiche, affiche légère et clip", () => {
+    expect(isPioState("ask")).toBe(true);
+    expect(pioPosterSrc("ask", "classic")).toBe("/images/pio/ask.png");
+    expect(pioPosterSrc("ask", "classic", true)).toBe("/images/pio/lite/ask.webp");
+    expect(pioClipSources("ask")).toEqual({ mov: "/videos/pio/ask.mov", webm: "/videos/pio/ask.webm" });
+  });
+
+  it("en boubou, retombe sur une pose calme de la MÊME tenue : Pio ne change pas d'habits", () => {
+    expect(pioPosterSrc("ask", "boubou")).toBe("/images/pio/boubou/idle.png");
+    expect(pioClipSources("ask", "boubou")).toEqual({ mov: "/videos/pio/boubou/idle.mov", webm: "/videos/pio/boubou/idle.webm" });
+  });
+
+  it("se nomme pour un lecteur d'écran", () => {
+    render(<Pio state="ask" animated={false} />);
+    expect(screen.getByRole("img", { name: "Pio te montre la question" })).toBeTruthy();
+  });
+});
+
+describe("la taille de Pio : des pixels, ou une longueur CSS", () => {
+  it("en pixels, rien ne change : 96 px de haut, 69 px de large, le clip à l'échelle", () => {
+    render(<Pio state="idle" size={96} />);
+    const root = screen.getByRole("img");
+    expect(root.style.height).toBe("96px");
+    expect(root.style.width).toBe("69px");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    expect(video.style.width).toBe("69px");
+    expect(video.style.height).toBe("123px");
+    expect(video.style.top).toBe("-15px");
+  });
+
+  it("en longueur CSS, la largeur et la géométrie du clip suivent en calc()", () => {
+    // Une variable plutôt qu'un `clamp(... svh ...)` : jsdom ne connaît pas `svh` et jetterait la valeur.
+    render(<Pio state="ask" size="var(--stage-pio)" />);
+    const root = screen.getByRole("img");
+    expect(root.style.height).toBe("var(--stage-pio)");
+    expect(root.style.width).toBe("calc(var(--stage-pio) * 0.715)");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    expect(video.style.width).toBe("calc(var(--stage-pio) * 0.72)");
+    expect(video.style.height).toBe("calc(var(--stage-pio) * 1.28)");
+    expect(video.style.top).toBe("calc(var(--stage-pio) * -0.16)");
   });
 });
 

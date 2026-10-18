@@ -31,7 +31,7 @@ describe("glisser-déposer et mise en ordre : prise au doigt", () => {
     }
   });
 
-  it("chaque poignée de la mise en ordre est `touch-none` et fait 44 px (h-11 w-11)", () => {
+  it("chaque poignée de la mise en ordre est `touch-none` et fait 56 px (h-14 w-14)", () => {
     const { container } = render(
       <OrderExercise
         prompt="Range les mots."
@@ -46,8 +46,8 @@ describe("glisser-déposer et mise en ordre : prise au doigt", () => {
     for (const handle of handles) {
       expect(handle.className).toContain("touch-none");
       expect(handle.className).toContain("select-none");
-      expect(handle.className).toContain("h-11");
-      expect(handle.className).toContain("w-11");
+      expect(handle.className).toContain("h-14");
+      expect(handle.className).toContain("w-14");
     }
   });
 });
