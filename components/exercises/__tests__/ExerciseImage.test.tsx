@@ -21,12 +21,21 @@ vi.mock("@/lib/exercise-images", async (importOriginal) => {
 import ExercisePrompt from "../ExercisePrompt";
 import QcmExercise from "../QcmExercise";
 
+/**
+ * Le paragraphe de la consigne, par son texte entier : « vois-tu » est tenu en
+ * `nowrap` dans un `span` (`ExercisePrompt`), et `getByText` ne lit que les
+ * nœuds de texte propres d'un élément.
+ */
+const squeeze = (text: string) => text.trim().replace(/\s+/g, " ");
+const byPrompt = (text: string) =>
+  screen.getByText((_, element) => element?.tagName === "P" && squeeze(element.textContent ?? "") === squeeze(text));
+
 describe("l'image d'un énoncé", () => {
   it("s'affiche au-dessus de la consigne, avec son texte alternatif", () => {
     const { container } = render(<ExercisePrompt prompt="Quel animal vois-tu ?" image="chat" />);
     const image = screen.getByRole("img", { name: "Un chat assis" }) as HTMLImageElement;
     expect(image.getAttribute("src")).toBe("/exercices/chat.webp");
-    const prompt = screen.getByText("Quel animal vois-tu ?");
+    const prompt = byPrompt("Quel animal vois-tu ?");
     expect(
       image.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING,
       "l'image précède la consigne",
@@ -48,7 +57,7 @@ describe("l'image d'un énoncé", () => {
   it("n'affiche rien pour un identifiant hors catalogue", () => {
     const { container } = render(<ExercisePrompt prompt="Quel animal vois-tu ?" image="licorne" />);
     expect(container.querySelector("img")).toBeNull();
-    expect(screen.queryByText("Quel animal vois-tu ?")).not.toBeNull();
+    expect(byPrompt("Quel animal vois-tu ?")).not.toBeNull();
   });
 
   it("se cache si le fichier manque, au lieu d'une icône cassée", () => {

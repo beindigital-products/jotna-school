@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { AlertTriangle, GripVertical } from "lucide-react";
+import { useState, type CSSProperties } from "react";
+import { AlertTriangle, Check, GripVertical } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
 import { payloadImage } from "./ExerciseImage";
+import { ExerciseActions } from "./game-parts";
 import {
   DndContext,
   closestCenter,
@@ -21,7 +22,31 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { ActionButton3D, ELEVATIONS, Reward, Tile3D, useGameFeel, type TileState } from "@/components/student/game-kit";
+import { StepNumber, StepSlot } from "@/components/student/game-kit/gestes-cases";
+import { TileGlyphs } from "@/components/student/game-kit/gestes-glyphes";
 
+/**
+ * LA MISE EN ORDRE EST UN ESCALIER DE MARCHES NUMÉROTÉES
+ * (`docs/direction-jeu-exercices.md`). Chaque marche porte sa pierre (1, 2,
+ * 3…, `StepNumber`) et un creux (`StepSlot`) ; une tuile épaisse (`Tile3D`)
+ * y est posée. Saisie par sa poignée, la tuile se soulève (8 px, un peu plus
+ * grande, l'ombre s'éloigne, une légère inclinaison), les autres glissent
+ * pour lui faire de la place et le creux de la marche visée apparaît. Lâchée,
+ * elle se pose avec un ressort et le téléphone claque dans la main.
+ *
+ * LE GESTE NE CHANGE PAS : les capteurs dnd-kit (doigt, souris, clavier :
+ * Espace prend, les flèches déplacent, Espace pose), la poignée en
+ * `touch-action: none`, les transformations fournies par `useSortable`. La
+ * poignée est un FRÈRE de la tuile, pas son enfant : un appui sur elle ne
+ * doit pas enfoncer la face de la tuile (`group-active` de `Tile3D`) pendant
+ * qu'elle se soulève. Le nœud trié est leur parent commun, dont le dernier
+ * enfant est la tuile : la vitrine lit le libellé par là.
+ *
+ * « Valider » est posé dans la barre d'action (`ExerciseActions`,
+ * `game-parts.tsx`) : pour un enfant qui apprend à lire, « Écouter » vient
+ * juste au-dessus, comme au QCM.
+ */
 interface OrderPayload {
   /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
   image?: string;
@@ -38,15 +63,6 @@ interface OrderExerciseProps {
   isCorrect: boolean | null;
 }
 
-const itemColors = [
-  "bg-blue-50 border-blue-200 text-blue-800",
-  "bg-pink-50 border-pink-200 text-pink-800",
-  "bg-amber-50 border-amber-200 text-amber-800",
-  "bg-green-50 border-green-200 text-green-800",
-  "bg-purple-50 border-purple-200 text-purple-800",
-  "bg-teal-50 border-teal-200 text-teal-800",
-];
-
 /**
  * Une étiquette à ranger. `id` est sa POSITION d'origine, `text` ce qu'elle
  * affiche : deux lettres « a » dans « papa » sont deux étiquettes, et
@@ -54,16 +70,28 @@ const itemColors = [
  */
 type OrderTile = { id: string; text: string };
 
+/** La tuile saisie penche un peu, comme tenue par un coin. */
+const GRAB_TILT_DEG = -1.5;
+
+/** L'état d'une tuile selon le verdict et la prise. */
+export function orderTileState(verdict: boolean | null, dragging: boolean): TileState {
+  if (verdict === true) return "juste";
+  if (verdict === false) return "fausse";
+  return dragging ? "choisie" : "repos";
+}
+
 function SortableItem({
   id,
   label,
   index,
   disabled,
+  verdict,
 }: {
   id: string;
   label: string;
   index: number;
   disabled: boolean;
+  verdict: boolean | null;
 }) {
   const {
     attributes,
@@ -74,46 +102,64 @@ function SortableItem({
     isDragging,
   } = useSortable({ id, disabled });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
+  // Le déplacement de dnd-kit sur le nœud trié ; l'inclinaison s'y ajoute le
+  // temps de la prise, et repart avec la même transition quand on lâche.
+  const moved = CSS.Transform.toString(transform);
+  const style: CSSProperties = {
+    transform: isDragging ? `${moved ?? ""} rotate(${GRAB_TILT_DEG}deg)` : (moved ?? undefined),
     transition,
+    willChange: isDragging ? "transform" : undefined,
   };
-
-  const color = itemColors[index % itemColors.length];
+  const state = orderTileState(verdict, isDragging);
+  const caseState = verdict === true ? "juste" : verdict === false ? "fausse" : "repos";
+  // La poignée monte avec la tuile saisie (même levée, même échelle).
+  const lift = ELEVATIONS.saisie;
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`
-        flex items-center gap-3 rounded-2xl border-3 px-5 py-4 text-lg font-bold transition-shadow
-        ${color}
-        ${isDragging ? "shadow-xl z-10 opacity-90 scale-[1.02]" : "shadow-sm"}
-        ${disabled ? "opacity-70" : ""}
-      `}
-    >
-      {/* LA POIGNÉE SE GLISSE AU DOIGT : `touch-none` (touch-action: none) dit
-          au navigateur de ne pas prendre ce geste pour un défilement. Sans lui,
-          sur iPhone, iPad et Android, le doigt qui glisse fait défiler la page,
-          le navigateur annule le geste (pointercancel) et la tuile ne bouge
-          jamais ; la souris, elle, n'a pas ce problème. 44 px, la plus petite
-          cible qu'un doigt d'enfant touche à coup sûr ; `select-none` et
-          `-webkit-touch-callout` coupent la loupe et le menu de sélection d'iOS
-          sur un appui long. */}
-      <span
-        {...attributes}
-        {...listeners}
-        className={`flex h-11 w-11 shrink-0 touch-none select-none items-center justify-center rounded-lg text-gray-400 [-webkit-touch-callout:none] ${
-          disabled ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
-        }`}
-      >
-        <GripVertical className="h-5 w-5" />
-      </span>
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/60 text-sm font-bold">
-        {index + 1}
-      </span>
-      <span>{label}</span>
-    </div>
+    <li className="flex items-center gap-3">
+      <StepNumber n={index + 1} tone={index} state={caseState} />
+      <div className="relative min-w-0 flex-1">
+        <StepSlot />
+        {/* `z-10` : une tuile qui glisse vers la marche du dessous passe DEVANT le
+            creux de cette marche, qui vient après elle dans le DOM. */}
+        <div ref={setNodeRef} style={style} className={`relative ${isDragging ? "z-20" : "z-10"}`}>
+          {/* LA POIGNÉE SE GLISSE AU DOIGT : `touch-none` (touch-action: none) dit
+              au navigateur de ne pas prendre ce geste pour un défilement. Sans lui,
+              sur iPhone, iPad et Android, le doigt qui glisse fait défiler la page,
+              le navigateur annule le geste (pointercancel) et la tuile ne bouge
+              jamais ; la souris, elle, n'a pas ce problème. 56 px, la cible d'un
+              doigt d'enfant ; `select-none` et `-webkit-touch-callout` coupent la
+              loupe et le menu de sélection d'iOS sur un appui long. */}
+          <span
+            {...attributes}
+            {...listeners}
+            aria-label={`Déplacer « ${label} »`}
+            className={`gk-spring absolute left-1.5 top-1/2 z-10 flex h-14 w-14 shrink-0 touch-none select-none items-center justify-center rounded-xl border-2 border-white/70 bg-[#fff1cc] text-amber-700 shadow-[inset_0_-2px_0_rgb(0_0_0_/_0.08),0_2px_0_#d6c39a] outline-none transition-transform duration-[220ms] gk-focus [-webkit-touch-callout:none] ${
+              disabled ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
+            }`}
+            style={{
+              transform: isDragging
+                ? `translateY(calc(-50% + ${lift.lift}px)) scale(${lift.scale})`
+                : "translateY(-50%)",
+            }}
+          >
+            <GripVertical className="h-7 w-7" strokeWidth={2.5} aria-hidden />
+          </span>
+          <Tile3D
+            as="div"
+            tone={index}
+            state={state}
+            elevation={isDragging ? "saisie" : undefined}
+            disabled={disabled}
+            data-dragging={isDragging || undefined}
+          >
+            <span className="block pl-14">
+              <TileGlyphs text={label} />
+            </span>
+          </Tile3D>
+        </div>
+      </div>
+    </li>
   );
 }
 
@@ -123,6 +169,7 @@ export default function OrderExercise({
   onSubmit,
   onSkip,
   disabled,
+  isCorrect,
 }: OrderExerciseProps) {
   const source = Array.isArray(payload?.items)
     ? payload.items.filter((s): s is string => typeof s === "string")
@@ -147,6 +194,18 @@ export default function OrderExercise({
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
+  const feel = useGameFeel();
+
+  // Le bouton n'appelle (reflet) qu'une fois que l'enfant a déplacé une tuile.
+  const [touched, setTouched] = useState(false);
+
+  // La récompense rejoue à chaque passage à « juste ».
+  const [fire, setFire] = useState(0);
+  const [seenVerdict, setSeenVerdict] = useState(isCorrect);
+  if (isCorrect !== seenVerdict) {
+    setSeenVerdict(isCorrect);
+    if (isCorrect === true) setFire((n) => n + 1);
+  }
 
   if (source.length < 2) {
     return (
@@ -171,6 +230,9 @@ export default function OrderExercise({
         return arrayMove(prevItems, oldIndex, newIndex);
       });
     }
+    // La tuile se pose : un petit claquement dans la main, qu'elle ait bougé ou non.
+    feel.vibrate("select");
+    setTouched(true);
   };
 
   const handleSubmit = () => {
@@ -178,7 +240,8 @@ export default function OrderExercise({
   };
 
   return (
-    <div className="space-y-6">
+    // Sur un écran court (667 px ou moins), les blocs se resserrent, comme au QCM.
+    <div className="space-y-6 [@media(max-height:667px)]:space-y-4">
       <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
       <DndContext
@@ -190,27 +253,36 @@ export default function OrderExercise({
           items={items.map((tile) => tile.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-3">
-            {items.map((tile, index) => (
-              <SortableItem
-                key={tile.id}
-                id={tile.id}
-                label={tile.text}
-                index={index}
-                disabled={disabled}
-              />
-            ))}
+          {/* L'escalier : une marche par rang, la récompense au milieu. */}
+          <div className="relative">
+            <ol className="space-y-4">
+              {items.map((tile, index) => (
+                <SortableItem
+                  key={tile.id}
+                  id={tile.id}
+                  label={tile.text}
+                  index={index}
+                  disabled={disabled}
+                  verdict={isCorrect}
+                />
+              ))}
+            </ol>
+            <Reward fire={fire > 0 ? fire : null} />
           </div>
         </SortableContext>
       </DndContext>
 
-      <button
-        onClick={handleSubmit}
-        disabled={disabled}
-        className="w-full rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-6 py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-      >
-        Valider
-      </button>
+      <ExerciseActions>
+        {/* La coche : le même « Valider » que le QCM, pour que le dock ne change pas de visage d'une question à l'autre. */}
+        <ActionButton3D
+          shine={touched && !disabled}
+          disabled={disabled}
+          onClick={handleSubmit}
+          icon={<Check className="h-6 w-6" strokeWidth={3} aria-hidden />}
+        >
+          Valider
+        </ActionButton3D>
+      </ExerciseActions>
     </div>
   );
 }

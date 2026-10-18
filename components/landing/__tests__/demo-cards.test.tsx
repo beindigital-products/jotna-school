@@ -5,6 +5,17 @@ import DemoCards from "../demo/demo-cards";
 import { BANK as mathematiques } from "../demo/bank/mathematiques";
 import { classicTypesFor, gamesFor } from "../demo/demo-matrix";
 
+/**
+ * La consigne, par le texte entier de son paragraphe : un mot à trait d'union
+ * (« a-t-elle ») y est tenu en `nowrap` dans un `span` (`ExercisePrompt`), et
+ * `getByText` ne lit que les nœuds de texte propres d'un élément.
+ */
+const byPrompt = (text: string) => (_: string, element: Element | null) =>
+  element?.tagName === "P" && squeeze(element.textContent ?? "") === squeeze(text);
+/** Le normaliseur de Testing Library : espaces (insécables comprises) repliées, bords rognés. */
+const squeeze = (text: string) => text.trim().replace(/\s+/g, " ");
+
+
 // Les confettis dessinent sur un canvas : jsdom n'en a pas.
 vi.mock("canvas-confetti", () => ({ default: vi.fn() }));
 
@@ -53,7 +64,7 @@ describe("les cartes jouables d'une matière et d'une classe", () => {
     );
 
     const qcm = mathematiques.CE2.find((item) => item.type === "qcm")!;
-    expect(await screen.findByText(qcm.prompt)).toBeTruthy();
+    expect(await screen.findByText(byPrompt(qcm.prompt))).toBeTruthy();
     expect(container.querySelectorAll("[aria-hidden].animate-pulse")).toHaveLength(0);
     expect(titles(container)).toEqual([
       "Questions à choix multiples",
@@ -71,7 +82,7 @@ describe("les cartes jouables d'une matière et d'une classe", () => {
 
   it("dit la thématique du programme et le niveau sur chaque carte", async () => {
     const { container } = render(<DemoCards subject="mathematiques" klass="CE2" />);
-    await screen.findByText(mathematiques.CE2[0].prompt);
+    await screen.findByText(byPrompt(mathematiques.CE2[0].prompt));
     // (Deux cartes peuvent partir de la même thématique : le glisser-déposer et le jeu de symétrie.)
     for (const item of mathematiques.CE2) expect(within(container).getAllByText(item.topic).length).toBeGreaterThan(0);
     // Un exercice de niveau 4 est « Maîtrise » : la réponse courte de CE2.
@@ -80,7 +91,7 @@ describe("les cartes jouables d'une matière et d'une classe", () => {
 
   it("montre le jeu que le programme donne à la classe : le dessin au CM1, pas de suite de nombres", async () => {
     const { container } = render(<DemoCards subject="mathematiques" klass="CM1" />);
-    await screen.findByText(mathematiques.CM1[0].prompt);
+    await screen.findByText(byPrompt(mathematiques.CM1[0].prompt));
     expect(screen.getByText("Les jeux")).toBeTruthy();
     expect(titles(container)).toContain("Dessiner sur quadrillage");
     expect(titles(container)).not.toContain("Continuer la suite");
@@ -95,7 +106,7 @@ describe("les cartes jouables d'une matière et d'une classe", () => {
 
   it("« Un autre exemple » change le jeu et monte la difficulté d'un cran", async () => {
     const { container } = render(<DemoCards subject="mathematiques" klass="CE2" />);
-    await screen.findByText(mathematiques.CE2[0].prompt);
+    await screen.findByText(byPrompt(mathematiques.CE2[0].prompt));
     const card = () => screen.getByRole("group", { name: "Continuer la suite" });
     // Le premier exemple est de niveau « consolidation ».
     expect(within(card()).getByText("Consolidation")).toBeTruthy();
@@ -120,11 +131,11 @@ describe("les cartes jouables d'une matière et d'une classe", () => {
 
   it("repart de zéro quand on change de classe : les cartes du CP, pas celles du CE2", async () => {
     const { rerender } = render(<DemoCards subject="mathematiques" klass="CE2" />);
-    await screen.findByText(mathematiques.CE2[0].prompt);
+    await screen.findByText(byPrompt(mathematiques.CE2[0].prompt));
 
     rerender(<DemoCards subject="mathematiques" klass="CP" />);
-    expect(await screen.findByText(mathematiques.CP[0].prompt)).toBeTruthy();
-    expect(screen.queryByText(mathematiques.CE2[0].prompt)).toBeNull();
+    expect(await screen.findByText(byPrompt(mathematiques.CP[0].prompt))).toBeTruthy();
+    expect(screen.queryByText(byPrompt(mathematiques.CE2[0].prompt))).toBeNull();
   });
 
   it("dit que les exercices n'ont pas pu se charger, puis les charge au « Réessayer »", async () => {
@@ -137,7 +148,7 @@ describe("les cartes jouables d'une matière et d'une classe", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Réessayer" }));
     });
-    expect(await screen.findByText(mathematiques.CE2[0].prompt)).toBeTruthy();
+    expect(await screen.findByText(byPrompt(mathematiques.CE2[0].prompt))).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });

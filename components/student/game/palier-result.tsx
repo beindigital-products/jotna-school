@@ -1,38 +1,24 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
-import { animate, motion, useMotionValue, useScroll, useTransform } from "framer-motion";
-import {
-  Check,
-  Flag,
-  ListChecks,
-  Lock,
-  Map as MapIcon,
-  Play,
-  RotateCcw,
-  Sparkles,
-  Star,
-  Trophy,
-} from "lucide-react";
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
+import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import { Check, Flag, ListChecks, Lock, Map as MapIcon, Play, RotateCcw, Sparkles, Star, Trophy } from "lucide-react";
 import { useDailyQuests, useStudentActions, useStudentStats } from "@/hooks/use-student-data";
 import { difficultyStage } from "@/convex/palierRules";
 import { PALIER_SIZE } from "@/convex/paliers/scoring";
 import { EXOS_PER_LEVEL, STARS_PER_EXERCISE, palierStarRating } from "@/convex/progressionRules";
 import { JotnaLoader } from "@/components/jotna-loader";
 import { BadgeShield } from "@/components/student/badge-icon";
-import { GameButton } from "@/components/student/game/game-button";
+import { ActionButton3D, useGameFeel } from "@/components/student/game-kit";
+import { Coffre3D } from "@/components/student/game-kit/coque-coffre-3d";
+import { FrostBar, useBareStatusBar } from "@/components/student/game/session-stage";
 import { SpeechBubble } from "@/components/student/game/speech-bubble";
 import { LevelUpOverlay } from "@/components/student/level-up-overlay";
 import { Pio } from "@/components/student/pio";
 import { SoundOptInDialog } from "@/components/student/sound-opt-in-dialog";
 import { kidMessages } from "@/lib/kidCopy";
 import { pickLine, pioSays } from "@/lib/pioCopy";
-import {
-  hasOptInBeenAsked,
-  playBadge,
-  preloadAll,
-  setSoundEnabledLocal,
-} from "@/lib/sounds";
+import { hasOptInBeenAsked, playBadge, preloadAll, setSoundEnabledLocal } from "@/lib/sounds";
 
 // La fête « missions du jour faites » ne se joue qu'une fois par jour et par
 // appareil : cette clé mémorise le dernier jour déjà fêté (commodité d'écran).
@@ -45,12 +31,21 @@ const QUESTS_CELEBRATED_KEY = "jotna:questsCelebratedDay";
  * étoiles se comptent, que le sentier de la thématique s'allume d'un cran et
  * que le prochain pas s'offre en un bouton. La séance, elle, reste sobre.
  *
- * Deux issues, une même scène. Palier validé : Pio fête, la récolte se
- * compte sous ses yeux, le palier suivant s'ouvre sur le sentier et les
- * confettis tombent. Palier manqué : Pio encourage, la jauge dit combien
- * d'étoiles manquent (un but, pas une note), et le bouton propose de refaire
- * les exercices ratés. Pas d'émoji dans les phrases : Pio est la mascotte,
- * il n'a pas besoin de cotillons dans le texte.
+ * Deux issues, une même scène. Palier validé : Pio fête, le COFFRE AU TRÉSOR
+ * s'ouvre à ses pieds (`Coffre3D`, du bois et de l'or en CSS 3D), la lumière
+ * en sort, l'éclat jaillit, les trois grandes étoiles tombent une à une, la
+ * récolte se compte sous ses yeux, le palier suivant s'ouvre sur le sentier et
+ * les confettis tombent (plafonnés par le niveau de l'appareil). Palier
+ * manqué : Pio encourage, le coffre reste cadenassé devant lui, la jauge dit
+ * combien d'étoiles manquent (un but, pas une note), et le bouton propose de
+ * refaire les exercices ratés. Pas d'émoji dans les phrases : Pio est la
+ * mascotte, il n'a pas besoin de cotillons dans le texte.
+ *
+ * CE QUI BOUGE : des `transform` et de l'`opacity`. Les jauges avancent en
+ * `translateX` (une barre pleine largeur qui glisse dans sa rainure), plus en
+ * `width` ; Pio a une ombre au sol peinte, pas un `drop-shadow` sur son clip.
+ * Le décor du héros (ciel, soleil) est une couche rognée à part : le coffre,
+ * en 3D, n'est jamais dans un parent `overflow: hidden` (Safari l'aplatirait).
  *
  * Les récompenses différées vivent ici aussi, comme sur l'ancien écran de
  * victoire : la carte du trophée débloqué (D25), l'écran de niveau (D2b/D24)
@@ -80,6 +75,19 @@ type UnseenBadge = {
 
 const CONFETTI_COLORS = ["#f97316", "#fbbf24", "#6ab04c", "#38bdf8", "#ec4899"];
 
+/**
+ * Les comptes de l'écran, purs : le plafond d'étoiles sur les exercices
+ * vraiment joués, le seuil ramené en étoiles (7 sur 10 → 21 sur 30), la
+ * récolte bornée, ce qui manque.
+ */
+export function palierStars(result: Pick<PalierResultView, "starsTotal" | "exerciseCount" | "thresholdTenths">) {
+  const exerciseCount = Math.max(1, Math.min(PALIER_SIZE, Math.round(result.exerciseCount)));
+  const maxStars = exerciseCount * STARS_PER_EXERCISE;
+  const threshold = Math.ceil((result.thresholdTenths / 10) * maxStars);
+  const starsTotal = Math.max(0, Math.min(maxStars, result.starsTotal));
+  return { exerciseCount, maxStars, threshold, starsTotal, missing: Math.max(0, threshold - starsTotal) };
+}
+
 export function PalierResultScreen({
   result,
   topicName,
@@ -104,12 +112,7 @@ export function PalierResultScreen({
   capAlternatives: ReactNode;
 }) {
   const validated = result.status === "validated";
-  const exerciseCount = Math.max(1, Math.min(PALIER_SIZE, Math.round(result.exerciseCount)));
-  const maxStars = exerciseCount * STARS_PER_EXERCISE;
-  // 7 sur 10 en moyenne, ramené en étoiles sur les exercices joués : 21 sur 30.
-  const threshold = Math.ceil((result.thresholdTenths / 10) * maxStars);
-  const starsTotal = Math.max(0, Math.min(maxStars, result.starsTotal));
-  const missing = Math.max(0, threshold - starsTotal);
+  const { exerciseCount, maxStars, threshold, starsTotal, missing } = palierStars(result);
   const topicDone = validated && nextPalierHref === null;
 
   // Les phrases se tirent une fois à l'arrivée : un titre qui changerait au
@@ -125,62 +128,75 @@ export function PalierResultScreen({
   useVictoryConfetti(validated);
   const extras = useVictoryExtras(validated);
   useBareStatusBar();
-  const { scrollY } = useScroll();
-  const frostOpacity = useTransform(scrollY, [24, 160], [0, 1]);
+  // L'écran de fin remplace la scène de la séance là où elle était : si
+  // l'enfant avait fait défiler la dernière question, Pio et sa bulle
+  // arriveraient sous la barre d'état (vu sur le simulateur iPhone 17). D'un
+  // coup : `scroll-behavior: smooth` de la page serait annulé par le
+  // remplacement du contenu sur le WKWebView.
+  useEffect(() => {
+    if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
   const sky = validated ? "#5db9f2" : "#f9a86b";
   const ground = validated ? "#f6c452" : "#ffe08a";
 
   return (
-    <div className="mx-auto max-w-lg space-y-5 pb-4">
-      {/* LA BARRE GIVRÉE QUI VIENT AU DÉFILEMENT. Au repos, rien : le ciel
-          du héros monte sous la barre d'état. Dès qu'on fait défiler, la
-          barre crème des autres écrans apparaît en fondu au-dessus de ce qui
-          passe dessous, comme un en-tête iOS qui se replie. Hors du flux, dans
-          la racine (pas dans le héros, dont l'entrée est animée). */}
-      <motion.div
-        aria-hidden
-        style={{ opacity: frostOpacity }}
-        className="fixed inset-x-0 top-0 z-40 h-[env(safe-area-inset-top)] bg-[#fff7e0]/90 backdrop-blur-md"
-      />
+    <div className="mx-auto max-w-lg space-y-5 pb-4" data-palier-result={result.status}>
+      <FrostBar />
       {/* LE CIEL MONTE JUSQU'À L'ENCOCHE. Le héros s'étend sous la barre
           d'état, d'un bord à l'autre, sans arrondi en haut : une seule
-          surface, du bord de l'écran au sol. Le dégradé ne commence qu'après
-          la zone de l'encoche, pour que la couleur y soit pleine. Sur le
-          web, la zone vaut zéro. */}
+          surface, du bord de l'écran au sol. Le décor (dégradé, soleil) est
+          une couche rognée derrière ; le contenu, et le coffre en 3D, sont
+          devant, hors de tout `overflow: hidden`. */}
       <motion.section
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.45, ease: "easeOut" }}
-        className="relative -mx-4 -mt-[env(safe-area-inset-top)] overflow-hidden rounded-b-[2rem] px-5 pb-6 pt-[calc(env(safe-area-inset-top)+1.25rem)] text-center shadow-2xl"
-        style={{
-          backgroundImage: `linear-gradient(180deg, ${sky} 0%, ${sky} env(safe-area-inset-top), ${ground} 100%)`,
-        }}
+        className="relative -mx-4 -mt-[env(safe-area-inset-top)] px-5 pb-5 pt-[calc(env(safe-area-inset-top)+1.25rem)] text-center"
       >
-        {/* Le soleil derrière Pio. */}
         <div
           aria-hidden
-          className="absolute left-1/2 top-[calc(env(safe-area-inset-top)+5rem)] h-60 w-60 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,247,194,0.95)_0%,rgba(255,210,63,0.6)_40%,rgba(255,176,32,0)_70%)] animate-[sun-pulse_4s_ease-in-out_infinite]"
-        />
+          className="savanna-motion absolute inset-0 overflow-hidden rounded-b-[2rem] shadow-2xl"
+          style={{
+            backgroundImage: `linear-gradient(180deg, ${sky} 0%, ${sky} env(safe-area-inset-top), ${ground} 100%)`,
+          }}
+        >
+          {/* Le soleil derrière Pio. */}
+          <div className="absolute left-1/2 top-[calc(env(safe-area-inset-top)+5rem)] h-60 w-60 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,247,194,0.95)_0%,rgba(255,210,63,0.6)_40%,rgba(255,176,32,0)_70%)] animate-[sun-pulse_4s_ease-in-out_infinite]" />
+          {/* Le sable au pied de la scène, où Pio et le coffre sont posés. */}
+          <div className="absolute inset-x-0 bottom-0 h-14 bg-[linear-gradient(180deg,rgba(233,168,58,0)_0%,rgba(233,168,58,0.45)_100%)]" />
+        </div>
+
         <div className="relative">
           <SpeechBubble bubbleKey={bubble}>{bubble}</SpeechBubble>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.6, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 240, damping: 18, delay: 0.1 }}
-            className="mt-4 flex justify-center"
-          >
-            <Pio
-              state={validated ? "cheer" : "encourage"}
-              size={200}
-              priority
-              className="drop-shadow-[0_16px_20px_rgba(60,30,0,0.45)]"
-            />
-          </motion.div>
+
+          {/* Pio et le coffre, côte à côte sur le sable. */}
+          <div className="mt-4 flex items-end justify-center gap-1 sm:gap-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.6, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 240, damping: 18, delay: 0.1 }}
+              className="relative"
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute bottom-0 left-1/2 h-5 w-32 -translate-x-1/2 rounded-[100%] bg-[radial-gradient(ellipse,rgba(60,30,0,0.4)_0%,rgba(60,30,0,0)_70%)]"
+              />
+              <Pio state={validated ? "cheer" : "encourage"} size={190} priority />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.7, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 220, damping: 18, delay: 0.3 }}
+            >
+              <Coffre3D open={validated} size={132} />
+            </motion.div>
+          </div>
+
           <motion.h1
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.35 }}
-            className="text-outline mt-2 font-display text-3xl font-extrabold text-white sm:text-4xl"
+            className="text-outline mt-1 font-display text-3xl font-extrabold text-white sm:text-4xl"
           >
             {validated ? `Palier ${palierIndex} validé` : `Palier ${palierIndex} manqué`}
           </motion.h1>
@@ -195,7 +211,7 @@ export function PalierResultScreen({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.55, duration: 0.4 }}
-        className="rounded-3xl border-2 border-amber-200 bg-white p-5 shadow-lg"
+        className="rounded-3xl border-2 border-white bg-[#fff8e6] p-5 shadow-[0_6px_0_#d6c39a,0_18px_30px_-16px_rgba(60,30,0,0.5)]"
       >
         <div className="flex items-end justify-between gap-3">
           <div>
@@ -209,7 +225,7 @@ export function PalierResultScreen({
             </p>
             <span className="sr-only">{pioSays.starsWon(starsTotal)}</span>
           </div>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border-2 border-amber-200 bg-[#fff7e0] px-3 py-1.5 font-display text-xs font-extrabold text-amber-900">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border-2 border-white bg-[#fff7e0] px-3 py-1.5 font-display text-xs font-extrabold text-amber-900 shadow-[0_2px_0_#d6c39a]">
             <Flag className="h-3.5 w-3.5" aria-hidden />
             {pioSays.validatedFrom(threshold)}
           </span>
@@ -218,7 +234,7 @@ export function PalierResultScreen({
         <StarsMeter value={starsTotal} threshold={threshold} max={maxStars} validated={validated} />
 
         {validated && extras.stats && (
-          <div className="mt-4 border-t-2 border-dashed border-amber-100 pt-3">
+          <div className="mt-4 border-t-2 border-dashed border-amber-200 pt-3">
             <div className="mb-1 flex items-center justify-between font-display text-xs font-extrabold text-amber-900/80">
               <span className="inline-flex items-center gap-1">
                 <Sparkles className="h-3.5 w-3.5 text-amber-500" aria-hidden />
@@ -230,31 +246,19 @@ export function PalierResultScreen({
                   : `Niveau ${extras.stats.level + 1} tout proche`}
               </span>
             </div>
-            <div className="h-3 overflow-hidden rounded-full bg-amber-100 shadow-inner" aria-hidden>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${extras.stats.levelPct}%` }}
-                transition={{ delay: 1.3, duration: 0.8, ease: "easeOut" }}
-                className="h-full rounded-full bg-gradient-to-r from-lime-400 to-green-500"
-              />
-            </div>
+            <Gauge pct={extras.stats.levelPct} className="h-3" delay={1.3} fill="bg-gradient-to-r from-lime-400 to-green-500" />
           </div>
         )}
       </motion.section>
 
-      <TopicTrail
-        topicName={topicName}
-        palierIndex={palierIndex}
-        palierCount={palierCount}
-        validated={validated}
-      />
+      <TopicTrail topicName={topicName} palierIndex={palierIndex} palierCount={palierCount} validated={validated} />
 
       {extras.badge && (
         <motion.section
           initial={{ opacity: 0, scale: 0.9, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ delay: 0.9, type: "spring", stiffness: 180 }}
-          className="rounded-3xl border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-fuchsia-50 p-5 shadow-md"
+          className="rounded-3xl border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-fuchsia-50 p-5 shadow-[0_6px_0_#d8b4fe,0_18px_30px_-16px_rgba(60,30,0,0.4)]"
         >
           <div className="flex items-center gap-4">
             <div className="shrink-0">
@@ -267,12 +271,8 @@ export function PalierResultScreen({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-display text-sm font-extrabold uppercase tracking-wider text-purple-700">
-                Nouveau trophée
-              </p>
-              <p className="truncate font-display text-lg font-extrabold text-purple-900">
-                {extras.badge.first.badge.name}
-              </p>
+              <p className="font-display text-sm font-extrabold uppercase tracking-wider text-purple-700">Nouveau trophée</p>
+              <p className="truncate font-display text-lg font-extrabold text-purple-900">{extras.badge.first.badge.name}</p>
               <p className="text-xs text-purple-700">{extras.badge.first.badge.description}</p>
             </div>
           </div>
@@ -293,56 +293,30 @@ export function PalierResultScreen({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1, duration: 0.35 }}
-        className="space-y-3"
+        className="space-y-4"
       >
         {validated && nextPalierHref && (
-          <GameButton
-            href={nextPalierHref}
-            tone="orange"
-            size="lg"
-            icon={<Play className="h-5 w-5 fill-current" aria-hidden />}
-            className="w-full"
-          >
+          <ActionButton3D href={nextPalierHref} tone="orange" size="lg" shine icon={<Play className="h-6 w-6 fill-current" aria-hidden />}>
             Palier suivant
-          </GameButton>
+          </ActionButton3D>
         )}
         {topicDone && (
-          <GameButton
-            href={trailHref}
-            tone="green"
-            size="lg"
-            icon={<Trophy className="h-5 w-5" aria-hidden />}
-            className="w-full"
-          >
+          <ActionButton3D href={trailHref} tone="green" size="lg" shine icon={<Trophy className="h-6 w-6" aria-hidden />}>
             Voir mon trésor
-          </GameButton>
+          </ActionButton3D>
         )}
         {!validated && result.canRegen && !regenerating && (
           <>
-            <p className="text-center font-display text-base font-bold text-amber-900">
-              {pioSays.regenInvite}
-            </p>
-            <GameButton
-              onClick={onRegen}
-              tone="green"
-              size="lg"
-              icon={<RotateCcw className="h-5 w-5" aria-hidden />}
-              className="w-full"
-            >
+            <p className="text-center font-display text-base font-bold text-amber-900">{pioSays.regenInvite}</p>
+            <ActionButton3D onClick={onRegen} tone="green" size="lg" shine icon={<RotateCcw className="h-6 w-6" aria-hidden />}>
               {pioSays.regenCta}
-            </GameButton>
+            </ActionButton3D>
           </>
         )}
         {!topicDone && (
-          <GameButton
-            href={trailHref}
-            tone="white"
-            size="md"
-            icon={<MapIcon className="h-5 w-5" aria-hidden />}
-            className="w-full"
-          >
+          <ActionButton3D href={trailHref} tone="white" size="md" icon={<MapIcon className="h-5 w-5" aria-hidden />}>
             Retour au sentier
-          </GameButton>
+          </ActionButton3D>
         )}
       </motion.div>
 
@@ -351,42 +325,23 @@ export function PalierResultScreen({
   );
 }
 
-/**
- * En mode focus, `(student)/layout` pose une barre crème sous la barre
- * d'état. Ici, elle coupait le ciel du héros d'un trait, et une barre de la
- * couleur du ciel coupait le sol dès qu'on faisait défiler. Le temps de cet
- * écran, elle devient transparente : le héros passe dessous.
- */
-function useBareStatusBar() {
-  useLayoutEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty("--focus-top-bg", "transparent");
-    root.style.setProperty("--focus-top-blur", "none");
-    return () => {
-      root.style.removeProperty("--focus-top-bg");
-      root.style.removeProperty("--focus-top-blur");
-    };
-  }, []);
-}
-
 // ---------------------------------------------------------------------------
 // Les morceaux
 // ---------------------------------------------------------------------------
 
+/** Les trois grandes étoiles : chacune tombe en tournant, de la moitié de sa taille (jamais de zéro). */
 function BigStars({ count }: { count: number }) {
   return (
-    <div className="flex justify-center gap-2" aria-label={pioSays.victoryStars(count)}>
+    <div className="flex justify-center gap-2" aria-label={pioSays.victoryStars(count)} data-big-stars={count}>
       {[1, 2, 3].map((i) => (
         <motion.div
           key={i}
-          initial={{ scale: 0, rotate: -40 }}
-          animate={{ scale: 1, rotate: 0 }}
+          initial={{ scale: 0.5, rotate: -40, opacity: 0, y: -16 }}
+          animate={{ scale: 1, rotate: 0, opacity: 1, y: 0 }}
           transition={{ delay: 0.35 + i * 0.18, type: "spring", stiffness: 220, damping: 12 }}
         >
           <Star
-            className={`h-16 w-16 drop-shadow-md ${
-              i <= count ? "fill-amber-400 text-amber-500" : "fill-white/70 text-amber-200"
-            }`}
+            className={`h-16 w-16 drop-shadow-md ${i <= count ? "fill-amber-400 text-amber-500" : "fill-white/70 text-amber-200"}`}
             aria-hidden
           />
         </motion.div>
@@ -406,38 +361,50 @@ function CountUp({ value, className }: { value: number; className?: string }) {
   return <motion.span className={className}>{rounded}</motion.span>;
 }
 
-/** La jauge d'étoiles, avec le drapeau du seuil dessus. */
-function StarsMeter({
-  value,
-  threshold,
-  max,
-  validated,
+/**
+ * Une jauge qui se remplit en `translateX` : la barre fait toute la largeur
+ * et glisse dans sa rainure rognée, son bout arrondi reste rond. Jamais de
+ * `width` animée.
+ */
+function Gauge({
+  pct,
+  className = "",
+  delay = 0.7,
+  duration = 1,
+  fill,
 }: {
-  value: number;
-  threshold: number;
-  max: number;
-  validated: boolean;
+  pct: number;
+  className?: string;
+  delay?: number;
+  duration?: number;
+  fill: string;
 }) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  return (
+    <div className={`overflow-hidden rounded-full bg-amber-100 shadow-inner ${className}`} aria-hidden>
+      <motion.div
+        data-gauge={clamped}
+        initial={{ x: "-100%" }}
+        animate={{ x: `${clamped - 100}%` }}
+        transition={{ delay, duration, ease: "easeOut" }}
+        className={`h-full w-full rounded-full ${fill}`}
+      />
+    </div>
+  );
+}
+
+/** La jauge d'étoiles, avec le drapeau du seuil dessus. */
+function StarsMeter({ value, threshold, max, validated }: { value: number; threshold: number; max: number; validated: boolean }) {
   const pct = (value / max) * 100;
   const thresholdPct = (threshold / max) * 100;
   return (
-    <div className="relative mt-5 mb-1" aria-hidden>
-      <div className="h-5 overflow-hidden rounded-full bg-amber-100 shadow-inner">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ delay: 0.7, duration: 1, ease: "easeOut" }}
-          className={`h-full rounded-full ${
-            validated
-              ? "bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500"
-              : "bg-gradient-to-r from-orange-300 to-rose-400"
-          }`}
-        />
-      </div>
-      <div
-        className="absolute -top-2 flex -translate-x-1/2 flex-col items-center"
-        style={{ left: `${thresholdPct}%` }}
-      >
+    <div className="relative mb-1 mt-5" aria-hidden>
+      <Gauge
+        pct={pct}
+        className="h-5"
+        fill={validated ? "bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500" : "bg-gradient-to-r from-amber-300 to-orange-400"}
+      />
+      <div className="absolute -top-2 flex -translate-x-1/2 flex-col items-center" style={{ left: `${thresholdPct}%` }}>
         <span className="h-9 w-1.5 rounded-full bg-amber-950 shadow-sm" />
       </div>
     </div>
@@ -472,7 +439,7 @@ function TopicTrail({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.75, duration: 0.4 }}
-      className="rounded-3xl border-2 border-amber-200 bg-[#fff7e0] p-4 shadow-md"
+      className="rounded-3xl border-2 border-white bg-[#fff7e0] p-4 shadow-[0_6px_0_#d6c39a,0_18px_30px_-16px_rgba(60,30,0,0.5)]"
     >
       <div className="flex items-center justify-between gap-2">
         <p className="truncate font-display text-base font-extrabold text-amber-950">{topicName}</p>
@@ -497,9 +464,7 @@ function TopicTrail({
               {n > 1 && (
                 <span
                   aria-hidden
-                  className={`h-1.5 min-w-1.5 flex-1 rounded-full ${
-                    n <= done ? "bg-green-500" : "bg-amber-900/15"
-                  }`}
+                  className={`h-1.5 min-w-1.5 flex-1 rounded-full ${n <= done ? "bg-green-500" : "bg-amber-900/15"}`}
                 />
               )}
               <TrailDot n={n} state={state} sizeClass={dot} />
@@ -541,10 +506,10 @@ function TrailDot({ n, state, sizeClass }: { n: number; state: DotState; sizeCla
       <motion.span
         role="listitem"
         aria-label={label}
-        initial={{ scale: 0.4 }}
-        animate={{ scale: [0.4, 1.25, 1] }}
+        initial={{ scale: 0.5 }}
+        animate={{ scale: [0.5, 1.25, 1] }}
         transition={{ delay: 1.1, duration: 0.5, ease: "easeOut" }}
-        className={`${base} border-amber-300 bg-gradient-to-b from-amber-300 to-orange-500 text-white shadow-[0_0_0_4px_rgba(251,191,36,0.4)]`}
+        className={`${base} border-amber-300 bg-gradient-to-b from-amber-300 to-orange-500 text-white shadow-[0_2px_0_#b45309,0_0_0_4px_rgba(251,191,36,0.4)]`}
       >
         <Star className="h-4 w-4 fill-current" aria-hidden />
       </motion.span>
@@ -552,7 +517,7 @@ function TrailDot({ n, state, sizeClass }: { n: number; state: DotState; sizeCla
   }
   if (state === "done") {
     return (
-      <span role="listitem" aria-label={label} className={`${base} border-green-500 bg-green-500 text-white`}>
+      <span role="listitem" aria-label={label} className={`${base} border-white bg-gradient-to-b from-lime-400 to-green-600 text-white shadow-[0_2px_0_#166534]`}>
         <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
       </span>
     );
@@ -564,14 +529,14 @@ function TrailDot({ n, state, sizeClass }: { n: number; state: DotState; sizeCla
         aria-label={label}
         animate={{ scale: [1, 1.12, 1] }}
         transition={{ delay: 1.6, duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-        className={`${base} border-orange-400 bg-white text-orange-600 shadow-[0_0_0_4px_rgba(251,146,60,0.3)]`}
+        className={`${base} border-orange-400 bg-white text-orange-600 shadow-[0_2px_0_#d6c39a,0_0_0_4px_rgba(251,146,60,0.3)]`}
       >
         {n}
       </motion.span>
     );
   }
   return (
-    <span role="listitem" aria-label={label} className={`${base} border-amber-200 bg-amber-100 text-amber-400`}>
+    <span role="listitem" aria-label={label} className={`${base} border-amber-200 bg-amber-100 text-amber-400 shadow-[0_2px_0_#d6c39a]`}>
       <Lock className="h-3.5 w-3.5" aria-hidden />
     </span>
   );
@@ -581,28 +546,27 @@ function TrailDot({ n, state, sizeClass }: { n: number; state: DotState; sizeCla
 // Les effets : confettis, trophées, niveau, son
 // ---------------------------------------------------------------------------
 
-/** Trois salves, coupées sous `prefers-reduced-motion` (D12). */
+/**
+ * Deux salves, une de chaque côté, chacune au plafond du niveau (50 riche,
+ * 16 sobre, 0 sous `prefers-reduced-motion`, D12) : la fête d'un palier vaut
+ * deux bonnes réponses, pas 230 particules.
+ */
 function useVictoryConfetti(enabled: boolean) {
+  const feel = useGameFeel();
+  const particles = feel.budget.particles;
   useEffect(() => {
-    if (!enabled) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!enabled || particles <= 0) return;
     let cancelled = false;
-    const timers: ReturnType<typeof setTimeout>[] = [];
     import("canvas-confetti").then((mod) => {
       if (cancelled) return;
-      const fire = (opts: object) =>
-        mod.default({ ...opts, colors: CONFETTI_COLORS, zIndex: 60 });
-      fire({ particleCount: 80, spread: 70, angle: 60, origin: { x: 0, y: 0.55 } });
-      fire({ particleCount: 80, spread: 70, angle: 120, origin: { x: 1, y: 0.55 } });
-      timers.push(
-        setTimeout(() => fire({ particleCount: 70, spread: 120, origin: { x: 0.5, y: 0.35 } }), 500),
-      );
+      const fire = (opts: object) => mod.default({ ...opts, particleCount: particles, colors: CONFETTI_COLORS, zIndex: 60 });
+      fire({ spread: 70, angle: 60, origin: { x: 0, y: 0.55 } });
+      fire({ spread: 70, angle: 120, origin: { x: 1, y: 0.55 } });
     });
     return () => {
       cancelled = true;
-      timers.forEach(clearTimeout);
     };
-  }, [enabled]);
+  }, [enabled, particles]);
 }
 
 /**
@@ -644,19 +608,15 @@ function QuestsDoneCard() {
       initial={{ opacity: 0, scale: 0.9, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ delay: 0.7, type: "spring", stiffness: 180 }}
-      className="rounded-3xl border-2 border-lime-300 bg-gradient-to-br from-lime-50 to-emerald-50 p-5 shadow-md"
+      className="rounded-3xl border-2 border-lime-300 bg-gradient-to-br from-lime-50 to-emerald-50 p-5 shadow-[0_6px_0_#86efac,0_18px_30px_-16px_rgba(60,30,0,0.4)]"
     >
       <div className="flex items-center gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-lime-400 to-green-600 text-white shadow">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-lime-400 to-green-600 text-white shadow-[0_3px_0_#166534]">
           <ListChecks className="h-8 w-8" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-display text-sm font-extrabold uppercase tracking-wider text-green-700">
-            Missions du jour
-          </p>
-          <p className="font-display text-lg font-extrabold text-green-900">
-            Toutes réussies&nbsp;! Bravo&nbsp;!
-          </p>
+          <p className="font-display text-sm font-extrabold uppercase tracking-wider text-green-700">Missions du jour</p>
+          <p className="font-display text-lg font-extrabold text-green-900">Toutes réussies&nbsp;! Bravo&nbsp;!</p>
           {daily.bonusStars > 0 && (
             <p className="text-xs font-bold text-green-700">
               + {daily.bonusStars} étoile{daily.bonusStars > 1 ? "s" : ""} bonus aujourd&apos;hui
@@ -739,20 +699,12 @@ function useVictoryExtras(enabled: boolean) {
   const gained = Math.max(0, Math.min(EXOS_PER_LEVEL, EXOS_PER_LEVEL - remaining));
 
   return {
-    stats: myStats
-      ? { level, remaining, levelPct: Math.round((gained / EXOS_PER_LEVEL) * 100) }
-      : null,
+    stats: myStats ? { level, remaining, levelPct: Math.round((gained / EXOS_PER_LEVEL) * 100) } : null,
     badge: badges && badges.length > 0 ? { first: badges[0], others: badges.length - 1 } : null,
     dialogs: myStats ? (
       <>
-        <SoundOptInDialog
-          userId={myStats.student._id as string}
-          open={optInOpen}
-          onOpenChange={setOptInOpen}
-        />
-        {levelUp !== null && (
-          <LevelUpOverlay level={levelUp} open={levelUpOpen} onDismiss={dismissLevelUp} />
-        )}
+        <SoundOptInDialog userId={myStats.student._id as string} open={optInOpen} onOpenChange={setOptInOpen} />
+        {levelUp !== null && <LevelUpOverlay level={levelUp} open={levelUpOpen} onDismiss={dismissLevelUp} />}
       </>
     ) : null,
   };

@@ -6,13 +6,17 @@
  * POUR LES CLASSES OÙ L'ON APPREND À LIRE (CI, CP : `isReadingLearnerClass`,
  * `convex/curriculum.ts`). Un enfant de six ans ne lit pas encore « Fais
  * correspondre les mots avec leur son » : il l'entend. La séance entoure
- * l'exercice de `PromptReaderProvider` ; `ExercisePrompt` y trouve le lecteur
- * et pose le bouton 🔊 devant la consigne. Hors de ces classes, pas de
- * fournisseur : la consigne s'affiche comme avant.
+ * l'exercice de `PromptReaderProvider` ; la barre d'action de l'exercice
+ * (`ExerciseActions`, `game-parts.tsx`) y trouve le lecteur et pose le gros
+ * bouton bleu « Écouter » juste au-dessus de « Valider », et la coque de la
+ * séance (`session-stage.tsx`) fait de Pio lui-même un bouton qui relit
+ * l'énoncé. Hors de ces classes, pas de fournisseur : la consigne s'affiche
+ * sans bouton, et l'énoncé prend toute la largeur de la carte dans tous les cas.
  *
  * QUAND L'EXERCICE APPARAÎT, LA CONSIGNE SE DIT TOUTE SEULE ; le bouton la
- * redit autant de fois que l'enfant veut. Elle se tait dès que l'enfant a
- * répondu (`silenced`), et quand l'exercice s'en va.
+ * redit autant de fois que l'enfant veut, et l'arrête d'un toucher pendant
+ * qu'elle joue (`stop`). Elle se tait dès que l'enfant a répondu
+ * (`silenced`), et quand l'exercice s'en va.
  *
  * LA VOIX EST CELLE DE PIO, ET ELLE EST DANS LE TÉLÉPHONE. L'application
  * télécharge à l'avance la consigne de chaque exercice de la classe
@@ -28,6 +32,14 @@
  *
  * IL NE LÈVE JAMAIS. Sans clé, ou sans réseau pour un son jamais téléchargé,
  * le bouton passe en « muet » et l'exercice reste jouable ; un toucher réessaie.
+ *
+ * LE LECTEUR ACTIF EST AUSSI PUBLIÉ HORS DE L'ARBRE (`useActivePromptReader`) :
+ * la coque de la séance est le PARENT du fournisseur (la carte porte la clé de
+ * l'exercice, le lecteur naît et meurt avec elle) et ne peut pas lire son
+ * contexte. Un petit magasin partagé, lu par `useSyncExternalStore`, lui dit
+ * s'il y a une voix à relire et si elle parle en ce moment : Pio devient
+ * touchable, et montre son affiche pendant la lecture (sur iOS, un son coupe
+ * le clip muet de Pio). Les séances n'ont rien à brancher.
  */
 
 import {
@@ -35,12 +47,13 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { Volume2, VolumeX } from "lucide-react";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useClipSource } from "@/components/offline/clip-source";
 import { newVoiceOwner, playUrl, stopPlaying } from "@/lib/voice-player";
@@ -51,6 +64,8 @@ export type PromptReader = {
   status: ReaderStatus;
   /** Dit la consigne depuis le début, en coupant ce qui joue. */
   read: () => void;
+  /** Coupe la lecture en cours (ou celle qui attendait son son) et se repose. */
+  stop: () => void;
 };
 
 const PromptReaderContext = createContext<PromptReader | null>(null);
@@ -58,6 +73,34 @@ const PromptReaderContext = createContext<PromptReader | null>(null);
 /** Le lecteur de l'exercice affiché, ou `null` si la consigne ne se lit pas. */
 export function usePromptReader(): PromptReader | null {
   return useContext(PromptReaderContext);
+}
+
+/* ── Le lecteur actif, vu de dehors ──────────────────────────────────────── */
+
+let activeReader: PromptReader | null = null;
+const activeListeners = new Set<() => void>();
+
+function publishReader(reader: PromptReader | null) {
+  activeReader = reader;
+  for (const listener of activeListeners) listener();
+}
+
+function subscribeReader(listener: () => void) {
+  activeListeners.add(listener);
+  return () => {
+    activeListeners.delete(listener);
+  };
+}
+
+const readActive = () => activeReader;
+const readActiveOnServer = () => null;
+
+/**
+ * Le lecteur de l'exercice affiché, pour un composant qui n'est PAS sous le
+ * fournisseur (la coque de la séance). `null` quand aucune consigne ne se lit.
+ */
+export function useActivePromptReader(): PromptReader | null {
+  return useSyncExternalStore(subscribeReader, readActive, readActiveOnServer);
 }
 
 /**
@@ -70,11 +113,21 @@ const urlByExercise = new Map<string, Promise<string | null>>();
 export function PromptReaderProvider({
   exerciseId,
   silenced = false,
+  clipUrl,
   children,
 }: {
   exerciseId: string;
   /** Vrai quand la consigne doit se taire : l'enfant a répondu, une fenêtre est ouverte. */
   silenced?: boolean;
+  /**
+   * POUR LES PAGES DE DÉVELOPPEMENT SEULEMENT : l'adresse d'un son à jouer à la
+   * place de la consigne, sans serveur ni clé (`/dev/seance/?voix=1`). Les
+   * spécimens de la galerie n'ont pas d'identifiant Convex : sans elle, le
+   * lecteur y est toujours « muet », et le comportement de Pio pendant la voix
+   * (l'affiche à la place du clip, sur iOS) ne se vérifie pas. La séance ne la
+   * passe jamais.
+   */
+  clipUrl?: string;
   children: ReactNode;
 }) {
   const findClip = useClipSource();
@@ -84,6 +137,7 @@ export function PromptReaderProvider({
   const tokenRef = useRef(0);
 
   const urlFor = useCallback((): Promise<string | null> => {
+    if (clipUrl) return Promise.resolve(clipUrl);
     const cached = urlByExercise.get(exerciseId);
     if (cached) return cached;
     const pending = findClip({ kind: "prompt", exerciseId: exerciseId as Id<"exercises"> })
@@ -94,7 +148,7 @@ export function PromptReaderProvider({
       if (!url) urlByExercise.delete(exerciseId);
     });
     return pending;
-  }, [exerciseId, findClip]);
+  }, [exerciseId, findClip, clipUrl]);
 
   // Le silence demandé, lu par une lecture qui attendait son URL.
   const silencedRef = useRef(silenced);
@@ -119,6 +173,14 @@ export function PromptReaderProvider({
     if (tokenRef.current === token) setStatus("idle");
   }, [owner, urlFor]);
 
+  // Un toucher pendant la lecture l'arrête : le jeton change, pour qu'une
+  // lecture qui attendait encore son son ne parte pas après coup.
+  const stop = useCallback(() => {
+    tokenRef.current++;
+    stopPlaying(owner);
+    setStatus("idle");
+  }, [owner]);
+
   // UNE FOIS PAR EXERCICE : la carte de l'exercice porte sa clé, donc ce
   // lecteur naît avec lui et meurt avec lui. Un exercice qui s'affiche alors
   // que la séance se tait (une reprise sous une fenêtre) ne parle pas.
@@ -141,37 +203,26 @@ export function PromptReaderProvider({
   }, [silenced, owner]);
 
   const value = useMemo<PromptReader>(
-    () => ({ status, read: () => void read() }),
-    [status, read],
+    () => ({ status, read: () => void read(), stop }),
+    [status, read, stop],
   );
+
+  // Publié avant la peinture (`useLayoutEffect`) : la coque sait dès la
+  // première image qu'une voix existe. En partant, on ne retire que soi.
+  useLayoutEffect(() => {
+    publishReader(value);
+    return () => {
+      if (activeReader === value) publishReader(null);
+    };
+  }, [value]);
 
   return (
     <PromptReaderContext.Provider value={value}>{children}</PromptReaderContext.Provider>
   );
 }
 
-/** Le gros bouton 🔊 posé devant la consigne. */
-export function PromptReaderButton({ reader }: { reader: PromptReader }) {
-  const busy = reader.status === "loading" || reader.status === "playing";
-  const muted = reader.status === "unavailable";
-
-  return (
-    <button
-      type="button"
-      onClick={reader.read}
-      aria-label={muted ? "Réessayer d'écouter la consigne" : "Écouter la consigne"}
-      className={`btn-chunky flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[3px] border-white text-white focus-visible:outline-none focus-visible:ring-4 ${
-        muted
-          ? "bg-gradient-to-b from-gray-300 to-gray-400 focus-visible:ring-gray-300"
-          : "bg-gradient-to-b from-sky-400 to-sky-600 focus-visible:ring-sky-300"
-      } ${busy ? "animate-pulse" : ""}`}
-      style={{ "--btn-depth": muted ? "#6b7280" : "#075985" } as React.CSSProperties}
-    >
-      {muted ? (
-        <VolumeX className="h-7 w-7" strokeWidth={2.75} aria-hidden />
-      ) : (
-        <Volume2 className="h-7 w-7" strokeWidth={2.75} aria-hidden />
-      )}
-    </button>
-  );
+/** Ce que fait un toucher sur « Écouter » ou sur Pio : relire, ou arrêter si la voix parle. */
+export function toggleReader(reader: PromptReader) {
+  if (reader.status === "playing") reader.stop();
+  else reader.read();
 }

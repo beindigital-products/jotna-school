@@ -55,12 +55,20 @@ async function playOneExercise(page: Page, idx: number): Promise<string> {
   // Try short-answer first (input + valider)
   const inputCount = await page.locator('input[type="text"]').count();
   if (inputCount > 0) {
-    await page.locator('input[type="text"]').first().fill("0");
+    const field = page.locator('input[type="text"]').first();
+    // Une réponse en chiffres se tape sur le pavé de la carte : le champ est en
+    // lecture seule (`ShortAnswerExercise`) et `fill` le refuse. Une réponse
+    // en lettres garde le clavier.
+    if ((await field.getAttribute("readonly")) !== null) {
+      await page.getByRole("button", { name: "Chiffre 0" }).first().click();
+    } else {
+      await field.fill("0");
+    }
     await page.getByRole("button", { name: /^Valider$/ }).first().click();
   } else {
     // QCM/Match/Order/DragDrop: click first option using structural CSS
-    // Option buttons in QcmExercise have class "border-3" (unique to options)
-    const qcmOpts = page.locator("button.border-3");
+    // Option buttons in QcmExercise carry `data-option` (unique to options)
+    const qcmOpts = page.locator("button[data-option]");
     const qcmCount = await qcmOpts.count();
     if (qcmCount > 0) {
       await qcmOpts.first().click();

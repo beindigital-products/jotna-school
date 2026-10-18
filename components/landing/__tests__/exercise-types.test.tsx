@@ -4,6 +4,17 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { ExerciseTypes } from "../exercise-types";
 import { BANK as mathematiques } from "../demo/bank/mathematiques";
 
+/**
+ * La consigne, par le texte entier de son paragraphe : un mot à trait d'union
+ * (« a-t-elle ») y est tenu en `nowrap` dans un `span` (`ExercisePrompt`), et
+ * `getByText` ne lit que les nœuds de texte propres d'un élément.
+ */
+const byPrompt = (text: string) => (_: string, element: Element | null) =>
+  element?.tagName === "P" && squeeze(element.textContent ?? "") === squeeze(text);
+/** Le normaliseur de Testing Library : espaces (insécables comprises) repliées, bords rognés. */
+const squeeze = (text: string) => text.trim().replace(/\s+/g, " ");
+
+
 // Les confettis dessinent sur un canvas : jsdom n'en a pas.
 vi.mock("canvas-confetti", () => ({ default: vi.fn() }));
 
@@ -282,7 +293,7 @@ describe("la section « Exercices » : les exercices jouables arrivent à la dem
     render(<ExerciseTypes />);
     await chooseSubject("Mathématiques");
     const qcm = mathematiques.CE2.find((item) => item.type === "qcm")!;
-    expect(await screen.findByText(qcm.prompt, {}, LOAD)).toBeTruthy();
+    expect(await screen.findByText(byPrompt(qcm.prompt), {}, LOAD)).toBeTruthy();
     expect(screen.getAllByRole("button", { name: "Valider" }).length).toBeGreaterThan(0);
   });
 
@@ -291,11 +302,11 @@ describe("la section « Exercices » : les exercices jouables arrivent à la dem
     await chooseSubject("Mathématiques");
     const ce2 = mathematiques.CE2.find((item) => item.type === "qcm")!;
     const cp = mathematiques.CP.find((item) => item.type === "qcm")!;
-    await screen.findByText(ce2.prompt, {}, LOAD);
+    await screen.findByText(byPrompt(ce2.prompt), {}, LOAD);
 
     await chooseClass("CP");
-    expect(await screen.findByText(cp.prompt, {}, LOAD)).toBeTruthy();
-    expect(screen.queryByText(ce2.prompt)).toBeNull();
+    expect(await screen.findByText(byPrompt(cp.prompt), {}, LOAD)).toBeTruthy();
+    expect(screen.queryByText(byPrompt(ce2.prompt))).toBeNull();
     // Le thème du programme et le niveau de l'exemple sont dits sur la carte.
     expect(within(panel()).getByText(cp.topic)).toBeTruthy();
   });
@@ -304,7 +315,7 @@ describe("la section « Exercices » : les exercices jouables arrivent à la dem
     render(<ExerciseTypes />);
     await chooseSubject("Mathématiques");
     const qcm = mathematiques.CE2.find((item) => item.type === "qcm")!;
-    await screen.findByText(qcm.prompt, {}, LOAD);
+    await screen.findByText(byPrompt(qcm.prompt), {}, LOAD);
     expect(within(panel()).getByText(qcm.topic)).toBeTruthy();
     // « Découverte » pour un exercice de niveau 1.
     expect(within(panel()).getAllByText("Découverte").length).toBeGreaterThan(0);
@@ -314,7 +325,7 @@ describe("la section « Exercices » : les exercices jouables arrivent à la dem
     render(<ExerciseTypes />);
     await chooseSubject("Mathématiques");
     const qcm = mathematiques.CE2.find((item) => item.type === "qcm")!;
-    const card = (await screen.findByText(qcm.prompt, {}, LOAD)).closest("div.space-y-3")!;
+    const card = (await screen.findByText(byPrompt(qcm.prompt), {}, LOAD)).closest("div.space-y-3")!;
     const scope = within(card as HTMLElement);
 
     fireEvent.click(scope.getByRole("button", { name: /^D8$/ }));

@@ -1,11 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { AlertTriangle, Link2 } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { AlertTriangle, Check } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
 import { payloadImage } from "./ExerciseImage";
+import { ExerciseActions } from "./game-parts";
 import { MATCH_HINT } from "@/convex/voice/speakable";
 import { linkTiles, matchAnswer, type MatchLink } from "@/lib/exerciseAnswers";
+import {
+  ActionButton3D,
+  ELEVATIONS,
+  GESTURE_ACCENT,
+  OPTION_TONE_COUNT,
+  Reward,
+  TILE_CORRECT_TONE,
+  TILE_WRONG_TONE,
+  Tile3D,
+  tileChosenTone,
+  useGameFeel,
+  type TileState,
+} from "@/components/student/game-kit";
+import {
+  CableOverlay,
+  type Cable,
+  type CableTone,
+  type Point,
+  type Socket,
+} from "@/components/student/game-kit/gestes-cables";
+import { TileGlyphs } from "@/components/student/game-kit/gestes-glyphes";
 
 /**
  * Server contract — the sanitized payload sent by `getExercisesForPalier`
@@ -25,6 +47,26 @@ import { linkTiles, matchAnswer, type MatchLink } from "@/lib/exerciseAnswers";
  * (« a » deux fois : mangue et yassa ont le même son). Suivies par leur
  * texte, relier l'une colorait les deux et le second mot restait sans
  * partenaire. Les liens retiennent donc des indices (`lib/exerciseAnswers.ts`).
+ *
+ * L'ÉCRAN EST UN JEU DE CÂBLES (`docs/direction-jeu-exercices.md`). Chaque
+ * tuile est une `Tile3D` épaisse, posée sur la carte, avec une prise sur son
+ * bord intérieur. Toucher une tuile la soulève et la teinte de bleu (l'accent
+ * du geste « choisir ») ; les prises de l'autre colonne s'allument en ambre
+ * et l'appellent. Toucher le partenaire tend un câble d'une prise à l'autre,
+ * dans la couleur de la paire, et les deux tuiles prennent cette couleur. Les
+ * câbles sont dessinés dans un SVG par-dessus la grille
+ * (`game-kit/gestes-cables.tsx`) à partir des positions mesurées des tuiles.
+ * Juste : tout passe au vert et gonfle, la récompense jaillit de la planche.
+ * Faux : tout passe à l'ambre et dit non, jamais de rouge.
+ *
+ * LE CONTRAT DU DOM reste celui que la galerie, la vitrine et les tests
+ * connaissent : les tuiles de gauche sont les N premiers boutons de réponse,
+ * celles de droite les N suivants, puis « Valider » ; le nom accessible d'une
+ * tuile est son texte. `data-linked` et `data-rank` disent son lien.
+ *
+ * « Valider » est posé dans la barre d'action (`ExerciseActions`,
+ * `game-parts.tsx`) : pour un enfant qui apprend à lire, « Écouter » vient
+ * juste au-dessus, comme au QCM.
  */
 interface MatchPayload {
   /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
@@ -42,14 +84,55 @@ interface MatchExerciseProps {
   isCorrect: boolean | null;
 }
 
-const pairColors = [
-  { left: "bg-blue-200 border-blue-400 text-blue-900", right: "bg-blue-100 border-blue-300 text-blue-800", line: "text-blue-400" },
-  { left: "bg-pink-200 border-pink-400 text-pink-900", right: "bg-pink-100 border-pink-300 text-pink-800", line: "text-pink-400" },
-  { left: "bg-amber-200 border-amber-400 text-amber-900", right: "bg-amber-100 border-amber-300 text-amber-800", line: "text-amber-400" },
-  { left: "bg-green-200 border-green-400 text-green-900", right: "bg-green-100 border-green-300 text-green-800", line: "text-green-400" },
-  { left: "bg-purple-200 border-purple-400 text-purple-900", right: "bg-purple-100 border-purple-300 text-purple-800", line: "text-purple-400" },
-  { left: "bg-teal-200 border-teal-400 text-teal-900", right: "bg-teal-100 border-teal-300 text-teal-800", line: "text-teal-400" },
-];
+type Side = keyof MatchLink;
+
+/** La tuile en main prend l'accent du geste « choisir » : le bleu d'option. */
+const SELECT_TONE = GESTURE_ACCENT.choisir.optionIndex;
+
+/**
+ * La couleur d'une paire suit son rang, en sautant le bleu de la sélection :
+ * rose, ambre, vert, violet, sarcelle, puis bleu pour une sixième paire.
+ */
+export function pairTone(rank: number): number {
+  return (rank + 1) % OPTION_TONE_COUNT;
+}
+
+/** Le câble d'une paire : la couleur 500 de son option et son contour 700 ; vert ou ambre après le verdict. */
+export function cableToneFor(rank: number, verdict: boolean | null): CableTone {
+  if (verdict === true) return { main: TILE_CORRECT_TONE.badge, dark: TILE_CORRECT_TONE.flank };
+  if (verdict === false) return { main: TILE_WRONG_TONE.badge, dark: TILE_WRONG_TONE.flank };
+  const tone = tileChosenTone(pairTone(rank));
+  return { main: tone.flank, dark: tone.badge };
+}
+
+const SELECT_CABLE_TONE: CableTone = { main: tileChosenTone(SELECT_TONE).flank, dark: tileChosenTone(SELECT_TONE).badge };
+
+/**
+ * LA LARGEUR DES DEUX COLONNES SUIT LEUR CONTENU. Quand une colonne ne porte
+ * que des signes d'un ou deux graphèmes (« 2 », « 5 », « a », « an ») et
+ * l'autre des rangées d'émojis ou des mots, la première se serre (un tiers)
+ * et laisse les deux autres tiers aux rangées : quatre mangues tiennent alors
+ * sur une ligne de tuile au lieu de deux, et la planche est plus courte sur un
+ * téléphone. Deux colonnes de mots, ou deux de signes : moitié-moitié.
+ */
+export function matchColumns(left: readonly string[], right: readonly string[]): "egales" | "gauche-etroite" | "droite-etroite" {
+  const narrow = (items: readonly string[]) => items.every((item) => Array.from(item.trim()).length <= 2);
+  const leftNarrow = narrow(left);
+  const rightNarrow = narrow(right);
+  if (leftNarrow === rightNarrow) return "egales";
+  return leftNarrow ? "gauche-etroite" : "droite-etroite";
+}
+
+const COLUMN_CLASSES = {
+  egales: "grid-cols-2",
+  "gauche-etroite": "grid-cols-[1fr_2fr]",
+  "droite-etroite": "grid-cols-[2fr_1fr]",
+} as const;
+
+type Geometry = { left: Point[]; right: Point[] };
+
+const samePoints = (a: Point[], b: Point[]) =>
+  a.length === b.length && a.every((p, i) => Math.abs(p.x - b[i].x) < 0.5 && Math.abs(p.y - b[i].y) < 0.5);
 
 export default function MatchExercise({
   prompt,
@@ -57,19 +140,75 @@ export default function MatchExercise({
   onSubmit,
   onSkip,
   disabled,
+  isCorrect,
 }: MatchExerciseProps) {
   const left = Array.isArray(payload?.left) ? payload.left : [];
   const right = Array.isArray(payload?.right) ? payload.right : [];
   const malformed = left.length === 0 || right.length !== left.length;
+  const feel = useGameFeel();
 
   // Des INDICES dans `left` et `right`, jamais des textes (voir l'en-tête).
   // La tuile choisie attend son partenaire dans l'autre colonne.
-  const [selected, setSelected] = useState<{ side: keyof MatchLink; index: number } | null>(
-    null,
-  );
+  const [selected, setSelected] = useState<{ side: Side; index: number } | null>(null);
   const [links, setLinks] = useState<MatchLink[]>([]);
 
-  const handleClick = (side: keyof MatchLink, index: number) => {
+  // La récompense rejoue à chaque passage à « juste » : un compteur ajusté
+  // pendant le rendu, comme `Reward` le fait pour sa propre prop.
+  const [fire, setFire] = useState(0);
+  const [seenVerdict, setSeenVerdict] = useState(isCorrect);
+  if (isCorrect !== seenVerdict) {
+    setSeenVerdict(isCorrect);
+    if (isCorrect === true) setFire((n) => n + 1);
+  }
+
+  /* ── Les positions des prises ─────────────────────────────────────────── */
+
+  // Les câbles se dessinent entre les bords intérieurs des tuiles, mesurés
+  // relativement à la planche. Mesuré après chaque changement de liens et à
+  // chaque redimensionnement (un mot qui passe à la ligne change la hauteur).
+  const boardRef = useRef<HTMLDivElement>(null);
+  const tileRefs = useRef<{ left: (HTMLElement | null)[]; right: (HTMLElement | null)[] }>({ left: [], right: [] });
+  const [geometry, setGeometry] = useState<Geometry | null>(null);
+  const count = left.length;
+
+  const measure = useCallback(() => {
+    const board = boardRef.current;
+    if (!board) return;
+    const box = board.getBoundingClientRect();
+    const edge = (el: HTMLElement | null, side: Side): Point => {
+      if (!el) return { x: 0, y: 0 };
+      const rect = el.getBoundingClientRect();
+      return {
+        x: (side === "left" ? rect.right : rect.left) - box.left,
+        y: rect.top + rect.height / 2 - box.top,
+      };
+    };
+    const next: Geometry = {
+      left: Array.from({ length: count }, (_, i) => edge(tileRefs.current.left[i] ?? null, "left")),
+      right: Array.from({ length: count }, (_, i) => edge(tileRefs.current.right[i] ?? null, "right")),
+    };
+    setGeometry((prev) => (prev && samePoints(prev.left, next.left) && samePoints(prev.right, next.right) ? prev : next));
+  }, [count]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure, links, selected, isCorrect, disabled]);
+
+  useEffect(() => {
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => measure());
+    if (boardRef.current) observer.observe(boardRef.current);
+    for (const el of [...tileRefs.current.left, ...tileRefs.current.right]) if (el) observer.observe(el);
+    // Les polices arrivent après le premier rendu et changent les retours à la ligne.
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      document.fonts.ready.then(measure).catch(() => {});
+    }
+    return () => observer.disconnect();
+  }, [measure]);
+
+  /* ── Les gestes ───────────────────────────────────────────────────────── */
+
+  const handleClick = (side: Side, index: number) => {
     if (disabled) return;
     // Une tuile reliée : on défait son lien.
     if (links.some((link) => link[side] === index)) {
@@ -82,20 +221,18 @@ export default function MatchExercise({
       setSelected({ side, index });
       return;
     }
-    // Une tuile de l'autre colonne : on relie.
+    // Une tuile de l'autre colonne : on relie, et le câble claque dans la main.
     setLinks(
       side === "right"
         ? linkTiles(links, selected.index, index)
         : linkTiles(links, index, selected.index),
     );
     setSelected(null);
+    feel.vibrate("select");
   };
 
-  /** La couleur d'une tuile reliée : celle du rang de son lien. */
-  const linkColor = (side: keyof MatchLink, index: number) => {
-    const rank = links.findIndex((link) => link[side] === index);
-    return rank >= 0 ? pairColors[rank % pairColors.length] : null;
-  };
+  /** Le rang du lien d'une tuile, -1 si elle est libre. */
+  const rankOf = (side: Side, index: number) => links.findIndex((link) => link[side] === index);
 
   const handleSubmit = () => {
     onSubmit(matchAnswer(left, right, links));
@@ -135,95 +272,112 @@ export default function MatchExercise({
     );
   }
 
+  /* ── Ce que chaque tuile montre ───────────────────────────────────────── */
+
+  const complete = links.length === left.length;
+  const columns = matchColumns(left, right);
+
+  const tileState = (linked: boolean, active: boolean): TileState => {
+    if (linked && isCorrect === true) return "juste";
+    if (linked && isCorrect === false) return "fausse";
+    return linked || active ? "choisie" : "repos";
+  };
+
+  /** La prise d'une tuile : reliée, en main, appelée par la tuile en main, ou libre. */
+  const socketOf = (side: Side, index: number, point: Point): Socket => {
+    const rank = rankOf(side, index);
+    const active = selected?.side === side && selected.index === index;
+    // La tuile en main est soulevée : sa prise monte avec elle.
+    const at = active ? { x: point.x, y: point.y + ELEVATIONS.soulevee.lift } : point;
+    if (rank >= 0) return { id: `${side}-${index}`, at, mode: "relie", tone: cableToneFor(rank, isCorrect) };
+    if (active) return { id: `${side}-${index}`, at, mode: "choisie", tone: SELECT_CABLE_TONE };
+    const called = selected !== null && selected.side !== side && !disabled;
+    return { id: `${side}-${index}`, at, mode: called ? "appel" : "libre" };
+  };
+
+  const cables: Cable[] = geometry
+    ? links.map((link, rank) => ({
+        id: `${link.left}-${link.right}`,
+        from: geometry.left[link.left] ?? { x: 0, y: 0 },
+        to: geometry.right[link.right] ?? { x: 0, y: 0 },
+        tone: cableToneFor(rank, isCorrect),
+      }))
+    : [];
+  const sockets: Socket[] = geometry
+    ? [
+        ...geometry.left.map((point, index) => socketOf("left", index, point)),
+        ...geometry.right.map((point, index) => socketOf("right", index, point)),
+      ]
+    : [];
+
+  const column = (side: Side, items: string[]) => (
+    <div className="space-y-3">
+      {items.map((item, index) => {
+        const rank = rankOf(side, index);
+        const linked = rank >= 0;
+        const active = selected?.side === side && selected.index === index;
+        return (
+          <Tile3D
+            key={index}
+            ref={(el) => {
+              tileRefs.current[side][index] = el;
+            }}
+            tone={linked ? pairTone(rank) : SELECT_TONE}
+            state={tileState(linked, active)}
+            // Une tuile reliée est posée ; seule la tuile en main se soulève.
+            elevation={linked ? "posee" : undefined}
+            disabled={disabled}
+            onPress={() => handleClick(side, index)}
+            align="center"
+            data-side={side}
+            data-linked={linked ? "true" : "false"}
+            data-rank={linked ? rank : undefined}
+          >
+            <TileGlyphs text={item} />
+          </Tile3D>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
+    // Sur un écran court (667 px ou moins), les blocs se resserrent, comme au QCM.
+    <div className="space-y-6 [@media(max-height:667px)]:space-y-4">
       <div className="space-y-2">
         <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
-        <p className="text-base font-medium text-gray-600">{MATCH_HINT}</p>
+        {/* Le mode d'emploi, en petit : il est DIT par Pio (CI, CP) ; ici il ne
+            doit pas pousser les tuiles sous le premier écran d'un téléphone. */}
+        <p className="text-sm font-semibold leading-snug text-amber-900/80">{MATCH_HINT}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-6">
-        {/* Left column — original order */}
-        <div className="space-y-3">
-          {left.map((item, index) => {
-            const color = linkColor("left", index);
-            const isActive = selected?.side === "left" && selected.index === index;
-            return (
-              <button
-                key={index}
-                onClick={() => handleClick("left", index)}
-                disabled={disabled}
-                className={`
-                  w-full rounded-2xl border-3 px-2 py-3 text-center text-base font-bold hyphens-auto [overflow-wrap:anywhere] transition-all duration-200 sm:px-4 sm:py-4 sm:text-lg
-                  ${color
-                    ? `${color.left} shadow-md`
-                    : isActive
-                      ? "border-indigo-400 bg-indigo-100 text-indigo-900 scale-[1.03] shadow-md"
-                      : "border-gray-200 bg-white text-gray-800 hover:border-indigo-300 hover:bg-indigo-50"
-                  }
-                  ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"}
-                  ${selected?.side === "right" && !color ? "ring-2 ring-amber-300 ring-offset-2" : ""}
-                `}
-              >
-                {item}
-              </button>
-            );
-          })}
+      {/* La planche : deux colonnes de tuiles, les câbles par-dessus, la récompense au milieu. */}
+      <div ref={boardRef} className="relative">
+        <div className={`grid gap-x-7 sm:gap-x-14 ${COLUMN_CLASSES[columns]}`} data-columns={columns}>
+          {/* Left column — original order */}
+          {column("left", left)}
+          {/* Right column — server-shuffled */}
+          {column("right", right)}
         </div>
-
-        {/* Right column — server-shuffled */}
-        <div className="space-y-3">
-          {right.map((item, index) => {
-            const color = linkColor("right", index);
-            const isActive = selected?.side === "right" && selected.index === index;
-            return (
-              <button
-                key={index}
-                onClick={() => handleClick("right", index)}
-                disabled={disabled}
-                className={`
-                  w-full rounded-2xl border-3 px-2 py-3 text-center text-base font-bold hyphens-auto [overflow-wrap:anywhere] transition-all duration-200 sm:px-4 sm:py-4 sm:text-lg
-                  ${color
-                    ? `${color.right} shadow-md`
-                    : isActive
-                      ? "border-indigo-400 bg-indigo-100 text-indigo-900 scale-[1.03] shadow-md"
-                      : "border-gray-200 bg-white text-gray-800 hover:border-amber-300 hover:bg-amber-50"
-                  }
-                  ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"}
-                  ${selected?.side === "left" && !color ? "ring-2 ring-amber-300 ring-offset-2" : ""}
-                `}
-              >
-                {item}
-              </button>
-            );
-          })}
-        </div>
+        <CableOverlay cables={cables} sockets={sockets} />
+        <Reward fire={fire > 0 ? fire : null} />
       </div>
 
-      {/* Connected pairs indicator */}
-      {links.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {links.map((link, rank) => {
-            const color = pairColors[rank % pairColors.length];
-            return (
-              <span
-                key={`${link.left}-${link.right}`}
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold ${color.line} bg-white border`}
-              >
-                {left[link.left]} <Link2 className="h-3 w-3" /> {right[link.right]}
-              </span>
-            );
-          })}
-        </div>
-      )}
+      {/* Les paires, pour qui n'y voit pas : les câbles sont muets. */}
+      <p className="sr-only" aria-live="polite">
+        {links.map((link) => `${left[link.left]} relié à ${right[link.right]}`).join(", ")}
+      </p>
 
-      <button
-        onClick={handleSubmit}
-        disabled={disabled || links.length !== left.length}
-        className="w-full rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-6 py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-      >
-        Valider
-      </button>
+      <ExerciseActions>
+        {/* La coche : le même « Valider » que le QCM, pour que le dock ne change pas de visage d'une question à l'autre. */}
+        <ActionButton3D
+          shine={complete && !disabled}
+          disabled={disabled || !complete}
+          onClick={handleSubmit}
+          icon={<Check className="h-6 w-6" strokeWidth={3} aria-hidden />}
+        >
+          Valider
+        </ActionButton3D>
+      </ExerciseActions>
     </div>
   );
 }
