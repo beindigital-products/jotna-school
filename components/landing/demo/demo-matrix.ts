@@ -5,9 +5,12 @@
  * - LES EXERCICES CLASSIQUES : ceux que le modèle a le droit d'écrire pour la
  *   matière (la ligne « Types autorisés » de sa consigne,
  *   `convex/paliers/prompts.ts`), sauf la réponse courte au CI, où l'enfant ne
- *   sait pas encore écrire au clavier (`readingLearnerRules`). Les
- *   mathématiques n'ont pas de phrase à trous : un calcul à trou s'y écrit en
- *   réponse courte, que le serveur vérifie par le calcul.
+ *   sait pas encore écrire au clavier (`readingLearnerRules`). Le modèle n'écrit
+ *   pas de phrase à trous en mathématiques : un calcul à trou s'y écrit en
+ *   réponse courte, que le serveur vérifie par le calcul. Un gabarit n'est pas
+ *   le modèle : les petits problèmes du CI en servent une (`probleme-question`,
+ *   le trou est un mot), que la vitrine ne montre pas, puisqu'elle liste ce que
+ *   le modèle écrit.
  * - LES JEUX : ceux que le programme demande aux thématiques de CETTE classe
  *   (`games`, `convex/programme`). Un jeu qui n'existe pas à une classe ne se
  *   montre pas à cette classe : un CM1 n'a pas de frise de nombres, un

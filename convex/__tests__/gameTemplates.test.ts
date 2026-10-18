@@ -66,6 +66,16 @@ const TEMPLATES = [
   "animaux-ordre",
   "moment-journee",
   "jour-voisin",
+  "image-compter",
+  "image-qui",
+  "tableau-case",
+  "tableau-nombre",
+  "image-donnee",
+  "probleme-donnee",
+  "donnee-ou-question",
+  "probleme-question",
+  "donnee-inutile",
+  "probleme-inutile",
 ] as const satisfies readonly GameKind[];
 
 /** Les gabarits de calcul : leur matière est « Mathématiques ». */
@@ -96,6 +106,16 @@ const MATH_KINDS = new Set<string>([
   "animaux-ordre",
   "moment-journee",
   "jour-voisin",
+  "image-compter",
+  "image-qui",
+  "tableau-case",
+  "tableau-nombre",
+  "image-donnee",
+  "probleme-donnee",
+  "donnee-ou-question",
+  "probleme-question",
+  "donnee-inutile",
+  "probleme-inutile",
 ]);
 
 const CLASSIC_TYPES = new Set<string>(["qcm", "order", "match", "drag-drop", "fill-blank"]);
@@ -951,7 +971,7 @@ describe("les gabarits dans le programme du CI", () => {
     e.topic.games?.some((g) => (TEMPLATES as readonly string[]).includes(g.kind)),
   );
 
-  it("est branché sur douze thématiques du CI", () => {
+  it("est branché sur treize thématiques du CI", () => {
     expect(entries.map((e) => e.topic.key).sort()).toEqual(
       [
         "fr-ci-alphabet",
@@ -966,6 +986,7 @@ describe("les gabarits dans le programme du CI", () => {
         "ma-ci-espace",
         "ma-ci-formes",
         "ma-ci-mesures",
+        "ma-ci-problemes",
       ].sort(),
     );
   });
@@ -984,6 +1005,7 @@ describe("les gabarits dans le programme du CI", () => {
       "ma-ci-espace",
       "ma-ci-formes",
       "ma-ci-mesures",
+      "ma-ci-problemes",
     ];
     for (const entry of entries) {
       for (const spec of entry.topic.games ?? []) {
@@ -1109,6 +1131,7 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     "ma-ci-espace",
     "ma-ci-formes",
     "ma-ci-mesures",
+    "ma-ci-problemes",
   ];
   const topicOf = (key: string) => allProgrammeEntries().find((e) => e.topic.key === key)!.topic;
 
@@ -1142,7 +1165,6 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
   it("annonce ces paliers comme gratuits à la pré-génération, et les autres comme payants", () => {
     for (const key of keys) expect(topicUsesModel(key), key).toBe(false);
     expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
-    expect(topicUsesModel("ma-ci-problemes")).toBe(true);
     expect(topicUsesModel("fr-cp-lecture")).toBe(true);
     expect(topicUsesModel("fr-ci-phrases")).toBe(true);
     expect(topicUsesModel("hi-cm2-empires")).toBe(true);

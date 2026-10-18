@@ -30,6 +30,7 @@ const WITHOUT_MODEL = [
   "ma-ci-espace",
   "ma-ci-formes",
   "ma-ci-mesures",
+  "ma-ci-problemes",
 ] as const;
 const MODEL_CALLED = "LE MODÈLE A ÉTÉ APPELÉ";
 
@@ -184,8 +185,8 @@ describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) =>
 });
 
 describe("le faux modèle ne laisse rien passer", () => {
-  it("fait échouer un palier qui a besoin du modèle (ma-ci-problemes : dix exercices à écrire)", async () => {
-    const { ctx, modelCalls, upserts } = fakeConvex("ma-ci-problemes");
+  it("fait échouer un palier qui a besoin du modèle (fr-ci-phrases : dix exercices à écrire)", async () => {
+    const { ctx, modelCalls, upserts } = fakeConvex("fr-ci-phrases");
     await expect(generateBucketCore(ctx, bucket(1))).rejects.toThrow(MODEL_CALLED);
     expect(modelCalls).toEqual(["aiGateway/index:generate"]);
     // Rien n'est écrit : le palier reste « generating », sans exercice.
