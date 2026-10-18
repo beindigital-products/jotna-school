@@ -45,6 +45,18 @@ import {
 } from "./listen";
 import { makeFreshFrise, makeNumberSuite } from "./patterns";
 import {
+  makeCountInScene,
+  makeDatumInImage,
+  makeDatumOrQuestion,
+  makeFindDatum,
+  makeProblemQuestion,
+  makeSolveWithUseless,
+  makeTableCell,
+  makeTableNumber,
+  makeUselessDatum,
+  makeWhoHas,
+} from "./problems";
+import {
   makeFirstLetter,
   makeCapitalMatch,
   makeFirstSyllable,
@@ -151,6 +163,17 @@ export const GAME_KINDS = {
   "complement": { label: "Combien faut-il ajouter", type: "qcm", make: makeComplement },
   "calcul-ecrit": { label: "Une addition ou une soustraction écrite", type: "qcm", make: makeWrittenCalc },
   "dizaine-unites": { label: "Une dizaine et des unités", type: "qcm", make: makeTensAndUnits },
+  // Les petits problèmes du CI (`problems.ts`) : l'image, le tableau, la donnée et la question, la donnée inutile.
+  "image-compter": { label: "Compter une sorte de dessins dans une image", type: "qcm", make: makeCountInScene },
+  "image-qui": { label: "Qui en a le plus, le moins, autant", type: "qcm", make: makeWhoHas },
+  "tableau-case": { label: "La case qui manque dans un tableau à double entrée", type: "qcm", make: makeTableCell },
+  "tableau-nombre": { label: "Lire un nombre dans un tableau", type: "qcm", make: makeTableNumber },
+  "image-donnee": { label: "Un petit problème dont l'image donne un nombre", type: "qcm", make: makeDatumInImage },
+  "probleme-donnee": { label: "Retrouver une donnée du problème", type: "qcm", make: makeFindDatum },
+  "donnee-ou-question": { label: "Ce que je sais, ce que je cherche", type: "drag-drop", make: makeDatumOrQuestion },
+  "probleme-question": { label: "La question qui va avec le problème", type: "fill-blank", make: makeProblemQuestion },
+  "donnee-inutile": { label: "Le nombre qui ne sert pas", type: "qcm", make: makeUselessDatum },
+  "probleme-inutile": { label: "Résoudre sans la donnée inutile", type: "qcm", make: makeSolveWithUseless },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }

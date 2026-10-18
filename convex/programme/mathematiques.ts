@@ -118,6 +118,20 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Petits problèmes",
         description:
           "Résolution de problèmes, paliers 1 à 3 du CI : trouver un indice dans une image, lire un tableau à double entrée, repérer la donnée et la question d'un petit problème, les données utiles et inutiles. Énoncés de deux phrases au plus, nombres jusqu'à 20.",
+        // Dix gabarits, dans l'ordre de la fiche : l'image, le tableau, la donnée et la question, la donnée inutile.
+        // `vocabulary` donne le plafond de la fiche (20) ; le tableau de dessins n'écrit aucun nombre.
+        games: [
+          { kind: "image-compter", count: 1, vocabulary: "nombres-20" },
+          { kind: "image-qui", count: 1, vocabulary: "nombres-20" },
+          { kind: "tableau-case", count: 1 },
+          { kind: "tableau-nombre", count: 1, vocabulary: "nombres-20" },
+          { kind: "image-donnee", count: 1, vocabulary: "nombres-20" },
+          { kind: "probleme-donnee", count: 1, vocabulary: "nombres-20" },
+          { kind: "donnee-ou-question", count: 1, vocabulary: "nombres-20" },
+          { kind: "probleme-question", count: 1, vocabulary: "nombres-20" },
+          { kind: "donnee-inutile", count: 1, vocabulary: "nombres-20" },
+          { kind: "probleme-inutile", count: 1, vocabulary: "nombres-20" },
+        ],
       },
     ],
     CP: [

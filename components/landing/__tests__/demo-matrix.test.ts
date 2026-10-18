@@ -36,9 +36,12 @@ function authorizedFor(subjectName: string): ExerciseType[] {
 }
 
 /**
- * Les gabarits (`paliers/games/words.ts`, `counting.ts`) fabriquent des
- * exercices CLASSIQUES : la vitrine les montre déjà avec leur type (QCM, ordre,
- * association, phrase à trous). Seuls les quatre jeux ont leur carte.
+ * Les gabarits (`paliers/games/words.ts`, `counting.ts`, `problems.ts`…)
+ * fabriquent des exercices CLASSIQUES : la vitrine les montre avec leur type
+ * (QCM, ordre, association, phrase à trous), parmi les types que le modèle a le
+ * droit d'écrire pour la matière. Elle ne montre donc pas la phrase à trous des
+ * mathématiques du CI, que seul un gabarit sert (`probleme-question`). Seuls
+ * les quatre jeux ont leur carte.
  */
 const isShownGame = (kind: GameKind) => (GAME_EXERCISE_TYPES as readonly string[]).includes(GAME_KINDS[kind].type);
 
