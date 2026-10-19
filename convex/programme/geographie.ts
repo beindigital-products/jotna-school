@@ -23,25 +23,55 @@ export const GEOGRAPHIE: ProgrammeSubject = {
         name: "Devant, derrière, à côté",
         description:
           "Géographie, étape 1 : la topologie. Devant, derrière, à côté de, entre, sur, sous, dans, près, loin, en se repérant par rapport à soi et aux objets de la classe.",
+        games: [
+          { kind: "sur-sous", count: 2 },
+          { kind: "devant-derriere", count: 1 },
+          { kind: "file-ordre", count: 2 },
+          { kind: "a-cote", count: 2 },
+          { kind: "entre", count: 1 },
+          { kind: "pres-loin", count: 1 },
+          { kind: "position-glisser", count: 1 },
+        ],
       },
       {
         key: "ge-ci-lateralite",
         name: "Ma droite et ma gauche",
         description:
           "Géographie, étape 1 : la latéralisation. La main droite, la main gauche, à droite de, à gauche de ; tourner à droite, tourner à gauche.",
+        games: [
+          { kind: "rangee-position", count: 2 },
+          { kind: "rangee-voisin", count: 2 },
+          { kind: "doigt-direction", count: 1 },
+          { kind: "doigt-relier", count: 1 },
+          { kind: "gauche-droite-glisser", count: 2 },
+          { kind: "rangee-copie", count: 2 },
+        ],
       },
       {
         key: "ge-ci-reperes",
         name: "Les repères de mon école",
         description:
           "Géographie, étape 1 : les repères fixes (le baobab de la cour, le portail, la mosquée, le marché) et les repères mobiles (une voiture, un âne, une charrette) ; savoir lesquels permettent de retrouver son chemin.",
+        games: [
+          { kind: "repere-glisser", count: 2 },
+          { kind: "repere-qcm", count: 3 },
+          { kind: "repere-intrus", count: 2 },
+          { kind: "repere-trajet", count: 3 },
+        ],
       },
       {
         key: "ge-ci-quadrillage",
         name: "Se repérer sur un quadrillage",
         description:
           "Géographie, étape 1 : repérer une case sur un quadrillage (ligne et colonne), déplacer un pion vers le haut, le bas, la gauche ou la droite, reproduire un dessin case par case.",
-        games: [{ kind: "pixel-copie", count: 3 }],
+        games: [
+          { kind: "pixel-copie", count: 3 },
+          { kind: "grille-position", count: 2 },
+          { kind: "grille-trou", count: 1 },
+          { kind: "pion-deplacement", count: 2 },
+          { kind: "grille-ligne-colonne", count: 1 },
+          { kind: "grille-glisser", count: 1 },
+        ],
       },
     ],
     CP: [

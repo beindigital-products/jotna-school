@@ -28,24 +28,55 @@ export const HISTOIRE: ProgrammeSubject = {
         name: "Le matin, le midi, le soir",
         description:
           "Histoire, étape 1 : repérer les moments de la journée (matin, midi, après-midi, soir, nuit) et ce qu'on y fait (se lever, aller à l'école, déjeuner, faire la sieste, dîner, dormir).",
+        games: [
+          { kind: "moment-journee", count: 2 },
+          { kind: "activite-moment", count: 2 },
+          { kind: "moment-ordre", count: 2 },
+          { kind: "activite-ordre", count: 1 },
+          { kind: "moment-voisin", count: 1 },
+          { kind: "activite-moments", count: 2 },
+        ],
       },
       {
         key: "hi-ci-ordre",
         name: "Avant, pendant, après",
         description:
           "Histoire, étape 1 : l'ordre des événements. Remettre dans l'ordre les moments d'une journée ou d'une petite histoire (se réveiller, se laver, s'habiller, prendre le petit-déjeuner, partir à l'école).",
+        games: [
+          { kind: "cycle-ordre", count: 2 },
+          { kind: "moment-ordre", count: 1 },
+          { kind: "activite-ordre", count: 1 },
+          { kind: "avant-apres", count: 3 },
+          { kind: "avant-apres-glisser", count: 2 },
+          { kind: "grandir-relier", count: 1 },
+        ],
       },
       {
         key: "hi-ci-hier-demain",
         name: "Hier, aujourd'hui, demain",
         description:
           "Histoire, étape 1 : les indicateurs temporels (hier, aujourd'hui, demain, avant, après, maintenant, bientôt, autrefois).",
+        games: [
+          { kind: "jour-relatif", count: 3 },
+          { kind: "jour-hier-demain", count: 2 },
+          { kind: "jour-trou", count: 2 },
+          { kind: "temps-ordre", count: 2 },
+          { kind: "jour-voisin", count: 1 },
+        ],
       },
       {
         key: "hi-ci-semaine",
         name: "Les jours de la semaine",
         description:
           "Histoire, étape 1 : les sept jours de la semaine dans l'ordre (lundi à dimanche), le jour d'avant et le jour d'après, les jours d'école et les jours de repos.",
+        games: [
+          { kind: "jour-voisin", count: 2 },
+          { kind: "jours-ordre", count: 2 },
+          { kind: "jour-manquant", count: 2 },
+          { kind: "jour-ecole-repos", count: 1 },
+          { kind: "jour-rang", count: 2 },
+          { kind: "jours-relier", count: 1 },
+        ],
       },
     ],
     CP: [
