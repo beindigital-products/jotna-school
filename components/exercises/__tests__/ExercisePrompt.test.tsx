@@ -8,13 +8,24 @@ import { PromptReaderProvider } from "../prompt-reader";
 
 afterEach(cleanup);
 
+const NBSP = "\u00a0";
+
+/**
+ * Le texte affiché avec ses espaces insécables remises en espaces ordinaires :
+ * l'écran met des insécables avant « ? », « ! », « : », « ; » (voir
+ * « l'espace avant la ponctuation haute » plus bas), et ces tests-ci gardent
+ * l'autre promesse, celle de ne perdre aucun mot.
+ */
+const withoutNbsp = (text: string | null | undefined) => (text ?? "").replaceAll(NBSP, " ");
+
 /** Les paragraphes affichés, et si l'un d'eux est la carte de la citation. */
 function shown(prompt: string) {
   const { container } = render(<ExercisePrompt prompt={prompt} />);
   const paragraphs = [...container.querySelectorAll("p")];
+  const card = paragraphs.find((p) => p.hasAttribute("data-prompt-quote"));
   return {
-    texts: paragraphs.map((p) => p.textContent),
-    card: paragraphs.find((p) => p.hasAttribute("data-prompt-quote"))?.textContent ?? null,
+    texts: paragraphs.map((p) => withoutNbsp(p.textContent)),
+    card: card ? withoutNbsp(card.textContent) : null,
   };
 }
 
@@ -78,7 +89,7 @@ describe("la consigne d'un exercice : on n'en perd jamais un mot", () => {
     const socle = container.querySelector(".gk-socle");
     expect(socle?.textContent).toBe(row);
     expect(socle?.className).toContain("text-4xl");
-    expect(container.querySelector("p")?.textContent).toBe(prompt);
+    expect(withoutNbsp(container.querySelector("p")?.textContent)).toBe(prompt);
     // Le « . » ne part jamais seul en tête de ligne : il est dans le même `nowrap` que le socle.
     const glued = socle?.parentElement;
     expect(glued?.className).toContain("whitespace-nowrap");
@@ -102,19 +113,19 @@ describe("la consigne d'un exercice : on n'en perd jamais un mot", () => {
     expect(socles).toHaveLength(1);
     expect(socles[0].textContent).toBe(scene);
     expect(socles[0].className).toContain("whitespace-pre");
-    expect(container.querySelector("p")?.textContent).toBe(`Regarde le quadrillage.\n${scene}\nLequel est au milieu ?`);
+    expect(withoutNbsp(container.querySelector("p")?.textContent)).toBe(`Regarde le quadrillage.\n${scene}\nLequel est au milieu ?`);
   });
 
   it("ne coupe pas un mot à trait d'union, et laisse les autres mots en texte nu", () => {
     const prompt = "Aïssatou a 3 mangues. Combien en a-t-elle maintenant ?";
     const { container } = render(<ExercisePrompt prompt={prompt} />);
     const p = container.querySelector("p")!;
-    expect(p.textContent).toBe(prompt);
+    expect(withoutNbsp(p.textContent)).toBe(prompt);
     const nowrap = [...p.querySelectorAll("span")];
     expect(nowrap.map((s) => s.textContent)).toEqual(["a-t-elle"]);
     expect(nowrap[0].className).toContain("whitespace-nowrap");
     // Les nœuds de texte nus autour, pour `getByText`.
-    expect([...p.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent)).toEqual([
+    expect([...p.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => withoutNbsp(n.textContent))).toEqual([
       "Aïssatou a 3 mangues. Combien en ",
       " maintenant ?",
     ]);
@@ -164,6 +175,64 @@ describe("la consigne d'un exercice : on n'en perd jamais un mot", () => {
     );
     expect(screen.queryByRole("button")).toBeNull();
     expect(container.querySelector("[data-prompt-reading]")).not.toBeNull();
-    expect(container.querySelector("p")?.textContent).toBe("Combien de mangues ?");
+    expect(withoutNbsp(container.querySelector("p")?.textContent)).toBe("Combien de mangues ?");
+  });
+});
+
+describe("l'espace avant la ponctuation haute : insécable à l'affichage, jamais en base", () => {
+  /** Le texte du premier paragraphe, tel que l'écran le tient. */
+  const rendered = (prompt: string) => render(<ExercisePrompt prompt={prompt} />).container.querySelector("p")!.textContent!;
+
+  it("tient « ? » au mot qui le précède (le défaut vu sur WebKit : « …sera août ⏎ ? Écris le nombre. »)", () => {
+    const prompt = "Nous sommes en février. Dans combien de mois sera août ? Écris le nombre.";
+    expect(rendered(prompt)).toBe(`Nous sommes en février. Dans combien de mois sera août${NBSP}? Écris le nombre.`);
+  });
+
+  it("fait de même pour « ! », « : » et « ; »", () => {
+    expect(rendered("Bravo ! Tu as gagné.")).toBe(`Bravo${NBSP}! Tu as gagné.`);
+    expect(rendered("Choisis : a ou b ?")).toBe(`Choisis${NBSP}: a ou b${NBSP}?`);
+    expect(rendered("Lis ; puis écris.")).toBe(`Lis${NBSP}; puis écris.`);
+  });
+
+  it("colle les guillemets français à leur mot, et les tranches d'un nombre entre elles", () => {
+    expect(rendered("Dans « Modou mange la mangue », quel pronom remplace « la mangue » ?")).toBe(
+      `Dans «${NBSP}Modou mange la mangue${NBSP}», quel pronom remplace «${NBSP}la mangue${NBSP}»${NBSP}?`,
+    );
+    expect(rendered("Un car roule à 60 km pendant 3 h. Il paie 1 200 F.")).toBe(
+      `Un car roule à 60${NBSP}km pendant 3${NBSP}h. Il paie 1${NBSP}200${NBSP}F.`,
+    );
+  });
+
+  it("n'a plus aucune espace ordinaire devant la ponctuation haute, citation en carte comprise", () => {
+    const { container } = render(<ExercisePrompt prompt="Trouve le temps du verbe : « Aujourd'hui, nous jouons ! »" />);
+    const paragraphs = [...container.querySelectorAll("p")];
+    expect(paragraphs.map((p) => p.textContent)).toEqual(["Trouve le temps du verbe", `Aujourd'hui, nous jouons${NBSP}!`]);
+    // La carte tient le « ! » à « jouons ».
+    expect(container.querySelector("[data-prompt-quote]")?.textContent).toBe(`Aujourd'hui, nous jouons${NBSP}!`);
+    for (const p of paragraphs) expect(p.textContent).not.toMatch(/ [?!:;»]|« /u);
+  });
+
+  it("tient aussi la ponctuation du texte qui suit une rangée d'émojis", () => {
+    const row = [0x1f418, 0x1f41f, 0x1f34c].map((code) => String.fromCodePoint(code)).join(" ");
+    const text = rendered(`Regarde la rangée ${row}. Lequel est au milieu ? Dis-le !`);
+    expect(text).toBe(`Regarde la rangée ${row}. Lequel est au milieu${NBSP}? Dis-le${NBSP}!`);
+  });
+
+  it("garde le mot à trait d'union en nowrap et ses voisins en texte nu, avec l'insécable", () => {
+    const { container } = render(<ExercisePrompt prompt="Combien en a-t-elle maintenant ?" />);
+    const p = container.querySelector("p")!;
+    expect([...p.querySelectorAll("span")].map((s) => s.textContent)).toEqual(["a-t-elle"]);
+    expect([...p.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent)).toEqual([
+      "Combien en ",
+      ` maintenant${NBSP}?`,
+    ]);
+  });
+
+  it("ne touche que l'affichage : le texte reçu garde ses espaces ordinaires, et `getByText` le retrouve", () => {
+    const prompt = "Dans combien de mois sera août ?";
+    render(<ExercisePrompt prompt={prompt} />);
+    // Le normaliseur de Testing Library replie les insécables : la consigne de la base s'y retrouve.
+    expect(screen.getByText(prompt)).toBeTruthy();
+    expect(prompt).not.toContain(NBSP);
   });
 });
