@@ -83,6 +83,26 @@ describe("la consigne d'un exercice : on n'en perd jamais un mot", () => {
     const glued = socle?.parentElement;
     expect(glued?.className).toContain("whitespace-nowrap");
     expect(glued?.textContent).toBe(`${row}.`);
+    // Une rangée sur une seule ligne se plie encore sur un écran étroit : `pre` est réservé aux scènes.
+    expect(socle?.className).not.toContain("whitespace-pre");
+  });
+
+  it("pose un quadrillage sur UN socle qui garde ses lignes et ne se coupe pas", () => {
+    // Trois rangées de trois dessins. Avec `pre-line`, Safari et le webview iOS mesuraient le socle
+    // trop étroit d'un cheveu et coupaient chaque rangée en un dessin seul puis deux : la grille
+    // n'en était plus une (relu sur l'iPhone 17, 19 octobre 2026). Chromium, lui, ne la coupait pas.
+    const codes = [
+      [0x1f408, 0x1f404, 0x1f992],
+      [0x1f34e, 0x1f96d, 0x1f414],
+      [0x1f415, 0x1f41f, 0x1f34b],
+    ];
+    const scene = codes.map((row) => row.map((code) => String.fromCodePoint(code)).join(" ")).join("\n");
+    const { container } = render(<ExercisePrompt prompt={`Regarde le quadrillage.\n${scene}\nLequel est au milieu ?`} />);
+    const socles = container.querySelectorAll(".gk-socle");
+    expect(socles).toHaveLength(1);
+    expect(socles[0].textContent).toBe(scene);
+    expect(socles[0].className).toContain("whitespace-pre");
+    expect(container.querySelector("p")?.textContent).toBe(`Regarde le quadrillage.\n${scene}\nLequel est au milieu ?`);
   });
 
   it("ne coupe pas un mot à trait d'union, et laisse les autres mots en texte nu", () => {
