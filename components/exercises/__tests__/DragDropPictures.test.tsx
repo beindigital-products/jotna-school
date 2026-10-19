@@ -21,7 +21,7 @@ afterEach(() => {
  * « Lion », « Poule » ou « La table » ne se lisent pas encore à six ans. Ces
  * tests tiennent ce que l'écran promet : l'image est là, avec le mot, sur
  * l'étiquette (au bac, dans une boîte, sous le doigt) et sur le nom d'une case
- * qui nomme une chose ; une catégorie (« Savane ») reste telle quelle ; la
+ * qui nomme une chose ; une catégorie (« Brousse ») reste telle quelle ; la
  * porte fermée ne change rien ; la prise (`touch-none`, le toucher en deux
  * temps) et la réponse restent celles d'avant. Les gestes au toucher sont ceux
  * de `DragDropTap.test.tsx`, que la suite existante garde verte.
@@ -30,7 +30,7 @@ afterEach(() => {
 type Payload = { zones: string[]; items: { text: string }[] };
 
 const PROMPT = "Où vit chaque animal ? Glisse-le dans sa case.";
-const FARM: Payload = { zones: ["Savane", "Ferme"], items: [{ text: "Lion" }, { text: "Poule" }, { text: "Girafe" }] };
+const FARM: Payload = { zones: ["Brousse", "Basse-cour"], items: [{ text: "Lion" }, { text: "Poule" }, { text: "Girafe" }] };
 
 type Gate = "ouverte" | "fermee" | "absente";
 
@@ -83,14 +83,14 @@ describe("glisser-déposer : la porte fermée ne change rien", () => {
 
   it("la plaque d'une case et le bac sont ceux d'avant : pas de `flex-wrap` sur le titre, la même rangée minimale", () => {
     const { container } = renderDrag(FARM, { gate: "fermee" });
-    expect(classesOf(screen.getByRole("heading", { name: "Savane" }))).not.toContain("flex-wrap");
+    expect(classesOf(screen.getByRole("heading", { name: "Brousse" }))).not.toContain("flex-wrap");
     expect(container.querySelector("[data-tray] > div")?.className).toBe(
       "flex min-h-[4.5rem] flex-wrap items-start justify-center gap-4",
     );
   });
 
   it("un émoji de tête reste dans le texte de l'étiquette quand la porte est fermée", () => {
-    renderDrag({ zones: ["Savane", "Ferme"], items: [{ text: "🦁 Lion" }, { text: "🐔 Poule" }] }, { gate: "fermee" });
+    renderDrag({ zones: ["Brousse", "Basse-cour"], items: [{ text: "🦁 Lion" }, { text: "🐔 Poule" }] }, { gate: "fermee" });
     expect(draggable("🦁 Lion")).toBeTruthy();
   });
 });
@@ -115,14 +115,14 @@ describe("glisser-déposer : les étiquettes en CI", () => {
   });
 
   it("l'émoji de tête cède la place à l'image, le mot s'écrit sans lui", () => {
-    const { container } = renderDrag({ zones: ["Savane", "Ferme"], items: [{ text: "🦁 Lion" }, { text: "🐔 Poule" }] });
+    const { container } = renderDrag({ zones: ["Brousse", "Basse-cour"], items: [{ text: "🦁 Lion" }, { text: "🐔 Poule" }] });
     expect(stickers(container)).toEqual(["lion", "poule"]);
     expect(draggable("Lion")).toBeTruthy();
     expect(() => draggable("🦁 Lion")).toThrow();
   });
 
   it("une étiquette hors catalogue ou au pluriel reste un mot", () => {
-    const { container } = renderDrag({ zones: ["Savane", "Ferme"], items: [{ text: "Lion" }, { text: "Fatou" }, { text: "les chats" }] });
+    const { container } = renderDrag({ zones: ["Brousse", "Basse-cour"], items: [{ text: "Lion" }, { text: "Fatou" }, { text: "les chats" }] });
     expect(stickers(container)).toEqual(["lion"]);
     expect(draggable("Fatou").querySelector("img")).toBeNull();
   });
@@ -132,12 +132,19 @@ describe("glisser-déposer : les étiquettes en CI", () => {
     expect(container.querySelector("img")).toBeNull();
   });
 
-  it("une catégorie (Savane, Ferme, Naturel, Fixe) n'est pas au catalogue : la case n'a pas d'image", () => {
+  it("une catégorie (Brousse, Basse-cour, Naturel, Fixe) n'est pas au catalogue : la case n'a pas d'image", () => {
     const { container } = renderDrag({ zones: ["Naturel", "Fabriqué"], items: [{ text: "Le baobab" }, { text: "La table" }] });
     expect(zone("Naturel").querySelector("img")).toBeNull();
     expect(zone("Fabriqué").querySelector("img")).toBeNull();
     // Les étiquettes, elles, nomment des choses.
     expect(stickers(container)).toEqual(["baobab", "table"]);
+  });
+
+  it("un lieu du catalogue (la savane, la ferme) montre sa scène sur sa case : l'élève joue sans lire", () => {
+    const { container } = renderDrag({ zones: ["Savane", "Ferme"], items: [{ text: "Lion" }, { text: "Poule" }] });
+    expect(zone("Savane").querySelector("[data-item-picture='savane'] img")?.getAttribute("src")).toBe("/objets/savane.webp");
+    expect(zone("Ferme").querySelector("[data-item-picture='ferme'] img")?.getAttribute("src")).toBe("/objets/ferme.webp");
+    expect(stickers(container).sort()).toEqual(["ferme", "lion", "poule", "savane"]);
   });
 
   it("garde sa prise : `touch-none`, `select-none`, `draggable`, et une image qui ne reçoit ni le toucher ni la sélection", () => {
@@ -158,7 +165,7 @@ describe("glisser-déposer : les étiquettes en CI", () => {
     renderDrag(FARM);
     fireEvent.click(draggable("Lion").querySelector("[data-item-picture]") as Element);
     expect(draggable("Lion").getAttribute("aria-pressed")).toBe("true");
-    expect(zone("Savane").getAttribute("data-armed")).toBe("true");
+    expect(zone("Brousse").getAttribute("data-armed")).toBe("true");
   });
 
   it("se joue au clavier comme avant : Entrée choisit l'étiquette à image", () => {
@@ -168,7 +175,7 @@ describe("glisser-déposer : les étiquettes en CI", () => {
   });
 
   it("si le fichier ne charge pas, l'émoji de tête prend la place de l'image, le mot reste", () => {
-    const { container } = renderDrag({ zones: ["Savane", "Ferme"], items: [{ text: "🦁 Lion" }, { text: "🐔 Poule" }] });
+    const { container } = renderDrag({ zones: ["Brousse", "Basse-cour"], items: [{ text: "🦁 Lion" }, { text: "🐔 Poule" }] });
     fireEvent.error(container.querySelector("[data-item-picture='lion'] img") as HTMLImageElement);
     // Le texte de l'étiquette est maintenant « 🦁Lion » (l'émoji de repli, puis le mot) : on la repère par son repli.
     const fallback = container.querySelector("[data-item-picture='repli']") as Element;
@@ -185,7 +192,7 @@ describe("glisser-déposer : les étiquettes en CI", () => {
 
   it("dès quatre étiquettes, la pastille se serre à 32 px", () => {
     const four: Payload = {
-      zones: ["Savane", "Ferme"],
+      zones: ["Brousse", "Basse-cour"],
       items: [{ text: "Lion" }, { text: "Poule" }, { text: "Girafe" }, { text: "Chèvre" }],
     };
     renderDrag(four);
@@ -241,9 +248,9 @@ describe("glisser-déposer : les cases qui nomment une chose", () => {
   });
 
   it("une catégorie à côté d'une case qui nomme une chose reste telle quelle", () => {
-    renderDrag({ zones: ["La poule", "Savane"], items: [{ text: "Le mil" }, { text: "Lion" }] });
+    renderDrag({ zones: ["La poule", "Brousse"], items: [{ text: "Le mil" }, { text: "Lion" }] });
     expect(screen.getByRole("heading", { name: "La poule" }).querySelector("img")).not.toBeNull();
-    expect(screen.getByRole("heading", { name: "Savane" }).querySelector("img")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Brousse" }).querySelector("img")).toBeNull();
   });
 
   it("une case dont l'émoji de tête remplace son image : le nom s'écrit sans l'émoji, et l'émoji revient si le fichier manque", () => {
@@ -261,9 +268,9 @@ describe("glisser-déposer : l'étiquette garde son image où qu'elle aille", ()
   it("posée dans une boîte, l'étiquette y montre toujours son image, et le bac ne la montre plus", () => {
     renderDrag(FARM);
     fireEvent.click(draggable("Lion"));
-    fireEvent.click(zone("Savane"));
-    expect(stickers(zone("Savane"))).toEqual(["lion"]);
-    expect(zone("Savane").textContent).toContain("Lion");
+    fireEvent.click(zone("Brousse"));
+    expect(stickers(zone("Brousse"))).toEqual(["lion"]);
+    expect(zone("Brousse").textContent).toContain("Lion");
     const tray = document.querySelector("[data-tray]") as Element;
     expect(stickers(tray)).toEqual(["poule", "girafe"]);
   });
@@ -271,9 +278,9 @@ describe("glisser-déposer : l'étiquette garde son image où qu'elle aille", ()
   it("le bac vidé garde la hauteur d'une rangée : les boîtes ne remontent pas à la dernière étiquette", () => {
     const { container } = renderDrag(FARM);
     for (const [text, where] of [
-      ["Lion", "Savane"],
-      ["Poule", "Ferme"],
-      ["Girafe", "Savane"],
+      ["Lion", "Brousse"],
+      ["Poule", "Basse-cour"],
+      ["Girafe", "Brousse"],
     ]) {
       fireEvent.click(draggable(text));
       fireEvent.click(zone(where));
@@ -353,7 +360,7 @@ describe("glisser-déposer : les garde-fous (l'image ne donne jamais la réponse
 });
 
 describe("glisser-déposer : la réponse ne change jamais d'un caractère", () => {
-  const PAYLOAD: Payload = { zones: ["Savane", "Ferme"], items: [{ text: "🦁 Lion" }, { text: "🐔 Poule" }, { text: "Girafe" }] };
+  const PAYLOAD: Payload = { zones: ["Brousse", "Basse-cour"], items: [{ text: "🦁 Lion" }, { text: "🐔 Poule" }, { text: "Girafe" }] };
 
   /** Pose chaque étiquette dans sa case par le toucher, valide, et rend ce qui part à `onSubmit`. */
   function play(gate: Gate): string {
@@ -374,7 +381,7 @@ describe("glisser-déposer : la réponse ne change jamais d'un caractère", () =
   }
 
   it("part en JSON des textes d'origine, émoji de tête compris", () => {
-    expect(JSON.parse(play("ouverte"))).toEqual({ "🦁 Lion": "Savane", "🐔 Poule": "Ferme", Girafe: "Savane" });
+    expect(JSON.parse(play("ouverte"))).toEqual({ "🦁 Lion": "Brousse", "🐔 Poule": "Basse-cour", Girafe: "Brousse" });
   });
 
   it("est la même chaîne, au caractère près, porte ouverte, fermée ou sans fournisseur", () => {

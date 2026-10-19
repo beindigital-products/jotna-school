@@ -73,7 +73,7 @@ mise en ordre) et `qcm-intrus` (trois véhicules et un fruit). Trois n'ont que l
 nom, comme le modèle l'écrit : `qcm-mots-seuls` (Lion, Poule, Chat, Âne),
 `match-mots` (quatre animaux et leurs cris, soit huit tuiles dont quatre sans
 image) et `drag-drop-savane` (quatre étiquettes à glisser vers la savane ou la
-ferme).
+ferme, deux boîtes qui montrent chacune leur scène).
 
 Chaque page pose le fournisseur d'images comme la séance :
 `<ItemPicturesProvider enabled={isPictureTileClass(classe)}>`, avec la classe du

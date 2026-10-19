@@ -210,7 +210,7 @@ const BARE_PAIRS = match({
   hints: ["Dis le nom de chaque animal.", "Pense au cri que chaque animal fait.", "Commence par l'animal que tu connais le mieux."],
 });
 
-/** Des étiquettes qui sont des noms d'animaux, des boîtes qui n'en sont pas (la savane, la ferme). */
+/** Des étiquettes qui sont des noms d'animaux, des boîtes qui sont des lieux (la savane, la ferme) : tout a son image. */
 const BARE_LABELS = dragDrop({
   topic: "Les animaux",
   stage: 2,

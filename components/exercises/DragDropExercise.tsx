@@ -72,8 +72,8 @@ import { glyphTilesOf, isDenseTileCount, TilePicture, TileSticker, tileName } fr
  * hauteur ; dès quatre étiquettes, la pastille se serre). Une case dont le nom
  * est celui d'une chose (« La poule ») pose la sienne dans sa plaque, devant son
  * nom, à côté quand la boîte est assez large et au-dessus sinon (`DropBox`) ; une
- * catégorie (« Savane », « Ferme », « Naturel », « Fixe ») n'est pas au catalogue
- * et reste telle quelle. LA PRISE NE CHANGE PAS : l'étiquette reste `touch-none`,
+ * catégorie (« Naturel », « Fixe », « Fruits ») n'est pas au catalogue et reste
+ * telle quelle. LA PRISE NE CHANGE PAS : l'étiquette reste `touch-none`,
  * de 56 px de haut au moins, et sa pastille, qui ne reçoit ni le toucher ni la
  * sélection (`ItemPicture`), n'en vole aucun. La réponse part toujours en `dragDropAnswer`
  * des textes d'origine, émoji compris. Sans `ItemPicturesProvider` (les autres
@@ -157,7 +157,7 @@ function DroppableZone({
 }: {
   id: string;
   label: string;
-  /** L'image qui nomme la case, ou `null` (une catégorie : Savane, Ferme). */
+  /** L'image qui nomme la case, ou `null` (une catégorie : Naturel, Fixe). */
   image: ItemImage | null;
   /** Quatre étiquettes ou plus : la pastille de la plaque se serre comme celle des étiquettes. */
   dense: boolean;
