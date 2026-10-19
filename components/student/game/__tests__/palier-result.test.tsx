@@ -71,7 +71,7 @@ describe("PalierResultScreen — la fin d'un palier", () => {
     expect(screen.getByText("Le palier 3 vient de s'ouvrir.")).toBeTruthy();
     expect(screen.getByRole("img", { name: "Pio célèbre avec toi" })).toBeTruthy();
     const chest = screen.getByRole("img", { name: "Le coffre au trésor est ouvert" });
-    expect(chest.querySelector("[data-lid]")?.getAttribute("data-lid")).toBe("ouvert");
+    expect(chest.getAttribute("data-open")).toBe("true");
     // La même note que l'étape du sentier : 26 sur 30 vaut deux grandes étoiles.
     expect(container.querySelector("[data-big-stars]")?.getAttribute("data-big-stars")).toBe(String(palierStarRating(26, 10)));
     expect(screen.getByText("/ 30")).toBeTruthy();
@@ -92,8 +92,10 @@ describe("PalierResultScreen — la fin d'un palier", () => {
     expect(screen.getByText("Il te manque 7 étoiles pour valider.")).toBeTruthy();
     expect(screen.getByRole("img", { name: "Pio t'encourage" })).toBeTruthy();
     const chest = screen.getByRole("img", { name: "Le coffre au trésor est fermé" });
-    expect(chest.querySelector("[data-lid]")?.getAttribute("data-lid")).toBe("ferme");
-    expect(chest.querySelector("svg.lucide-lock")).not.toBeNull();
+    expect(chest.getAttribute("data-open")).toBe("false");
+    expect(chest.getAttribute("data-phase")).toBe("ferme");
+    // Fermé : l'image fixe, pas de clip qui se lance.
+    expect(chest.querySelector("video")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Allez, on réessaie/ }));
     expect(onRegen).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("link", { name: /Palier suivant/ })).toBeNull();

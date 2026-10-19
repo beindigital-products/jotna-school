@@ -10,7 +10,7 @@ import { EXOS_PER_LEVEL, STARS_PER_EXERCISE, palierStarRating } from "@/convex/p
 import { JotnaLoader } from "@/components/jotna-loader";
 import { BadgeShield } from "@/components/student/badge-icon";
 import { ActionButton3D, useGameFeel } from "@/components/student/game-kit";
-import { Coffre3D } from "@/components/student/game-kit/coque-coffre-3d";
+import { Coffre } from "@/components/student/game-kit/coffre";
 import { FrostBar, useBareStatusBar } from "@/components/student/game/session-stage";
 import { SpeechBubble } from "@/components/student/game/speech-bubble";
 import { LevelUpOverlay } from "@/components/student/level-up-overlay";
@@ -32,7 +32,8 @@ const QUESTS_CELEBRATED_KEY = "jotna:questsCelebratedDay";
  * que le prochain pas s'offre en un bouton. La séance, elle, reste sobre.
  *
  * Deux issues, une même scène. Palier validé : Pio fête, le COFFRE AU TRÉSOR
- * s'ouvre à ses pieds (`Coffre3D`, du bois et de l'or en CSS 3D), la lumière
+ * s'ouvre à ses pieds (`Coffre`, un clip du studio : le couvercle se lève sur
+ * du bois et de l'or), la lumière
  * en sort, l'éclat jaillit, les trois grandes étoiles tombent une à une, la
  * récolte se compte sous ses yeux, le palier suivant s'ouvre sur le sentier et
  * les confettis tombent (plafonnés par le niveau de l'appareil). Palier
@@ -44,8 +45,9 @@ const QUESTS_CELEBRATED_KEY = "jotna:questsCelebratedDay";
  * CE QUI BOUGE : des `transform` et de l'`opacity`. Les jauges avancent en
  * `translateX` (une barre pleine largeur qui glisse dans sa rainure), plus en
  * `width` ; Pio a une ombre au sol peinte, pas un `drop-shadow` sur son clip.
- * Le décor du héros (ciel, soleil) est une couche rognée à part : le coffre,
- * en 3D, n'est jamais dans un parent `overflow: hidden` (Safari l'aplatirait).
+ * Le décor du héros (ciel, soleil) est une couche rognée à part : le coffre
+ * déborde de son cadre (le couvercle ouvert monte au-dessus de la caisse, sa
+ * lueur éclaire autour) et n'est jamais dans un parent `overflow: hidden`.
  *
  * Les récompenses différées vivent ici aussi, comme sur l'ancien écran de
  * victoire : la carte du trophée débloqué (D25), l'écran de niveau (D2b/D24)
@@ -145,7 +147,7 @@ export function PalierResultScreen({
       {/* LE CIEL MONTE JUSQU'À L'ENCOCHE. Le héros s'étend sous la barre
           d'état, d'un bord à l'autre, sans arrondi en haut : une seule
           surface, du bord de l'écran au sol. Le décor (dégradé, soleil) est
-          une couche rognée derrière ; le contenu, et le coffre en 3D, sont
+          une couche rognée derrière ; le contenu, et le coffre qui déborde, sont
           devant, hors de tout `overflow: hidden`. */}
       <motion.section
         initial={{ opacity: 0 }}
@@ -188,7 +190,7 @@ export function PalierResultScreen({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 220, damping: 18, delay: 0.3 }}
             >
-              <Coffre3D open={validated} size={132} />
+              <Coffre open={validated} size={132} />
             </motion.div>
           </div>
 
