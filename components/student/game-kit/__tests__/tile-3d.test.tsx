@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { ELEVATIONS, elevationFor, Tile3D, toneFor } from "../tile-3d";
+import { ELEVATIONS, LONG_WORD, elevationFor, Tile3D, toneFor } from "../tile-3d";
 import { TILE_CORRECT_TONE, TILE_WRONG_TONE, tileChosenTone, tileRestTone } from "../tones";
 import { GameFeelProvider } from "../use-game-feel";
 
@@ -231,5 +231,30 @@ describe("Tile3D — l'inclinaison par l'appareil (`useDeviceTilt`)", () => {
     );
     tilt({ beta: 10, gamma: 10 });
     expect(rootVar("--gk-dev-rx")).toBe("");
+  });
+});
+
+describe("Tile3D — un mot long ne se coupe pas au milieu", () => {
+  it("écrit plus petit un mot seul de dix lettres ou plus (« grandmother »), et rien d'autre", () => {
+    render(
+      <>
+        <Tile3D onPress={() => {}} size="lg">
+          grandmother
+        </Tile3D>
+        <Tile3D onPress={() => {}} size="lg">
+          seventeen
+        </Tile3D>
+        <Tile3D onPress={() => {}} size="lg">
+          la grand-mère
+        </Tile3D>
+      </>,
+    );
+    expect(LONG_WORD).toBe(10);
+    const html = (label: string) => screen.getByRole("button", { name: label }).innerHTML;
+    // Un mot long : text-base. Un mot de neuf lettres et une phrase de plusieurs mots : la taille de la tuile (text-xl).
+    expect(html("grandmother")).toContain("text-base");
+    expect(html("grandmother")).not.toContain("text-xl");
+    expect(html("seventeen")).toContain("text-xl");
+    expect(html("la grand-mère")).toContain("text-xl");
   });
 });

@@ -89,6 +89,9 @@ export type TileTone = number | "neutre";
 type Elevation = { depth: number; lift: number; scale: number; shadowY: number; shadowScale: number; shadowOpacity: number };
 
 /** L'échelle des élévations, en pixels. */
+/** Le nombre de lettres à partir duquel un mot seul est écrit plus petit dans une tuile. */
+export const LONG_WORD = 10;
+
 export const ELEVATIONS: Record<TileElevation, Elevation> = {
   plat: { depth: 0, lift: 0, scale: 1, shadowY: 1, shadowScale: 0.98, shadowOpacity: 0.12 },
   posee: { depth: 5, lift: 0, scale: 1, shadowY: 6, shadowScale: 0.99, shadowOpacity: 0.3 },
@@ -208,7 +211,11 @@ export const Tile3D = forwardRef<HTMLElement, Props>(function Tile3D(
     color: colors.text,
   };
 
-  const sizeClass = size === "lg" ? "min-h-16 px-5 py-3.5 text-xl" : "min-h-14 px-4 py-3 text-lg";
+  // Un mot seul de dix lettres ou plus (« grandmother », « bibliothèque ») est plus large que le texte d'une tuile à deux colonnes
+  // sur un téléphone de 400 points : `overflow-wrap: anywhere` le coupait au milieu (« grandmothe » puis « r »). Ce mot-là passe en
+  // `text-base`, ce qui le fait tenir jusqu'à 360 points ; les autres tuiles gardent leur taille.
+  const longWord = typeof children === "string" && children.length >= LONG_WORD && !/\s/u.test(children);
+  const sizeClass = longWord ? "min-h-14 px-3 py-3 text-base" : size === "lg" ? "min-h-16 px-5 py-3.5 text-xl" : "min-h-14 px-4 py-3 text-lg";
   const stateIcon =
     state === "juste" ? (
       <Check className="h-5 w-5" strokeWidth={3.5} aria-hidden />
