@@ -305,6 +305,11 @@ const CASES: Record<DefectCode, AuditInput> = {
   text_replacement_char: qcm({ prompt: "Quelle est la capit�le du Sénégal ?" }),
   text_english_in_young_class: qcm({ class: "CP", subject: "Français", prompt: "Quel animal dit the dog ?" }, { options: ["Le chien", "Le chat"] }),
   text_foreign_currency: shortAnswer({ prompt: "Un cahier coûte 5 euros. Combien coûtent 2 cahiers ?" }, { acceptedAnswers: ["10"] }),
+  // --- Images des tuiles du CI ---
+  ci_tile_without_picture: qcm(
+    { prompt: "Lequel n'est pas comme les autres ?", class: "CI", subject: "Mathématiques", answerKey: "le diplodocus" },
+    { options: ["le diplodocus", "la mangue", "le chat"], correctIndex: 0 },
+  ),
 };
 
 describe("auditExercise : un cas par code de défaut", () => {
@@ -1537,5 +1542,69 @@ describe("trois défauts du modèle vus dans les paliers du CI en prod", () => {
     const rank = (prompt: string) => codesOf(order(["ma", "la", "de"], { prompt, class: "CI", subject: "Français" }));
     expect(rank("Place chaque syllabe dans la bonne zone.")).toContain("order_prompt_mentions_zones");
     expect(rank("Remets les syllabes dans l'ordre pour former un mot.")).not.toContain("order_prompt_mentions_zones");
+  });
+});
+
+describe("les images des tuiles du CI : ce que la consigne n'a pas obtenu", () => {
+  const ciQcm = (options: string[], over: Partial<AuditInput> = {}) =>
+    auditExercise(
+      qcm(
+        { prompt: "Lequel n'est pas comme les autres ?", class: "CI", subject: "Mathématiques", answerKey: options[0], ...over },
+        { options, correctIndex: 0 },
+      ),
+    );
+  const gap = (options: string[], over: Partial<AuditInput> = {}) =>
+    ciQcm(options, over).find((defect) => defect.code === "ci_tile_without_picture");
+
+  it("signale en CI une chose nommée qui n'a pas d'image, sans jamais bloquer", () => {
+    const defect = gap(["le diplodocus", "la mangue", "le chat"]);
+    expect(defect?.severity).toBe("warning");
+    expect(defect?.detail).toContain("« le diplodocus »");
+    expect(defect?.detail).not.toContain("mangue");
+    expect(DEFECT_SEVERITY.ci_tile_without_picture).toBe("warning");
+    expect(blockingDefects(ciQcm(["le diplodocus", "la mangue", "le chat"]))).toEqual([]);
+  });
+
+  it("ne dit rien quand toutes les choses ont leur image, avec ou sans émoji de tête", () => {
+    expect(gap(["la mangue", "la banane", "le chat"])).toBeUndefined();
+    expect(gap(["🥭 la mangue", "🍌 la banane", "🐈 le chat"])).toBeUndefined();
+  });
+
+  it("ne juge ni un pronom suivi d'un verbe, ni un groupe de plusieurs mots, ni un mot seul", () => {
+    expect(gap(["le cacher", "l'aider", "le ranger"])).toBeUndefined();
+    expect(gap(["le maître parle", "du matériel commun", "le feu d'artifice"])).toBeUndefined();
+    expect(gap(["Fatou", "Lait", "Lemon"])).toBeUndefined();
+    // « Lait » n'est pas « La » et « it » : l'espace est obligatoire après un article plein.
+    expect(gap(["le panier", "un cahier", "l'ami"])?.detail).toContain("« le panier »");
+  });
+
+  it("ne juge pas les autres classes", () => {
+    expect(gap(["le diplodocus", "la mangue", "le chat"], { class: "CE2" })).toBeUndefined();
+    expect(gap(["le diplodocus", "la mangue", "le chat"], { class: "CP" })).toBeUndefined();
+  });
+
+  it("ne juge pas un énoncé qui demande de lire ou de nommer : l'écran retire les images", () => {
+    expect(gap(["le diplodocus", "la mangue", "le chat"], { prompt: "Quel est le nom de cette forme ? ⬛" })).toBeUndefined();
+    expect(gap(["le diplodocus", "la mangue", "le chat"], { prompt: "Quel mot commence par le son « a » ?" })).toBeUndefined();
+  });
+
+  it("lit les tuiles des quatre types, pas l'énoncé ni les indices", () => {
+    const base = { class: "CI", subject: "Sciences", answerKey: "" } as const;
+    const tiles = (input: AuditInput) =>
+      auditExercise(input).find((defect) => defect.code === "ci_tile_without_picture")?.detail ?? "";
+    expect(tiles(order(["le diplodocus", "la mangue", "le chat"], { ...base, prompt: "Mets ces animaux du plus petit au plus grand." }))).toContain("diplodocus");
+    expect(
+      tiles(match([["le diplodocus", "Rrr"], ["la mangue", "Miam"], ["le chat", "Miaou"]], { ...base, prompt: "Relie chaque animal à son cri." })),
+    ).toContain("diplodocus");
+    expect(
+      tiles(
+        dragDrop(
+          { zones: ["Savane", "Ferme"], items: [{ text: "le diplodocus", correctZone: "Savane" }, { text: "la poule", correctZone: "Ferme" }] },
+          { ...base, prompt: "Glisse chaque animal là où il vit." },
+        ),
+      ),
+    ).toContain("diplodocus");
+    // Un énoncé qui nomme une chose sans image ne déclenche rien : seules les tuiles comptent.
+    expect(gap(["la mangue", "la banane", "le chat"], { prompt: "Où est le diplodocus ?", hints: ["Pense au diplodocus.", "Regarde bien."] })).toBeUndefined();
   });
 });

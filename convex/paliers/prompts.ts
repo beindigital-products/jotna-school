@@ -20,6 +20,7 @@ import {
   exerciseImageCatalogueText,
   type ExerciseImage,
 } from "../../lib/exercise-images";
+import { ITEM_IMAGES, type ItemImage } from "../../lib/item-images";
 
 export type ClassLevel = "CI" | "CP" | "CE1" | "CE2" | "CM1" | "CM2";
 
@@ -188,6 +189,80 @@ ${exerciseImageCatalogueText(catalogue)}
 - Jamais d'image pour COMPTER : le comptage se fait en émojis. Jamais d'image dont
   la réponse est écrite dessus.
 - Au plus 3 exercices avec image par palier.`;
+}
+
+/**
+ * LES IMAGES SUR LES TUILES DU CI : UNE RÈGLE PERMANENTE (`lib/item-images.ts`).
+ *
+ * Un enfant de CI ne lit pas : « Lion », « la table » ou « midi » ne lui disent
+ * rien. L'application montre donc, à côté du nom, l'image de toute chose que nomme
+ * une option, une étiquette, une case ou un élément à ranger (demande du
+ * propriétaire, 19 octobre 2026 : « pour les classes de CI, il faut toujours
+ * mettre l'image de référence »). Le serveur n'a pas accès au studio d'images, et
+ * l'écran ne reconnaît qu'un nom EXACT du catalogue : le modèle ne désigne aucune
+ * image, il NOMME les choses avec les mots du catalogue. Un nom hors catalogue
+ * donnerait une tuile sans image au milieu de tuiles illustrées, qui désigne la
+ * bonne réponse par élimination : l'écran retire alors les images de tout
+ * l'exercice (`lib/item-pictures.ts`, garde-fou d).
+ *
+ * La liste est LUE dans le catalogue à chaque génération : une image ajoutée au
+ * catalogue entre seule dans la consigne, il n'y a rien à recopier ici. Vide tant
+ * que le catalogue est vide. Le contrôleur (`exerciseAudit.ts`,
+ * `ci_tile_without_picture`) signale ce que la consigne n'a pas obtenu, et
+ * `convex/__tests__/templatePictures.test.ts` tient les gabarits du code à la même
+ * règle.
+ */
+const ITEM_GROUP_LABELS: Record<string, string> = {
+  animaux: "animaux",
+  aliments: "aliments et plats",
+  plantes: "plantes",
+  corps: "corps",
+  objets: "objets",
+  vetements: "vêtements",
+  transports: "transports",
+  lieux: "lieux et nature",
+  signalisation: "route",
+  solides: "solides",
+  formes: "formes",
+  moments: "moments de la journée",
+};
+
+export function tilePicturesRule(catalogue: readonly ItemImage[] = ITEM_IMAGES): string {
+  if (catalogue.length === 0) return "";
+  const byGroup = new Map<string, string[]>();
+  for (const entry of catalogue) {
+    const list = byGroup.get(entry.group) ?? [];
+    list.push(entry.words[0]);
+    byGroup.set(entry.group, list);
+  }
+  // Les groupes dans l'ordre de `ITEM_GROUP_LABELS`, puis ceux qu'il ne connaît pas encore.
+  const known = Object.keys(ITEM_GROUP_LABELS).filter((group) => byGroup.has(group));
+  const others = [...byGroup.keys()].filter((group) => !(group in ITEM_GROUP_LABELS));
+  const lines = [...known, ...others]
+    .map((group) => `- ${ITEM_GROUP_LABELS[group] ?? group} : ${byGroup.get(group)!.join(", ")}`)
+    .join("\n");
+  return `
+[Images sur les tuiles — CI, règle permanente]
+L'enfant de CI ne lit pas. Quand une option, une étiquette, une case ou un élément à
+ranger NOMME une chose, l'application affiche toute seule son image à côté du mot : tu
+n'écris ni champ "image" ni description. Il n'y a d'image que pour les noms de cette
+liste fermée :
+${lines}
+- Nomme une chose avec CES mots, EXACTEMENT, au singulier, avec son article (« le chat »,
+  « la mangue », « l'éléphant ») ou seule (« Chat ») : « le poulet », « les chats »,
+  « 3 pommes » n'ont pas d'image. Un émoji devant le nom reste permis (« 🐕 le chien »).
+- Une chose qui n'est pas dans la liste : ne la nomme pas dans une option ni une
+  étiquette. Prends-en une de la liste : il y en a toujours assez pour classer, ranger,
+  relier ou trouver l'intrus.
+- Dans un même exercice, toutes les options qui nomment une chose viennent de la liste :
+  si une seule n'a pas d'image, l'application retire celles des autres.
+- Les catégories (« Fruits », « Animaux », « Naturel », « Fabriqué ») n'ont pas d'image :
+  c'est voulu, écris-les librement.
+- En anglais, l'émoji de la chose devant le mot (« 🐈 cat ») est ce qui donne l'image :
+  garde-le.
+- Exceptions, où l'application retire elle-même l'image parce qu'elle donnerait la
+  réponse : lire un mot ou une syllabe, nommer une forme ou un solide, relier un mot à
+  l'émoji de la même chose. Là, les mots n'ont pas à venir de la liste.`;
 }
 
 const STAGE_LABEL: Record<DifficultyStage, string> = {
@@ -609,7 +684,7 @@ ${SHORT_ANSWER_RULE}`;
   · compter 1 à 10 émojis, comparer deux nombres, reconnaître une forme (qcm).
 - Hors de propos au CI : une question de culture générale, une définition, un mot
   abstrait, une phrase à lire seule, une dictée, une réponse rédigée.
-- Un trou se choisit dans une liste (qcm ou fill-blank) : on ne le tape pas.`;
+- Un trou se choisit dans une liste (qcm ou fill-blank) : on ne le tape pas.${tilePicturesRule()}`;
 }
 
 function topicBlock(description: string | undefined): string {

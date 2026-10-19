@@ -373,6 +373,7 @@ les `blocking` d'abord :
 | Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots), `fill_blank_word_unknown` (CI et CP : le trou d'une lettre ou d'une syllabe écrit un mot absent de `paliers/knownWords.ts`, « ___ngue » avec « m »), `fill_blank_word_unreadable` (« Le mot est ___ (pa, ra, ni) » : le mot n'est écrit nulle part), `fill_blank_article_gender` (« Le ___ » avec « poule », « Un ___ » avec « mangue » : l'article collé au trou n'est pas du genre du mot ; seuls les noms de `paliers/genders.ts`, dont le genre est sûr, sont jugés ; « mon, ton, son » devant une voyelle sont laissés) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
 | Indices | | `hints_few` (moins de 2), `hint_empty`, `hints_duplicated`, `hint_gives_answer` (le 1er écrit le bon choix sans parler des autres), `hint_dangling_visual` |
 | Texte | `text_placeholder` (« undefined », « null », « NaN »), `text_replacement_char` (�) | `text_double_space`, `text_markup` (`**`, `#`, backtick, balise), `text_english_in_young_class` (anglais dans un énoncé de CI ou de CP hors Anglais), `text_foreign_currency` (euros, dollars : FCFA seul) |
+| Images (CI) | | `ci_tile_without_picture` (en CI, une tuile « article + un nom » dont la chose n'a pas d'image au catalogue ; voir « Des images sur les tuiles (CI) » : jamais bloquant, et l'écran retire lui-même les images quand l'énoncé demande de lire, de décoder ou de nommer) |
 
 **La prudence est la règle.** Un faux positif écarte un bon exercice et le
 palier se refait pour rien : un défaut n'est `blocking` que si aucun exercice
@@ -520,6 +521,48 @@ partie du corps, objet, véhicule, signal de route, lieu, solide, moment du
 jour, forme) montre une vraie image de référence, un dessin propre, et garde
 son nom écrit. L'image ne remplace pas le mot : l'enfant reconnaît la chose, et
 le mot reste là pour qu'il apprenne à le lire.
+
+**Une règle permanente.** Le propriétaire a demandé (19 octobre 2026) que la
+règle ne dépende de la mémoire de personne : elle est écrite dans les
+instructions de génération et tenue à quatre endroits, du plus tôt au plus
+tard. À ne pas affaiblir pour faire passer un contenu.
+
+1. Les instructions de génération. `tilePicturesRule()`
+   (`convex/paliers/prompts.ts`) lit le catalogue (`ITEM_IMAGES`) et écrit au
+   modèle, pour la classe CI seulement, la liste fermée des mots qu'il peut
+   mettre sur une tuile, groupe par groupe, et ce qu'il doit en faire : nommer
+   une chose avec ces mots exactement, au singulier ; ne nommer aucune chose
+   qui n'y est pas ; ne pas mêler, dans un même exercice, des choses de la liste
+   et d'autres (l'écran retirerait toutes les images) ; garder les catégories
+   (« Fruits », « Naturel ») en mots, sans image ; garder l'émoji devant un mot
+   anglais ; et les exceptions où l'écran retire lui-même l'image. Elle est
+   ajoutée à `readingLearnerRules("CI")`, donc aux trois consignes système (base,
+   personnalisée, variation). La liste suit le catalogue toute seule : une image
+   ajoutée est annoncée au modèle à la génération suivante, rien n'est à
+   recopier.
+2. Le contrôleur. `ci_tile_without_picture` (`convex/paliers/exerciseAudit.ts`)
+   est un avertissement : en CI, une tuile de QCM, de mise en ordre,
+   d'association ou de glisser-déposer qui a la forme « article + un nom »
+   (« le diplodocus ») sans image au catalogue. Il ne bloque jamais (l'exercice
+   reste jouable), il se lit dans le rapport d'audit et dit quel mot manque. Il se
+   tait quand l'énoncé demande de lire, de décoder ou de nommer, parce que
+   l'écran retire alors les images lui-même, et il ne juge ni un mot seul (un
+   prénom, une syllabe), ni un groupe de plusieurs mots, ni un verbe à
+   l'infinitif (« le cacher »). Sur l'export de production du 19 octobre 2026,
+   il signalait 4 exercices avant la vague 2 (de vrais manques), et aucun après.
+3. Les tests des gabarits. `convex/__tests__/templatePictures.test.ts` casse si
+   un gabarit du code (les listes de choses de `convex/paliers/games/things.ts`,
+   les moments de la journée, les noms des formes et des solides) nomme une
+   chose sans image, et fait passer plus de mille exercices fabriqués dans le
+   contrôleur. Un gabarit qui ajoute une chose à sa liste doit d'abord lui
+   fabriquer son image.
+4. Le catalogue lui-même. `lib/__tests__/item-images.test.ts` : chaque entrée a
+   son fichier, chaque fichier son entrée, un mot ou un émoji ne va qu'à une
+   seule image. `AGENTS.md` porte la règle pour tout agent qui touche au contenu.
+
+Quand une chose n'a pas d'image : la fabriquer d'abord (« Ajouter une image »,
+plus bas), l'ajouter au catalogue, PUIS écrire le contenu qui la nomme. Jamais de
+tuile sans image en CI, jamais de nom hors catalogue « pour l'instant ».
 
 **Le principe : l'image se résout à l'affichage.** Aucune donnée ne change. Le
 texte d'une tuile reste la chaîne que le serveur a envoyée, et la réponse qui
@@ -864,7 +907,7 @@ pluriel). Restent volontairement sans image : les pluriels (« Ronds », « Frui
 et les groupes à préposition, qu'une image au singulier trahirait ; « main droite »
 et « main gauche », qu'une main dessinée trancherait ; les personnes et les
 prénoms ; « milier », que le modèle a écrit pour le plant de mil et qui n'est pas
-du français (la tuile reste sans image). Huit images ont été
+du français (la tuile reste signalée par le contrôleur). Huit images ont été
 refaites après relecture (un doigt manquant, un short coupé par le bord, une
 peau trop claire…). `ferme`, `marché` (« marche » sans son accent) et `tente`
 sont des mots ambigus : seuls, ils pourraient être des verbes.
@@ -877,13 +920,17 @@ galerie et la séance factice montre les images à un spécimen de CP. Le budget
 de hauteur a été mesuré sur des spécimens de CI : le mesurer de nouveau sur des
 exercices de CP.
 
-**Ordre de déploiement.** Le web seulement : un déploiement du site, sans
-Convex (aucune fonction ne change) et sans régénérer de palier. Les élèves du
-web voient les images dès que le site est en ligne. Les images sont des
-fichiers statiques de l'export : les applications iOS et Android les reçoivent
-avec une reconstruction ou une mise à jour à distance, comme tout fichier
-statique (`docs/capacitor-ios.md`), et gardent les écrans d'avant en
-attendant.
+**Ordre de déploiement.** Pour que l'élève voie les images, le web seulement : un
+déploiement du site, sans Convex et sans régénérer de palier. Les élèves du web
+voient les images dès que le site est en ligne. Les images sont des fichiers
+statiques de l'export : les applications iOS et Android les reçoivent avec une
+reconstruction ou une mise à jour à distance, comme tout fichier statique
+(`docs/capacitor-ios.md`), et gardent les écrans d'avant en attendant. La
+consigne de génération (`tilePicturesRule`) et le contrôleur
+(`ci_tile_without_picture`) vivent dans `convex/` : ils n'agissent qu'après un
+déploiement Convex, et la consigne ne change que les exercices générés ensuite,
+ceux qui sont déjà en base gardent leurs tuiles et reçoivent leurs images à
+l'écran.
 
 **Ce qui reste à faire.** Regarder une séance de CI sur le web après le
 déploiement, puis sur un téléphone ; les mesures de hauteur sont celles de
@@ -891,7 +938,9 @@ Chromium, pas de Safari ni du WebView Android (l'appui long sur une pastille,
 la césure des mots, les unités `cqw` du repli sont à voir sur le simulateur
 iPhone 17 avec `scripts/native-loop-ios.sh`). Sur l'export de production, plus
 aucune tuile qui nomme une chose n'est sans image, sauf quatre (voir « La
-couverture sur le contenu réel »). Deux décisions attendent le propriétaire : les 12 exercices « Quel est le nom de
+couverture sur le contenu réel »). Les choses que le contenu à venir nommera sans
+image seront signalées par le contrôleur, et se règlent par une image au
+catalogue. Deux décisions attendent le propriétaire : les 12 exercices « Quel est le nom de
 cette forme ? » (6) et « Quel est le nom du solide… ? » (6), où l'enfant ne peut
 pas lire les noms des options et où l'image donnerait la réponse, restent sans
 image ; et les 24 exercices de position, coupés par le garde-fou b sans fuite

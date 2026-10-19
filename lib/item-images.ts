@@ -84,6 +84,14 @@
  * du scooter : sans elles, une tuile sans image au milieu de tuiles illustrées
  * désigne la bonne réponse par élimination.
  *
+ * LA RÈGLE EST PERMANENTE (AGENTS.md, « Les élèves de CI ne lisent pas »), pas une
+ * liste à compléter un jour : la consigne de génération emprunte ses mots à ce
+ * catalogue (`tilePicturesRule`, `convex/paliers/prompts.ts`), le contrôleur signale
+ * une tuile qui nomme une chose absente d'ici (`ci_tile_without_picture`,
+ * `convex/paliers/exerciseAudit.ts`), et `convex/__tests__/templatePictures.test.ts`
+ * casse si un gabarit du code en nomme une. Une chose sans image n'a qu'une issue :
+ * son image, ajoutée ici AVANT le contenu qui la nomme.
+ *
  * LA VAGUE 2 a ajouté soixante-dix images, pour les mots que les paliers de CI en
  * production nommaient encore sans image : les parties de la plante, les plats, le
  * corps et les cinq sens, les feux et le passage piéton, des lieux et des scènes (la

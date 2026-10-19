@@ -45,6 +45,7 @@ import { BLANK_MARK } from "./games/types";
 import { articleGenderMismatch } from "./genders";
 import { KNOWN_WORDS } from "./knownWords";
 import { bracketSounds, hasSound, knownSound } from "./sounds";
+import { isPictureTileClass, matchTile, promptForbidsPictures, splitTile } from "../../lib/item-pictures";
 
 // ===========================================================================
 // LES CODES DE DÉFAUT ET LEUR GRAVITÉ
@@ -143,6 +144,8 @@ export const DEFECT_SEVERITY = {
   text_replacement_char: "blocking",
   text_english_in_young_class: "warning",
   text_foreign_currency: "warning",
+  // --- Images des tuiles du CI --------------------------------------------
+  ci_tile_without_picture: "warning",
 } as const satisfies Record<string, Severity>;
 
 export type DefectCode = keyof typeof DEFECT_SEVERITY;
@@ -202,7 +205,7 @@ const MIN_MATCH_PAIRS = 3;
 // ===========================================================================
 
 const PICTOGRAPH = /\p{Extended_Pictographic}/u;
-const PICTOGRAPHS = /\p{Extended_Pictographic}[︎️]?/gu;
+const PICTOGRAPHS = /\p{Extended_Pictographic}[\uFE0E\uFE0F]?/gu;
 
 /** Espaces ramenés à un, bords retirés : ce que l'enfant lit comme « le même texte ». */
 function collapse(text: string): string {
@@ -473,7 +476,64 @@ function auditInto(found: Findings, input: AuditInput): void {
           break;
       }
       auditHints(found, input, prompt, payload);
+      auditCiTilePictures(found, input, payload);
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Les images des tuiles du CI
+// ---------------------------------------------------------------------------
+
+/** Les types dont les tuiles montrent une image (`docs/paliers-et-exercices.md`). */
+const PICTURE_TILE_TYPES = new Set(["qcm", "order", "match", "drag-drop"]);
+/** Les tuiles, par opposition à l'énoncé et aux indices (les étiquettes de `shownTexts`). */
+const TILE_WHERE = /^(?:l'option|la paire|l'élément|la zone|l'étiquette)/;
+/**
+ * Un article et UN mot : la forme d'une tuile qui nomme une chose (« la fenêtre »,
+ * « un arbre », « l'ami »). L'espace est obligatoire après un article plein, sans
+ * quoi « Lait » serait « La » et « it » ; un groupe plus long (« le feu d'artifice »,
+ * « le maître parle ») n'est pas jugé.
+ */
+const ARTICLE_THEN_NOUN = /^(?:(?:le|la|les|un|une|des|du|de la)\s+|(?:de\s+)?l['’]\s?)([\p{L}'’-]+)$/iu;
+/**
+ * « le cacher », « l'aider », « le ranger » sont un pronom et un verbe, pas une
+ * chose : un mot en -er (hors -ier : cahier, panier) ne se juge pas. On manque
+ * « le dîner » ; on ne signale plus une consigne de comportement.
+ */
+const LOOKS_LIKE_INFINITIVE = /(?<!i)er$/iu;
+
+/**
+ * LA RÈGLE DU CI, VUE DU CONTRÔLEUR : en CI, une tuile qui nomme une chose a son
+ * image (`lib/item-images.ts`). La consigne de génération (`tilePicturesRule`,
+ * `prompts.ts`) demande au modèle de n'employer que les mots du catalogue ; ceci
+ * signale ce qu'elle n'a pas obtenu : une tuile en forme de nom (un article et un
+ * ou deux mots) que l'écran ne reconnaît pas. C'est un avertissement, jamais un
+ * défaut bloquant : le contrôleur ne sait pas distinguer une chose d'un métier ou
+ * d'une catégorie (« le maître », « les animaux »), et un exercice jouable n'est
+ * pas écarté pour une image qui manque. Il sert à CHIFFRER le trou du catalogue :
+ * `pregen:auditExercises` compte le code, `scripts/item-pictures-coverage.mjs`
+ * liste les noms à illustrer.
+ *
+ * Sans objet quand l'énoncé demande de lire, de décoder ou de nommer
+ * (`promptForbidsPictures`) : l'écran retire alors les images, il n'en manque aucune.
+ */
+function auditCiTilePictures(found: Findings, input: AuditInput, payload: Record<string, unknown>): void {
+  if (!isPictureTileClass(input.class) || !PICTURE_TILE_TYPES.has(input.type)) return;
+  if (promptForbidsPictures(input.prompt)) return;
+  const gaps = new Set<string>();
+  for (const shown of shownTexts(input, payload)) {
+    if (!TILE_WHERE.test(shown.where)) continue;
+    const name = splitTile(shown.text).rest.trim();
+    const noun = ARTICLE_THEN_NOUN.exec(name)?.[1];
+    if (!noun || LOOKS_LIKE_INFINITIVE.test(noun) || matchTile(shown.text)) continue;
+    gaps.add(`« ${name} »`);
+  }
+  if (gaps.size > 0) {
+    found.add(
+      "ci_tile_without_picture",
+      `en CI, ${[...gaps].slice(0, 4).join(", ")} nomme peut-être une chose qui n'a pas d'image (ajouter l'image au catalogue, ou nommer une chose de la liste)`,
+    );
   }
 }
 
