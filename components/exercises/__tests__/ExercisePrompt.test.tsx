@@ -113,7 +113,7 @@ describe("la consigne d'un exercice : on n'en perd jamais un mot", () => {
     expect(socles).toHaveLength(1);
     expect(socles[0].textContent).toBe(scene);
     expect(socles[0].className).toContain("whitespace-pre");
-    expect(container.querySelector("p")?.textContent).toBe(`Regarde le quadrillage.\n${scene}\nLequel est au milieu ?`);
+    expect(withoutNbsp(container.querySelector("p")?.textContent)).toBe(`Regarde le quadrillage.\n${scene}\nLequel est au milieu ?`);
   });
 
   it("ne coupe pas un mot à trait d'union, et laisse les autres mots en texte nu", () => {
