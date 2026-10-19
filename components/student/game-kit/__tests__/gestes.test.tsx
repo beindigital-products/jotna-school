@@ -76,6 +76,31 @@ describe("DropBox, StepNumber, StepSlot — les cases", () => {
     expect(box.getAttribute("data-state")).toBe("juste");
   });
 
+  it("une boîte qui nomme une chose pose son image dans la plaque, devant le nom ; le titre reste l'enfant direct de la boîte", () => {
+    render(
+      <DropBox tone={0} label="La poule" picture={<span data-testid="pastille" />} armed={false} over={false}>
+        <span />
+      </DropBox>,
+    );
+    const heading = screen.getByRole("heading", { name: "La poule" });
+    expect(heading.parentElement?.className).toContain("gk-box");
+    expect(heading.firstElementChild).toBe(screen.getByTestId("pastille"));
+    expect(heading.textContent).toBe("La poule");
+    // L'image et le nom se rangent sur une ligne si la plaque est large, l'un sous l'autre sinon.
+    expect(heading.className).toContain("flex-wrap");
+  });
+
+  it("sans image, la plaque est celle d'avant, au caractère près", () => {
+    render(
+      <DropBox tone={0} label="Ronds" armed={false} over={false}>
+        <span />
+      </DropBox>,
+    );
+    expect(screen.getByRole("heading", { name: "Ronds" }).className).toBe(
+      "relative mx-auto mt-1.5 w-fit max-w-[calc(100%-1.5rem)] rounded-xl border-2 border-white/80 bg-[#fff8e6] px-4 py-1.5 text-center font-display text-lg font-extrabold leading-tight shadow-[0_3px_0_#d6c39a] [overflow-wrap:anywhere]",
+    );
+  });
+
   it("la boîte survolée s'enfonce (transform seulement)", () => {
     render(
       <DropBox tone={1} label="Carrés" armed={false} over>

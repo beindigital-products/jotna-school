@@ -117,6 +117,37 @@ describe("Tile3D — un bouton, avec sa sémantique", () => {
     expect(tile.getAttribute("data-elevation")).toBe("saisie");
   });
 
+  /**
+   * LA FACE REMPLIT SA CELLULE. Dans une grille, la racine d'une tuile courte s'étire à la
+   * hauteur de sa voisine, mais sa face restait courte, avec l'ombre de la tuile étirée en bande
+   * fantôme dessous. La racine, la couche d'objet et la face sont trois colonnes qui grandissent :
+   * jsdom ne mesure rien, le test lit donc la chaîne qui fait la mise en page. Pas de hauteur en
+   * pourcentage : dans une colonne étirée (l'association), chaque tuile en prendrait la hauteur entière.
+   */
+  it("la racine, l'objet et la face grandissent ensemble : la face de la tuile courte remplit la cellule étirée", () => {
+    const { container } = render(<Tile3D onPress={() => {}}>le bus</Tile3D>);
+    const root = container.firstElementChild as HTMLElement;
+    const object = root.querySelector(".gk-spring") as HTMLElement;
+    const face = root.querySelector(".gk-face-light") as HTMLElement;
+    const classes = (element: Element) => (element.getAttribute("class") ?? "").split(/\s+/);
+    expect(classes(root)).toEqual(expect.arrayContaining(["flex", "flex-col", "w-full"]));
+    expect(classes(object)).toEqual(expect.arrayContaining(["flex", "flex-col", "grow"]));
+    expect(classes(face)).toEqual(expect.arrayContaining(["flex", "grow", "items-center"]));
+    // Une hauteur en pourcentage ferait de chaque tuile d'une colonne étirée la colonne entière.
+    for (const element of [root, object, face]) {
+      expect(classes(element).filter((name) => /^h-(full|\[)/.test(name))).toEqual([]);
+    }
+  });
+
+  it("garde les mêmes couches, dans le même ordre : ombre, objet (flanc, face)", () => {
+    const { container } = render(<Tile3D onPress={() => {}}>le bus</Tile3D>);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.children).toHaveLength(2);
+    expect(root.children[1].classList.contains("gk-spring")).toBe(true);
+    expect(root.children[1].children).toHaveLength(2);
+    expect(root.children[1].children[1].classList.contains("gk-face-light")).toBe(true);
+  });
+
   it("au niveau sobre, aucune écoute du doigt pour l'inclinaison", () => {
     render(
       <GameFeelProvider level="sobre">

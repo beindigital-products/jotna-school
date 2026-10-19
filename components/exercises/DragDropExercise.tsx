@@ -20,7 +20,9 @@ import { dragDropAnswer } from "@/lib/exerciseAnswers";
 import { ActionButton3D, GESTURE_ACCENT, Reward, Tile3D, useGameFeel, type TileState } from "@/components/student/game-kit";
 import { graphemeCount } from "@/components/student/game-kit/choix-texte";
 import { DropBox } from "@/components/student/game-kit/gestes-cases";
-import { TileGlyphs } from "@/components/student/game-kit/gestes-glyphes";
+import type { ItemImage } from "@/lib/item-images";
+import { useTilePictures } from "./item-pictures";
+import { glyphTilesOf, isDenseTileCount, TilePicture, TileSticker, tileName } from "./tile-picture";
 
 /**
  * LE GLISSER-DÉPOSER SE JOUE AVEC DE VRAIES BOÎTES
@@ -54,6 +56,29 @@ import { TileGlyphs } from "@/components/student/game-kit/gestes-glyphes";
  * « Valider » est posé dans la barre d'action (`ExerciseActions`,
  * `game-parts.tsx`) : pour un enfant qui apprend à lire, « Écouter » vient
  * juste au-dessus, comme au QCM.
+ *
+ * EN CI, UNE ÉTIQUETTE OU UNE CASE QUI NOMME UNE CHOSE MONTRE SON IMAGE
+ * (`item-pictures.tsx`) : « Lion », « Poule » ou « La table » ne se lisent pas
+ * encore à six ans. Les étiquettes et les noms des cases se résolvent sur leur
+ * texte (`useTilePictures`), avec l'énoncé, l'image d'énoncé et, pour chaque
+ * groupe, ce que l'AUTRE montre : ses tuiles « que des émojis » (des cases en
+ * émojis et des étiquettes en mots, c'est « range le mot sous son image », où
+ * l'image sur le mot donnerait la réponse, donc aucune image) et ses textes
+ * (`counterpart` : la même image sur les étiquettes et sur les cases se
+ * relierait par son dessin). Une étiquette à image la garde partout où elle va :
+ * dans le bac, dans une boîte et sous le doigt (l'`DragOverlay` la porte avec
+ * elle) ; elle pose sa pastille au-dessus de son mot sur un téléphone, à côté de
+ * lui à 640 px de large et plus (`tile-picture.tsx` dit la mise en page et sa
+ * hauteur ; dès quatre étiquettes, la pastille se serre). Une case dont le nom
+ * est celui d'une chose (« La poule ») pose la sienne dans sa plaque, devant son
+ * nom, à côté quand la boîte est assez large et au-dessus sinon (`DropBox`) ; une
+ * catégorie (« Savane », « Ferme », « Naturel », « Fixe ») n'est pas au catalogue
+ * et reste telle quelle. LA PRISE NE CHANGE PAS : l'étiquette reste `touch-none`,
+ * de 56 px de haut au moins, et sa pastille, qui ne reçoit ni le toucher ni la
+ * sélection (`ItemPicture`), n'en vole aucun. La réponse part toujours en `dragDropAnswer`
+ * des textes d'origine, émoji compris. Sans `ItemPicturesProvider` (les autres
+ * classes, la vitrine, les aperçus des professeurs) ou pour une tuile sans
+ * image, le DOM est celui d'avant.
  */
 interface DragDropPayload {
   /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
@@ -87,6 +112,16 @@ const DROP_SPRING = { duration: 280, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)"
 const zoneId = (index: number) => `zone-${index}`;
 const itemId = (index: number) => `etiquette-${index}`;
 
+/*
+ * LA RANGÉE DU BAC GARDE SES 72 PX (4,5 rem), avec ou sans image. Le bac vide garde la
+ * hauteur d'UNE rangée, pour que les boîtes ne remontent pas sous le doigt quand la
+ * dernière étiquette s'y pose (mesuré le 19 octobre 2026). Une étiquette à pastille
+ * ne dépasse pas cette hauteur : 68,5 px en pile avec la pastille de 32 px (dès quatre
+ * étiquettes), 72,5 px avec celle de 36 px (0,5 px de plus quand la dernière part,
+ * qu'on ne voit pas), 56 à 68 px à côté du mot à 640 px de large et plus. La classe est
+ * donc celle d'avant les images, et le DOM du bac ne change pas.
+ */
+
 /**
  * LES BOÎTES EN DEUX COLONNES DÈS LE TÉLÉPHONE quand tout est court : des noms
  * d'un mot de dix graphèmes au plus (« Ronds », « Jour », « an »), des
@@ -112,6 +147,8 @@ export function itemTileState(verdict: boolean | null, inZone: boolean, selected
 function DroppableZone({
   id,
   label,
+  image,
+  dense,
   colorIndex,
   armed,
   verdict,
@@ -120,6 +157,10 @@ function DroppableZone({
 }: {
   id: string;
   label: string;
+  /** L'image qui nomme la case, ou `null` (une catégorie : Savane, Ferme). */
+  image: ItemImage | null;
+  /** Quatre étiquettes ou plus : la pastille de la plaque se serre comme celle des étiquettes. */
+  dense: boolean;
   colorIndex: number;
   /** Une étiquette est choisie : toucher cette case l'y pose. */
   armed: boolean;
@@ -133,7 +174,8 @@ function DroppableZone({
     <DropBox
       ref={setNodeRef}
       tone={colorIndex}
-      label={label}
+      label={tileName(label, image)}
+      picture={image ? <TileSticker image={image} text={label} dense={dense} /> : undefined}
       armed={armed}
       over={isOver}
       state={verdict === true ? "juste" : verdict === false ? "fausse" : "repos"}
@@ -147,6 +189,8 @@ function DroppableZone({
 function DraggableItem({
   id,
   label,
+  image,
+  dense,
   disabled,
   inZone,
   selected,
@@ -155,6 +199,10 @@ function DraggableItem({
 }: {
   id: string;
   label: string;
+  /** L'image qui montre ce que nomme l'étiquette, ou `null`. */
+  image: ItemImage | null;
+  /** Quatre étiquettes ou plus : la pastille se serre. */
+  dense: boolean;
   disabled: boolean;
   inZone: boolean;
   /** Choisie par un toucher : elle attend qu'on touche sa case. */
@@ -205,7 +253,7 @@ function DraggableItem({
         }`}
         data-in-zone={inZone || undefined}
       >
-        <TileGlyphs text={label} />
+        <TilePicture text={label} image={image} dense={dense} />
       </Tile3D>
     </div>
   );
@@ -251,6 +299,14 @@ export default function DragDropExercise({
     setSeenVerdict(isCorrect);
     if (isCorrect === true) setFire((n) => n + 1);
   }
+
+  // L'image de chaque étiquette et de chaque case (CI) : chaque groupe se résout
+  // avec les tuiles « que des émojis » de l'autre. Avant le retour anticipé :
+  // l'ordre des hooks ne dépend pas de la donnée.
+  const itemTexts = items.map((item) => item.text);
+  const exerciseImage = payloadImage(payload);
+  const itemPictures = useTilePictures(itemTexts, { prompt, glyphTiles: glyphTilesOf(zones), counterpart: zones, exerciseImage });
+  const zonePictures = useTilePictures(zones, { prompt, glyphTiles: glyphTilesOf(itemTexts), counterpart: itemTexts, exerciseImage });
 
   if (zones.length < 2 || items.length < 2) {
     return (
@@ -332,8 +388,10 @@ export default function DragDropExercise({
     .map((item, index) => ({ item, index }))
     .filter(({ index }) => zoneOfItem[index] === null);
   const allPlaced = unplacedItems.length === 0;
-  const activeLabel = activeId ? items[itemIds.indexOf(activeId)]?.text : undefined;
+  const activeIndex = activeId ? itemIds.indexOf(activeId) : -1;
+  const activeLabel = activeIndex >= 0 ? items[activeIndex]?.text : undefined;
   const sideBySide = boxesSideBySide(zones, items.map((item) => item.text));
+  const dense = isDenseTileCount(items.length);
 
   return (
     // Sur un écran court (667 px ou moins), les blocs se resserrent, comme au QCM.
@@ -378,6 +436,8 @@ export default function DragDropExercise({
                 key={itemIds[index]}
                 id={itemIds[index]}
                 label={item.text}
+                image={itemPictures[index]}
+                dense={dense}
                 disabled={disabled}
                 inZone={false}
                 selected={chosen === index}
@@ -396,6 +456,8 @@ export default function DragDropExercise({
                 key={zoneIds[zoneIndex]}
                 id={zoneIds[zoneIndex]}
                 label={zone}
+                image={zonePictures[zoneIndex]}
+                dense={dense}
                 colorIndex={zoneIndex}
                 armed={chosen !== null && zoneOfItem[chosen] !== zoneIndex}
                 verdict={isCorrect}
@@ -407,6 +469,8 @@ export default function DragDropExercise({
                       key={itemIds[index]}
                       id={itemIds[index]}
                       label={item.text}
+                      image={itemPictures[index]}
+                      dense={dense}
                       disabled={disabled}
                       inZone={true}
                       selected={chosen === index}
@@ -425,7 +489,7 @@ export default function DragDropExercise({
         <DragOverlay dropAnimation={feel.reducedMotion ? null : DROP_SPRING}>
           {activeLabel !== undefined ? (
             <Tile3D as="div" tone={GRAB_TONE} state="choisie" elevation="saisie" align="center" className="rotate-[-2deg] cursor-grabbing">
-              <TileGlyphs text={activeLabel} />
+              <TilePicture text={activeLabel} image={itemPictures[activeIndex]} dense={dense} />
             </Tile3D>
           ) : null}
         </DragOverlay>

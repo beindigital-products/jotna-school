@@ -17,8 +17,18 @@
  *                        JAMAIS dans le dépôt : viser le scratchpad de la session.
  *   --base <url>         le serveur (défaut http://localhost:3000)
  *   --types a,b          qcm3,qcm4,match,order,drag-drop,fill-blank,short-answer,
- *                        short-answer-texte,pattern,color-mix,listen,pixel-art
+ *                        short-answer-texte,pattern,color-mix,listen,pixel-art,
+ *                        puis les six types de TUILES QUI NOMMENT UNE CHOSE, dont
+ *                        un enfant de CI voit l'image : order-animaux,
+ *                        order-animaux-4, qcm-intrus, qcm-mots-seuls, match-mots,
+ *                        drag-drop-savane (`app/dev/exercices/specimens.ts`)
  *                        (défaut : tous)
+ *   --images 0|1         passe `&images=0` (aucune image de tuile : l'écran
+ *                        d'avant, pour les comparaisons) ou `&images=1` (des
+ *                        images même au CP) à toutes les pages. Sans l'option,
+ *                        la classe du spécimen décide, comme en séance : le CI
+ *                        les montre, le CP et le CE1 non (`app/dev/images.ts`).
+ *                        Chaque capture attend que les images soient chargées.
  *   --states a,b         repos,choisie,bonne,mauvaise,desactive (défaut : tous)
  *   --devices a,b        petit (360 × 640, Android d'entrée de gamme), se
  *                        (375 × 667, iPhone SE), telephone (390 × 844, échelle 3),
@@ -71,7 +81,7 @@
  *                        le grand Pio, la vraie coque) pour chacun de ces
  *                        types de la galerie, et mesure le premier écran comme
  *                        ci-dessus : `seance-<type>-<appareil>.png`. « tous »
- *                        pour les douze. Rien sans `--seance`.
+ *                        pour les dix-huit. Rien sans `--seance`.
  *   --video              enregistre une courte vidéo d'interaction sur
  *                        `/dev/seance/` (choisir une option, valider, une
  *                        mauvaise puis une bonne) : `interaction-<appareil>.webm`
@@ -82,6 +92,16 @@
  * Exemple (banc d'essai « avant ») :
  *   node scripts/shoot-exercises.mjs --label avant --full --seance --video \
  *     --out "$SCRATCHPAD/shots"
+ *
+ * Exemple (les images de tuile, sans puis avec, sur les six types de tuiles nommées :
+ * la galerie à l'état de repos, puis la vraie coque avec la mesure du premier écran) :
+ *   T=order-animaux,order-animaux-4,qcm-intrus,qcm-mots-seuls,match-mots,drag-drop-savane
+ *   node scripts/shoot-exercises.mjs --label sans-images --images 0 --types $T \
+ *     --states repos --devices petit,telephone,tablette --seance --scenes exercice \
+ *     --seance-types $T --out "$SCRATCHPAD/shots"
+ *   node scripts/shoot-exercises.mjs --label avec-images --types $T \
+ *     --states repos --devices petit,telephone,tablette --seance --scenes exercice \
+ *     --seance-types $T --out "$SCRATCHPAD/shots"
  *
  * LE MOTEUR EST BLINK, PAS WEBKIT : ces captures jugent la mise en page et les
  * états, pas Safari. Le webview d'iOS et d'Android se photographie avec
@@ -106,6 +126,14 @@ const KINDS = [
   "color-mix",
   "listen",
   "pixel-art",
+  // Les tuiles qui nomment une chose (au CI, chacune montre son image) : la suite de `KINDS`
+  // dans `app/dev/exercices/specimens.ts`, qu'un test compare à cette liste.
+  "order-animaux",
+  "order-animaux-4",
+  "qcm-intrus",
+  "qcm-mots-seuls",
+  "match-mots",
+  "drag-drop-savane",
 ];
 const STATES = ["repos", "choisie", "bonne", "mauvaise", "desactive"];
 const SCENES = ["exercice", "bonne", "mauvaise", "plus-d-essai", "fin-validee", "fin-manquee"];
@@ -154,7 +182,11 @@ function parseArgs(argv) {
     else if (arg === "--tous-appareils") args.devices = Object.keys(DEVICES);
     else if (arg === "--full") args.full = true;
     else if (arg === "--reduced") args.reduced = true;
-    else if (arg === "--seance") args.seance = true;
+    else if (arg === "--images") {
+      const value = next();
+      if (value !== "0" && value !== "1") throw new Error(`--images vaut 0 ou 1 : ${value}`);
+      args.images = value;
+    } else if (arg === "--seance") args.seance = true;
     else if (arg === "--scenes") args.scenes = next().split(",");
     else if (arg === "--seance-seule") args.seanceOnly = true;
     else if (arg === "--seance-types") {
@@ -275,10 +307,32 @@ async function measureBottom(page) {
   });
 }
 
-/** La page est prête : polices chargées, carte(s) armée(s), animations finies. */
+/** Le paramètre `images` de l'URL (`app/dev/images.ts`) ; vide quand `--images` n'est pas donné. */
+const imagesQuery = (args) => (args.images ? `&images=${args.images}` : "");
+
+/** La page est prête : polices chargées, carte(s) armée(s), images chargées, animations finies. */
 async function settle(page, selector, extra = 900) {
   await page.waitForSelector(selector, { timeout: 30_000, state: "attached" });
   await page.evaluate(() => document.fonts.ready);
+  // Les images de tuile (`/objets/*.webp`) arrivent après le rendu : une image à mi-chemin se
+  // photographierait en pastille blanche vide. On attend qu'elles aient chargé et décodé, ou
+  // échoué (la pastille cède alors la place à l'émoji de la tuile, `item-pictures.tsx`), mais
+  // jamais plus de cinq secondes : une image qui ne vient pas ne bloque pas la capture.
+  await page.evaluate(() =>
+    Promise.race([
+      Promise.all(
+        Array.from(document.images, (image) =>
+          image.complete
+            ? image.decode().catch(() => {})
+            : new Promise((resolve) => {
+                image.addEventListener("load", resolve, { once: true });
+                image.addEventListener("error", resolve, { once: true });
+              }),
+        ),
+      ),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]),
+  );
   // Le badge « N » des outils de développement de Next, en bas à gauche, n'est
   // pas l'écran de l'enfant.
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
@@ -288,7 +342,7 @@ async function settle(page, selector, extra = 900) {
 async function shootGallery({ page, args, device, dir, suffix }) {
   for (const type of args.types) {
     for (const state of args.states) {
-      const url = `${args.base}/dev/exercices/?type=${type}&etat=${state}&barre=0${args.reduced ? "&rm=1" : ""}`;
+      const url = `${args.base}/dev/exercices/?type=${type}&etat=${state}&barre=0${args.reduced ? "&rm=1" : ""}${imagesQuery(args)}`;
       await page.goto(url, { waitUntil: "networkidle" });
       await settle(page, `[data-specimen="${type}"][data-state="${state}"][data-stage-ready="1"]`);
       const name = `${type}-${state}-${device}${suffix}`;
@@ -339,7 +393,7 @@ async function firstScreenNote(page, notch) {
 
 async function shootSession({ page, args, device, dir, suffix }) {
   for (const scene of args.scenes) {
-    const url = `${args.base}/dev/seance/?scene=${scene}&barre=0${args.reduced ? "&rm=1" : ""}`;
+    const url = `${args.base}/dev/seance/?scene=${scene}&barre=0${args.reduced ? "&rm=1" : ""}${imagesQuery(args)}`;
     await page.goto(url, { waitUntil: "networkidle" });
     // Les scènes de réponse et de fin ont des entrées à ressort : on leur laisse le temps.
     await settle(page, "main", scene === "exercice" ? 1200 : 2200);
@@ -352,7 +406,7 @@ async function shootSession({ page, args, device, dir, suffix }) {
   // Chaque type de la galerie, en première question du palier de poche : la
   // vraie coque, le grand Pio, et la mesure du premier écran.
   for (const type of args.seanceTypes) {
-    const url = `${args.base}/dev/seance/?exo=${type}&barre=0${args.reduced ? "&rm=1" : ""}`;
+    const url = `${args.base}/dev/seance/?exo=${type}&barre=0${args.reduced ? "&rm=1" : ""}${imagesQuery(args)}`;
     await page.goto(url, { waitUntil: "networkidle" });
     await settle(page, "[data-scene-actions]", 1200);
     // L'encoche simulée avant la photo : Pio à sa vraie taille.
@@ -391,7 +445,7 @@ async function recordInteraction({ browser, args, device, dir, suffix }) {
     recordVideo: { dir: videoDir, size: emulation.viewport },
   });
   const page = await context.newPage();
-  await page.goto(`${args.base}/dev/seance/?barre=0${args.reduced ? "&rm=1" : ""}`, { waitUntil: "networkidle" });
+  await page.goto(`${args.base}/dev/seance/?barre=0${args.reduced ? "&rm=1" : ""}${imagesQuery(args)}`, { waitUntil: "networkidle" });
   await settle(page, "main", 800);
   const options = page.locator("main button").filter({ hasText: /^[A-D]/ });
   await options.nth(0).tap();
