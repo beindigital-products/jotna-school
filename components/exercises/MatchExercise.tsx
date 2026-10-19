@@ -27,7 +27,8 @@ import {
   type Point,
   type Socket,
 } from "@/components/student/game-kit/gestes-cables";
-import { TileGlyphs } from "@/components/student/game-kit/gestes-glyphes";
+import { useTilePictures } from "./item-pictures";
+import { glyphTilesOf, isDenseTileCount, TilePicture } from "./tile-picture";
 
 /**
  * Server contract — the sanitized payload sent by `getExercisesForPalier`
@@ -67,6 +68,27 @@ import { TileGlyphs } from "@/components/student/game-kit/gestes-glyphes";
  * « Valider » est posé dans la barre d'action (`ExerciseActions`,
  * `game-parts.tsx`) : pour un enfant qui apprend à lire, « Écouter » vient
  * juste au-dessus, comme au QCM.
+ *
+ * EN CI, UNE TUILE QUI NOMME UNE CHOSE MONTRE SON IMAGE (`item-pictures.tsx`) :
+ * un enfant de six ans ne lit pas encore « le crocodile », il doit VOIR de quoi
+ * on parle. Les images se résolvent sur le texte des tuiles, côté par côté
+ * (`useTilePictures`), avec l'énoncé (un énoncé qui demande de lire, de décoder,
+ * de nommer ou de traduire n'en laisse aucune), l'image d'énoncé et, pour chaque
+ * côté, ce que l'AUTRE montre : ses tuiles « que des émojis » (quand un côté montre
+ * « [chat] » et l'autre « le chat », l'image sur le mot donnerait la paire : le
+ * côté des mots n'en reçoit aucune et le côté des émojis reste en émojis, [chat]
+ * tient lieu de l'émoji) et ses textes (`counterpart` : « Arachide » en face de
+ * « Cacahuète », la même image des deux côtés, se relierait par son dessin : ni
+ * l'un ni l'autre n'en reçoit). Une tuile qui reçoit une image la pose au-dessus
+ * de son mot sur un téléphone, à côté de lui à 640 px de large et plus, sans
+ * l'émoji de tête que l'image remplace (`tile-picture.tsx` dit la mise en page et
+ * la hauteur qu'elle coûte : une tuile de 68,5 px au lieu de 56 en pile, 56 px en
+ * rangée ; une colonne qui montre des images serre ses tuiles de 12 px à 8 px).
+ * Rien ne change dans la donnée : les paires partent toujours en
+ * `{ left, right }` faites des textes d'origine, et le nom accessible d'une tuile
+ * à image est son mot. Sans `ItemPicturesProvider` (les autres classes, la vitrine,
+ * les aperçus des professeurs) ou pour une tuile sans image, le DOM est celui
+ * d'avant, au caractère près.
  */
 interface MatchPayload {
   /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
@@ -146,6 +168,15 @@ export default function MatchExercise({
   const right = Array.isArray(payload?.right) ? payload.right : [];
   const malformed = left.length === 0 || right.length !== left.length;
   const feel = useGameFeel();
+
+  // L'image de chaque tuile (CI), côté par côté : chaque côté se résout avec les
+  // tuiles « que des émojis » de l'autre. Avant le retour anticipé : l'ordre des
+  // hooks ne dépend pas de la donnée.
+  const exerciseImage = payloadImage(payload);
+  const pictures = {
+    left: useTilePictures(left, { prompt, glyphTiles: glyphTilesOf(right), counterpart: right, exerciseImage }),
+    right: useTilePictures(right, { prompt, glyphTiles: glyphTilesOf(left), counterpart: left, exerciseImage }),
+  };
 
   // Des INDICES dans `left` et `right`, jamais des textes (voir l'en-tête).
   // La tuile choisie attend son partenaire dans l'autre colonne.
@@ -311,7 +342,9 @@ export default function MatchExercise({
     : [];
 
   const column = (side: Side, items: string[]) => (
-    <div className="space-y-3">
+    // Une colonne qui montre des images serre ses tuiles (8 px au lieu de 12) et, à
+    // partir de quatre, leurs pastilles : voir `tile-picture.tsx`.
+    <div className={pictures[side].some((picture) => picture !== null) ? "space-y-2" : "space-y-3"}>
       {items.map((item, index) => {
         const rank = rankOf(side, index);
         const linked = rank >= 0;
@@ -333,7 +366,7 @@ export default function MatchExercise({
             data-linked={linked ? "true" : "false"}
             data-rank={linked ? rank : undefined}
           >
-            <TileGlyphs text={item} />
+            <TilePicture text={item} image={pictures[side][index]} dense={isDenseTileCount(items.length)} />
           </Tile3D>
         );
       })}

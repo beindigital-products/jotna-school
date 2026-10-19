@@ -42,8 +42,10 @@ import {
   type SceneAlert,
   type StageExercise,
 } from "@/components/student/game/session-screens";
+import { ItemPicturesProvider } from "@/components/exercises/item-pictures";
 import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
 import { isReadingLearnerClass } from "@/convex/curriculum";
+import { isPictureTileClass } from "@/lib/item-pictures";
 import { AnimatePresence } from "framer-motion";
 import { refusalMessage } from "@/lib/refusalMessage";
 
@@ -563,7 +565,14 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   // LE LECTEUR DE CONSIGNES : un enfant qui apprend à lire (CI, CP) entend la
   // consigne de chaque exercice (`components/exercises/prompt-reader.tsx`).
   // La classe est celle de l'enfant ; à défaut, celle de la thématique.
-  const readsAloud = isReadingLearnerClass(profile?.class ?? topic.class);
+  // LES IMAGES DE TUILE se règlent sur la MÊME classe : un enfant de CI, qui ne
+  // lit pas encore « Lion » ni « midi », voit l'image de chaque chose nommée
+  // (`components/exercises/item-pictures.tsx`, `lib/item-pictures.ts`). Rien ne
+  // change dans la donnée : le texte des tuiles et la réponse envoyée restent
+  // ceux du serveur.
+  const learnerClass = profile?.class ?? topic.class;
+  const readsAloud = isReadingLearnerClass(learnerClass);
+  const showsPictures = isPictureTileClass(learnerClass);
   const exerciseRenderer = (
     <ExerciseRenderer
       exo={exo}
@@ -636,17 +645,21 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
         }
       >
         {/* La consigne se tait dès que l'enfant a répondu ou qu'une fenêtre
-            s'ouvre par-dessus. */}
-        {readsAloud ? (
-          <PromptReaderProvider
-            exerciseId={exo._id}
-            silenced={feedback !== null || explainOpen || sceneAlert !== null}
-          >
-            {exerciseRenderer}
-          </PromptReaderProvider>
-        ) : (
-          exerciseRenderer
-        )}
+            s'ouvre par-dessus. Le fournisseur d'images est posé pour toutes
+            les classes, `enabled` faux hors CI : ni DOM ni état de plus, et la
+            forme de l'arbre ne dépend pas de la classe. */}
+        <ItemPicturesProvider enabled={showsPictures}>
+          {readsAloud ? (
+            <PromptReaderProvider
+              exerciseId={exo._id}
+              silenced={feedback !== null || explainOpen || sceneAlert !== null}
+            >
+              {exerciseRenderer}
+            </PromptReaderProvider>
+          ) : (
+            exerciseRenderer
+          )}
+        </ItemPicturesProvider>
       </SessionStage>
 
       {/* Step-by-step pedagogical explanation overlay (kid clicked

@@ -10,9 +10,11 @@ import MatchExercise from "@/components/exercises/MatchExercise";
 import OrderExercise from "@/components/exercises/OrderExercise";
 import QcmExercise from "@/components/exercises/QcmExercise";
 import ShortAnswerExercise from "@/components/exercises/ShortAnswerExercise";
+import { ItemPicturesProvider } from "@/components/exercises/item-pictures";
 import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
 import { isReadingLearnerClass } from "@/convex/curriculum";
 import { verifyAnswer } from "@/convex/paliers/exerciseRules";
+import { picturesEnabled, readImagesFlag } from "../images";
 import { DevBar, DevButton, DevSelect, DevToggle, ExerciseCard, SessionBar, SessionShell } from "../session-shell";
 import {
   KINDS,
@@ -47,6 +49,18 @@ import {
  *   &tablette=1                    la largeur d'une tablette, dans un grand écran
  *   &ci=0                          sans le lecteur de consigne (il est là par
  *                                  défaut : les spécimens sont de CI et de CP)
+ *   &images=0|1                    les images de tuile (`../images.ts`). Sans le
+ *                                  paramètre, la porte de la CLASSE du spécimen
+ *                                  décide, comme en séance : le CI les montre, le
+ *                                  CP et le CE1 non (`isPictureTileClass`). `0`
+ *                                  les coupe partout (l'écran d'avant, pour les
+ *                                  comparaisons) ; `1` les montre même au CP (un
+ *                                  aperçu de `PICTURE_TILE_CLASSES` élargi au CP).
+ *                                  Elles ne changent que les tuiles qui NOMMENT une
+ *                                  chose (les types `order-animaux`, `order-animaux-4`,
+ *                                  `qcm-intrus`, `qcm-mots-seuls`, `match-mots`,
+ *                                  `drag-drop-savane`) ; la carte porte
+ *                                  `data-pictures="1"` quand elles sont ouvertes.
  *   &barre=0                       sans la barre de commande (les captures)
  *
  * L'attribut `data-stage-ready="1"` sur chaque carte dit que les gestes sont
@@ -67,6 +81,8 @@ type Params = {
   reduced: boolean;
   tablet: boolean;
   reader: boolean;
+  /** `false` : `images=0` ; `true` : `images=1` ; `null` : la porte de la classe décide (`../images.ts`). */
+  images: boolean | null;
   bar: boolean;
 };
 
@@ -80,6 +96,7 @@ function readParams(search: URLSearchParams): Params {
     reduced: search.get("rm") === "1",
     tablet: search.get("tablette") === "1",
     reader: search.get("ci") !== "0",
+    images: readImagesFlag(search),
     bar: search.get("barre") !== "0",
   };
 }
@@ -92,6 +109,7 @@ function writeParams(params: Params): string {
   if (params.reduced) search.set("rm", "1");
   if (params.tablet) search.set("tablette", "1");
   if (!params.reader) search.set("ci", "0");
+  if (params.images !== null) search.set("images", params.images ? "1" : "0");
   if (!params.bar) search.set("barre", "0");
   const text = search.toString();
   return text ? `?${text}` : "";
@@ -152,6 +170,12 @@ function GalleryInner() {
           />
           <DevToggle label="Tablette" checked={params.tablet} onChange={(tablet) => update({ tablet })} title="La largeur d'une tablette (820 px), sans changer la fenêtre." />
           <DevToggle label="Lecteur CI" checked={params.reader} onChange={(reader) => update({ reader })} title="Le bouton qui lit la consigne, comme au CI et au CP (muet ici : rien n'est demandé au serveur)." />
+          <DevToggle
+            label="Images CI"
+            checked={params.images !== false}
+            onChange={(images) => update({ images: images ? null : false })}
+            title="L'image de chaque tuile qui nomme une chose (animal, aliment, objet…), comme en séance au CI. Décochée : ?images=0, l'écran d'avant. ?images=1 les montre aussi au CP."
+          />
           <DevToggle label="Barre" checked={params.bar} onChange={(bar) => update({ bar })} title="?barre=0 la cache pour les captures." />
           <DevButton onClick={() => setRound((current) => current + 1)}>Rejouer</DevButton>
           <Link href="/dev/seance/" className="min-h-9 rounded-md px-2 py-1.5 text-sm font-semibold text-amber-300 underline-offset-2 hover:underline">
@@ -165,10 +189,11 @@ function GalleryInner() {
           <div className="relative mx-auto max-w-2xl pb-4">
             <SessionBar topic={specimens[params.type as Kind].exercise.topic} palierIndex={1} questionIndex={2} total={10} answered={params.state === "bonne"} />
             <StageCard
-              key={`${params.type}-${params.state}-${params.reader}-${round}`}
+              key={`${params.type}-${params.state}-${params.reader}-${params.images}-${round}`}
               specimen={specimens[params.type as Kind]}
               state={params.state as StageState}
               reader={params.reader}
+              images={params.images}
               fitScreen
             />
           </div>
@@ -181,10 +206,11 @@ function GalleryInner() {
                     {kind} · {state}
                   </p>
                   <StageCard
-                    key={`${kind}-${state}-${params.reader}-${round}`}
+                    key={`${kind}-${state}-${params.reader}-${params.images}-${round}`}
                     specimen={specimens[kind]}
                     state={state}
                     reader={params.reader}
+                    images={params.images}
                     fitScreen={false}
                   />
                 </section>
@@ -210,11 +236,14 @@ function StageCard({
   specimen,
   state,
   reader,
+  images,
   fitScreen,
 }: {
   specimen: Specimen;
   state: StageState;
   reader: boolean;
+  /** Le paramètre `images` de l'URL (`../images.ts`) : `null` laisse la classe du spécimen décider. */
+  images: boolean | null;
   fitScreen: boolean;
 }) {
   const arming = needsArming(state);
@@ -254,17 +283,29 @@ function StageCard({
   // Comme la séance : le lecteur de consigne entoure l'exercice d'un enfant
   // qui apprend à lire. Muet (`silenced`) : le bouton est là, rien ne part.
   const readsAloud = reader && isReadingLearnerClass(specimen.klass);
+  // Et le fournisseur d'images de tuile, comme `online-session.tsx` : la porte de
+  // la classe du spécimen (`isPictureTileClass`), sauf si l'URL en décide (`images`).
+  const pictures = picturesEnabled(specimen.klass, images);
 
   return (
-    <div ref={rootRef} data-specimen={specimen.kind} data-state={state} data-live={live} data-stage-ready={ready ? "1" : "0"}>
+    <div
+      ref={rootRef}
+      data-specimen={specimen.kind}
+      data-state={state}
+      data-live={live}
+      data-pictures={pictures ? "1" : "0"}
+      data-stage-ready={ready ? "1" : "0"}
+    >
       <ExerciseCard cardKey={specimen.exercise.id}>
-        {readsAloud ? (
-          <PromptReaderProvider exerciseId={specimen.exercise.id} silenced>
-            {screen}
-          </PromptReaderProvider>
-        ) : (
-          screen
-        )}
+        <ItemPicturesProvider enabled={pictures}>
+          {readsAloud ? (
+            <PromptReaderProvider exerciseId={specimen.exercise.id} silenced>
+              {screen}
+            </PromptReaderProvider>
+          ) : (
+            screen
+          )}
+        </ItemPicturesProvider>
       </ExerciseCard>
     </div>
   );

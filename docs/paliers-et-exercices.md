@@ -501,6 +501,366 @@ question. Rien ne vérifie que l'image choisie correspond à l'énoncé et à la
 réponse : un QCM « Quel animal vois-tu ? » avec l'image du chat et la bonne
 réponse « Chien » est bien formé pour le contrôleur. C'est à relire.
 
+Les tuiles des exercices ont leur propre catalogue d'images, distinct de
+celui-ci : voir la section suivante, « Des images sur les tuiles (CI) ».
+
+## Des images sur les tuiles (CI)
+
+Un enfant de CI a six ans et ne sait pas encore lire. Une tuile « Lion »,
+« La table » ou « midi » ne lui dit rien, et une tuile « 🐁 la souris » ne lui
+montre qu'un émoji minuscule collé au mot. L'émoji est écrit dans le texte de
+l'option par le gabarit ou par le modèle, et beaucoup de tuiles n'ont que le
+mot. Le propriétaire a joué une séance de CI en production et l'a dit
+(19 octobre 2026) : pour ranger des animaux du plus grand au plus petit,
+l'élève doit voir de quel animal on parle, et pour les classes de CI il faut
+toujours mettre l'image de référence.
+
+**La règle.** En CI, toute tuile qui nomme une chose (animal, aliment, objet,
+véhicule, lieu, solide, moment du jour, forme) montre une vraie image de
+référence, un dessin propre, et garde son nom écrit. L'image ne remplace pas
+le mot : l'enfant reconnaît la chose, et le mot reste là pour qu'il apprenne à
+le lire.
+
+**Le principe : l'image se résout à l'affichage.** Aucune donnée ne change. Le
+texte d'une tuile reste la chaîne que le serveur a envoyée, et la réponse qui
+part à `onSubmit` ne change jamais d'un caractère. Rien n'est écrit dans
+`convex/` et aucun palier n'est régénéré : l'écran lit le texte de la tuile,
+reconnaît la chose nommée et va chercher son image dans un catalogue fermé. Le
+catalogue est fermé pour deux raisons. Le serveur de production n'a pas accès
+au studio d'images : une image se fabrique à l'avance, et on la regarde avant
+de la garder. Et une image posée sur une tuile qui ne dit pas ce qu'elle
+montre est pire que pas d'image : une tuile n'est reconnue que si toute sa
+chaîne est un nom du catalogue.
+
+**Où ça vit**
+
+- Le catalogue est `lib/item-images.ts` (`ITEM_IMAGES`, un module pur). Il
+  compte 98 entrées : 92 images fabriquées au studio et six formes dessinées
+  par le code (carré, rond, triangle, rectangle, cœur, étoile), soit 21
+  animaux, 19 aliments, 23 objets, 3 vêtements, 7 transports, 11 lieux et
+  éléments de la nature, 4 solides, 4 moments du jour et 6 formes. Chaque
+  entrée a son fichier `public/objets/<id>.webp` (384 × 384, fond blanc). Les
+  noms FRANÇAIS sont dans `words`, les noms ANGLAIS à part dans `english` (un
+  mot anglais seul n'est pas fiable : voir plus bas) ; `emoji` est la liste
+  prudente des glyphes de la chose (le repli d'une tuile « [chien] Rex »),
+  `guardEmoji` la liste large que seuls les garde-fous lisent (les ronds, les
+  carrés, le dé, la brique, la boîte de conserve, la goutte). Ce n'est pas le
+  catalogue des images d'énoncé (`lib/exercise-images.ts`, `public/exercices/`,
+  `ExerciseImage`) : celles-là illustrent une question et c'est le modèle qui les
+  choisit, celles-ci nomment une tuile et le modèle n'en choisit aucune.
+- Le résolveur est `lib/item-pictures.ts`, un module pur sans React.
+  `pictureForTile` reconnaît la chose nommée par le texte d'une tuile seule ;
+  `recognizeTiles` y ajoute ce qu'un GROUPE de tuiles apprend ; 
+  `explainTilePictures` y ajoute les garde-fous et dit lequel a joué ;
+  `resolveTilePictures` en rend les images, toujours dans un tableau de la même
+  longueur que les tuiles, avec `null` pour une tuile sans image.
+- La porte est `PICTURE_TILE_CLASSES` (`["CI"]`, même fichier) : seules ces
+  classes voient les images. Les deux séances (`online-session.tsx` et
+  `offline-session.tsx`) entourent l'exercice d'un `ItemPicturesProvider`
+  (`components/exercises/item-pictures.tsx`) réglé par `isPictureTileClass`,
+  comme `PromptReaderProvider` l'est par `isReadingLearnerClass`. Les deux
+  lisent la même classe : celle de l'enfant, à défaut celle de la thématique.
+  Hors CI, `enabled` est faux : le DOM est celui d'avant, sans état de plus.
+- Les écrans câblés sont le QCM (`QcmExercise`), la mise en ordre
+  (`OrderExercise`), l'association (`MatchExercise`) et le glisser-déposer
+  (`DragDropExercise`, pour les étiquettes et pour les cases qui nomment une
+  chose). Chacun résout les images de ses tuiles avant de dessiner, par
+  `useTilePictures(tuiles, contexte)`, un appel par groupe de tuiles : les
+  options, les étiquettes, chaque côté d'une association, les cases. Le
+  contexte (`TileContext`) est ce que l'écran sait de l'exercice et que les
+  garde-fous lisent : l'énoncé, l'image d'énoncé (`payloadImage`), les tuiles
+  « que des émojis » de l'autre côté, les textes de l'autre groupe, et `choice`
+  pour un QCM. L'image est dessinée par `ItemPicture`, la pastille ;
+  l'association et le glisser-déposer la posent par
+  `components/exercises/tile-picture.tsx`.
+- Ce qui n'est pas touché : l'écoute (`ListenExercise`), le texte à trous, la
+  réponse courte, les motifs, le pixel-art, le mélange de couleurs, les tuiles
+  d'émojis (comptage, frises, motifs) et les images d'énoncé. La vitrine et
+  les aperçus des professeurs n'ont pas de fournisseur : ils ne changent pas.
+
+**Comment une tuile est reconnue** (`pictureForTile`, sur le texte seul)
+
+1. On retire l'émoji de tête, l'article (le, la, l', les, un, une, des, du, de
+   la, de l') et la ponctuation finale, puis on normalise (minuscules, sans
+   accents, « œ » devenu « oe », apostrophe droite, trait d'union
+   typographique ramené au trait d'union, caractères invisibles ôtés) et on
+   cherche le mot dans les `words` du catalogue, le singulier français d'abord,
+   l'anglais (`english`) ensuite. La correspondance porte sur toute la tuile,
+   jamais sur un morceau : « Le baobab », « L'éléphant » et « Âne » reçoivent
+   leur image ; « Fruits du baobab », « les chats » et « 3 pommes » ne
+   reçoivent rien.
+2. Un mot ambigu (`ambiguousBare`) n'a son image qu'avec un article (« une
+   orange ») ou avec l'émoji de la chose en tête (« 🍊 orange »). Seul,
+   « orange » peut être la couleur, « Pierre » le prénom.
+3. Repli : une tuile « 🐕 Rex » ou « 🍎 une belle pomme », dont le mot n'est pas
+   au catalogue, reçoit l'image de son émoji de tête. Il faut un seul émoji en
+   tête, aucun chiffre ni nombre écrit en lettres dans le reste (« 🍎 trois
+   pommes » ne reçoit rien : une seule pomme dessinée mentirait) et trois mots
+   au plus.
+4. Une tuile qui n'est que des émojis, des chiffres ou des signes n'est jamais
+   changée : le comptage, les frises et les motifs restent en émojis.
+
+**Ce que le groupe de tuiles ajoute** (`recognizeTiles`)
+
+Une tuile seule ne sait pas toujours ce qu'elle est ; ses voisines le lui disent.
+
+- Un NOM ANGLAIS demande un témoin. « pen » est le stylo des leçons d'anglais
+  et la première syllabe de « Penda » : quatre exercices de syllabes du CI de
+  production montraient un stylo sur « pen ». Un nom anglais reçoit son image si
+  l'émoji de la chose le précède, ou si un autre nom anglais du MÊME groupe
+  l'accompagne (« cat, dog, fish » est une leçon d'anglais). Seul entre « lo » et
+  « lou », il se tait. « pen » a de plus quitté le catalogue (le stylo se dit
+  « stylo »), comme « rock » et « football », et « moto » n'est plus le scooter :
+  la moto a sa propre image.
+- Un mot ambigu que son groupe éclaire (`bareInGroup`) prend son image. L'orange
+  seule parmi des aliments (« pomme, orange, banane » : « Mets ces fruits dans
+  l'ordre alphabétique ») est le fruit ; parmi des couleurs elle ne reçoit rien.
+  « Pierre » parmi des lieux et de la nature (« Pierre, Seau, Pirogue, Sable ») est
+  la pierre ; parmi des prénoms elle ne reçoit rien. Sans cela, la seule tuile
+  sans image au milieu des fruits de la liste désignait celle-là.
+
+**Les garde-fous** (`explainTilePictures`, titres dans `TILE_GUARDS`)
+
+Une image ne doit jamais donner la réponse d'un exercice qui demande de relier
+un mot à une image, ou de lire. Chaque garde-fou retire toutes les images de
+l'exercice d'un coup, jamais une seule : épargner la bonne tuile et montrer les
+autres la désignerait par élimination. Dans l'ordre :
+
+- **a.** L'énoncé demande de lire (`READING_PROMPT` : lis, lisez, relis,
+  épelle, lecture, écrit), de décoder (`DECODING_PROMPT` : la syllabe, la lettre,
+  la majuscule, « commence par », « finit par »), de ranger les mots d'une phrase
+  (`SENTENCE_PROMPT` : « Remets les mots dans l'ordre », « Place les mots dans la
+  bonne phrase »), de nommer ce qu'il montre (`NAMING_PROMPT` : « Quel est le nom
+  de cette forme ? », « Comment s'appelle… ») ou de traduire (`TRANSLATION_PROMPT` :
+  « en anglais », « comment dit-on », « que veut dire »). Les consignes de lecture
+  du CI ne disent presque jamais « lis » : elles disent « syllabe » et « commence
+  par ». L'ordre alphabétique de mots n'est pas une phrase à ranger (l'image ne dit
+  rien de l'ordre des lettres).
+- **b.** L'énoncé contient l'émoji d'une chose du catalogue et une tuile nomme
+  cette même chose (l'énoncé montre un éléphant, une option dit « l'éléphant ») :
+  aucune tuile n'a d'image. L'émoji se lit LARGE (`guardEmoji`) : le carré noir,
+  le rond rouge, le triangle, le dé, la brique, la boîte de conserve ne sont pas
+  des émojis de tête (« 🔴 rouge » est la couleur), mais ils trahissent la forme
+  ou le solide dont l'énoncé demande le nom.
+- **c.** Association : un côté n'est fait que d'émojis (une tuile « que des
+  émojis »), et le mot de l'autre côté nomme la même chose que l'un d'eux. Le
+  côté des mots n'a pas d'image, le côté des émojis reste tel quel. Mettre
+  l'image sur le mot donnerait la paire.
+- **d.** QCM (`choice`) : une tuile qui porte des lettres n'a pas d'image alors
+  qu'une autre en a une. Un QCM n'a qu'une bonne tuile, et celle qui se détache du
+  lot, la seule illustrée ou la seule nue, la désigne par élimination. Sur
+  l'export de production, 43 QCM sur 452 avaient des images partielles, et dans 15
+  la bonne réponse était la seule tuile illustrée (8) ou la seule tuile nue (7) :
+  les images d'un QCM sont toutes ou aucune. Une tuile sans lettre (un nombre, des
+  émojis) ne compte pas. L'association, le glisser-déposer et la mise en ordre n'ont
+  pas de bonne tuile à désigner : leurs images partielles restent.
+- **e.** L'énoncé a sa propre image (`payload.image`, le catalogue des images
+  d'énoncé) et c'est celle d'une tuile : dix-neuf des vingt identifiants de
+  `lib/exercise-images.ts` sont aussi des identifiants de tuile (chat, chien,
+  lion, banane…). Le chat sur l'énoncé et « le chat » parmi les options, c'est la
+  réponse sur la bonne tuile. Aucun exercice de production n'a encore d'image
+  d'énoncé ; le garde-fou attend le jour où le modèle en choisira.
+- **f.** Association et glisser-déposer : une même image des deux côtés (sur les
+  étiquettes et sur les cases). « Arachide » en face de « Cacahuète » se relient
+  par leur dessin identique, sans savoir ce que c'est.
+
+Sur l'export de production (850 exercices jouables dans les quatre types), les
+garde-fous retirent les images de 91 exercices : 35 par a (dont 18 de syllabes,
+12 de « Quel est le nom… », 5 de phrases à ranger), 24 par b, 17 par c, 12 par d
+et 3 par f ; plus aucun QCM n'a d'images partielles, et les 36 exercices où
+l'image donnait la réponse sont tous coupés. Le garde-fou b coupe aussi 24
+exercices de position (« Regarde la rangée… Lequel est le premier ? ») où l'image
+n'aurait rien donné, puisque toutes les options sont dans la rangée : c'est la
+décision de départ (aucune tuile n'a d'image quand l'énoncé montre l'émoji d'une
+option), que le propriétaire peut assouplir. Le script
+`scripts/item-pictures-coverage.mjs` le calcule, avec une proposition
+d'assouplissement (S1) qu'il ne fait pas lui-même.
+
+**Ce que l'enfant voit**
+
+L'image est posée dans une pastille blanche arrondie, comme l'autocollant d'un
+imagier (`ItemPicture`), avec une ombre basse et un flanc crème : elle se
+détache des tuiles crème comme des tuiles teintées. La pastille suit l'écran,
+parce que le budget de hauteur du jeu ne bouge pas : un QCM à quatre tuiles
+reste entièrement au-dessus du dock de 360 × 640 à 820 × 1180, une mise en
+ordre de quatre tuiles tient à 390 × 844, et une association ou un
+glisser-déposer qui tenait au-dessus du dock sans image y tient avec.
+
+- QCM : 72 px sur une tablette (plus de 960 px de haut), 56 px de 820 à 960 px,
+  44 px de 668 à 819 px, 36 px de 481 à 667 px, 32 px en paysage (480 px de
+  haut ou moins). La tuile d'émoji, elle, ne change pas, en paysage non plus.
+- Mise en ordre : 44 px jusqu'à quatre tuiles (36 px sur un écran court,
+  667 px ou moins), 36 px au-delà.
+- Association et glisser-déposer : en pile sous 640 px de large (36 px, 32 px
+  dès quatre paires ou quatre étiquettes), à côté du mot à partir de 640 px
+  (44 px, 56 px au-delà de 960 px de haut, 36 px sur un téléphone couché).
+  Une colonne d'association qui montre des images serre ses tuiles de 12 px à
+  8 px. `components/exercises/tile-picture.tsx` dit pourquoi.
+
+Ce que cela coûte, mesuré dans Chromium le 19 octobre 2026 dans la séance
+factice (dock compris) : la marge entre la dernière tuile et le dock, en pixels,
+avec images puis sans (négative : la tuile passe sous le dock, la page défile).
+
+| Écran | Association, 4 paires | Glisser-déposer, 4 étiquettes |
+| --- | --- | --- |
+| 360 × 640 | -85 / -47 | -66 / -41 |
+| 375 × 667 | -42 / -4 | -43 / -18 |
+| 375 × 812 | 15 / 53 | 6 / 31 |
+| 390 × 844 | 41 / 79 | 32 / 57 |
+| 412 × 915 | 99 / 137 | 90 / 115 |
+| 768 × 1024 | 113 / 149 | 84 / 164 |
+| 1024 × 768 | 20 / 20 | 35 / 35 |
+| 844 × 390 (couché) | -145 / -145 | -122 / -122 |
+| 820 × 1180 | 269 / 305 | 240 / 320 |
+| 390 × 844 avec encoche (l'app iPhone) | -33 / 5 | -42 / -17 |
+
+Sur un téléphone debout, les images ajoutent au plus 38 px de défilement à
+l'association et 25 px au glisser-déposer ; à côté du mot, elles n'ajoutent aucun
+défilement. Tout ce qui tenait au-dessus du dock sans image y tient avec, sauf
+l'association dans l'app iPhone à encoche (390 × 844 : 5 px de marge sans
+image, 33 px de défilement avec ; 402 × 874 : 17 px sans, 21 px de
+défilement avec). Avant la relecture, l'association de quatre paires défilait
+de 82 à 114 px de plus avec les images sur la plupart des téléphones et des
+tablettes, y compris à 390 × 844, à 375 × 812, à 768 × 1024 et à 1024 × 768, où
+elle tenait sans image. Un QCM à quatre tuiles garde de 74 px
+(360 × 640) à 315 px (820 × 1180) de marge, 21 px à 844 × 390 et 0 px à 844 × 390
+avec l'encoche. À 320 × 568 (un iPhone SE de première génération), tout est hors
+budget avec comme sans image ; la mise en ordre de quatre tuiles, dont la poignée
+passe à 44 px et la pastille à 32 px sous 340 px de large, finit à 140 px sous le
+dock (161 px sans image). Ces mesures sont celles de Chromium, pas de Safari ni du
+WebView Android.
+
+L'image est décorative : le nom est écrit à côté, donc son `alt` est vide, et
+elle ne reçoit ni le toucher ni la sélection (`pointer-events-none`,
+`select-none`, `draggable={false}`). Sans cela, iOS ouvre le menu de l'image
+sur un appui long, en pleine zone de glisser. Les fichiers sont ceux du site
+(une balise `img`, pas `next/image` : l'export est statique) et partent dans
+l'application, donc elles s'affichent aussi hors ligne. Si un fichier ne charge
+pas, il n'y a jamais d'icône cassée : la pastille cède la place à l'émoji de
+tête de la tuile, s'il y en a un, sinon elle disparaît.
+
+**Le voir**
+
+La galerie (`/dev/exercices/`) et la séance factice (`/dev/seance/`) posent le
+même fournisseur que la séance, selon la classe du spécimen : un spécimen de CI
+montre ses images, un spécimen de CP non. Le paramètre `images` règle la
+comparaison : `images=0` les coupe partout, `images=1` les montre aussi au CP.
+Six types de la galerie sont faits pour elles : `order-animaux`,
+`order-animaux-4`, `qcm-intrus`, `qcm-mots-seuls`, `match-mots` et
+`drag-drop-savane`. `scripts/shoot-exercises.mjs --images 0|1` en fait des
+captures avant et après. Le détail est dans `docs/boucle-native-jeu.md`.
+
+**La couverture sur le contenu réel**
+
+`node scripts/item-pictures-coverage.mjs <dossier de l'export>` passe les
+exercices de la production dans la même chaîne que l'écran (`sanitizePayload`,
+`explainTilePictures`, avec ce que chaque écran passe : `groupsOf` doit suivre
+les écrans) et rend, par type et par thème, les tuiles avec image, les
+exercices coupés et par quel garde-fou, les mots les plus fréquents sans image,
+et les règles proposées (R1 à R6, adoptées, coupent 0 de plus). Sur l'export
+du 19 octobre 2026 : 573 tuiles avec image, soit 78,3 % des tuiles qui nomment
+une chose (71,2 % avant la relecture) ; en comptant aussi les tuiles que les
+garde-fous retirent, 59,2 % (62,2 % avant).
+
+**Ajouter une image**
+
+1. Écrire l'entrée dans `ITEM_IMAGES` (`lib/item-images.ts`), au bon groupe :
+   `id` (minuscules, chiffres et tirets : c'est le nom du fichier), `alt` (ce
+   que lit un lecteur d'écran, court, sans « image de »), `group`, `words` (les
+   noms FRANÇAIS au singulier, sans article ; accents et casse libres),
+   `english` (les noms anglais, à part), `emoji` (les glyphes qui désignent la
+   chose, avec leur sélecteur U+FE0F quand ils en portent un : ne pas les
+   « nettoyer » ; prudents : un glyphe qui dirait aussi autre chose, comme le
+   rond rouge, n'y va pas), `guardEmoji` (les glyphes en plus que seuls les
+   garde-fous lisent), `ambiguousBare` si le mot seul peut dire autre chose (et
+   `bareInGroup` si un groupe d'images peut lever le doute), et `about` (ce
+   qu'on demande au générateur, en anglais). Un mot ou un émoji ne va qu'à une
+   seule image : le test refuse un doublon, français ou anglais.
+2. La fabriquer avec le serveur MCP « studio » (`generate_image`). Modèle
+   `bfl/flux-3-image` (0,048 $ l'image), `mode: "manual"`, `aspectRatio: "1:1"`,
+   et deux images déjà retenues en `referenceImages`, un animal et un objet,
+   pour garder l'unité de style (la première vague a pris une girafe et une
+   table ; en PNG, `ffmpeg -i public/objets/girafe.webp girafe.png`). Demander
+   l'estimation avant (`estimate_cost`). Prompt-type, où `<about>` est le champ
+   `about` de l'entrée : *Children's picture-book illustration of <about>. Flat
+   vector style, simple rounded shapes, thick soft dark-brown outline, bright
+   warm colors, centered, the whole subject fully visible with a margin around
+   it, plain pure white background, no text, no letters, no numbers, no shadow,
+   no other objects. Same drawing style as the reference images.* Un seul
+   sujet, jamais de texte dans l'image. **Regarder chaque image** avant de la
+   garder, et la regarder petite : une tuile la montre à 32 px de côté.
+3. La convertir : `node scripts/build-item-images.mjs --raw <dossier de png>
+   --ids <id>` écrit `public/objets/<id>.webp` (384 × 384, fond blanc, webp
+   qualité 85, la scène entière visible). Le script ramène à blanc pur les
+   quasi-blancs que laissent les générateurs (les trois canaux à 246 sur 255
+   au moins), et tout fond clair relié au bord de l'image (les trois canaux à
+   236 au moins) : la souris avait un fond rose pâle, à peine visible seul, qui
+   se devine comme un carré sur l'autocollant blanc. Les scènes de ciel
+   (`midi`, `soir`, `nuit`, `matin`) gardent leur ciel intact. Il signale une image
+   sans entrée. Les six formes ne passent pas par le studio : un générateur
+   dessine mal un carré parfait. `node scripts/build-item-images.mjs` sans
+   argument les redessine en SVG (couleur franche, contour brun épais, reflet
+   doux).
+4. Tester : `npx vitest run lib/__tests__/item-images.test.ts`. Chaque entrée
+   a son fichier, chaque fichier son entrée, chaque fichier fait 384 × 384 et
+   pèse de 1 à 40 Ko, et aucun mot ni émoji n'est donné à deux images. Puis
+   regarder la tuile dans la galerie. Les règles de reconnaissance et les
+   garde-fous ont leurs tests dans `lib/__tests__/item-pictures.test.ts`, les
+   écrans dans `components/exercises/__tests__/`.
+
+**Le coût.** 114 générations en tout, environ 5,47 $ à 0,048 $ pièce : 104 pour
+la première vague (essais pilotes et images refaites comprises, environ
+4,99 $), 10 pour la seconde (le cylindre, le matin et le pilon refaits, puis
+l'eau, la fleur, la feuille, le lit, le bissap, le fromager et la moto, une
+génération chacun, 0,48 $). Les six formes ne coûtent rien. Les 98 fichiers
+pèsent ensemble environ 0,8 Mo.
+
+**Les images refusées, puis refaites.** À la première vague, trois images
+avaient été refusées après trois tours de studio : le cylindre (un corps bleu
+glacé presque blanc, qui se lisait comme un verre), le matin (une palette
+pastel terne, un demi-soleil qu'on confond avec le soir) et le pilon (un bâton
+fin en deux tronçons, qui se lisait comme un os). Leurs tuiles gardaient leur
+émoji ou leur seul mot, et une tuile sans image au milieu de tuiles illustrées
+désignait la bonne réponse : six tuiles « cylindre » et dix-neuf « matin » en
+production. Elles sont refaites, au quatrième tour, avec les consignes que cette
+section avait écrites : un cylindre d'un bleu vif et opaque, un matin au coq qui
+chante sur une barrière devant un grand soleil orange, un pilon d'une pièce.
+Sept images se sont ajoutées pour les mots les plus fréquents des paliers de
+CI qui n'en avaient pas (l'eau 13 tuiles, la fleur 11, la feuille 10, le lit, le bissap
+et le fromager 7 chacun) et la moto, qui empruntait l'image du scooter.
+
+**Élargir au CP.** Une ligne : dans `lib/item-pictures.ts`,
+`PICTURE_TILE_CLASSES = ["CI", "CP"]`. `READING_LEARNER_CLASSES`
+(`convex/curriculum.ts`) règle la voix de Pio et reste une autre liste : les
+deux sont indépendantes. Pour voir l'effet avant de décider, `images=1` dans la
+galerie et la séance factice montre les images à un spécimen de CP. Le budget
+de hauteur a été mesuré sur des spécimens de CI : le mesurer de nouveau sur des
+exercices de CP.
+
+**Ordre de déploiement.** Le web seulement : un déploiement du site, sans
+Convex (aucune fonction ne change) et sans régénérer de palier. Les élèves du
+web voient les images dès que le site est en ligne. Les images sont des
+fichiers statiques de l'export : les applications iOS et Android les reçoivent
+avec une reconstruction ou une mise à jour à distance, comme tout fichier
+statique (`docs/capacitor-ios.md`), et gardent les écrans d'avant en
+attendant.
+
+**Ce qui reste à faire.** Regarder une séance de CI sur le web après le
+déploiement, puis sur un téléphone ; les mesures de hauteur sont celles de
+Chromium, pas de Safari ni du WebView Android (l'appui long sur une pastille,
+la césure des mots, les unités `cqw` du repli sont à voir sur le simulateur
+iPhone 17 avec `scripts/native-loop-ios.sh`). Les tuiles dont le mot n'est pas
+au catalogue restent sans image : les plus fréquentes de l'export sont la tige
+(7), le fruit (6), la racine (6), le yassa (6), l'après-midi (4), l'auto (4), la
+fenêtre (4), le mafé (4) et le rat (4) ; les parties de la plante (tige,
+racine, fruit) sont les plus utiles, parce qu'avec « fleur » et « feuille » déjà
+illustrées, elles laissent des mises en ordre aux images partielles. Deux
+décisions attendent le propriétaire : les 12 exercices « Quel est le nom de
+cette forme ? » (6) et « Quel est le nom du solide… ? » (6), où l'enfant ne peut
+pas lire les noms des options et où l'image donnerait la réponse, restent sans
+image ; et les 24 exercices de position, coupés par le garde-fou b sans fuite
+réelle.
+
 ## Essais et indices
 
 Un exercice se joue en cinq essais au plus (`MAX_ATTEMPTS_PER_EXERCISE`).

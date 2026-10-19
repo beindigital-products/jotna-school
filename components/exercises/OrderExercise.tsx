@@ -25,6 +25,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { ActionButton3D, ELEVATIONS, Reward, Tile3D, useGameFeel, type TileState } from "@/components/student/game-kit";
 import { StepNumber, StepSlot } from "@/components/student/game-kit/gestes-cases";
 import { TileGlyphs } from "@/components/student/game-kit/gestes-glyphes";
+import type { ItemImage } from "@/lib/item-images";
+import { splitTile } from "@/lib/item-pictures";
+import { cn } from "@/lib/utils";
+import { ItemPicture, useTilePictures, type ItemPictureSize } from "./item-pictures";
 
 /**
  * LA MISE EN ORDRE EST UN ESCALIER DE MARCHES NUMÉROTÉES
@@ -46,6 +50,26 @@ import { TileGlyphs } from "@/components/student/game-kit/gestes-glyphes";
  * « Valider » est posé dans la barre d'action (`ExerciseActions`,
  * `game-parts.tsx`) : pour un enfant qui apprend à lire, « Écouter » vient
  * juste au-dessus, comme au QCM.
+ *
+ * EN CI, UNE TUILE QUI NOMME UNE CHOSE MONTRE SON IMAGE (`item-pictures.tsx`) :
+ * pour ranger des animaux du plus grand au plus petit, l'enfant doit VOIR de
+ * quel animal on parle, et il ne sait pas encore lire « la souris ». Les
+ * images se résolvent sur le texte des tuiles (`useTilePictures`, avec
+ * l'énoncé : un énoncé qui demande de lire n'en laisse aucune) ; une tuile qui
+ * en reçoit une pose sa pastille d'imagier entre la poignée et son mot, et le
+ * mot reste écrit, sans l'émoji de tête que la pastille remplace. La réponse ne
+ * change pas d'un caractère : elle part toujours en JSON des `tile.text` d'origine,
+ * émoji compris, et la poignée garde son nom « Déplacer « … » ». UNE MARCHE À
+ * IMAGE NE POUSSE PAS LE DOCK : la pastille déborde du remplissage de la tuile
+ * (marge négative de 8 px au-dessus et au-dessous d'une pastille de 44 px, 4 px
+ * pour 36 px), si bien que la marche garde ses 56 px d'avant (`min-h-14`) et que
+ * la quatrième marche garde sa marge, y compris sur un iPhone de 844 px qui n'a
+ * que 763 px utiles (la requête média voit les 844 ; mesuré le 19 octobre 2026 :
+ * à 44 px SANS ce débord, elle passait 3 px sous le dock). La pastille mesure 44 px
+ * jusqu'à quatre tuiles, 36 px sur un écran court (667 px ou moins) ou au-delà ; sous
+ * 340 px de large, la poignée d'une marche à image passe à 44 px et la pastille à 32 px
+ * (`NARROW_HANDLE`). Sans `ItemPicturesProvider` (les autres classes, la vitrine, les
+ * aperçus) ou pour une tuile sans image, rien ne change.
  */
 interface OrderPayload {
   /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
@@ -86,12 +110,18 @@ function SortableItem({
   index,
   disabled,
   verdict,
+  picture,
+  sticker,
 }: {
   id: string;
   label: string;
   index: number;
   disabled: boolean;
   verdict: boolean | null;
+  /** L'image de la tuile (CI), ou `null` : la tuile reste un libellé. */
+  picture: ItemImage | null;
+  /** La pastille de cette marche (`stickerFor`), pour les tuiles qui ont une image. */
+  sticker: Sticker;
 }) {
   const {
     attributes,
@@ -135,8 +165,8 @@ function SortableItem({
             {...listeners}
             aria-label={`Déplacer « ${label} »`}
             className={`gk-spring absolute left-1.5 top-1/2 z-10 flex h-14 w-14 shrink-0 touch-none select-none items-center justify-center rounded-xl border-2 border-white/70 bg-[#fff1cc] text-amber-700 shadow-[inset_0_-2px_0_rgb(0_0_0_/_0.08),0_2px_0_#d6c39a] outline-none transition-transform duration-[220ms] gk-focus [-webkit-touch-callout:none] ${
-              disabled ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
-            }`}
+              picture ? NARROW_HANDLE : ""
+            } ${disabled ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing"}`}
             style={{
               transform: isDragging
                 ? `translateY(calc(-50% + ${lift.lift}px)) scale(${lift.scale})`
@@ -153,9 +183,13 @@ function SortableItem({
             disabled={disabled}
             data-dragging={isDragging || undefined}
           >
-            <span className="block pl-14">
-              <TileGlyphs text={label} />
-            </span>
+            {picture ? (
+              <PictureLabel label={label} image={picture} sticker={sticker} />
+            ) : (
+              <span className="block pl-14">
+                <TileGlyphs text={label} />
+              </span>
+            )}
           </Tile3D>
         </div>
       </div>
@@ -195,6 +229,14 @@ export default function OrderExercise({
     }),
   );
   const feel = useGameFeel();
+  // Les images des étiquettes (CI), dans l'ordre où elles sont rangées : une
+  // pastille suit son texte, où qu'il aille. Calculées avant le retour anticipé.
+  const pictures = useTilePictures(
+    items.map((tile) => tile.text),
+    { prompt, exerciseImage: payloadImage(payload) },
+  );
+  // La pastille suit le nombre de marches : la hauteur de l'escalier compte.
+  const sticker = stickerFor(items.length);
 
   // Le bouton n'appelle (reflet) qu'une fois que l'enfant a déplacé une tuile.
   const [touched, setTouched] = useState(false);
@@ -264,6 +306,8 @@ export default function OrderExercise({
                   index={index}
                   disabled={disabled}
                   verdict={isCorrect}
+                  picture={pictures[index] ?? null}
+                  sticker={sticker}
                 />
               ))}
             </ol>
@@ -284,5 +328,65 @@ export default function OrderExercise({
         </ActionButton3D>
       </ExerciseActions>
     </div>
+  );
+}
+
+/** La taille d'une pastille de marche, et ses classes : débord et écran court. */
+type Sticker = { size: ItemPictureSize; className: string };
+
+/**
+ * SOUS 340 PX DE LARGE (un iPhone SE de première génération, 320 px), la poignée, la
+ * pastille et le mot ne tiennent pas côte à côte : « l'éléphant » se coupait avec un trait
+ * d'union, « la poule » et « la fourmi » passaient sur trois lignes, et la quatrième marche
+ * finissait 207 px sous le dock (161 px sans image). La poignée d'une marche à image passe de
+ * 56 à 44 px (la cible minimale d'un doigt chez Apple), la pastille à 32 px (`stickerFor`) et
+ * le texte réserve la place de la poignée plus étroite (`NARROW_LABEL`) : la quatrième
+ * marche finit alors à 140 px sous le dock, mieux que les 161 px d'avant sans image, et
+ * « la poule » tient sur une ligne (mesuré le 19 octobre 2026). Les marches sans image
+ * gardent leurs 56 px.
+ */
+const NARROW_HANDLE = "max-[339px]:h-11 max-[339px]:w-11";
+const NARROW_LABEL = "max-[339px]:pl-12";
+
+/**
+ * La pastille d'une marche selon le nombre de tuiles : 44 px jusqu'à quatre tuiles
+ * (36 px sur un écran court, 667 px ou moins), 36 px au-delà, et 32 px sous 340 px de
+ * large (`NARROW_HANDLE`). Les deux requêtes s'excluent (`min-[340px]` et `max-[339px]`) :
+ * Tailwind ne garantit pas l'ordre de deux requêtes média. LE DÉBORD : la marche
+ * mesure 56 px (`min-h-14`) et son remplissage n'en laisse que 28 à la pastille ; une
+ * marge négative de la moitié du surplus, au-dessus et au-dessous (8 px pour 44 px,
+ * 4 px pour 36 px), la laisse déborder dans le remplissage, centrée, sans agrandir la
+ * marche. La marge est sur la pastille et non sur la rangée : un mot qui se plie en
+ * deux lignes garde la hauteur que son texte demande. Les classes sont écrites en
+ * entier : Tailwind ne voit que ce qui est écrit.
+ */
+function stickerFor(count: number): Sticker {
+  if (count <= 4) return { size: "sm", className: "-my-2 min-[340px]:[@media(max-height:667px)]:size-9 max-[339px]:size-8" };
+  return { size: "xs", className: "-my-1 max-[339px]:size-8" };
+}
+
+/**
+ * Le contenu d'une tuile à image : la pastille à droite de la poignée (le `pl-14`
+ * réserve sa place), puis le mot, le texte de la tuile sans son émoji de tête.
+ * `min-w-0` laisse le mot se plier (`TileGlyphs` le coupe où il faut) au lieu de
+ * pousser la tuile. SOUS 380 PX DE LARGE, la pastille prend 46 px au mot, qui n'en
+ * garde que 90 à 360 px et 50 à 320 px (« la souris » se coupait en trois lignes) :
+ * la pastille se rapproche de la poignée, l'écart se resserre et le mot prend les
+ * 8 px de remplissage de droite, de quoi lui rendre 16 px.
+ */
+function PictureLabel({ label, image, sticker }: { label: string; image: ItemImage; sticker: Sticker }) {
+  const { emoji, rest } = splitTile(label);
+  return (
+    <span className={`flex items-center gap-2.5 pl-14 max-[379px]:gap-2 ${NARROW_LABEL}`}>
+      <ItemPicture
+        image={image}
+        emoji={emoji}
+        size={sticker.size}
+        className={cn("max-[379px]:-ml-1.5", sticker.className)}
+      />
+      <span className="min-w-0 flex-1 max-[379px]:-mr-2">
+        <TileGlyphs text={rest || label} />
+      </span>
+    </span>
   );
 }

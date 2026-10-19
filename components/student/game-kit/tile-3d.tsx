@@ -60,6 +60,18 @@ import { useDeviceTilt, useGameFeel } from "./use-game-feel";
  * demande le temps qu'elle est montée), seulement au niveau « riche ». Elle
  * passe par des variables CSS écrites sur l'élément, sans re-rendu React.
  *
+ * LA FACE REMPLIT SA CELLULE. Dans une grille, deux tuiles d'une même ligne
+ * n'ont pas la même hauteur quand l'une porte une image ou un mot qui passe à
+ * la ligne : la cellule s'étire à la plus haute, et la racine de l'autre avec
+ * elle, mais sa face restait courte, avec l'ombre de la tuile étirée en bande
+ * fantôme dessous et son mot plus haut que celui du voisin (mesuré le 19 octobre
+ * 2026, 360 × 640, 390 × 844, 768 × 1024). La racine, la couche d'objet et la
+ * face sont donc trois colonnes qui grandissent (`flex-col` et `grow`, pas
+ * `height: 100%`) : étirée, la face remplit la cellule et son contenu s'y centre ;
+ * dans une colonne de hauteur libre (l'association, l'escalier, le bac) rien n'a
+ * de place à prendre, et la tuile garde la hauteur de son contenu. Une hauteur en
+ * pourcentage ferait de chaque tuile d'une colonne étirée la colonne entière.
+ *
  * SÉMANTIQUE INCHANGÉE : un `<button>` par défaut, avec `aria-pressed` quand
  * elle est choisie, `disabled` natif, le focus visible. `as="div"` sert aux
  * étiquettes dont dnd-kit tient déjà la sémantique : on pose alors ses
@@ -211,7 +223,7 @@ export const Tile3D = forwardRef<HTMLElement, Props>(function Tile3D(
 
   const shared = {
     ref: rootRef as React.Ref<HTMLButtonElement & HTMLDivElement>,
-    className: `gk-tile gk-motion group relative block w-full select-none rounded-2xl text-left font-display font-extrabold gk-focus ${
+    className: `gk-tile gk-motion group relative flex w-full select-none flex-col rounded-2xl text-left font-display font-extrabold gk-focus ${
       disabled ? "cursor-not-allowed" : as === "button" ? "cursor-pointer" : ""
     } ${className}`,
     style: rootVars,
@@ -239,7 +251,7 @@ export const Tile3D = forwardRef<HTMLElement, Props>(function Tile3D(
           chaque verrouillage. La tuile jugée garde toute sa lumière. */}
       <span
         ref={objectRef}
-        className={`gk-spring relative block transition-transform duration-[220ms] ${motionClass} ${
+        className={`gk-spring relative flex grow flex-col transition-transform duration-[220ms] ${motionClass} ${
           disabled && state !== "juste" && state !== "fausse" ? "opacity-70" : ""
         }`}
         style={objectStyle}
@@ -252,7 +264,7 @@ export const Tile3D = forwardRef<HTMLElement, Props>(function Tile3D(
         />
         {/* La face : elle s'enfonce sous le doigt. */}
         <span
-          className={`gk-face-light relative flex items-center gap-3 rounded-2xl border-2 border-white/70 transition-transform duration-[90ms] ease-out ${
+          className={`gk-face-light relative flex grow items-center gap-3 rounded-2xl border-2 border-white/70 transition-transform duration-[90ms] ease-out ${
             disabled ? "" : "group-active:translate-y-[calc(var(--gk-depth)_-_1px)]"
           } ${sizeClass} ${align === "center" ? "justify-center text-center" : ""}`}
           style={faceStyle}

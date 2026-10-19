@@ -12,12 +12,14 @@ import MatchExercise from "@/components/exercises/MatchExercise";
 import OrderExercise from "@/components/exercises/OrderExercise";
 import QcmExercise from "@/components/exercises/QcmExercise";
 import ShortAnswerExercise from "@/components/exercises/ShortAnswerExercise";
+import { ItemPicturesProvider } from "@/components/exercises/item-pictures";
 import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
 import { AnswerFeedback } from "@/components/student/game/answer-feedback";
 import { PalierResultScreen } from "@/components/student/game/palier-result";
 import { SessionStage } from "@/components/student/game/session-stage";
 import { verifyAnswer } from "@/convex/paliers/exerciseRules";
 import { playCorrect } from "@/lib/sounds";
+import { picturesEnabled, readImagesFlag } from "../images";
 import { DevBar, DevButton, DevSelect, DevToggle, SessionShell } from "../session-shell";
 import { buildSpecimens, isKind, KIND_LABELS, KINDS, type Kind, type Specimen } from "../exercices/specimens";
 
@@ -55,6 +57,17 @@ import { buildSpecimens, isKind, KIND_LABELS, KINDS, type Kind, type Specimen } 
  *   &son=1       sur un écran de fin, un son part 2,5 s après l'arrivée, sous le
  *                clip « cheer » de Pio : la sonde (`&sonde=1`) dit si la vidéo
  *                le remarque, le film si sa couche s'éteint.
+ *   &images=0|1  LES IMAGES DE TUILE (`../images.ts`). La séance pose, comme
+ *                `online-session.tsx`, `<ItemPicturesProvider enabled={isPictureTileClass(classe)}>`
+ *                avec la classe de l'exercice affiché (`Specimen.klass`) : sans le
+ *                paramètre, un exercice de CI montre l'image de chaque tuile qui
+ *                nomme une chose, un exercice de CP ou de CE1 non. `0` les coupe
+ *                partout (les comparaisons avant / après) ; `1` les montre même au
+ *                CP (un aperçu de `PICTURE_TILE_CLASSES` élargi au CP). Le palier de
+ *                poche par défaut (mangues, nombres, frise) n'a aucune tuile qui nomme
+ *                une chose : pour les voir, ouvrir un type de tuiles nommées, par
+ *                exemple `?exo=order-animaux`, `qcm-intrus`, `qcm-mots-seuls`,
+ *                `match-mots` ou `drag-drop-savane` (`KINDS`).
  */
 const SCENES = ["exercice", "bonne", "mauvaise", "plus-d-essai", "fin-validee", "fin-manquee"] as const;
 type Scene = (typeof SCENES)[number];
@@ -135,9 +148,11 @@ function FakeSessionInner() {
   const exoParam = search.get("exo");
   const exo0: Kind = isKind(exoParam) ? exoParam : "qcm4";
   const voice = search.get("voix") === "1";
+  // `false` : images=0 ; `true` : images=1 ; `null` : la porte de la classe décide.
+  const images = readImagesFlag(search);
 
   const update = useCallback(
-    (patch: { scene?: Scene; rm?: boolean; barre?: boolean; exo?: Kind }) => {
+    (patch: { scene?: Scene; rm?: boolean; barre?: boolean; exo?: Kind; images?: boolean | null }) => {
       const next = new URLSearchParams();
       const nextScene = patch.scene ?? scene;
       if (nextScene !== "exercice") next.set("scene", nextScene);
@@ -145,10 +160,12 @@ function FakeSessionInner() {
       if (!(patch.barre ?? bar)) next.set("barre", "0");
       const nextExo = patch.exo ?? exo0;
       if (nextExo !== "qcm4") next.set("exo", nextExo);
+      const nextImages = patch.images === undefined ? images : patch.images;
+      if (nextImages !== null) next.set("images", nextImages ? "1" : "0");
       const text = next.toString();
       router.replace(`${pathname}${text ? `?${text}` : ""}`, { scroll: false });
     },
-    [router, pathname, scene, reduced, bar, exo0],
+    [router, pathname, scene, reduced, bar, exo0, images],
   );
 
   // Le palier de poche : un QCM, une association, une frise ; `?exo=` met un
@@ -197,6 +214,12 @@ function FakeSessionInner() {
         options={KINDS.map((value) => ({ value, label: KIND_LABELS[value] }))}
       />
       <DevToggle label="Mouvement réduit" checked={reduced} onChange={(rm) => update({ rm })} />
+      <DevToggle
+        label="Images CI"
+        checked={images !== false}
+        onChange={(on) => update({ images: on ? null : false })}
+        title="L'image de chaque tuile qui nomme une chose, comme en séance au CI. Décochée : ?images=0, l'écran d'avant. ?images=1 les montre aussi au CP."
+      />
       <DevToggle label="Barre" checked={bar} onChange={(barre) => update({ barre })} />
       <DevButton onClick={() => dispatch({ type: "reset" })}>Recommencer</DevButton>
       <Link href="/dev/exercices/" className="min-h-9 rounded-md px-2 py-1.5 text-sm font-semibold text-amber-300 underline-offset-2 hover:underline">
@@ -302,14 +325,18 @@ function FakeSessionInner() {
         }
       >
         {/* Muet par défaut (les spécimens n'ont pas de son) ; `?voix=1` joue un
-            son local avec les silences de la vraie séance (`online-session.tsx`). */}
-        <PromptReaderProvider
-          exerciseId={exo.exercise.id}
-          silenced={voice ? feedback !== null : true}
-          clipUrl={voice ? "/sounds/badge.mp3" : undefined}
-        >
-          <Screen specimen={exo} disabled={disabled} isCorrect={feedback?.correct ?? null} onSubmit={submit} />
-        </PromptReaderProvider>
+            son local avec les silences de la vraie séance (`online-session.tsx`).
+            Le fournisseur d'images de tuile est celui de la séance : la porte de
+            la classe de l'exercice affiché, sauf si l'URL en décide (`?images=`). */}
+        <ItemPicturesProvider enabled={picturesEnabled(exo.klass, images)}>
+          <PromptReaderProvider
+            exerciseId={exo.exercise.id}
+            silenced={voice ? feedback !== null : true}
+            clipUrl={voice ? "/sounds/badge.mp3" : undefined}
+          >
+            <Screen specimen={exo} disabled={disabled} isCorrect={feedback?.correct ?? null} onSubmit={submit} />
+          </PromptReaderProvider>
+        </ItemPicturesProvider>
       </SessionStage>
     </SessionShell>
   );

@@ -5,6 +5,20 @@
  * (`convex/paliers/games`). Le même contenu que l'enfant reçoit : des
  * émojis au CI (« Regarde la rangée 🐔 🍌 🐄… »), des syllabes, des formes.
  *
+ * LES TUILES QUI NOMMENT UNE CHOSE. Un enfant de CI ne sait pas encore lire
+ * « Lion » ni « la vache » : ses tuiles montrent l'image de la chose et gardent
+ * son nom (`components/exercises/item-pictures.tsx`). Six spécimens les
+ * montrent sous leurs deux formes, celles que la séance reçoit :
+ *   - AVEC un émoji devant le nom, tels que les gabarits du serveur les
+ *     écrivent (« [éléphant] l'éléphant » : [éléphant] tient lieu de l'émoji) :
+ *     `order-animaux` et `order-animaux-4` (ranger des animaux, le cas du
+ *     propriétaire), `qcm-intrus` ;
+ *   - SANS émoji, le nom seul, tel que le modèle les écrit (« Lion », « Poule »),
+ *     écrits à la main avec les constructeurs de la banque : `qcm-mots-seuls`,
+ *     `match-mots`, `drag-drop-savane`.
+ * Les images viennent du catalogue `lib/item-images.ts` ; chaque nom ci-dessous
+ * y figure (un test le vérifie).
+ *
  * Et LES GESTES QUI AMÈNENT CHAQUE ÉCRAN DANS UN ÉTAT. Les composants
  * d'exercice gardent leur choix en état interne et n'ont aucune prop pour le
  * préremplir ; la galerie ne les modifie pas (leurs props sont un contrat
@@ -14,13 +28,16 @@
  */
 import { BANK as FRANCAIS } from "@/components/landing/demo/bank/francais";
 import { BANK as MATHEMATIQUES } from "@/components/landing/demo/bank/mathematiques";
+import { dragDrop, match, qcm } from "@/components/landing/demo/bank-helpers";
 import { gamesFor } from "@/components/landing/demo/demo-matrix";
 import type {
+  ClassicItem,
   ClassicType,
   DemoClass,
   DemoSubject,
   GameType,
   PlayableExercise,
+  Stage,
   SubjectBank,
 } from "@/components/landing/demo/demo-types";
 import { makeGame } from "@/components/landing/demo/make-game";
@@ -42,6 +59,13 @@ export const KINDS = [
   "color-mix",
   "listen",
   "pixel-art",
+  // Les tuiles qui nomment une chose : au CI, elles montrent son image (voir plus haut).
+  "order-animaux",
+  "order-animaux-4",
+  "qcm-intrus",
+  "qcm-mots-seuls",
+  "match-mots",
+  "drag-drop-savane",
 ] as const;
 
 export type Kind = (typeof KINDS)[number];
@@ -61,6 +85,12 @@ export const KIND_LABELS: Record<Kind, string> = {
   "color-mix": "Atelier des couleurs (CI)",
   listen: "Écoute (CI)",
   "pixel-art": "Dessin sur quadrillage (CI)",
+  "order-animaux": "Mise en ordre d'animaux, 3 tuiles (émoji et nom, CI)",
+  "order-animaux-4": "Mise en ordre d'animaux, 4 tuiles (émoji et nom, CI)",
+  "qcm-intrus": "QCM, l'intrus (émoji et nom, CI)",
+  "qcm-mots-seuls": "QCM, quatre noms sans émoji (CI)",
+  "match-mots": "Association, noms sans émoji (animaux et cris, CI)",
+  "drag-drop-savane": "Glisser-déposer, noms sans émoji (savane et ferme, CI)",
 };
 
 export const STATES = ["repos", "choisie", "bonne", "mauvaise", "desactive"] as const;
@@ -99,9 +129,13 @@ function offered(subject: DemoSubject, klass: DemoClass, type: GameType): Playab
   return makeGame(subject, klass, offer, 0);
 }
 
-/** Un exercice d'un gabarit du serveur (une rangée d'émojis, par exemple), à graine fixe. */
-function template(kind: GameKind, klass: DemoClass, seed: string): PlayableExercise {
-  const made = GAME_KINDS[kind].make(makeContext(klass, 2, seed));
+/**
+ * Un exercice d'un gabarit du serveur (une rangée d'émojis, par exemple), à graine fixe.
+ * `level` est le palier de difficulté du gabarit (2 : consolidation) ; au niveau 3, ranger
+ * des animaux par le poids en demande quatre au lieu de trois.
+ */
+function template(kind: GameKind, klass: DemoClass, seed: string, level: Stage = 2): PlayableExercise {
+  const made = GAME_KINDS[kind].make(makeContext(klass, level, seed));
   return {
     id: `galerie:${kind}:${seed}`,
     type: made.type,
@@ -109,8 +143,27 @@ function template(kind: GameKind, klass: DemoClass, seed: string): PlayableExerc
     payload: made.payload,
     hints: made.hints,
     topic: GAME_KINDS[kind].label,
-    stage: 2,
+    stage: level,
     gameLabel: GAME_KINDS[kind].label,
+  };
+}
+
+/**
+ * Un exercice écrit à la main avec les constructeurs de la banque
+ * (`bank-helpers.ts`), pour les tuiles que les gabarits ne fabriquent pas : le nom
+ * SEUL, sans émoji devant, comme le modèle l'écrit (« Lion », « Poule »). Il n'est
+ * pas passé par `typeset` (la vitrine le fait, pas la séance) : la tuile est ce
+ * que le serveur enverrait.
+ */
+function handmade(kind: Kind, item: ClassicItem): PlayableExercise {
+  return {
+    id: `galerie:${kind}`,
+    type: item.type,
+    prompt: item.prompt,
+    payload: item.payload,
+    hints: item.hints,
+    topic: item.topic,
+    stage: item.stage,
   };
 }
 
@@ -118,7 +171,56 @@ function specimen(kind: Kind, klass: DemoClass, exercise: PlayableExercise): Spe
   return { kind, label: KIND_LABELS[kind], klass, exercise, view: viewOf(exercise) };
 }
 
-/** Les douze spécimens. Calculés une fois par page : les graines sont fixes, le résultat aussi. */
+/*
+ * LES TUILES QUI NOMMENT UNE CHOSE : les graines et les textes des six spécimens du CI qui
+ * montrent une image sur chaque tuile. Les graines sont choisies pour ce que le gabarit en
+ * tire (un test le relit : si un gabarit change, il dit lequel des spécimens a perdu son cas).
+ */
+
+/** « Du plus petit au plus grand » : la souris, le chien, la girafe. Le cas du propriétaire. */
+const SEED_ORDER_SIZE = "galerie-ordre-6";
+
+/** « Du plus léger au plus lourd », au niveau 3 : la fourmi, la poule, le mouton, l'éléphant. */
+const SEED_ORDER_WEIGHT = "galerie-ordre4-1";
+
+/** Trois véhicules et un fruit intrus (la pastèque), l'émoji devant chaque nom. */
+const SEED_ODD_ONE_OUT = "galerie-intrus-21";
+
+/** Quatre noms SEULS : sans émoji, l'enfant ne peut compter que sur l'image. Le chat miaule. */
+const BARE_NAMES = qcm({
+  topic: "Les animaux",
+  stage: 1,
+  prompt: "Quel animal miaule ?",
+  options: ["Lion", "Poule", "Chat", "Âne"],
+  answer: "Chat",
+  hints: ["Dis le nom de chaque animal.", "Pense au cri de chaque animal.", "Un seul de ces animaux fait « miaou »."],
+});
+
+/** Huit tuiles, quatre qui nomment un animal et quatre qui sont un cri : les deux colonnes ne se ressemblent pas. */
+const BARE_PAIRS = match({
+  topic: "Les animaux",
+  stage: 1,
+  prompt: "Relie chaque animal à son cri.",
+  pairs: [
+    ["Le chat", "Miaou"],
+    ["Le chien", "Ouaf"],
+    ["Le mouton", "Bêê"],
+    ["La poule", "Cot cot"],
+  ],
+  hints: ["Dis le nom de chaque animal.", "Pense au cri que chaque animal fait.", "Commence par l'animal que tu connais le mieux."],
+});
+
+/** Des étiquettes qui sont des noms d'animaux, des boîtes qui n'en sont pas (la savane, la ferme). */
+const BARE_LABELS = dragDrop({
+  topic: "Les animaux",
+  stage: 2,
+  prompt: "Glisse chaque animal là où il vit.",
+  zones: ["Savane", "Ferme"],
+  items: { Savane: ["Lion", "Hyène"], Ferme: ["Poule", "Chèvre"] },
+  hints: ["Dis le nom de chaque animal.", "Certains animaux vivent près des maisons, d'autres dans la nature.", "Le lion et la hyène vivent dans la savane."],
+});
+
+/** Les dix-huit spécimens. Calculés une fois par page : les graines sont fixes, le résultat aussi. */
 export function buildSpecimens(): Record<Kind, Specimen> {
   return {
     qcm3: specimen("qcm3", "CI", template("rangee-position", "CI", "galerie-rangee-3")),
@@ -133,6 +235,12 @@ export function buildSpecimens(): Record<Kind, Specimen> {
     "color-mix": specimen("color-mix", "CI", offered("education-artistique", "CI", "color-mix")),
     listen: specimen("listen", "CI", offered("education-artistique", "CI", "listen")),
     "pixel-art": specimen("pixel-art", "CI", offered("mathematiques", "CI", "pixel-art")),
+    "order-animaux": specimen("order-animaux", "CI", template("animaux-ordre", "CI", SEED_ORDER_SIZE)),
+    "order-animaux-4": specimen("order-animaux-4", "CI", template("animaux-ordre", "CI", SEED_ORDER_WEIGHT, 3)),
+    "qcm-intrus": specimen("qcm-intrus", "CI", template("intrus", "CI", SEED_ODD_ONE_OUT)),
+    "qcm-mots-seuls": specimen("qcm-mots-seuls", "CI", handmade("qcm-mots-seuls", BARE_NAMES)),
+    "match-mots": specimen("match-mots", "CI", handmade("match-mots", BARE_PAIRS)),
+    "drag-drop-savane": specimen("drag-drop-savane", "CI", handmade("drag-drop-savane", BARE_LABELS)),
   };
 }
 
@@ -243,6 +351,8 @@ export async function armSpecimen(root: HTMLElement, specimen: Specimen, state: 
   switch (specimen.kind) {
     case "qcm3":
     case "qcm4":
+    case "qcm-intrus":
+    case "qcm-mots-seuls":
     case "listen": {
       const options = (full.options as string[]) ?? [];
       const correct = typeof full.correctIndex === "number" ? full.correctIndex : 0;
@@ -251,7 +361,8 @@ export async function armSpecimen(root: HTMLElement, specimen: Specimen, state: 
       return;
     }
 
-    case "match": {
+    case "match":
+    case "match-mots": {
       const pairs = (full.pairs as { left: string; right: string }[]) ?? [];
       const rightColumn = (view.right as string[]) ?? [];
       const buttons = answerButtons(root);
@@ -269,7 +380,9 @@ export async function armSpecimen(root: HTMLElement, specimen: Specimen, state: 
       return;
     }
 
-    case "order": {
+    case "order":
+    case "order-animaux":
+    case "order-animaux-4": {
       // Au clavier, comme dnd-kit le permet : Espace prend la tuile, la flèche
       // la descend d'un cran, Espace la pose. `choisie` la garde en main.
       const handle = root.querySelector<HTMLElement>('[aria-roledescription="sortable"]');
@@ -285,7 +398,8 @@ export async function armSpecimen(root: HTMLElement, specimen: Specimen, state: 
       return;
     }
 
-    case "drag-drop": {
+    case "drag-drop":
+    case "drag-drop-savane": {
       const items = (full.items as { text: string; correctZone: string }[]) ?? [];
       const zones = (full.zones as string[]) ?? [];
       const zoneBox = (name: string) => {

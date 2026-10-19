@@ -1,5 +1,9 @@
 # Les exercices rejoignent le Monde de Pio : direction de jeu
 
+Voir aussi `docs/paliers-et-exercices.md`, section « Des images sur les tuiles
+(CI) » : en CI, une tuile qui nomme une chose montre son image, dans une
+pastille d'imagier, et garde son nom écrit.
+
 Le propriétaire veut que les exercices soient un vrai jeu : une allure de jeu
 vidéo, de la 3D, des animations, dans l'application iOS et Android comme sur
 le web. Et il a fixé la règle : « garde la même DA ». Ce document fait donc
@@ -759,6 +763,17 @@ médaillon sur le coin haut droit). `size` `md` (56 px) ou `lg` (64 px),
 `align` `left` ou `center`, `disabled`, `onPress`, `tilt`. `as="div"` pour
 une étiquette dont dnd-kit tient la sémantique (poser `listeners` et
 `attributes` dessus, garder `touch-none` sur la poignée).
+
+**La face remplit sa cellule.** Dans une grille, deux tuiles d'une même ligne
+n'ont pas la même hauteur quand l'une porte une image ou un mot qui passe à la
+ligne : la cellule s'étire à la plus haute, et avec elle la racine de l'autre.
+La racine, la couche d'objet et la face sont donc trois colonnes qui grandissent
+(`flex-col` et `grow`, pas `height: 100%`) : étirée, la face de la tuile courte
+remplit la cellule et centre son contenu, au lieu de laisser l'ombre de la tuile
+étirée en bande fantôme dessous. Dans une colonne de hauteur libre (l'association,
+l'escalier, le bac), rien n'a de place à prendre : la tuile garde la hauteur de
+son contenu. Une hauteur en pourcentage donnerait à chaque tuile d'une colonne
+étirée la hauteur de la colonne entière.
 
 ```tsx
 {options.map((text, i) => (

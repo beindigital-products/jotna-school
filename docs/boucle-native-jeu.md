@@ -48,12 +48,13 @@ Tout se pilote par l'URL :
 
 | Paramètre | Valeurs | Effet |
 | --- | --- | --- |
-| `type` | `qcm3`, `qcm4`, `match`, `order`, `drag-drop`, `fill-blank`, `short-answer`, `short-answer-texte`, `pattern`, `color-mix`, `listen`, `pixel-art`, `tous` | l'écran (défaut `qcm4`) |
+| `type` | `qcm3`, `qcm4`, `match`, `order`, `drag-drop`, `fill-blank`, `short-answer`, `short-answer-texte`, `pattern`, `color-mix`, `listen`, `pixel-art`, `order-animaux`, `order-animaux-4`, `qcm-intrus`, `qcm-mots-seuls`, `match-mots`, `drag-drop-savane`, `tous` | l'écran (défaut `qcm4`) ; les six derniers sont les tuiles qui nomment une chose (voir plus bas) |
 | `etat` | `repos`, `choisie`, `bonne`, `mauvaise`, `desactive`, `tous` | l'état (défaut `repos`) |
 | `tout=1` | | la grille de tous les états (et de tous les types avec `type=tous`) |
 | `rm=1` | | mouvement réduit simulé depuis la page |
 | `tablette=1` | | la largeur d'une tablette dans un grand écran |
 | `ci=0` | | sans le bouton qui lit la consigne (présent par défaut : les spécimens sont de CI et de CP) |
+| `images` | `0`, `1` | les images de tuile du CI : sans le paramètre, la classe du spécimen décide comme en séance (CI oui, CP et CE1 non) ; `0` les coupe partout, `1` les montre aussi au CP |
 | `barre=0` | | sans la barre de commande, pour les captures |
 
 Chaque carte porte `data-stage-ready="1"` quand ses gestes sont joués et
@@ -61,13 +62,37 @@ son état posé : c'est le signal qu'attend le script de captures. Vérifié
 dans Chromium le 18 octobre 2026 : les 60 cartes (12 types × 5 états)
 arrivent dans l'état demandé en moins de deux secondes.
 
+LES TUILES QUI NOMMENT UNE CHOSE (19 octobre 2026). Un enfant de CI ne lit pas
+encore « Lion » ni « la vache » : en séance, chaque tuile qui nomme une chose
+montre son image et garde son nom écrit (`components/exercises/item-pictures.tsx`,
+`lib/item-pictures.ts`). Six types de la galerie les montrent. Trois portent un
+émoji devant le nom, comme les gabarits du serveur les écrivent : `order-animaux`
+(trois animaux du plus petit au plus grand, le cas du propriétaire),
+`order-animaux-4` (quatre animaux du plus léger au plus lourd, la plus longue
+mise en ordre) et `qcm-intrus` (trois véhicules et un fruit). Trois n'ont que le
+nom, comme le modèle l'écrit : `qcm-mots-seuls` (Lion, Poule, Chat, Âne),
+`match-mots` (quatre animaux et leurs cris, soit huit tuiles dont quatre sans
+image) et `drag-drop-savane` (quatre étiquettes à glisser vers la savane ou la
+ferme).
+
+Chaque page pose le fournisseur d'images comme la séance :
+`<ItemPicturesProvider enabled={isPictureTileClass(classe)}>`, avec la classe du
+spécimen affiché. Sans paramètre, un spécimen de CI montre ses images et un
+spécimen de CP non. `?images=0` les coupe partout, c'est l'écran d'avant, pour
+comparer. `?images=1` les montre aussi à un spécimen de CP, pour voir ce que
+donnerait `PICTURE_TILE_CLASSES` élargi au CP. La carte de la galerie porte
+`data-pictures="1"` quand les images sont ouvertes. Le palier de poche par défaut
+de `/dev/seance/` n'a aucune tuile qui nomme une chose : pour les voir, ouvrir
+`?exo=qcm-intrus` ou l'un des cinq autres types.
+
 `app/dev/seance/` est la coque complète avec des données inventées : barre de
 séance, progression, carte, « Valider », la scène de réponse
 (`AnswerFeedback`) et l'écran de fin (`PalierResultScreen`). Elle se joue (un
 palier de trois exercices, jugé par la règle du serveur) et se fige par
 `?scene=` : `exercice`, `bonne`, `mauvaise`, `plus-d-essai`, `fin-validee`,
 `fin-manquee`. `?exo=<type>` met un autre type de la galerie en première
-question. `?voix=1` donne au lecteur de consignes un son local
+question. `?images=0|1` règle les images de tuile, comme dans la galerie (voir
+plus haut). `?voix=1` donne au lecteur de consignes un son local
 (`/sounds/badge.mp3`, 1,5 s) à la place de la consigne, avec les silences de
 la vraie séance (lecture automatique à l'arrivée de la carte, silence dès la
 réponse) : les spécimens n'ont pas d'identifiant Convex, sans lui le lecteur
@@ -154,9 +179,11 @@ l'échelle 3, tablette 820 × 1180 à l'échelle 2), en mode tactile, dans
 entière (`-pleine`), `--reduced` émule `prefers-reduced-motion: reduce`
 (suffixe `-rm`), `--seance` photographie les six scènes de la séance
 factice, `--video` filme une interaction (une option fausse, « Valider »,
-puis la bonne). Les captures ne vont jamais dans le dépôt : visez le
-scratchpad de la session. Le passage complet (deux appareils, pages
-entières, séance, vidéos) prend environ six minutes.
+puis la bonne), `--images 0|1` passe le paramètre `images` à toutes les pages
+(l'écran sans images, puis celui avec : deux `--label`) et chaque capture attend
+que les images de tuile soient chargées. Les captures ne vont jamais dans le
+dépôt : visez le scratchpad de la session. Le passage complet (deux appareils,
+pages entières, séance, vidéos) prend environ six minutes.
 
 Le moteur est Blink. Ces images jugent la mise en page et les états, pas
 Safari. Pour le mouvement, il faut le simulateur ou l'émulateur : le panneau

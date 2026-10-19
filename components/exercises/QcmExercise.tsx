@@ -4,9 +4,12 @@ import { useState } from "react";
 import { AlertTriangle, Check } from "lucide-react";
 import { ActionButton3D, Reward, Tile3D, type TileState } from "@/components/student/game-kit";
 import { graphemeCount, qcmLayout, splitLeadingEmoji } from "@/components/student/game-kit/choix-texte";
+import type { ItemImage } from "@/lib/item-images";
+import { splitTile } from "@/lib/item-pictures";
 import ExercisePrompt from "./ExercisePrompt";
 import { payloadImage } from "./ExerciseImage";
 import { ExerciseActions } from "./game-parts";
+import { ItemPicture, useTilePictures } from "./item-pictures";
 
 interface QcmPayload {
   /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
@@ -43,6 +46,23 @@ interface QcmExerciseProps {
  * comme avant (« A » puis « le poisson » : les tests de la vitrine cherchent
  * `/^[A-D]7$/`), en texte caché quand la pastille ne s'affiche pas.
  *
+ * EN CI, UNE TUILE QUI NOMME UNE CHOSE MONTRE SON IMAGE (`item-pictures.tsx`) :
+ * un enfant de six ans ne lit pas encore « Lion » ni « La table », et l'émoji
+ * collé à « la souris » est trop petit pour la reconnaître. Les images se
+ * résolvent UNE fois pour toutes les options (`useTilePictures`, avec l'énoncé :
+ * un énoncé qui demande de lire, de décoder ou de nommer, ou qui montre l'émoji
+ * ou l'image de la réponse, n'en laisse aucune). Un QCM n'a qu'une bonne tuile :
+ * ses images sont toutes ou aucune (`choice`), car la seule tuile illustrée, ou
+ * la seule tuile nue, la désignerait par élimination. Une tuile qui en reçoit une
+ * pose sa pastille d'imagier à la place de son émoji de tête et garde son mot
+ * écrit au même endroit, dessous (deux colonnes) ou à gauche (une colonne). Rien
+ * ne change dans la donnée : `options` reste ce que le serveur a envoyé, et la
+ * réponse part toujours en `String(index)`. Sans `ItemPicturesProvider` (les
+ * autres classes, la vitrine, les aperçus des professeurs) ou pour une option
+ * sans image, le rendu est celui d'avant, au caractère près : les classes de la
+ * branche « émoji et mot » sont celles d'avant, un test les compare à la chaîne
+ * d'origine.
+ *
  * APRÈS « PAS TOUT À FAIT », la tuile fausse se repose et l'enfant rechoisit :
  * le choix s'efface quand le verdict repasse de faux à rien (la séance garde
  * le composant monté entre deux essais). Après une bonne réponse, la tuile
@@ -74,6 +94,10 @@ export default function QcmExercise({
   }
 
   const options = Array.isArray(payload?.options) ? payload.options.filter((o): o is string => typeof o === "string") : [];
+  // Les images des tuiles (CI) : un seul calcul pour toutes les options, avant le
+  // retour anticipé pour que l'ordre des hooks ne dépende pas du contenu. `choice` :
+  // un QCM n'a qu'une bonne tuile, ses images sont toutes ou aucune.
+  const pictures = useTilePictures(options, { prompt, choice: true, exerciseImage: payloadImage(payload) });
 
   if (options.length < 2) {
     return (
@@ -130,7 +154,7 @@ export default function QcmExercise({
               data-option={index}
             >
               <span className="sr-only">{letter}</span>
-              <OptionContent text={option} big={twoColumns} />
+              <OptionContent text={option} big={twoColumns} image={pictures[index] ?? null} />
             </Tile3D>
           );
           // Une option seule sur la dernière ligne se centre, à la largeur des autres.
@@ -161,6 +185,14 @@ export default function QcmExercise({
 }
 
 /**
+ * La pile « émoji au-dessus du mot » d'une tuile d'émoji, en deux colonnes : les
+ * classes d'avant les images, au caractère près (un test les compare à cette
+ * chaîne). Hors CI, une tuile d'émoji ne change pas, même en paysage.
+ */
+export const EMOJI_OPTION_STACK =
+  "flex flex-col items-center gap-1.5 py-1 [@media(max-height:960px)_and_(min-height:668px)]:gap-1 [@media(max-height:960px)_and_(min-height:668px)]:py-0.5 [@media(max-height:667px)]:gap-1 [@media(max-height:667px)]:py-0";
+
+/**
  * Le contenu d'une tuile : l'émoji qui ouvre l'option en grand, le mot
  * dessous (deux colonnes) ou à côté (une colonne) ; un nombre ou un mot seul
  * en gros ; une option sans émoji telle quelle. LA HAUTEUR DES GROSSES TUILES
@@ -172,7 +204,8 @@ export default function QcmExercise({
  * Deux rangées de tuiles à émoji ne tenaient pas au-dessus du dock à 360 × 640
  * ni, avec un énoncé de quatre lignes, à 390 × 844 (mesuré le 18 octobre 2026).
  */
-function OptionContent({ text, big }: { text: string; big: boolean }) {
+function OptionContent({ text, big, image }: { text: string; big: boolean; image: ItemImage | null }) {
+  if (image) return <PictureOption text={text} big={big} image={image} />;
   const { emoji, rest } = splitLeadingEmoji(text);
   if (!emoji) {
     if (!big) return <>{text}</>;
@@ -188,7 +221,7 @@ function OptionContent({ text, big }: { text: string; big: boolean }) {
   }
   if (big) {
     return (
-      <span className="flex flex-col items-center gap-1.5 py-1 [@media(max-height:960px)_and_(min-height:668px)]:gap-1 [@media(max-height:960px)_and_(min-height:668px)]:py-0.5 [@media(max-height:667px)]:gap-1 [@media(max-height:667px)]:py-0">
+      <span className={EMOJI_OPTION_STACK}>
         <span className="text-4xl leading-none [@media(max-height:667px)]:text-3xl">{emoji}</span>
         <span className="text-lg leading-tight">{rest}</span>
       </span>
@@ -198,6 +231,69 @@ function OptionContent({ text, big }: { text: string; big: boolean }) {
     <span className="flex items-center gap-3">
       <span className="text-3xl leading-none">{emoji}</span>
       <span>{rest}</span>
+    </span>
+  );
+}
+
+/**
+ * La pile « pastille au-dessus du mot » d'une tuile à image, en deux colonnes : celle
+ * de la tuile d'émoji, plus, EN PAYSAGE (480 px de haut ou moins), la rangée centrée
+ * (la pastille à gauche du mot). Elle n'est qu'ici : la tuile d'émoji, elle, ne
+ * change pas (`EMOJI_OPTION_STACK`).
+ */
+export const PICTURE_OPTION_STACK =
+  "flex flex-col items-center gap-1.5 py-1 [@media(max-height:960px)_and_(min-height:668px)]:gap-1 [@media(max-height:960px)_and_(min-height:668px)]:py-0.5 [@media(max-height:667px)_and_(min-height:481px)]:gap-1 [@media(max-height:667px)]:py-0 [@media(max-height:480px)]:flex-row [@media(max-height:480px)]:justify-center [@media(max-height:480px)]:gap-2.5";
+
+/**
+ * La taille de la pastille en deux colonnes selon la hauteur de l'écran : 56, 44 et
+ * 36 px aux seuils de l'émoji, et 32 px en paysage (480 px de haut ou moins), où la
+ * pastille de 36 px poussait la tuile de 64 à 68 px et recouvrait de 8 px la
+ * deuxième rangée sur un iPhone à encoche.
+ */
+export const PICTURE_OPTION_STICKER =
+  "[@media(max-height:960px)_and_(min-height:820px)]:size-14 [@media(max-height:819px)_and_(min-height:668px)]:size-11 [@media(max-height:667px)_and_(min-height:481px)]:size-9 [@media(max-height:480px)]:size-8";
+
+/**
+ * Une tuile qui montre son image (CI) : la pastille d'imagier prend la place de
+ * l'émoji de tête, le mot (le reste du texte, sans l'émoji) reste écrit. Même
+ * disposition qu'une tuile à émoji : la pastille au-dessus du mot en deux
+ * colonnes, à sa gauche en une colonne. Même budget de hauteur aussi, avec les
+ * mêmes requêtes média, et cinq tailles de pastille en deux colonnes : 72 px
+ * sur une tablette (plus de 960 px de haut), 56 px sur un grand téléphone (820 à
+ * 960 px : 390 × 844, 412 × 915), 44 px sur un téléphone moyen (668 à 819 px),
+ * 36 px sur un écran court (481 à 667 px), où l'émoji faisait 30 px, 32 px en
+ * paysage (480 px ou moins, voir plus bas). Mesuré le
+ * 19 octobre 2026 : quatre tuiles à image restent entièrement au-dessus du dock
+ * de 360 × 640 (74 px de jour, énoncé de deux lignes) à 820 × 1180 (315 px). LE
+ * SEUIL DE 820 PX COMPTE L'ENCOCHE : la requête média voit la hauteur entière d'un
+ * iPhone (844 px) quand l'écran n'en offre que 763 ; à 56 px, il garde 60 px de
+ * jour sous quatre tuiles (37 px avec un énoncé de trois lignes), 71 px pour celui
+ * de 874 px. EN PAYSAGE (480 px de haut ou moins), la pastille passe à gauche du
+ * mot, comme en une colonne, et se serre à 32 px : la tuile mesure 64 px au lieu de
+ * 95 (à 36 px elle en mesurait 68, et la deuxième rangée passait de 8 px sous le dock
+ * sur un iPhone à encoche), et les quatre tuiles tiennent à 844 × 390 (21 px de jour,
+ * 0 px avec l'encoche d'un iPhone couché) et à 667 × 375 (6 px de jour) ; les deux
+ * colonnes y laissent 150 px de large à la pastille et au mot. En une colonne, la
+ * pastille (44 px, 36 px sur un écran court) déborde de 2 px dans le remplissage de
+ * la tuile (`-my-0.5`) : la tuile garde les 72 px que lui donne la pastille de sa
+ * lettre. Les paliers de hauteur s'excluent (`min-height`) : Tailwind ne garantit
+ * pas l'ordre de deux requêtes média.
+ */
+function PictureOption({ text, big, image }: { text: string; big: boolean; image: ItemImage }) {
+  const { emoji, rest } = splitTile(text);
+  const word = rest || text;
+  if (big) {
+    return (
+      <span className={PICTURE_OPTION_STACK}>
+        <ItemPicture image={image} emoji={emoji} size="lg" className={PICTURE_OPTION_STICKER} />
+        <span className="text-lg leading-tight">{word}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-3">
+      <ItemPicture image={image} emoji={emoji} size="sm" className="-my-0.5 [@media(max-height:667px)]:size-9" />
+      <span>{word}</span>
     </span>
   );
 }

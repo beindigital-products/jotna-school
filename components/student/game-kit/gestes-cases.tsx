@@ -29,6 +29,15 @@ import { shade, TILE_CORRECT_TONE, TILE_WRONG_TONE, tileChosenTone, tileRestTone
  * `h4` est son enfant direct (la galerie, la vitrine et les tests prennent
  * `h4.parentElement` pour la case) ; les étiquettes posées sont ses
  * descendantes. Rien de 3D ne porte `overflow: hidden` ET `preserve-3d`.
+ *
+ * UNE BOÎTE QUI NOMME UNE CHOSE PEUT MONTRER SON IMAGE (`picture`, une pastille
+ * d'imagier que l'écran fournit) : elle se pose dans la plaque, devant le nom,
+ * et la plaque passe en `flex-wrap` : l'image et le nom tiennent sur une ligne
+ * quand la boîte est large (292 px, trois boîtes empilées) et se rangent l'un sous
+ * l'autre quand elle est étroite (138 px, deux ou trois boîtes côte à côte), sans
+ * que l'écran ait à le dire. Le `h4` reste l'enfant direct de la boîte, et son nom
+ * accessible reste le nom : l'image est décorative (`alt` vide). Sans `picture`,
+ * la plaque est celle d'avant, au caractère près.
  */
 
 type CaseState = "repos" | "juste" | "fausse";
@@ -83,6 +92,8 @@ export const DropBox = forwardRef<
     /** L'index de la case (0 à 5) : sa couleur d'option. */
     tone: number;
     label: string;
+    /** Une image qui nomme la boîte, posée dans la plaque devant son nom (voir l'en-tête). */
+    picture?: ReactNode;
     /** Une étiquette est choisie ailleurs : la boîte s'allume, un toucher l'y pose. */
     armed: boolean;
     /** Une étiquette glissée passe au-dessus : la boîte s'enfonce et s'allume. */
@@ -92,7 +103,7 @@ export const DropBox = forwardRef<
     children: ReactNode;
     className?: string;
   }
->(function DropBox({ tone, label, armed, over, state = "repos", onClick, children, className = "" }, ref) {
+>(function DropBox({ tone, label, picture, armed, over, state = "repos", onClick, children, className = "" }, ref) {
   const colors = caseTone(tone, state);
   const lit = armed || over;
   // Après le verdict, l'intérieur pâlit : les étiquettes vertes ou ambre
@@ -150,9 +161,12 @@ export const DropBox = forwardRef<
       </span>
       {/* La plaque : le nom de la boîte, accroché à la paroi du fond. */}
       <h4
-        className="relative mx-auto mt-1.5 w-fit max-w-[calc(100%-1.5rem)] rounded-xl border-2 border-white/80 bg-[#fff8e6] px-4 py-1.5 text-center font-display text-lg font-extrabold leading-tight shadow-[0_3px_0_#d6c39a] [overflow-wrap:anywhere]"
+        className={`relative mx-auto mt-1.5 w-fit max-w-[calc(100%-1.5rem)] rounded-xl border-2 border-white/80 bg-[#fff8e6] px-4 py-1.5 text-center font-display text-lg font-extrabold leading-tight shadow-[0_3px_0_#d6c39a] [overflow-wrap:anywhere]${
+          picture ? " flex flex-wrap items-center justify-center gap-x-2 gap-y-1" : ""
+        }`}
         style={{ color: colors.text }}
       >
+        {picture}
         {label}
       </h4>
       {/* Les étiquettes posées, dans la boîte. */}
