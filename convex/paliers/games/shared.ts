@@ -25,7 +25,9 @@ export type GameExerciseType =
   | "order"
   | "match"
   | "drag-drop"
-  | "fill-blank";
+  | "fill-blank"
+  // Une réponse à écrire : un NOMBRE, jamais un mot (l'orthographe tolérante est l'affaire du modèle). Dès le CP.
+  | "short-answer";
 
 /** Un exercice fabriqué, prêt à rejoindre les exercices du palier. */
 export type GeneratedGame = {

@@ -979,6 +979,10 @@ thématiques mêlent des jeux fabriqués par le code à leurs paliers : voir
 
 ## Réponse courte : types par classe et orthographe
 
+- **Des gabarits de réponse courte, dès le CP.** `mois-ecart` et `pas-difference` fabriquent une réponse courte : un nombre, jamais
+  un mot. Leur seule réponse admise tient en chiffres collés (le pavé numérique s'ouvre), la consigne finit par « Écris le nombre. »
+  et le contrôleur les juge comme celles du modèle. `short-answer` figure donc parmi les types de gabarits
+  (`GameExerciseType`, `TEMPLATE_TYPES`).
 - **CI : aucune réponse tapée.** `short-answer` sort des types autorisés et du
   format JSON demandé au modèle (`prompts.typesFor`), en maths comme ailleurs :
   un calcul à trou se pose en QCM. `short_answer_in_ci` est `blocking` : le
@@ -1111,6 +1115,54 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `probleme-question` | phrase à trous | « Awa a 4 mangues 🥭🥭🥭🥭 et elle en mange 1. Complète la question du problème. » : `Combien de ___ lui reste-t-il ?` avec `mangues 🥭`, `poules 🐔`, `ballons ⚽` |
 | `donnee-inutile` | QCM | « Awa, 7 ans, a 3 mangues et en mange 1. Quel nombre est inutile pour les mangues qui restent ? » : 7 (les trois options sont les trois nombres) |
 | `probleme-inutile` | QCM | « Cheikh a 17 moutons et 3 poules, il vend 5 moutons. Combien de moutons lui reste-t-il ? » : 12 (14 et 17 sont les calculs faits avec la donnée inutile, ou sans calcul) |
+| `mois-ordre` | ordre | « Mets ces mois dans l'ordre du calendrier. » : `mars, avril, mai` (trois mois qui se suivent, quatre ensuite, espacés au dernier palier) |
+| `mois-voisin` | QCM | « Quel mois vient juste après mars ? » : `avril` (le mois cité n'est jamais un choix) |
+| `mois-rang` | QCM | « Quel est le troisième mois de l'année ? » : `mars` (du premier au dernier, aucun indice ne nomme un mois) |
+| `mois-trou` | phrase à trous | « Complète les mois de l'année. » : `janvier, février, ___, avril.` : `mars` (aucun mauvais choix ne complète la suite) |
+| `mois-ecart` | réponse courte | « Nous sommes en mars. Dans combien de mois sera juillet ? Écris le nombre. » : `4` |
+| `date-lire` | QCM | « Voici une date, le 14 mai 2026. Quel est le mois ? » : `mai` (puis le jour du mois, puis l'année) |
+| `calendrier-jour` | QCM | « Le 3 mars est un mardi. Quel jour est le 4 mars ? » : `mercredi` (sept jours plus tard, c'est le même jour) |
+| `mois-relier` | association | « Relie chaque mois au mois qui vient juste après. » : `mars~avril ; juin~juillet…` |
+| `mois-avant-apres` | glisser-déposer | « Glisse chaque mois avant ou après avril. » : `février` dans Avant avril, `juillet` dans Après avril |
+| `duree-plus-long` | QCM | « Lequel dure le plus longtemps ? » : `année`, parmi `récréation`, `semaine` et `année` ; ou « …plus longtemps qu'une semaine ? » |
+| `duree-ordre` | ordre | « Mets ces durées du plus court au plus long. » : `journée, semaine, mois` |
+| `duree-relier` | association | « Relie chaque durée au bon nombre. » : `semaine~7 jours ; année~12 mois…` |
+| `duree-glisser` | glisser-déposer | « Glisse chaque durée dans sa case, plus court ou plus long qu'une semaine. » |
+| `duree-unites` | phrase à trous | « Complète la phrase. » : `Une semaine dure 7 ___.` : `jours` |
+| `frequence-glisser` | glisser-déposer | « Glisse chaque moment dans sa case, tous les jours, chaque semaine ou chaque année. » : `Aller à l'école` dans Tous les jours, `Tabaski` dans Chaque année |
+| `frequence-qcm` | QCM | « Quand revient la Tabaski ? » : `Chaque année` (parmi les trois rythmes de la fiche) |
+| `frequence-trou` | phrase à trous | `La Tabaski revient chaque ___.` : `année` |
+| `frequence-relier` | association | « Relie chaque moment à sa fréquence. » : `Jour de marché~Chaque semaine…` |
+| `frequence-ordre` | ordre | « Mets ces moments du plus souvent au moins souvent. » : `Aller à l'école, Jour de marché, Noël` |
+| `edt-apres` | QCM | l'emploi du temps sur plusieurs lignes (`8 h Lecture`, `9 h Maths`, `10 h Récréation`…), « Quel cours vient juste après la récréation ? » : `dessin` |
+| `edt-quand` | QCM | « À quelle heure commence la récréation ? » : `10 h` |
+| `edt-ordre` | ordre | « Mets ces cours du premier au dernier. » (ou du dernier au premier) |
+| `edt-trou` | phrase à trous | `Après la récréation, il y a le cours de ___.` : `dessin` |
+| `edt-semaine` | QCM | « Voici l'emploi du temps de la semaine. » puis `Lundi Sport`, `Mardi Chant`…, « Quel cours a-t-on le mardi ? » : `chant` |
+| `trajet-case` | QCM | un quadrillage de 3 sur 3, « Le pion est sur le chat. Il monte de 1 case puis va de 1 case vers la droite. Où arrive-t-il ? » |
+| `trajet-tourne` | QCM | « Le pion est sur le chat et regarde en haut. Il avance de 1 case, tourne à droite et avance de 1 case. Où arrive-t-il ? » (la droite du pion, pas celle de l'écran) |
+| `itineraire-ordre` | ordre | « Awa part de la maison, passe devant la boutique et arrive au marché. Mets les lieux dans l'ordre du trajet. » : `maison, boutique, marché` |
+| `itineraire-passe` | QCM | « …Devant quel lieu passe Awa ? » : `boutique` (le départ et l'arrivée ne se proposent jamais) |
+| `itineraire-trou` | phrase à trous | « Awa part du marché, passe devant le puits et arrive au jardin. » puis `Awa passe devant le ___.` : `puits` (lieux masculins) |
+| `itineraire-glisser` | glisser-déposer | « …Glisse chaque lieu avant ou après la boutique. » |
+| `distance-pas` | QCM | « Pour aller à la boutique, Awa fait 12 pas, Moussa 8 pas et Fatou 15 pas. Qui habite le plus près ? » : `Moussa` |
+| `distance-ordre` | ordre | « …Mets-les du plus près au plus loin de la boutique. » : `Moussa, Awa, Fatou` |
+| `mesure-comparer` | QCM | « Awa mesure avec ses empans. Le cahier fait 2 empans, la table 6 empans et le tableau 11 empans. Qu'est-ce qui est le plus long ? » : `tableau` |
+| `chemin-court` | QCM | « Trois chemins mènent à l'école. Par le marché, 15 pas. Par la mosquée, 11 pas. Par le puits, 18 pas. Quel chemin est le plus court ? » |
+| `pas-difference` | réponse courte | « Pour aller à la boutique, Awa fait 12 pas et Moussa 8 pas. Combien de pas de plus fait Awa ? Écris le nombre. » : `4` |
+| `distance-trou` | phrase à trous | « De chez Awa, le marché est à 9 pas, le puits à 4 pas et le dispensaire à 15 pas. » puis `Le lieu le plus près de chez Awa est le ___.` : `puits` |
+| `distance-glisser` | glisser-déposer | « La boutique est à 10 pas de chez Awa. Glisse chaque lieu plus près ou plus loin que la boutique. » : `Marché 4 pas` dans Plus près |
+| `plan-ou` | QCM | « Regarde la table vue de dessus. » puis le plan, « Où est la règle ? » : `en haut à gauche` |
+| `plan-objet` | QCM | « Qu'est-ce qui est en bas à droite ? » : le dessin de cette place |
+| `plan-compter` | QCM | « Combien de bananes y a-t-il ? » : le nombre de fois que le dessin revient |
+| `plan-glisser` | glisser-déposer | « Glisse chaque dessin en haut ou en bas. » (ou à gauche ou à droite) |
+| `plan-relier` | association | « Relie chaque dessin à sa place. » : `📏 la règle~en haut à gauche…` |
+| `plan-trou` | phrase à trous | « Complète la phrase. » : `En bas à droite, il y a ___.` |
+| `quartier-rue` | QCM | « Dans la rue, il y a la mosquée, puis la boutique, puis le marché. Quel lieu est à côté de la mosquée ? » : `boutique` (puis juste avant, juste après, entre) |
+| `quartier-ordre` | ordre | « …Mets les lieux dans le même ordre. » |
+| `quartier-glisser` | glisser-déposer | « …Glisse chaque lieu avant ou après la boutique. » |
+| `quartier-trou` | phrase à trous | « Dans la rue, il y a le marché, puis le puits, puis le dispensaire. » puis `Le puits est entre le marché et le ___.` : `dispensaire` |
+| `lieu-fonction` | association | « Relie chaque lieu à ce qu'on y fait. » : `école~apprendre ; marché~acheter…` |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -1218,6 +1270,55 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     aucun sélecteur de variation, un choix juste parmi des choix tous différents, aucun indice qui écrit la réponse,
     une image pour chaque tuile qui nomme une chose) et fabrique 40 paliers de chacune des huit thématiques.
     `templatesWithoutModel.test.ts` joue leur génération complète contre un faux modèle.
+- **Le calendrier, les durées, les fréquences et l'emploi du temps du CP** (`paliers/games/calendrier.ts`) : vingt-quatre gabarits
+  pour `hi-cp-calendrier`, `hi-cp-durees`, `hi-cp-frequences` et `hi-cp-emploi-du-temps`. Sur l'échantillon de CP lu le 19 octobre 2026,
+  sept exercices d'histoire sur vingt et un étaient faux : deux mois de la saison sèche qui n'en font pas partie, un emploi du temps
+  cité mais absent de l'écran, un ordre de durées sans critère, une réponse libre qui refusait des mois justes. Ici la réponse se
+  calcule ou se lit dans ce que l'énoncé montre.
+  - **Les mois et les jours** sont des ordres que personne ne discute : les douze mois de janvier à décembre, les sept jours de lundi à
+    dimanche. `calendrier-jour` avance ou recule dans la semaine d'un écart de 1, 2, 3, 7 ou 8 jours, et retrouve le même jour quand
+    l'écart est de sept. Les saisons (saison sèche, hivernage) n'ont aucun gabarit : la fiche du CP ne dit pas quels mois en font
+    partie. Seule la fiche du CE1 (`ge-ce1-saisons`) donne ces mois, de novembre à juin puis de juillet à octobre ; une fiche du CP
+    qui les donnerait permettrait d'ajouter les saisons.
+  - **Les durées** forment une chaîne que personne ne discute : la récréation, la journée, la semaine, le mois, l'année. Les
+    équivalences viennent du calendrier (une semaine, sept jours ; une année, douze mois ; un jour, vingt-quatre heures ; une
+    heure, soixante minutes). La fiche demande aussi « en même temps » : aucun gabarit ne le couvre pour l'instant.
+  - **Les fréquences** sont celles de la fiche, rien de plus : aller à l'école tous les jours, le jour de marché chaque semaine,
+    l'anniversaire, la Tabaski, la Korité, Noël et la fête de l'indépendance chaque année. Sept moments seulement, donc la variété
+    d'un palier est mince. « Souvent, parfois, jamais » reste hors des gabarits : c'est un jugement, pas un fait.
+  - **L'emploi du temps** est inventé par le gabarit et écrit dans l'énoncé, une ligne par heure (`8 h Lecture`, `9 h Maths`,
+    `10 h Récréation`). La récréation n'est ni la première ni la dernière, les cours sont tous différents, et seuls lundi, mardi,
+    mercredi et vendredi figurent dans l'emploi du temps de la semaine.
+  - **Une étiquette est un mot seul, sans article** (`mars`, `semaine`, `Tabaski`). Au CI, une tuile « article + un nom » demande une
+    image du catalogue, et ces noms n'en ont pas. Ces gabarits ne servent qu'au CP, mais `templatePictures.test.ts` les joue aussi au CI.
+  - **Deux gabarits demandent un nombre à écrire** (type `short-answer`, dès le CP) : `mois-ecart` (« Dans combien de mois sera
+    juillet ? Écris le nombre. ») et `pas-difference` (voir plus bas). La réponse tient en chiffres collés, donc l'écran ouvre le
+    pavé numérique. Sans eux, la vitrine ne pourrait plus montrer de réponse courte au CP en histoire ni en géographie.
+- **Le quartier du CP** (`paliers/games/quartier.ts`) : vingt-quatre gabarits pour `ge-cp-itineraire`, `ge-cp-distances`, `ge-cp-plan`
+  et `ge-cp-quartier`. Sur l'échantillon de CP, seize exercices de géographie sur vingt-trois étaient faux ou injouables : des
+  villes classées par distance (Thiès est plus près de Dakar que Mbour), un plan cité mais absent, une chaise posée sur la table.
+  Ici la scène est écrite dans l'énoncé ou dessinée par des émojis, et la réponse s'y lit. Aucune ville, aucune région, aucune
+  distance réelle.
+  - **Le trajet** s'écrit en mots (« Awa part de la maison, passe devant la boutique et arrive à l'école ») ou se joue sur un
+    quadrillage de trois sur trois. `trajet-tourne` fait tourner le pion vers SA droite ou SA gauche, pas celles de l'écran : quand
+    il regarde en bas, sa droite est à gauche de l'écran. Aux deux premiers paliers, le pion regarde toujours en haut.
+  - **Les distances** sont des nombres de pas écrits dans l'énoncé. Un seul enfant mesure avec ses empans ou ses pas (celui d'un
+    enfant n'est pas celui d'un autre), et les objets suivent l'ordre réel des tailles (un cahier, une table, un tableau) : le
+    plus grand nombre est toujours le plus long. `distance-ordre` dit proche DE QUOI (« du plus près au plus loin de la boutique »),
+    sans quoi le contrôleur le refuse. `pas-difference` demande un nombre à écrire.
+  - **Le plan vu de dessus** est une table ou une cour dessinée en émojis, sur deux lignes au premier palier et trois ensuite. Les
+    dessins ont leur image au catalogue du CI (`optionOf`), comme dans `espace.ts`.
+  - **Le quartier** est une rue écrite en mots (« Dans la rue, il y a la mosquée, puis la boutique, puis le marché »). Les lieux
+    sont ceux de la fiche, plus le puits, le dispensaire et le jardin. Ce qu'on fait dans un lieu (`lieu-fonction`) est sa définition :
+    on apprend à l'école, on achète au marché, on prie à la mosquée, on se soigne au dispensaire, on joue sur le terrain de football.
+    Les trous (`itineraire-trou`, `quartier-trou`, `distance-trou`) n'emploient que des lieux masculins, pour que l'article écrit
+    dans la phrase ne donne pas la réponse.
+  - **Les gabarits repris du CI** (`jour-ecole-repos`, `jours-ordre`, `pres-loin`, `repere-glisser`, `repere-qcm`, `repere-intrus`)
+    jouent à la difficulté du CI : le CP et le CI partagent la même tranche d'âge (`ageBand` vaut 0). Un palier du CP n'en reçoit
+    qu'un ou deux par thématique.
+  - `convex/__tests__/cpHistoryGeographyTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé, avec ses propres tables (les
+    mois, les durées, les fréquences de la fiche, les cours, les lieux, les dessins), et fabrique 40 paliers de chacune des huit
+    thématiques, au CP, contre le contrôleur.
 - **Les premières phrases et la politesse** (`paliers/games/phrases.ts`, `paliers/games/politesse.ts`) : dix
   gabarits pour le français du CI (`fr-ci-phrases`, `fr-ci-politesse`). Sur l'échantillon lu le 19 octobre 2026,
   16 exercices sur 30 étaient faux en « Mes premières phrases » (onze quiz sur les aliments sans scène, des trous où
@@ -1253,8 +1354,9 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
   `ma-ci-nombres-20`, `ma-ci-trier`, `ma-ci-espace`, `ma-ci-formes`, `ma-ci-mesures` et
   `ma-ci-problemes`, puis `hi-ci-journee`, `hi-ci-ordre`, `hi-ci-hier-demain`, `hi-ci-semaine`, `ge-ci-position`,
-  `ge-ci-lateralite`, `ge-ci-reperes` et `ge-ci-quadrillage`, puis `fr-ci-phrases` et `fr-ci-politesse` (`convex/programme`), dix
-  exercices par palier, voir plus bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
+  `ge-ci-lateralite`, `ge-ci-reperes`, `ge-ci-quadrillage`, `fr-ci-phrases` et `fr-ci-politesse` au CI, puis `hi-cp-calendrier`, `hi-cp-durees`,
+  `hi-cp-frequences`, `hi-cp-emploi-du-temps`, `ge-cp-itineraire`, `ge-cp-distances`, `ge-cp-plan` et `ge-cp-quartier` au CP
+  (`convex/programme`), dix exercices par palier, voir plus bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
   modèle, le seuil de validation exige tous les exercices écrits : le modèle en
   écrit deux de plus et on garde les premiers valides, `scoring.exercisesToRequest`.)
   Un palier déjà généré garde ses exercices : il faut l'invalider
@@ -1307,13 +1409,14 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces vingt-trois thématiques contre un faux modèle qui lève une
+  chaque palier de ces trente et une thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
   Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
-  haut) : en CI, l'éveil, l'instruction civique, l'anglais et l'éducation artistique ; toutes les autres classes. Le
-  français (phrases, politesse), l'histoire et la géographie du CI n'appellent plus le modèle.
+  haut) : en CI, l'éveil, l'instruction civique, l'anglais et l'éducation artistique ; toutes les autres classes, sauf l'histoire et la
+  géographie du CP. Le français (phrases, politesse), l'histoire et la géographie du CI, puis l'histoire et la géographie du CP,
+  n'appellent plus le modèle.
   Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
   dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
   rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à
@@ -1325,4 +1428,5 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   géographie son relier dans « Ma droite et ma gauche », que `doigt-relier` fabrique)
   (le glisser-déposer du français du CI est rattaché à « Bonjour, merci, s'il te plaît », que `politesse-glisser`
   fabrique ; celui des mathématiques à « Les formes et les solides », que `classer-formes`
-  fabrique).
+  fabrique). Au CP, l'histoire et la géographie sont tout en gabarits : la réponse courte de la vitrine est rattachée à « Le
+  calendrier » (`mois-ecart`) et à « Près ou loin ? » (`pas-difference`), les deux gabarits qui demandent un nombre à écrire.

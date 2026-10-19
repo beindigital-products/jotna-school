@@ -49,6 +49,9 @@ function rightAnswer(type: string, payload: unknown): string {
       return JSON.stringify((payload as { pairs: unknown[] }).pairs);
     case "fill-blank":
       return JSON.stringify((payload as { blanks: { answer: string }[] }).blanks.map((b) => b.answer));
+    // Une réponse courte fabriquée par le code : un nombre à écrire (`calendrier.ts`, `quartier.ts`).
+    case "short-answer":
+      return String((payload as { acceptedAnswers: string[] }).acceptedAnswers[0]);
     case "drag-drop":
       return JSON.stringify(
         Object.fromEntries((payload as { items: { text: string; correctZone: string }[] }).items.map((item) => [item.text, item.correctZone])),

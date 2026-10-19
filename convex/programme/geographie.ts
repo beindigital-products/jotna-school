@@ -80,24 +80,60 @@ export const GEOGRAPHIE: ProgrammeSubject = {
         name: "Le chemin de l'école",
         description:
           "Géographie, étape 1 : les itinéraires. Décrire un trajet (je sors, je tourne à droite, je passe devant la boutique), suivre un itinéraire sur un dessin, remettre les étapes d'un trajet dans l'ordre.",
+        games: [
+          { kind: "trajet-case", count: 2 },
+          { kind: "trajet-tourne", count: 2 },
+          { kind: "itineraire-ordre", count: 2 },
+          { kind: "itineraire-passe", count: 1 },
+          { kind: "itineraire-trou", count: 1 },
+          { kind: "itineraire-glisser", count: 2 },
+        ],
       },
       {
         key: "ge-cp-distances",
         name: "Près ou loin ?",
         description:
           "Géographie, étape 1 : les distances. Comparer des distances, mesurer avec des pas ou avec l'empan (mesures non conventionnelles), trouver le chemin le plus court.",
+        games: [
+          { kind: "distance-pas", count: 2 },
+          { kind: "distance-ordre", count: 1 },
+          { kind: "mesure-comparer", count: 2 },
+          { kind: "chemin-court", count: 1 },
+          { kind: "pas-difference", count: 1 },
+          { kind: "distance-trou", count: 1 },
+          { kind: "distance-glisser", count: 1 },
+          { kind: "pres-loin", count: 1 },
+        ],
       },
       {
         key: "ge-cp-plan",
         name: "Vu de dessus",
         description:
           "Géographie, étape 1 : représenter un espace vu de dessus (une table, la classe), retrouver un objet sur un dessin vu de dessus.",
+        games: [
+          { kind: "plan-ou", count: 2 },
+          { kind: "plan-objet", count: 2 },
+          { kind: "plan-compter", count: 2 },
+          { kind: "plan-glisser", count: 1 },
+          { kind: "plan-relier", count: 1 },
+          { kind: "plan-trou", count: 2 },
+        ],
       },
       {
         key: "ge-cp-quartier",
         name: "Se repérer dans le quartier",
         description:
           "Géographie, étape 1 : repères fixes et mobiles du quartier ou du village ; dire où se trouve un lieu par rapport à un repère (la boutique est à côté de la mosquée, l'école est derrière le terrain de football).",
+        games: [
+          { kind: "repere-glisser", count: 1 },
+          { kind: "repere-qcm", count: 1 },
+          { kind: "repere-intrus", count: 1 },
+          { kind: "quartier-rue", count: 3 },
+          { kind: "quartier-ordre", count: 1 },
+          { kind: "quartier-glisser", count: 1 },
+          { kind: "quartier-trou", count: 1 },
+          { kind: "lieu-fonction", count: 1 },
+        ],
       },
     ],
     CE1: [
