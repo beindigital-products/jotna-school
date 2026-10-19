@@ -111,6 +111,24 @@ export function verifyDragDrop(
 
   if (!parsed || typeof parsed !== "object") return false;
   const zoneOf = parsed as Record<string, unknown>;
+
+  // LES ÉTIQUETTES EN TROP INVALIDENT. La forme objet ne regardait que les
+  // étiquettes attendues : une réponse qui place EN PLUS ce que l'exercice ne
+  // propose pas passait, du moment que l'attendu était juste. Elle ne décrit
+  // alors pas cet exercice. `dragDropAnswer` ne bâtit ses clés qu'à partir des
+  // `texts` de l'exercice, donc aucun écran n'en produit — mais le serveur ne
+  // doit pas compter sur l'écran, comme pour l'appariement plus haut. La forme
+  // tableau refusait déjà le surplus, par son multi-ensemble.
+  //
+  // APPARTENANCE, PAS COMPTAGE : deux copies d'une même étiquette posées dans
+  // la même zone se fondent en une seule clé — « banane » envoie quatre clés
+  // pour six tuiles — donc comparer le nombre de clés au nombre d'`items`
+  // refuserait des réponses justes.
+  const expected = new Set(payload.items.map((item) => item.text));
+  for (const label of Object.keys(zoneOf)) {
+    if (!expected.has(label)) return false;
+  }
+
   return payload.items.every(
     (item) =>
       Object.prototype.hasOwnProperty.call(zoneOf, item.text) &&
