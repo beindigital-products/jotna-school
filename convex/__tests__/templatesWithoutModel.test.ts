@@ -31,6 +31,14 @@ const WITHOUT_MODEL = [
   "ma-ci-formes",
   "ma-ci-mesures",
   "ma-ci-problemes",
+  "hi-ci-journee",
+  "hi-ci-ordre",
+  "hi-ci-hier-demain",
+  "hi-ci-semaine",
+  "ge-ci-position",
+  "ge-ci-lateralite",
+  "ge-ci-reperes",
+  "ge-ci-quadrillage",
 ] as const;
 const MODEL_CALLED = "LE MODÈLE A ÉTÉ APPELÉ";
 

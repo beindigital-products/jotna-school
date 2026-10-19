@@ -76,6 +76,46 @@ const TEMPLATES = [
   "probleme-question",
   "donnee-inutile",
   "probleme-inutile",
+  // Le temps et l'espace de l'histoire et de la géographie du CI (`games/temps.ts`, `games/espace.ts`).
+  "jours-ordre",
+  "jour-manquant",
+  "jour-ecole-repos",
+  "jour-rang",
+  "jours-relier",
+  "jour-relatif",
+  "jour-hier-demain",
+  "jour-trou",
+  "temps-ordre",
+  "activite-moment",
+  "moment-ordre",
+  "activite-ordre",
+  "moment-voisin",
+  "activite-moments",
+  "cycle-ordre",
+  "avant-apres",
+  "avant-apres-glisser",
+  "grandir-relier",
+  "sur-sous",
+  "devant-derriere",
+  "position-glisser",
+  "file-ordre",
+  "a-cote",
+  "entre",
+  "pres-loin",
+  "rangee-voisin",
+  "doigt-direction",
+  "doigt-relier",
+  "gauche-droite-glisser",
+  "rangee-copie",
+  "repere-glisser",
+  "repere-qcm",
+  "repere-intrus",
+  "repere-trajet",
+  "grille-position",
+  "grille-ligne-colonne",
+  "grille-trou",
+  "pion-deplacement",
+  "grille-glisser",
 ] as const satisfies readonly GameKind[];
 
 /** Les gabarits de calcul : leur matière est « Mathématiques ». */
@@ -117,6 +157,61 @@ const MATH_KINDS = new Set<string>([
   "donnee-inutile",
   "probleme-inutile",
 ]);
+
+/** Les gabarits du temps (`games/temps.ts`) : leur matière est « Histoire ». */
+const HISTORY_KINDS = new Set<string>([
+  "jours-ordre",
+  "jour-manquant",
+  "jour-ecole-repos",
+  "jour-rang",
+  "jours-relier",
+  "jour-relatif",
+  "jour-hier-demain",
+  "jour-trou",
+  "temps-ordre",
+  "activite-moment",
+  "moment-ordre",
+  "activite-ordre",
+  "moment-voisin",
+  "activite-moments",
+  "cycle-ordre",
+  "avant-apres",
+  "avant-apres-glisser",
+  "grandir-relier",
+]);
+
+/** Les gabarits de l'espace (`games/espace.ts`) : leur matière est « Géographie ». */
+const GEOGRAPHY_KINDS = new Set<string>([
+  "sur-sous",
+  "devant-derriere",
+  "position-glisser",
+  "file-ordre",
+  "a-cote",
+  "entre",
+  "pres-loin",
+  "rangee-voisin",
+  "doigt-direction",
+  "doigt-relier",
+  "gauche-droite-glisser",
+  "rangee-copie",
+  "repere-glisser",
+  "repere-qcm",
+  "repere-intrus",
+  "repere-trajet",
+  "grille-position",
+  "grille-ligne-colonne",
+  "grille-trou",
+  "pion-deplacement",
+  "grille-glisser",
+]);
+
+/** La matière que le contrôleur reçoit pour un gabarit : celle de la thématique qui le demande. */
+const subjectOfKind = (kind: string) =>
+  MATH_KINDS.has(kind) ? "Mathématiques" : HISTORY_KINDS.has(kind) ? "Histoire" : GEOGRAPHY_KINDS.has(kind) ? "Géographie" : "Français";
+
+/** La matière d'une thématique du programme, lue sur le préfixe de sa clé. */
+const subjectOfTopic = (key: string) =>
+  key.startsWith("ma-") ? "Mathématiques" : key.startsWith("hi-") ? "Histoire" : key.startsWith("ge-") ? "Géographie" : "Français";
 
 const CLASSIC_TYPES = new Set<string>(["qcm", "order", "match", "drag-drop", "fill-blank"]);
 
@@ -181,7 +276,7 @@ describe.each(TEMPLATES)("le gabarit « %s »", (kind) => {
   it("passe le contrôleur sans aucun défaut", () => {
     for (const { level, vocabulary, seed } of cases) {
       const exo = GAME_KINDS[kind].make(makeContext("CI", level, seed, undefined, vocabulary));
-      const subject = MATH_KINDS.has(kind) ? "Mathématiques" : "Français";
+      const subject = subjectOfKind(kind);
       const defects = auditExercise({
         type: exo.type,
         prompt: exo.prompt,
@@ -971,7 +1066,7 @@ describe("les gabarits dans le programme du CI", () => {
     e.topic.games?.some((g) => (TEMPLATES as readonly string[]).includes(g.kind)),
   );
 
-  it("est branché sur treize thématiques du CI", () => {
+  it("est branché sur vingt et une thématiques du CI", () => {
     expect(entries.map((e) => e.topic.key).sort()).toEqual(
       [
         "fr-ci-alphabet",
@@ -987,6 +1082,14 @@ describe("les gabarits dans le programme du CI", () => {
         "ma-ci-formes",
         "ma-ci-mesures",
         "ma-ci-problemes",
+        "hi-ci-journee",
+        "hi-ci-ordre",
+        "hi-ci-hier-demain",
+        "hi-ci-semaine",
+        "ge-ci-position",
+        "ge-ci-lateralite",
+        "ge-ci-reperes",
+        "ge-ci-quadrillage",
       ].sort(),
     );
   });
@@ -1006,6 +1109,14 @@ describe("les gabarits dans le programme du CI", () => {
       "ma-ci-formes",
       "ma-ci-mesures",
       "ma-ci-problemes",
+      "hi-ci-journee",
+      "hi-ci-ordre",
+      "hi-ci-hier-demain",
+      "hi-ci-semaine",
+      "ge-ci-position",
+      "ge-ci-lateralite",
+      "ge-ci-reperes",
+      "ge-ci-quadrillage",
     ];
     for (const entry of entries) {
       for (const spec of entry.topic.games ?? []) {
@@ -1027,7 +1138,7 @@ describe("les gabarits dans le programme du CI", () => {
           palierCount: 4,
           seed: `${entry.topic.key}:${palierIndex}`,
         });
-        const subject = entry.topic.key.startsWith("ma-") ? "Mathématiques" : "Français";
+        const subject = subjectOfTopic(entry.topic.key);
         for (const exo of games) {
           const defects = auditExercise({
             type: exo.type,
@@ -1132,6 +1243,14 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     "ma-ci-formes",
     "ma-ci-mesures",
     "ma-ci-problemes",
+    "hi-ci-journee",
+    "hi-ci-ordre",
+    "hi-ci-hier-demain",
+    "hi-ci-semaine",
+    "ge-ci-position",
+    "ge-ci-lateralite",
+    "ge-ci-reperes",
+    "ge-ci-quadrillage",
   ];
   const topicOf = (key: string) => allProgrammeEntries().find((e) => e.topic.key === key)!.topic;
 
@@ -1240,7 +1359,7 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
           correctAnswer: game.answerKey,
           hints: game.hints,
         }));
-        const batch = shapeBatch(raw as Parameters<typeof shapeBatch>[0], { class: "CI", subject: "Français" });
+        const batch = shapeBatch(raw as Parameters<typeof shapeBatch>[0], { class: "CI", subject: subjectOfTopic(key) });
         expect(batch.exos, `${key} palier ${palierIndex}`).toHaveLength(games.length);
         expect(batch.audit.rejected, key).toBe(0);
         expect(batch.audit.warned, key).toBe(0);

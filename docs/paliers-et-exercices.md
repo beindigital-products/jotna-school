@@ -1045,6 +1045,27 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `classer-formes` | glisser-déposer | « Glisse chaque forme dans la bonne case. » : `⬛🔲` dans Carrés, `🔴` dans Ronds |
 | `rangee-position` | QCM | « Regarde la rangée 🐔 🍌 🐄. Qui est à gauche ? » : `🐔 la poule` |
 | `rangee-ordinal` | QCM | « …Qui est le troisième, en lisant de gauche à droite ? » |
+| `sur-sous` | QCM | « Regarde le dessin. » puis `🐈`, `📦` et `🐔` sur trois lignes, « Qui est sur la boîte ? » : `🐈 le chat` (« sous » dès le deuxième palier) |
+| `devant-derriere` | QCM | « Le chat est devant le chien. Qui est derrière ? » : `🐕 le chien` ; trois animaux à la queue leu leu au dernier palier |
+| `position-glisser` | glisser-déposer | « Le mouton est devant la maison. La vache est derrière la maison. Glisse chaque animal dans sa case. » |
+| `file-ordre` | ordre | « Le chat est devant le chien. Le chien est devant la poule. Mets-les dans l'ordre de la file. » : `🐈 le chat, 🐕 le chien, 🐔 la poule` (chaque phrase lie deux voisins : un seul ordre les respecte toutes ; « derrière » dès le deuxième palier, phrases mêlées au dernier) |
+| `a-cote` | QCM | « Regarde la rangée 🐔 🍌 🐄 🍎. Lequel est à côté de la poule ? » : `🍌 la banane` (le dessin de la question est au bout de la rangée : il n'a qu'un voisin) |
+| `entre` | QCM | « Lequel est entre le citron et le chien ? » : trois dessins puis cinq ; les deux dessins nommés ne se proposent jamais |
+| `pres-loin` | QCM | « Lequel est le plus près de la vache ? » ou « le plus loin » : le dessin de la question est au bout, le plus près est son voisin, le plus loin l'autre bout |
+| `rangee-voisin` | QCM | « Lequel est juste à droite du chat ? » ou « juste à gauche » |
+| `doigt-direction` | QCM | « Quel doigt montre la droite ? » : `👉`, parmi trois doigts, sans mot à lire |
+| `doigt-relier` | association | « Relie chaque doigt à la direction qu'il montre. » : `👉~à droite ; 👆~en haut…` (« à droite », pas « la droite » : un article et un nom ressembleraient à une chose sans image) |
+| `gauche-droite-glisser` | glisser-déposer | « Glisse chaque dessin à gauche ou à droite de la mangue. » (un dessin au moins de chaque côté) |
+| `rangee-copie` | ordre | « Regarde la rangée 🐟 🍉 🦒. Mets ces dessins dans le même ordre, de gauche à droite. » |
+| `repere-glisser` | glisser-déposer | « Glisse chaque dessin dans la bonne case, repère fixe ou repère mobile. » : `le baobab` est fixe, `la charrette` est mobile |
+| `repere-qcm` | QCM | « Lequel ne bouge pas ? » : `la mosquée` ; « Lequel peut bouger ? » dès le deuxième palier |
+| `repere-intrus` | QCM | « Lequel n'est pas comme les autres ? » : trois repères fixes et une voiture ; deux intrus d'un même palier ne sont jamais le même |
+| `repere-trajet` | ordre | « Awa part du portail, passe devant le baobab et arrive au marché. Mets-les dans l'ordre du trajet. » |
+| `grille-position` | QCM | « Regarde le quadrillage. » puis deux lignes de deux dessins (trois de trois ensuite), « Lequel est en bas à gauche ? » |
+| `grille-ligne-colonne` | QCM | « Lequel est dans la deuxième ligne et la première colonne ? » |
+| `grille-trou` | phrase à trous | le quadrillage, « Complète la phrase. » : `En bas à droite, il y a ___.` : `🐄 la vache` |
+| `pion-deplacement` | QCM | « Le pion est sur la mangue. Il descend d'une case. Où arrive-t-il ? » : le pion ne sort jamais du quadrillage ; deux cases dès le dernier palier |
+| `grille-glisser` | glisser-déposer | « Glisse chaque dessin en haut ou en bas. » (ou à gauche ou à droite) : deux dessins dans chaque case |
 | `intrus` | QCM | « Lequel n'est pas comme les autres ? » : trois fruits et un animal |
 | `appartient` | QCM | « Est-ce un fruit ? 🐔 » : Non |
 | `couleur-objet` | QCM | « Qu'est-ce qui est jaune ? » : `🍌 la banane`, parmi trois couleurs |
@@ -1052,6 +1073,24 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `animaux-ordre` | ordre | « Mets ces animaux dans l'ordre, du plus léger au plus lourd. » |
 | `moment-journee` | QCM | « Le soleil se couche. Quel moment de la journée est-ce ? » : `le soir` |
 | `jour-voisin` | QCM | « Quel jour vient juste après mardi ? » : mercredi |
+| `jours-ordre` | ordre | « Mets ces jours dans l'ordre de la semaine. » : `lundi, mardi, mercredi` (trois jours qui se suivent, puis quatre, puis quatre qui sautent un jour) |
+| `jour-manquant` | phrase à trous | « Complète les jours de la semaine. » : `lundi, mardi, ___, jeudi.` : `mercredi` (aucun mauvais choix ne complète la suite) |
+| `jour-ecole-repos` | glisser-déposer | « Glisse chaque jour dans sa case, jour d'école ou jour de repos. » : `dimanche` au repos, les autres à l'école ; jamais jeudi ni samedi, qui dépendent de l'école |
+| `jour-rang` | QCM | « Quel est le troisième jour de la semaine ? » : `mercredi` (la semaine commence le lundi ; aucun indice ne nomme un jour) |
+| `jours-relier` | association | « Relie chaque jour au jour qui vient juste après. » : `lundi~mardi ; mercredi~jeudi…` (trois paires, aucun jour des deux côtés) |
+| `jour-relatif` | QCM | « Nous sommes mardi. Quel jour sera demain ? » : `mercredi` ; hier dès le deuxième palier ; au dernier « Hier, c'était jeudi. Quel jour sommes-nous ? » (le jour cité n'est jamais un mauvais choix) |
+| `jour-hier-demain` | glisser-déposer | « Nous sommes mardi. Glisse chaque jour dans la bonne case. » : `lundi` dans Hier, `mardi` dans Aujourd'hui, `mercredi` dans Demain |
+| `jour-trou` | phrase à trous | « Nous sommes mardi. Hier, c'était ___. » : `lundi` |
+| `temps-ordre` | ordre | « Mets ces mots dans l'ordre du temps. » : `hier, aujourd'hui, demain` ou `avant, maintenant, après` |
+| `activite-moment` | QCM | « Quand déjeune-t-on ? » : `midi` (« le soir » et « la nuit » ne se proposent jamais ensemble) |
+| `moment-ordre` | ordre | « Mets ces moments dans l'ordre de la journée. » : `le matin, midi, le soir` |
+| `activite-ordre` | ordre | « Mets ce que fait Awa dans l'ordre de la journée. » : `⏰ se réveiller, 🍞 prendre le petit-déjeuner, 🍚 déjeuner` (jamais « se laver », qui dépend de la maison) |
+| `moment-voisin` | QCM | « Quel moment vient juste après midi ? » : `l'après-midi` (l'après-midi n'est jamais le repère de la question, et rien ne vient après la nuit) |
+| `activite-moments` | glisser-déposer | « Glisse chaque activité dans le bon moment de la journée. » : `🍞 prendre le petit-déjeuner` dans Le matin, `🍚 déjeuner` dans Midi (deux cases puis trois, chacune reçoit une activité) |
+| `cycle-ordre` | ordre | « Mets ces dessins dans l'ordre où ils grandissent. » : `la graine, la plante, le fruit` ou `l'œuf, le poussin, la poule` |
+| `avant-apres` | QCM | « Que devient l'œuf ? » : `le poussin` ; « Qu'est-ce qui vient avant la plante ? » : `la graine` (les mauvais choix viennent d'une autre famille) |
+| `avant-apres-glisser` | glisser-déposer | « Glisse chaque moment avant ou après midi. » : `le matin` dans Avant midi, `le soir` dans Après midi |
+| `grandir-relier` | association | « Relie chaque petit à l'animal adulte. » : `le poussin~la poule ; le chaton~le chat…` |
 | `image-compter` | QCM | « Combien de poules vois-tu dans la cour ? 🐔 🐑 🐔 🐔 🐑 » : 3 (deux sortes, puis trois) |
 | `image-qui` | QCM | « Voici les billes de Moussa 🔵🔵, de Fatou 🔵🔵🔵🔵🔵 et de Cheikh 🔵. Qui a le plus de billes ? » : `Fatou` ; au dernier palier « Qui a autant de billes que Moussa ? » avec quatre enfants |
 | `tableau-case` | QCM | « Regarde le tableau. » puis la grille `💚 💙 🧡` / `📗 ❔ 📙` sur deux lignes, « Quel dessin manque dans le tableau ? » : `📘` |
@@ -1141,6 +1180,34 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   ne les lit pas, lire est l'exercice, les émojis des deux premiers paliers aident.
   Les paliers déjà générés de cette thématique gardent les exercices du modèle jusqu'à leur
   invalidation (`pregen:invalidate`, voir plus haut).
+- **Le temps et l'espace** (`paliers/games/temps.ts`, `paliers/games/espace.ts`) : trente-neuf gabarits pour
+  l'histoire et la géographie du CI (`hi-ci-semaine`, `hi-ci-hier-demain`, `hi-ci-journee`, `hi-ci-ordre`,
+  `ge-ci-position`, `ge-ci-lateralite`, `ge-ci-reperes`, `ge-ci-quadrillage`). Le modèle y écrivait des exercices
+  faux ou injouables : un ordre sans critère (« Mets ces repères en ordre d'apparition »), une scène que rien ne
+  montre (« Place le chien à droite et le chat à gauche »), deux réponses qui vont (« Aujourd'hui, je vais ___ à
+  l'école »). Sur l'échantillon lu le 19 octobre 2026, 15 exercices de géographie sur 19 et 5 d'histoire sur 19
+  étaient faux. Ici la réponse se lit dans ce que l'énoncé montre ou dit.
+  - **Le temps** repose sur trois ordres que personne ne discute : les sept jours dans l'ordre de la semaine (elle
+    commence le lundi), les cinq moments dans l'ordre de la journée, deux cycles de croissance (la graine, la
+    plante, la fleur, le fruit ; l'œuf, le poussin, la poule). Jeudi et samedi ne sont jamais « jour d'école » ni
+    « jour de repos » (cela dépend de l'école), et « se laver » n'est jamais une activité du matin (cela dépend de
+    la maison). Le jour cité par la question n'est jamais un mauvais choix, et aucun indice ne nomme la réponse.
+  - **L'espace** DESSINE sa scène avec des émojis sur plusieurs lignes de l'énoncé (une pile, une rangée, un
+    quadrillage : `ExercisePrompt` garde les retours à la ligne ; la voix de Pio les aplatit et ne dit pas les
+    émojis, donc un énoncé nomme toujours le dessin par son nom), ou la dit en mots (« Le chat est devant le chien »).
+    Les mauvais choix ne peuvent pas être une deuxième bonne réponse : on ne demande « à côté de » ou « le plus près
+    de » que du dessin au bout d'une rangée, qui n'a qu'un voisin. La gauche est du côté où l'on commence à lire, le
+    haut est en haut de l'écran. Un repère FIXE ne bouge jamais (un baobab, une mosquée, un portail), un repère MOBILE
+    se déplace (une voiture, un âne, une charrette). Les dessins d'une scène n'ont pas d'élision (« l'éléphant » ferait
+    deux apostrophes dans l'énoncé). Les doigts `👉👈👆👇` restent des tuiles sans nom : ce ne sont pas des choses.
+  - Deux exercices d'un même palier ne se répètent pas (`pickFresh` sur les rangs, les cycles, les mots du temps, les
+    supports, les places du quadrillage et les intrus).
+  - `convex/__tests__/historyGeographyTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé, avec ses propres
+    tables (les jours, les moments, les cycles, les repères, le quadrillage) : un gabarit dont la réponse contredit sa
+    table échoue. Il vérifie aussi les règles communes (aucun « : », une apostrophe au plus, vingt mots,
+    aucun sélecteur de variation, un choix juste parmi des choix tous différents, aucun indice qui écrit la réponse,
+    une image pour chaque tuile qui nomme une chose) et fabrique 40 paliers de chacune des huit thématiques.
+    `templatesWithoutModel.test.ts` joue leur génération complète contre un faux modèle.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
@@ -1155,8 +1222,9 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 - **Où ils sont demandés** : le champ `games` des fiches `fr-ci-sons-1` à
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
   `ma-ci-nombres-20`, `ma-ci-trier`, `ma-ci-espace`, `ma-ci-formes`, `ma-ci-mesures` et
-  `ma-ci-problemes` (`convex/programme`), dix exercices par palier, voir plus bas ; le modèle n'écrit plus
-  rien. (Quand une fiche garde des exercices du
+  `ma-ci-problemes`, puis `hi-ci-journee`, `hi-ci-ordre`, `hi-ci-hier-demain`, `hi-ci-semaine`, `ge-ci-position`,
+  `ge-ci-lateralite`, `ge-ci-reperes` et `ge-ci-quadrillage` (`convex/programme`), dix exercices par palier, voir plus
+  bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
   modèle, le seuil de validation exige tous les exercices écrits : le modèle en
   écrit deux de plus et on garde les premiers valides, `scoring.exercisesToRequest`.)
   Un palier déjà généré garde ses exercices : il faut l'invalider
@@ -1188,6 +1256,18 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   3 moments de la journée, 3 jours voisins. **Problèmes :** `ma-ci-problemes` = les dix gabarits
   de petits problèmes, un de chaque, dans l'ordre de la fiche (l'image, le tableau, la donnée et
   la question, la donnée inutile) ; la difficulté vient du palier, pas du nombre d'exemplaires.
+  **Histoire et géographie :** `hi-ci-journee` = 2 moments du soleil (`moment-journee`), 2 activités et leur
+  moment, 2 moments rangés, une journée rangée, un moment voisin, 2 activités glissées dans leur moment ;
+  `hi-ci-ordre` = 2 cycles de croissance, un moment et une journée rangés, 3 « que devient », 2 moments avant
+  ou après un repère, un petit relié à l'adulte ; `hi-ci-hier-demain` = 3 hier ou demain, 2 jours glissés dans
+  Hier, Aujourd'hui, Demain, 2 phrases à trous, 2 mots du temps rangés, un jour voisin ; `hi-ci-semaine` = 2 jours
+  voisins, 2 jours rangés, 2 jours qui manquent, jour d'école ou de repos, 2 rangs, un relier ;
+  `ge-ci-position` = 2 sur ou sous, un devant ou derrière, 2 files rangées, 2 à côté, un entre, un plus près ou
+  plus loin, un devant ou derrière glissé ; `ge-ci-lateralite` = 2 places dans une rangée, 2 voisins, un doigt, un
+  doigt relié, 2 à gauche ou à droite glissés, 2 rangées copiées ; `ge-ci-reperes` = 2 repères glissés, 3 « lequel
+  ne bouge pas », 2 intrus, 3 trajets ; `ge-ci-quadrillage` = 3 dessins à copier (le jeu `pixel-copie`, qui reste
+  un jeu), 2 places, un texte à trous, 2 déplacements d'un pion, une ligne et une colonne, un dessin glissé en
+  haut ou en bas.
   `generateBucketCore` saute alors le modèle (`aiCount` vaut 0,
   `exercisesToRequest(0)` aussi), ne demande aucune réserve, n'échoue pas en
   `TOO_FEW_VALID_EXERCISES` et garde ses dix exercices, tant que le contrôleur
@@ -1197,13 +1277,14 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces treize thématiques contre un faux modèle qui lève une
+  chaque palier de ces vingt et une thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
   Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
-  haut) : en CI, les premières phrases, les salutations, l'éveil, l'histoire, la
-  géographie, l'instruction civique, l'anglais et l'éducation artistique ; toutes les autres classes.
+  haut) : en CI, les premières phrases, les salutations, l'éveil, l'instruction civique,
+  l'anglais et l'éducation artistique ; toutes les autres classes. L'histoire et la géographie du CI n'appellent plus
+  le modèle.
   Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
   dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
   rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à
@@ -1211,6 +1292,8 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 - **La vitrine** ne leur donne pas de carte : ce sont des QCM, des ordres, des
   associations et des phrases à trous, déjà montrés. Son test n'admet un exercice
   dans une thématique tout en jeux que si l'un de ses gabarits fabrique ce type
+  (l'histoire du CI montre sa phrase à trous dans « Les jours de la semaine », que `jour-manquant` fabrique, et la
+  géographie son relier dans « Ma droite et ma gauche », que `doigt-relier` fabrique)
   (le glisser-déposer du français du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
   modèle l'écrit ; celui des mathématiques à « Les formes et les solides », que `classer-formes`
   fabrique).
