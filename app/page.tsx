@@ -18,7 +18,10 @@ export default function StorefrontPage() {
     // Sur iOS et Android, ce composant renvoie vers /login : l'application
     // n'affiche pas la vitrine marchande. Sur le web il est transparent.
     <NativeAppGate>
-      <div className="flex min-h-screen flex-1 flex-col bg-white text-gray-900 overflow-x-hidden">
+      {/* `overflow-x-clip` et non `-hidden` : `hidden` fait de ce conteneur un
+          conteneur de défilement, et le `sticky` de la barre de navigation
+          s'y accroche au lieu de suivre la fenêtre. */}
+      <div className="flex min-h-screen flex-1 flex-col bg-white text-gray-900 overflow-x-clip">
       <Navbar />
       <main className="flex-1">
         <Hero />
