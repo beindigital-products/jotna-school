@@ -5,14 +5,16 @@ import { motion, useInView } from "framer-motion";
 import {
   BookOpen,
   Calculator,
-  Flame,
   FlaskConical,
   Globe2,
-  Target,
-  Trophy,
   type LucideIcon,
 } from "lucide-react";
 
+import {
+  MasteryGaugeIcon,
+  StreakFlameIcon,
+  TrophyRibbonIcon,
+} from "./landing-icons";
 import { Section } from "./section";
 import { NumberTicker } from "@/components/ui/number-ticker";
 
@@ -47,8 +49,8 @@ function MasteryCard() {
       className="rounded-3xl border border-gray-100 bg-white p-6"
     >
       <div className="flex items-center gap-3">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-          <Target className="size-5" aria-hidden />
+        <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-[0_8px_18px_-8px_rgba(245,158,11,0.55)]">
+          <MasteryGaugeIcon className="size-5" />
         </span>
         <div>
           <h3 className="text-lg font-extrabold text-gray-900">Maîtrise</h3>
@@ -93,8 +95,8 @@ function BadgesCard() {
       className="rounded-3xl border border-gray-100 bg-white p-6"
     >
       <div className="flex items-center gap-3">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-yellow-100 text-yellow-700">
-          <Trophy className="size-5" aria-hidden />
+        <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-600 text-white shadow-[0_8px_18px_-8px_rgba(249,115,22,0.55)]">
+          <TrophyRibbonIcon className="size-5" />
         </span>
         <div>
           <h3 className="text-lg font-extrabold text-gray-900">Badges</h3>
@@ -185,7 +187,7 @@ function StreakCard() {
           }
           className="flex size-10 items-center justify-center rounded-xl bg-white/20 text-white"
         >
-          <Flame className="size-5" aria-hidden />
+          <StreakFlameIcon className="size-5" />
         </motion.span>
         <div>
           <h3 className="text-lg font-extrabold">Série quotidienne</h3>

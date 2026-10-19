@@ -10,6 +10,7 @@ import {
   Users,
   Settings,
   Zap,
+  Hourglass,
 } from "lucide-react";
 
 import { Brand } from "@/components/landing/brand";
@@ -37,6 +38,7 @@ const sidebarLinks = [
   { href: "/admin/badges", label: "Badges", icon: Award },
   { href: "/admin/ecoles", label: "Écoles", icon: School },
   { href: "/admin/eleves", label: "Élèves", icon: Users },
+  { href: "/admin/liste-attente", label: "Liste d'attente", icon: Hourglass },
   { href: "/admin/settings", label: "Paramètres", icon: Settings },
 ];
 

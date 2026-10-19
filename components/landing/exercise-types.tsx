@@ -1,371 +1,434 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Apple, CheckCircle2, GripVertical } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import Link from "next/link";
+import { MotionConfig, motion } from "framer-motion";
+import { ArrowRight, Volume2 } from "lucide-react";
 
 import { Section } from "./section";
-import { StaggerContainer, StaggerItem } from "@/components/ui/motion-wrapper";
+import { SUBJECT_PRACTICE } from "./exercise-catalog";
+import { LANDING_SUBJECTS, type LandingSubject } from "./landing-subjects";
+import { useNearViewport } from "./use-near-viewport";
+import { CardShells, LoadFailure } from "./demo/card-frame";
+import { classicTypesFor, gamesFor } from "./demo/demo-matrix";
+import { CLASS_AGES, DEMO_CLASSES, type DemoClass, type DemoSubject } from "./demo/demo-types";
+import { cn } from "@/lib/utils";
 
-type ExerciseCard = {
-  label: string;
-  title: string;
-  description: string;
-  tint: string;
-  accent: string;
-  preview: (hovered: boolean) => React.ReactNode;
-};
+/**
+ * LES EXERCICES, À ESSAYER : une matière, une classe, et des cartes qu'on joue.
+ *
+ * Un parent, un professeur ou une école voit ici ce que son enfant ou son élève
+ * fera, SANS COMPTE : le visiteur choisit une matière et la classe de l'enfant,
+ * et chaque carte est un vrai exercice de cette classe, joué avec les écrans de
+ * l'application et corrigé par la même règle (`demo/demo-player.tsx`).
+ *
+ * CE QUI SE VOIT TOUT DE SUITE, CE QUI SE CHARGE ENSUITE. Le pré-rendu contient
+ * les onglets, le sélecteur de classe et les cartes de la classe, vides
+ * (`CardShells`) : de quoi lire ce que la classe propose. Les écrans des
+ * exercices, la règle de correction et les générateurs de jeux forment un lot à
+ * part (`demo/demo-cards.tsx`), que la page ne télécharge que quand le visiteur
+ * approche de la section ; la banque d'exercices de la matière regardée en est
+ * un autre (`demo/bank/`), que le premier va chercher.
+ */
 
-function QcmPreview({ hovered }: { hovered: boolean }) {
-  const options = [
-    { v: "12", ok: true },
-    { v: "8", ok: false },
-    { v: "15", ok: false },
-    { v: "6", ok: false },
-  ];
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {options.map((o, i) => (
-        <motion.div
-          key={o.v}
-          animate={
-            o.ok
-              ? hovered
-                ? {
-                    scale: [1, 1.08, 1],
-                    boxShadow: [
-                      "0 0 0 0 rgba(16,185,129,0)",
-                      "0 0 0 6px rgba(16,185,129,0.18)",
-                      "0 0 0 0 rgba(16,185,129,0)",
-                    ],
-                    transition: {
-                      duration: 1.2,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "easeInOut",
-                    },
-                  }
-                : { scale: 1, boxShadow: "0 0 0 0 rgba(16,185,129,0)" }
-              : hovered
-                ? {
-                    opacity: 0.45,
-                    transition: { duration: 0.3, delay: 0.1 + i * 0.05 },
-                  }
-                : { opacity: 1 }
-          }
-          className={
-            o.ok
-              ? "flex items-center justify-between rounded-xl border-2 border-emerald-400 bg-white px-3 py-2 text-sm font-bold text-emerald-700"
-              : "flex items-center justify-between rounded-xl border-2 border-gray-100 bg-white/80 px-3 py-2 text-sm font-semibold text-gray-500"
-          }
-        >
-          <span>{o.v}</span>
-          {o.ok && (
-            <motion.span
-              animate={hovered ? { rotate: [0, 15, -10, 0] } : { rotate: 0 }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
-            >
-              <CheckCircle2 className="size-4 text-emerald-500" aria-hidden />
-            </motion.span>
-          )}
-        </motion.div>
-      ))}
-    </div>
-  );
+const PANEL_ID = "exercices-panneau";
+const tabId = (key: DemoSubject) => `exercices-onglet-${key}`;
+
+/** La classe qu'on montre d'abord : au milieu du primaire, là où chaque matière a le plus à montrer. */
+const DEFAULT_CLASS: DemoClass = "CE2";
+
+/** Combien avant la section on commence à charger les exercices, pour qu'ils soient prêts à l'arrivée. */
+const LOAD_MARGIN = "900px 0px";
+
+/**
+ * La case où va le clavier après une flèche, Début ou Fin, dans une rangée
+ * d'onglets ou de boutons radio (WAI-ARIA) ; `null` pour une autre touche.
+ */
+function rovingTarget(key: string, current: number, total: number): number | null {
+  switch (key) {
+    case "ArrowRight":
+    case "ArrowDown":
+      return (current + 1) % total;
+    case "ArrowLeft":
+    case "ArrowUp":
+      return (current - 1 + total) % total;
+    case "Home":
+      return 0;
+    case "End":
+      return total - 1;
+    default:
+      return null;
+  }
 }
 
-function DragDropPreview({ hovered }: { hovered: boolean }) {
-  return (
-    <div className="space-y-2.5">
-      <motion.div
-        animate={
-          hovered
-            ? {
-                borderColor: "rgb(34,197,94)",
-                backgroundColor: "rgba(220,252,231,0.9)",
-              }
-            : {
-                borderColor: "rgb(253,186,116)",
-                backgroundColor: "rgba(255,255,255,0.7)",
-              }
-        }
-        transition={{ duration: 0.3, delay: hovered ? 0.45 : 0 }}
-        className="flex items-center justify-between gap-2 rounded-xl border-2 border-dashed px-3 py-2 text-xs font-bold"
-      >
-        <span className="flex items-center gap-2 text-orange-700">
-          <Apple className="size-4" aria-hidden />
-          Déposer ici : Fruits
-        </span>
-        <motion.span
-          initial={false}
-          animate={hovered ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.4 }}
-          transition={{ duration: 0.3, delay: hovered ? 0.55 : 0 }}
-        >
-          <CheckCircle2 className="size-4 text-emerald-500" aria-hidden />
-        </motion.span>
-      </motion.div>
-      <div className="flex gap-2">
-        <motion.span
-          animate={
-            hovered
-              ? { y: -40, x: 14, opacity: 0, scale: 0.85 }
-              : { y: 0, x: 0, opacity: 1, scale: 1 }
-          }
-          transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
-          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm"
-        >
-          <GripVertical className="size-3 text-gray-400" aria-hidden />
-          pomme
-        </motion.span>
-        <motion.span
-          animate={hovered ? { y: [0, -2, 0] } : { y: 0 }}
-          transition={{
-            duration: 1,
-            repeat: hovered ? Number.POSITIVE_INFINITY : 0,
-            ease: "easeInOut",
-          }}
-          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm"
-        >
-          <GripVertical className="size-3 text-gray-400" aria-hidden />
-          fraise
-        </motion.span>
-      </div>
-    </div>
-  );
+// ---------------------------------------------------------------------------
+// Les cartes jouables : un lot chargé à la demande
+// ---------------------------------------------------------------------------
+
+type CardsModule = typeof import("./demo/demo-cards");
+
+let cardsRequest: Promise<CardsModule> | undefined;
+let cardsReady: CardsModule | undefined;
+
+/** Le lot des cartes jouables, demandé une fois ; un échec se redemande au « Réessayer ». */
+function loadCards(): Promise<CardsModule> {
+  if (!cardsRequest) {
+    const pending = import("./demo/demo-cards");
+    cardsRequest = pending;
+    pending.then(
+      (module) => {
+        cardsReady = module;
+      },
+      () => {
+        if (cardsRequest === pending) cardsRequest = undefined;
+      },
+    );
+  }
+  return cardsRequest;
 }
 
-function AssociationPreview({ hovered }: { hovered: boolean }) {
-  const pairs = [
-    { a: "chat", b: "miauler" },
-    { a: "chien", b: "aboyer" },
-  ];
-  return (
-    <div className="space-y-2">
-      {pairs.map((pair, i) => (
-        <div
-          key={pair.a}
-          className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 text-xs font-bold"
-        >
-          <motion.span
-            animate={
-              hovered
-                ? {
-                    backgroundColor: "rgb(224,242,254)",
-                    scale: [1, 1.04, 1],
-                  }
-                : { backgroundColor: "rgb(255,255,255)", scale: 1 }
-            }
-            transition={{ duration: 0.4, delay: i * 0.2 }}
-            className="rounded-lg px-2.5 py-1.5 text-center text-gray-700 shadow-sm ring-1 ring-sky-200"
-          >
-            {pair.a}
-          </motion.span>
-          <motion.span
-            animate={
-              hovered
-                ? { scale: [1, 1.4, 1], color: "#0284c7" }
-                : { scale: 1, color: "#7dd3fc" }
-            }
-            transition={{
-              duration: 0.6,
-              delay: i * 0.2 + 0.1,
-              repeat: hovered ? Number.POSITIVE_INFINITY : 0,
-              repeatDelay: 0.8,
-            }}
-            aria-hidden
-            className="font-black"
-          >
-            ←→
-          </motion.span>
-          <motion.span
-            animate={
-              hovered
-                ? {
-                    backgroundColor: "rgb(224,242,254)",
-                    scale: [1, 1.04, 1],
-                  }
-                : { backgroundColor: "rgb(255,255,255)", scale: 1 }
-            }
-            transition={{ duration: 0.4, delay: i * 0.2 + 0.2 }}
-            className="rounded-lg px-2.5 py-1.5 text-center text-gray-700 shadow-sm ring-1 ring-sky-200"
-          >
-            {pair.b}
-          </motion.span>
-        </div>
-      ))}
-    </div>
-  );
+/**
+ * Le lot des cartes jouables, une fois `enabled` : tout de suite s'il est déjà
+ * arrivé (revenir à une matière ne montre pas de cartes vides), sinon à
+ * l'arrivée du fichier. Un échec se dit (`failed`) et se retente (`retry`).
+ */
+function useCards(enabled: boolean) {
+  const [attempt, setAttempt] = useState(0);
+  const [outcome, setOutcome] = useState<{ attempt: number; module: CardsModule | null } | null>(null);
+
+  useEffect(() => {
+    if (!enabled || cardsReady) return;
+    let cancelled = false;
+    loadCards().then(
+      (module) => {
+        if (!cancelled) setOutcome({ attempt, module });
+      },
+      () => {
+        if (!cancelled) setOutcome({ attempt, module: null });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, attempt]);
+
+  const mine = outcome?.attempt === attempt ? outcome : null;
+  return {
+    Cards: enabled ? (cardsReady ?? mine?.module ?? null)?.default ?? null : null,
+    failed: enabled && !cardsReady && mine !== null && mine.module === null,
+    retry: () => setAttempt((current) => current + 1),
+  };
 }
 
-function OrderPreview({ hovered }: { hovered: boolean }) {
-  const letters = ["L", "I", "V", "R", "E"];
-  return (
-    <div className="flex items-center justify-center gap-1.5 text-sm font-extrabold">
-      {letters.map((l, i) => (
-        <motion.span
-          key={l}
-          animate={
-            hovered
-              ? { y: [0, -10, 0], rotate: [0, -6, 6, 0] }
-              : { y: 0, rotate: 0 }
-          }
-          transition={{
-            duration: 0.5,
-            delay: i * 0.08,
-            ease: "easeInOut",
-          }}
-          className="relative flex size-9 items-center justify-center rounded-lg bg-white text-lime-800 shadow-sm ring-1 ring-lime-300"
-        >
-          <motion.span
-            initial={false}
-            animate={
-              hovered
-                ? { scale: [0.6, 1.3, 1], opacity: 1 }
-                : { scale: 1, opacity: 1 }
-            }
-            transition={{ duration: 0.35, delay: i * 0.08 + 0.05 }}
-            className="absolute -top-1.5 -right-1 flex size-4 items-center justify-center rounded-full bg-lime-500 text-[9px] font-bold text-white"
-          >
-            {i + 1}
-          </motion.span>
-          {l}
-        </motion.span>
-      ))}
-    </div>
-  );
-}
+// ---------------------------------------------------------------------------
+// Le panneau d'une matière
+// ---------------------------------------------------------------------------
 
-function FreeAnswerPreview({ hovered }: { hovered: boolean }) {
+const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
+
+function SubjectPanel({
+  subject,
+  klass,
+  animate,
+  Cards,
+  failed,
+  onRetry,
+}: {
+  subject: LandingSubject;
+  klass: DemoClass;
+  animate: boolean;
+  /** Le lot des exercices jouables, une fois arrivé : il remplace les cartes vides. */
+  Cards: CardsModule["default"] | null;
+  failed: boolean;
+  onRetry: () => void;
+}) {
+  const { icon: Icon } = subject;
+  const classic = classicTypesFor(subject.key, klass);
+  const games = gamesFor(subject.key, klass);
+  const count = [
+    plural(classic.length, "type d'exercice", "types d'exercices"),
+    games.length > 0 ? plural(games.length, "type de jeu", "types de jeux") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <motion.div
-      animate={
-        hovered
-          ? { borderColor: "rgb(34,197,94)" }
-          : { borderColor: "rgb(250,204,21)" }
-      }
-      transition={{ duration: 0.3, delay: hovered ? 0.3 : 0 }}
-      className="rounded-xl border-2 bg-white px-3 py-2.5 shadow-sm"
+      role="tabpanel"
+      id={PANEL_ID}
+      aria-labelledby={tabId(subject.key)}
+      // Le premier affichage est celui du pré-rendu : pas de fondu, pas de
+      // saut. Seul le changement de matière anime le panneau.
+      initial={animate ? { opacity: 0, y: 10 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.21, 0.47, 0.32, 0.98] }}
+      className="mt-8"
     >
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-        Ta réponse
-      </p>
-      <p className="mt-1 flex items-center text-base font-extrabold text-gray-900">
-        <motion.span
-          animate={hovered ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-          transition={{ duration: 0.4 }}
-          className="inline-block"
-        >
-          42
-        </motion.span>
-        <motion.span
+      {/* L'icône et le texte côte à côte, y compris sur téléphone ; le compte
+          passe dessous, puis à droite dès `sm`. */}
+      <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3 rounded-3xl bg-gray-50/80 p-5 ring-1 ring-gray-100 sm:grid-cols-[auto_1fr_auto] sm:gap-x-5 sm:p-6">
+        <span
           aria-hidden
-          animate={hovered ? { opacity: 0 } : { opacity: 1 }}
-          transition={{ duration: 0.2 }}
-          className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-amber-500 align-middle"
-        />
-      </p>
-      <div className="mt-1 h-4 overflow-hidden">
-        <motion.div
-          initial={false}
-          animate={
-            hovered ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }
-          }
-          transition={{ duration: 0.3, delay: hovered ? 0.35 : 0 }}
-          className="flex items-center gap-1 text-[10px] font-bold text-emerald-600"
+          className={`flex size-12 items-center justify-center rounded-2xl text-white sm:size-14 ${subject.gradient}`}
         >
-          <CheckCircle2 className="size-3" aria-hidden />
-          Validé !
-        </motion.div>
+          <Icon className="size-6 sm:size-7" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-xl font-extrabold text-gray-900">{subject.title}</h3>
+          <p className="mt-1 text-sm leading-6 text-gray-600">{SUBJECT_PRACTICE[subject.key]}</p>
+        </div>
+        <p
+          role="status"
+          className="col-span-2 w-fit rounded-full bg-white px-3 py-1.5 text-xs font-bold text-gray-700 ring-1 ring-gray-200 sm:col-span-1"
+        >
+          En {klass} : {count}
+        </p>
+      </div>
+
+      <ClassNotes klass={klass} />
+
+      <p className="mt-4 text-center text-sm leading-6 text-gray-500">
+        Essayez de répondre, et même de vous tromper : Pio encourage, un indice s&apos;ouvre après chaque erreur, et la
+        bonne réponse s&apos;affiche au troisième essai raté.
+      </p>
+
+      <div className="mt-8">
+        {failed ? (
+          <LoadFailure onRetry={onRetry} />
+        ) : Cards ? (
+          <Cards subject={subject.key} klass={klass} />
+        ) : (
+          <CardShells subject={subject.key} klass={klass} />
+        )}
       </div>
     </motion.div>
   );
 }
 
-const TYPES: ExerciseCard[] = [
-  {
-    label: "QCM",
-    title: "Questions à choix multiples",
-    description: "Quatre propositions, une bonne réponse. Simple et efficace.",
-    tint: "from-amber-50 to-amber-100/60",
-    accent: "text-amber-700",
-    preview: (hovered) => <QcmPreview hovered={hovered} />,
-  },
-  {
-    label: "Glisser-déposer",
-    title: "Drag & drop",
-    description: "Classer, trier, ranger — par le geste.",
-    tint: "from-orange-50 to-orange-100/60",
-    accent: "text-orange-700",
-    preview: (hovered) => <DragDropPreview hovered={hovered} />,
-  },
-  {
-    label: "Association",
-    title: "Relier les paires",
-    description: "Associer des mots, images ou concepts qui vont ensemble.",
-    tint: "from-sky-50 to-sky-100/60",
-    accent: "text-sky-700",
-    preview: (hovered) => <AssociationPreview hovered={hovered} />,
-  },
-  {
-    label: "Mise en ordre",
-    title: "Remettre en ordre",
-    description: "Chronologie, étapes, lettres d'un mot — dans le bon ordre.",
-    tint: "from-lime-50 to-lime-100/60",
-    accent: "text-lime-700",
-    preview: (hovered) => <OrderPreview hovered={hovered} />,
-  },
-  {
-    label: "Réponse libre",
-    title: "Réponse courte",
-    description: "Écrire la solution — l'orthographe compte.",
-    tint: "from-yellow-50 to-yellow-100/60",
-    accent: "text-yellow-700",
-    preview: (hovered) => <FreeAnswerPreview hovered={hovered} />,
-  },
-];
-
-function ExerciseCardView({ type }: { type: ExerciseCard }) {
-  const [hovered, setHovered] = useState(false);
+/** Ce qui change pour les plus petits : la voix de Pio dans l'application, et pas de réponse à écrire au CI. */
+function ClassNotes({ klass }: { klass: DemoClass }) {
+  if (klass !== "CI" && klass !== "CP") return null;
   return (
-    <StaggerItem
-      className="group flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 transition-all hover:-translate-y-1 hover:border-gray-200 hover:shadow-xl"
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
-      onTap={() => setHovered((current) => !current)}
-    >
-      <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-gray-900 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
-        <span className={`size-1.5 rounded-full bg-current ${type.accent}`} />
-        {type.label}
+    <p className="mt-4 flex items-start gap-2.5 rounded-2xl bg-sky-50 px-4 py-3 text-sm leading-6 text-sky-950 ring-1 ring-sky-100">
+      <Volume2 className="mt-0.5 size-4 flex-none text-sky-600" aria-hidden />
+      <span>
+        Au {klass}, l&apos;enfant apprend à lire :{" "}
+        <strong className="font-semibold">dans l&apos;application, Pio lit chaque consigne à voix haute</strong>
+        {klass === "CI" ? ", et aucune réponse n'est à taper au clavier" : ""}. Ici, c&apos;est à vous de la lire.
       </span>
-      <h3 className="mt-4 text-lg font-extrabold text-gray-900">
-        {type.title}
-      </h3>
-      <p className="mt-1.5 text-sm leading-6 text-gray-600">
-        {type.description}
-      </p>
-      <div className="mt-auto pt-5">
-        <div
-          className={`flex min-h-[140px] items-center justify-center rounded-2xl bg-gradient-to-br ${type.tint} p-4 ring-1 ring-inset ring-white/60 transition-shadow group-hover:shadow-inner`}
-        >
-          <div className="w-full">{type.preview(hovered)}</div>
-        </div>
-      </div>
-    </StaggerItem>
+    </p>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Les onglets des matières et le sélecteur de classe
+// ---------------------------------------------------------------------------
+
+function SubjectTabs({
+  active,
+  onChange,
+}: {
+  active: DemoSubject;
+  onChange: (key: DemoSubject) => void;
+}) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const total = LANDING_SUBJECTS.length;
+
+  function select(index: number) {
+    onChange(LANDING_SUBJECTS[index].key);
+    refs.current[index]?.focus();
+  }
+
+  // Les flèches changent de matière, Début et Fin vont aux extrémités : le
+  // clavier se comporte comme celui d'un jeu d'onglets (WAI-ARIA).
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const current = LANDING_SUBJECTS.findIndex((subject) => subject.key === active);
+    const target = rovingTarget(event.key, current, total);
+    if (target === null) return;
+    event.preventDefault();
+    select(target);
+  }
+
+  return (
+    <div
+      role="tablist"
+      aria-label="Matières"
+      onKeyDown={onKeyDown}
+      // Sur téléphone, une rangée qui défile de côté jusqu'au bord de l'écran ;
+      // dès `sm`, les huit matières passent à la ligne, centrées.
+      className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden"
+    >
+      {LANDING_SUBJECTS.map(({ key, icon: Icon, title, gradient }, i) => {
+        const selected = key === active;
+        return (
+          <button
+            key={key}
+            ref={(element) => {
+              refs.current[i] = element;
+            }}
+            type="button"
+            role="tab"
+            id={tabId(key)}
+            aria-selected={selected}
+            aria-controls={PANEL_ID}
+            tabIndex={selected ? 0 : -1}
+            onClick={(event) => {
+              onChange(key);
+              event.currentTarget.scrollIntoView?.({ block: "nearest", inline: "center" });
+            }}
+            className={cn(
+              "inline-flex flex-none items-center gap-1.5 rounded-full border px-2.5 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500",
+              selected
+                ? "border-gray-900 bg-gray-900 text-white shadow-md"
+                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50",
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn("flex size-5 items-center justify-center rounded-full text-white", gradient)}
+            >
+              <Icon className="size-3" />
+            </span>
+            {title}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ClassPicker({
+  active,
+  onChange,
+}: {
+  active: DemoClass;
+  onChange: (klass: DemoClass) => void;
+}) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const total = DEMO_CLASSES.length;
+
+  function select(index: number) {
+    onChange(DEMO_CLASSES[index]);
+    refs.current[index]?.focus();
+  }
+
+  // Comme un groupe de boutons radio : les flèches choisissent la classe voisine.
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const target = rovingTarget(event.key, DEMO_CLASSES.indexOf(active), total);
+    if (target === null) return;
+    event.preventDefault();
+    select(target);
+  }
+
+  return (
+    <div className="mt-6 flex flex-col items-center gap-3">
+      <p id="exercices-classe" className="text-sm font-bold text-gray-900">
+        Classe de votre enfant
+      </p>
+      <div
+        role="radiogroup"
+        aria-labelledby="exercices-classe"
+        onKeyDown={onKeyDown}
+        // Trois par rangée sur téléphone, les six d'un trait dès `sm`.
+        className="grid w-full max-w-sm grid-cols-3 gap-2 sm:flex sm:max-w-none sm:justify-center"
+      >
+        {DEMO_CLASSES.map((klass, i) => {
+          const selected = klass === active;
+          return (
+            <button
+              key={klass}
+              ref={(element) => {
+                refs.current[i] = element;
+              }}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => onChange(klass)}
+              className={cn(
+                "flex flex-col items-center rounded-2xl border px-4 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 sm:min-w-[5.5rem]",
+                selected
+                  ? "border-amber-500 bg-amber-100 text-amber-950 shadow-sm ring-2 ring-amber-500/25"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-amber-300 hover:bg-amber-50/50",
+              )}
+            >
+              <span className="text-base font-extrabold leading-tight">{klass}</span>
+              <span className={cn("text-[11px] font-medium", selected ? "text-amber-900/80" : "text-gray-500")}>
+                {CLASS_AGES[klass]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// La section
+// ---------------------------------------------------------------------------
+
 export function ExerciseTypes() {
+  const [active, setActive] = useState<DemoSubject>(LANDING_SUBJECTS[0].key);
+  const [klass, setKlass] = useState<DemoClass>(DEFAULT_CLASS);
+  // Vrai dès le premier choix du visiteur : voir `SubjectPanel`.
+  const [changed, setChanged] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const near = useNearViewport(rootRef, LOAD_MARGIN);
+  // Le visiteur qui touche à un choix a déjà approché : on charge sans attendre l'observateur.
+  const { Cards, failed, retry } = useCards(near || changed);
+  const subject = LANDING_SUBJECTS.find((entry) => entry.key === active) ?? LANDING_SUBJECTS[0];
+
   return (
     <Section
       id="exercices"
-      eyebrow="Exercices"
-      title="Cinq formats, toujours ludiques."
-      description="Survole les cartes pour voir chaque format en action — pour garder l'attention et varier les plaisirs."
+      eyebrow="Exercices par matière"
+      title="Essayez comme un élève."
+      description="Choisissez une matière et la classe de votre enfant : chaque carte est un vrai exercice, à jouer ici, sans créer de compte. Même écran, même correction que dans l'application."
     >
-      <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {TYPES.map((type) => (
-          <ExerciseCardView key={type.label} type={type} />
-        ))}
-      </StaggerContainer>
+      <MotionConfig reducedMotion="user">
+        <div ref={rootRef}>
+          <SubjectTabs
+            active={active}
+            onChange={(key) => {
+              setActive(key);
+              setChanged(true);
+            }}
+          />
+          <ClassPicker
+            active={klass}
+            onChange={(next) => {
+              setKlass(next);
+              setChanged(true);
+            }}
+          />
+          <SubjectPanel
+            key={subject.key}
+            subject={subject}
+            klass={klass}
+            animate={changed}
+            Cards={Cards}
+            failed={failed}
+            onRetry={retry}
+          />
+        </div>
+
+        <div className="mt-12 rounded-3xl bg-gray-50/80 p-6 text-center ring-1 ring-gray-100 sm:p-8">
+          <p className="text-lg font-extrabold text-gray-900">Ce n&apos;est qu&apos;un aperçu.</p>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-600">
+            Dans l&apos;application, chaque matière se découpe en thématiques et chaque thématique en paliers de
+            difficulté croissante, de la découverte à la maîtrise. Rien n&apos;est enregistré ici : créez un compte
+            pour suivre les progrès de votre enfant.
+          </p>
+          <Link
+            href="/register"
+            className="group mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98]"
+          >
+            S&apos;inscrire
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </Link>
+        </div>
+      </MotionConfig>
     </Section>
   );
 }

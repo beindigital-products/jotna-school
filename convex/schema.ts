@@ -2,6 +2,10 @@ import { defineSchema, defineTable } from "convex/server";
 import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { classEnum, visibleClassValidator } from "./curriculum";
+import { moduleKeyValidator } from "./moduleCatalog";
+import { exerciseTypeValidator } from "./exerciseTypes";
+import { placementLevelValidator } from "./arabic/progressRules";
+import { waitlistAudienceValidator } from "./waitlistRules";
 
 // ---------------------------------------------------------------------------
 // AI gateway purposes — mirrors aiGateway/registry.ts. Listed here as
@@ -41,19 +45,27 @@ export default defineSchema({
     // Parental consent for AI data processing (Loi 2008-12, Sénégal)
     aiDataConsentGranted: v.optional(v.boolean()),
     aiDataConsentGrantedAt: v.optional(v.number()),
-    // Niveau de l'élève.
+    // Niveau de l'élève, fourni par l'ÉCOLE.
     //
-    // ATTENTION — ce champ N'EST ENCORE LU PAR AUCUNE lecture de contenu.
-    // `students.getStudentSubjectMap` charge tous les topics d'une matière par
-    // `by_subjectId`, sans filtre de niveau : un élève voit donc toujours les
-    // six niveaux, et l'ajout de ce champ n'y a rien changé. La session de
-    // palier tient son niveau de `topic.class`, pas d'ici.
+    // Écritures : `schools.enrollStudent`, `schools.transferStudent` et
+    // l'import en masse (`studentImport.ts`), qui l'alignent sur la classe
+    // d'inscription. Aucun écran ne laisse l'enfant ou le parent le saisir.
     //
-    // Seule écriture à ce jour : `schools.enrollStudent`, qui l'aligne sur la
-    // classe d'inscription. Le filtrage par niveau reste à faire — c'est la
-    // décision D10 de la spec, déclarée mais non réalisée.
+    // Lectures : le paywall (`accessRules.decideAccess`) refuse `no_class` à
+    // un élève inscrit sans classe visible, et `students.getStudentSubjectMap`
+    // (D10) ne montre que les thématiques de ce niveau. La session de palier tient son niveau de `topic.class`, pas
+    // d'ici — les deux coïncident dès que le parcours est filtré.
     class: v.optional(classEnum),
-  }).index("by_userId", ["userId"]),
+    // CODE ÉLÈVE (`ELV-7C4K2M`), élèves seulement, stocké normalisé
+    // (`importCodes.normalizeCode`). La famille le donne au professeur, qui
+    // le saisit pour ajouter l'enfant à sa classe (`classrooms.addStudentByCode`).
+    // Distinct du code de connexion, qui est aussi le mot de passe. Posé à la
+    // création du compte, ou à la demande pour un compte plus ancien
+    // (`family.ensureStudentCode`). Voir `convex/openAccessRules.ts`.
+    studentCode: v.optional(v.string()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_studentCode", ["studentCode"]),
 
   // ---------------------------------------------------------------------------
   // studentGuardians
@@ -99,6 +111,19 @@ export default defineSchema({
     // base, le système scolaire sénégalais en compte davantage, et fermer la
     // liste ferait échouer la prochaine poussée sur la première non devinée.
     serie: v.optional(v.string()),
+
+    // LE NOMBRE D'ÉTAPES DE LA THÉMATIQUE, de 1 à 10 paliers de dix exercices.
+    // Absent, c'est le défaut du niveau qui vaut (`palierRules.ts` : 3 en
+    // CI/CP, 4 en CE, 5 en CM). Posé depuis l'administration pour une
+    // thématique plus large ou plus étroite que la moyenne de son niveau.
+    palierCount: v.optional(v.number()),
+
+    // LA FICHE DU PROGRAMME OFFICIEL dont la thématique vient
+    // (`convex/programme`, clé « hi-cm2-empires »). Posée par le chargement
+    // du programme (`programme/seed.ts`) ; absente pour une thématique créée
+    // à la main. La génération y retrouve les jeux à mêler au palier
+    // (`paliers/games`) même quand un administrateur a renommé la thématique.
+    programmeKey: v.optional(v.string()),
   })
     .index("by_subjectId", ["subjectId"])
     .index("by_subjectId_class", ["subjectId", "class"]),
@@ -108,13 +133,9 @@ export default defineSchema({
   // ---------------------------------------------------------------------------
   exercises: defineTable({
     topicId: v.id("topics"),
-    type: v.union(
-      v.literal("qcm"),
-      v.literal("drag-drop"),
-      v.literal("match"),
-      v.literal("order"),
-      v.literal("short-answer"),
-    ),
+    // La liste vit dans `exerciseTypes.ts` : les cinq types classiques, la
+    // phrase à trous et les quatre jeux fabriqués par le code.
+    type: exerciseTypeValidator,
     prompt: v.string(),
     payload: v.any(),
     answerKey: v.string(),
@@ -192,6 +213,11 @@ export default defineSchema({
     correctExercises: v.number(),
     totalHintsUsed: v.number(),
     masteryLevel: v.number(),
+    // LES ÉTOILES DE LA THÉMATIQUE : pour chaque palier, celles de la
+    // meilleure tentative finie (trois par exercice au plus), additionnées.
+    // Posé par `progression.syncTopicProgress` ; le carnet et le bandeau du
+    // sentier en font la somme. Absent sur une ligne pas encore recalculée.
+    starsEarned: v.optional(v.number()),
     completedAt: v.optional(v.number()),
   })
     .index("by_studentId", ["studentId"])
@@ -322,6 +348,14 @@ export default defineSchema({
       v.object({
         totalChecked: v.number(),
         divergences: v.number(),
+        // Divergences corrigées par l'arithmétique (`paliers/mathRepair.ts`) :
+        // la clé servie est la valeur calculée, pas celle du modèle.
+        repaired: v.optional(v.number()),
+        // Le contrôleur structurel (`paliers/exerciseAudit.ts`) : exercices du
+        // modèle écartés pour un défaut bloquant, et exercices gardés avec
+        // des avertissements. Optionnels : les paliers déjà écrits n'en ont pas.
+        auditRejected: v.optional(v.number()),
+        auditWarnings: v.optional(v.number()),
       }),
     ),
     shuffleSeed: v.optional(v.string()), // Decision 75 — server-side deterministic shuffle seed prefix
@@ -354,10 +388,38 @@ export default defineSchema({
     averageScore: v.optional(v.number()), // 0..10
     failedExerciseIds: v.optional(v.array(v.id("exercises"))),
     regenCount: v.number(), // 0..3, capped at submitPalier-level
+    // LE RÉSUMÉ DE LA TENTATIVE, posé à `submitPalier` (`progressionRules`).
+    // C'est de lui que vivent la jauge de niveau, les étoiles du camp et
+    // les trophées ; `progression:rebuild` le pose sur les tentatives d'avant.
+    // Facultatif : une tentative en cours ou pas encore rattrapée n'en a pas.
+    exerciseCount: v.optional(v.number()),
+    correctCount: v.optional(v.number()),
+    firstTryCount: v.optional(v.number()),
+    noHintCount: v.optional(v.number()),
+    hintsUsed: v.optional(v.number()),
+    starsTotal: v.optional(v.number()),
+    timeSpentMs: v.optional(v.number()),
+    // UNE SÉANCE JOUÉE SUR L'APPAREIL (`docs/hors-ligne.md`). L'application
+    // joue le palier sans attendre le réseau, puis l'envoie à la
+    // synchronisation (`offline/sync.ts`) : `clientSessionId` est l'identifiant
+    // que l'appareil lui a donné, et rend l'envoi rejouable sans doublon.
+    // `playedExerciseIds` dit QUELS exercices l'enfant a joués, dans l'ordre :
+    // un palier peut avoir été régénéré entre la séance et son envoi, et ses
+    // exercices du moment ne sont plus ceux-là. Absents sur une séance
+    // jouée en ligne d'ancienne manière.
+    clientSessionId: v.optional(v.string()),
+    playedExerciseIds: v.optional(v.array(v.id("exercises"))),
+    /**
+     * Combien d'entrées du journal de la séance (réponses, indices) sont déjà
+     * écrites. Le journal ne fait que grandir : le renvoyer n'écrit que ce
+     * qui dépasse ce nombre.
+     */
+    syncedLogLength: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_user_palier", ["userId", "palierId"])
-    .index("by_palier", ["palierId"]),
+    .index("by_palier", ["palierId"])
+    .index("by_user_clientSession", ["userId", "clientSessionId"]),
 
   // ---------------------------------------------------------------------------
   // palierAttemptHistory
@@ -565,7 +627,24 @@ export default defineSchema({
       v.literal("suspended"),
     ),
     createdAt: v.number(),
-  }).index("by_status", ["status"]),
+    // ACCÈS LIBRE (`convex/openAccessRules.ts`).
+    //
+    // `kind: "personal"` : l'espace d'un professeur qui n'a pas d'école. Ses
+    // classes et inscriptions exigent un `schoolId`, et cet espace le leur
+    // donne sans rien changer au reste du schéma. Il n'apparaît jamais comme
+    // une école à l'écran. Quand le professeur rejoint une vraie école
+    // (`classrooms.joinSchoolWithCode`), ses classes y passent.
+    kind: v.optional(v.literal("personal")),
+    // Le profil qui a créé l'école ou l'espace : le directeur, ou le
+    // professeur pour un espace personnel.
+    ownerProfileId: v.optional(v.id("profiles")),
+    // CODE ÉCOLE (`ECO-7C4K2M`), stocké normalisé. Les professeurs le
+    // saisissent pour rejoindre l'école. Absent sur un espace personnel.
+    joinCode: v.optional(v.string()),
+  })
+    .index("by_status", ["status"])
+    .index("by_ownerProfileId", ["ownerProfileId"])
+    .index("by_joinCode", ["joinCode"]),
 
   schoolStaff: defineTable({
     schoolId: v.id("schools"),
@@ -988,4 +1067,301 @@ export default defineSchema({
   })
     .index("by_code", ["code"])
     .index("by_student", ["studentId"]),
+
+  // ===========================================================================
+  // MODULE « ARABE & CORAN » — enseignement optionnel, allumé par l'école.
+  //
+  // CE QUE CE BLOC AJOUTE, ET CE QU'IL NE TOUCHE PAS. Quatre tables, toutes
+  // neuves, et pas une ligne de plus ailleurs : ni `subjects`, ni `topics`, ni
+  // `exercises`, ni `attempts`. Le module a son propre contenu (vingt-huit
+  // lettres et six sourates, écrites en TypeScript dans `convex/arabic/`, pas
+  // en base) et sa propre progression, parce qu'il ne se joue pas comme un
+  // palier : on y écoute, on y parle, on y écrit au doigt, et aucune de ces
+  // trois choses n'entre dans `attempts.submittedAnswer`. Greffer l'arabe sur
+  // le moteur d'exercices aurait demandé de tordre les deux.
+  // ===========================================================================
+
+  // Quels modules optionnels cette école a allumés.
+  //
+  // L'ABSENCE DE LIGNE VAUT « ÉTEINT » (voir `convex/moduleCatalog.ts`). Une
+  // école qui n'a rien demandé n'a donc aucune ligne ici, et ses élèves ne
+  // voient rien du module — c'est l'état de toutes les écoles le jour où ce
+  // code est déployé, et c'est le seul état acceptable par défaut pour un
+  // enseignement religieux.
+  //
+  // UNE LIGNE PAR (école, module), maintenue par `modules.setForSchool` :
+  // éteindre n'efface pas la ligne, ça passe `enabled` à faux. La différence
+  // compte — `updatedBy` et `updatedAt` disent alors QUI a éteint et QUAND,
+  // là où une suppression ne dirait plus rien.
+  schoolModules: defineTable({
+    schoolId: v.id("schools"),
+    moduleKey: moduleKeyValidator,
+    enabled: v.boolean(),
+    // L'auteur du dernier changement : un `admin`, ou le `directeur` de cette
+    // école. Copié, jamais relu pour autoriser quoi que ce soit — même
+    // principe que les journaux de `schools.ts`.
+    updatedBy: v.id("profiles"),
+    updatedAt: v.number(),
+  })
+    .index("by_school", ["schoolId"])
+    // La question du chemin chaud : « CE module est-il allumé pour CETTE
+    // école ? », posée à chaque ouverture de l'espace arabe par un élève.
+    .index("by_school_module", ["schoolId", "moduleKey"]),
+
+  // L'AUDIO SYNTHÉTISÉ, mis en cache.
+  //
+  // POURQUOI UN CACHE, ET NON UN APPEL PAR ÉCOUTE. Le texte est FINI et connu
+  // d'avance : vingt-huit noms de lettres, quatre-vingt-quatre syllabes,
+  // quelques dizaines de mots, vingt-huit versets. Une classe de quarante
+  // élèves qui révise l'alphabet, c'est le même « بَاء » demandé des centaines
+  // de fois par semaine. Sans cache, chaque écoute serait un appel facturé
+  // chez le fournisseur de voix, pour un fichier identique au précédent.
+  //
+  // LA CLÉ PORTE LA VOIX ET LE MODÈLE (`cacheKey`), pas seulement le texte :
+  // changer de voix doit produire un nouveau clip, pas resservir l'ancien.
+  // C'est ce qui rend le changement de voix sans danger — on ne réécrit ni
+  // n'efface rien, les anciens clips deviennent simplement inatteignables.
+  //
+  // `storageId` et non les octets : un mp3 de quelques secondes dépasse
+  // rapidement ce qu'un document Convex doit porter, et le stockage de fichiers
+  // existe pour ça.
+  arabicAudioClips: defineTable({
+    cacheKey: v.string(),
+    text: v.string(),
+    voiceId: v.string(),
+    modelId: v.string(),
+    storageId: v.id("_storage"),
+    bytes: v.number(),
+    createdAt: v.number(),
+  }).index("by_cacheKey", ["cacheKey"]),
+
+  // La progression d'un élève, leçon par leçon.
+  //
+  // `drillsDone` EST UN TABLEAU, et c'est permis ici : il énumère des familles
+  // d'exercices (`DrillKind`), dont le nombre est fixé par le code — sept
+  // aujourd'hui. Les guidelines interdisent les listes NON BORNÉES dans un
+  // document ; celle-ci ne peut pas grandir avec l'usage. Les tentatives,
+  // elles, sont sans limite : elles ont leur propre table, juste en dessous.
+  arabicLessonProgress: defineTable({
+    studentId: v.id("profiles"),
+    lessonKey: v.string(),
+    status: v.union(v.literal("in_progress"), v.literal("completed")),
+    /** 0..3 — la même échelle d'étoiles que le reste de l'espace élève. */
+    stars: v.number(),
+    /** 0..1 — la meilleure moyenne obtenue sur la leçon. */
+    bestScore: v.number(),
+    drillsDone: v.array(v.string()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_student", ["studentId"])
+    .index("by_student_lesson", ["studentId", "lessonKey"]),
+
+  // Une ligne par exercice tenté — la matière des bilans du professeur.
+  //
+  // CE QU'ELLE NE PORTE PAS, ET C'EST DÉLIBÉRÉ : ni l'audio de l'enfant, ni sa
+  // transcription. La voix d'un enfant est une donnée personnelle sensible ;
+  // elle traverse le module pour être jugée et n'est écrite NULLE PART — ni en
+  // stockage, ni en base, ni dans un journal. Ce qui reste est ce qu'un cahier
+  // garderait : la date, l'exercice, et si c'était juste.
+  //
+  // `source` dit OÙ la note a été calculée. « device » pour le tracé, que seul
+  // le navigateur peut juger (il faut la police pour dessiner le modèle) ;
+  // « server » pour la prononciation, jugée après transcription. La distinction
+  // est écrite parce qu'elle change ce qu'on peut conclure d'une note : celle
+  // du tracé est une aide à l'apprentissage, pas une preuve.
+  arabicAttempts: defineTable({
+    studentId: v.id("profiles"),
+    lessonKey: v.string(),
+    /** Une valeur de `DrillKind` (`convex/arabic/curriculum.ts`). */
+    drill: v.string(),
+    /** La lettre ou l'item de lecture visé. */
+    itemKey: v.string(),
+    correct: v.boolean(),
+    /** 0..1 pour la prononciation et le tracé ; absent pour les QCM. */
+    score: v.optional(v.number()),
+    verdict: v.optional(
+      v.union(v.literal("ok"), v.literal("close"), v.literal("retry")),
+    ),
+    source: v.union(v.literal("device"), v.literal("server")),
+    at: v.number(),
+    /**
+     * L'identifiant que l'appareil a donné à une tentative faite sans réseau
+     * (`offline/sync.ts`) : la renvoyer ne l'écrit pas deux fois.
+     */
+    clientEventId: v.optional(v.string()),
+  })
+    .index("by_student_lesson", ["studentId", "lessonKey"])
+    .index("by_student_at", ["studentId", "at"])
+    .index("by_student_clientEvent", ["studentId", "clientEventId"]),
+
+  // Ce que l'élève a consommé de voix aujourd'hui — le garde-fou de dépense.
+  //
+  // POURQUOI UNE TABLE À PART, ET NON `aiUsage` / `aiUserQuota`. Ces deux
+  // tables servent le plafond MENSUEL d'OpenAI (`aiGateway/budget.ts`), qui
+  // coupe la génération d'exercices quand la dépense approche du budget. Y
+  // verser la synthèse vocale ferait que réviser l'alphabet en classe pourrait
+  // fermer la génération de paliers en mathématiques — deux enseignements qui
+  // n'ont rien à voir, reliés par un compteur. Le fournisseur, l'unité
+  // facturée (des caractères, des secondes d'audio) et le geste de l'enfant
+  // sont différents : le compteur l'est aussi.
+  //
+  // UNE LIGNE PAR (élève, jour), et le jour est en UTC comme `aiUserQuota`
+  // (`dayKey`) — pas pour l'exactitude du fuseau sénégalais (UTC+0, donc
+  // exact ici), mais pour que deux compteurs du même dépôt ne tournent pas sur
+  // deux minuits différents.
+  arabicVoiceUsage: defineTable({
+    studentId: v.id("profiles"),
+    dayKey: v.string(), // YYYY-MM-DD, UTC
+    /** Nombre de transcriptions demandées — c'est ce qui coûte à l'appel. */
+    sttCalls: v.number(),
+    /** Caractères synthétisés HORS cache : les seuls qui aient été facturés. */
+    ttsChars: v.number(),
+    updatedAt: v.number(),
+  }).index("by_student_day", ["studentId", "dayKey"]),
+
+  // LE PLACEMENT D'UN ÉLÈVE, décidé par son école.
+  //
+  // CE QUE C'EST : la déclaration d'un adulte — « cet enfant connaît déjà ses
+  // lettres », « il apprend Al-Falaq avec son grand-père ». Le module s'en sert
+  // pour OUVRIR des leçons (`progressRules.placementFloorOrder`), jamais pour
+  // en valider : un élève placé « confirmé » a l'alphabet ouvert et NON FAIT.
+  // Cocher une case ne remplit pas un cahier.
+  //
+  // `schoolId` EST SUR LA LIGNE, et c'est ce qui rend le placement réversible :
+  // il appartient à l'école qui l'a posé. Un enfant transféré ailleurs n'emporte
+  // pas le jugement de son ancienne école — la lecture vérifie que l'école de
+  // la ligne est bien celle où il est inscrit AUJOURD'HUI, et l'ignore sinon.
+  // La ligne, elle, n'est pas effacée : s'il revient, elle revaut.
+  //
+  // UNE SEULE LIGNE PAR (élève, école) — `by_student_school` la trouve, et
+  // c'est aussi ce qui fait que replacer un élève réécrit au lieu d'empiler.
+  arabicPlacement: defineTable({
+    studentId: v.id("profiles"),
+    schoolId: v.id("schools"),
+    level: placementLevelValidator,
+    /** La leçon où l'élève s'est arrêté, si l'école la connaît. */
+    startLessonKey: v.optional(v.string()),
+    /** La sourate qu'il apprend, si l'école la connaît. */
+    surahKey: v.optional(v.string()),
+    /** L'auteur du placement. Copié, jamais relu pour autoriser quoi que ce soit. */
+    updatedBy: v.id("profiles"),
+    updatedAt: v.number(),
+  })
+    .index("by_student_school", ["studentId", "schoolId"])
+    // « qui est placé dans cette école ? » — la liste du tableau de bord.
+    .index("by_school", ["schoolId"]),
+
+  // LA MÉMORISATION D'UNE SOURATE — une ligne par (élève, sourate).
+  //
+  // POURQUOI PAS `arabicLessonProgress`. Une leçon se termine ; une sourate
+  // mémorisée, non. Ce qui compte ici n'est pas « fait / pas fait » mais QUAND
+  // ELLE REVIENT : une sourate apprise et jamais revue est perdue, et c'est le
+  // seul fait qui gouverne tout ce module (`hifz.ts`). Mettre ça dans une table
+  // de progression de leçons obligerait à y faire vivre une horloge qui n'a
+  // rien à y faire.
+  //
+  // `strength` EST UN ÉCHELON, pas une note : 0 = appris aujourd'hui, 5 = tenu
+  // depuis trois mois. Il monte d'un cran quand la récitation passe, redescend
+  // d'UN cran quand elle casse — jamais à zéro, parce qu'un enfant fatigué un
+  // mardi soir n'a pas tout oublié.
+  //
+  // PAS D'INDEX SUR `dueAt`, et c'est un choix mesuré : le parcours compte six
+  // sourates. « Qu'est-ce qui est à réviser ? » se répond en lisant les
+  // quelques lignes de l'élève et en comparant les échéances — un index de plus
+  // coûterait une écriture de plus à chaque révision pour trier six lignes.
+  // Le jour où un recueil entier entre dans le module, il se justifiera.
+  arabicHifz: defineTable({
+    studentId: v.id("profiles"),
+    surahKey: v.string(),
+    /** 0..5 — l'échelon de révision espacée (`hifz.REVIEW_INTERVALS_DAYS`). */
+    strength: v.number(),
+    /** Versets consécutifs tenus depuis le premier. 0 tant que rien ne tient. */
+    versesMemorized: v.number(),
+    /** 0..1 — la note de la dernière séance, telle qu'elle a fait bouger l'échelon. */
+    lastScore: v.number(),
+    lastVerdict: v.union(
+      v.literal("ok"),
+      v.literal("close"),
+      v.literal("retry"),
+    ),
+    lastReviewedAt: v.number(),
+    /** Quand la sourate doit revenir. C'est le champ qui fait vivre le module. */
+    dueAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_student", ["studentId"])
+    .index("by_student_surah", ["studentId", "surahKey"]),
+
+  // ---------------------------------------------------------------------------
+  // dailyMissions — les missions du jour du Monde de Pio (conception §6, G7).
+  //
+  // UNE LIGNE PAR (élève, jour). Les trois missions sont EMBARQUÉES : trois
+  // objets, jamais plus (`questRules.QUESTS_PER_DAY`), donc pas une liste
+  // non bornée. La clé du jour est celle de la série (`streak.todayYmd`).
+  //
+  // `bonusStars` = ce que cette journée a déjà rapporté, pour que
+  // `quests.recordActivity` ne verse jamais deux fois la même étoile. Le
+  // total de vie, lui, est sur `profiles.preferences.questBonusStars`.
+  // ---------------------------------------------------------------------------
+  dailyMissions: defineTable({
+    studentId: v.id("profiles"),
+    dayKey: v.string(), // YYYY-MM-DD
+    quests: v.array(
+      v.object({
+        key: v.string(),
+        type: v.union(
+          v.literal("do_exercises"),
+          v.literal("earn_stars"),
+          v.literal("validate_palier"),
+          v.literal("play_subject"),
+        ),
+        label: v.string(),
+        target: v.number(),
+        progress: v.number(),
+        completedAt: v.optional(v.number()),
+        subjectId: v.optional(v.id("subjects")),
+        subjectName: v.optional(v.string()),
+      }),
+    ),
+    bonusStars: v.number(),
+    createdAt: v.number(),
+  }).index("by_student_day", ["studentId", "dayKey"]),
+
+  // ---------------------------------------------------------------------------
+  // offlineReceipts — ce que la synchronisation a déjà appliqué.
+  //
+  // L'application joue sans réseau et range ce que l'enfant fait dans un
+  // journal (`lib/offline/`), envoyé quand le réseau revient
+  // (`offline/sync.ts`). Un envoi peut se rejouer : réponse perdue en route,
+  // application fermée avant l'accusé de réception. Les séances de palier et
+  // les tentatives d'arabe portent leur identifiant d'appareil sur leur propre
+  // ligne ; les autres évènements qui ne doivent compter qu'une fois (la fin
+  // d'une leçon d'arabe, qui fait bouger la mémorisation) laissent ici leur
+  // reçu. Purgés après trente jours (`crons.ts`) : un évènement accusé n'est
+  // plus renvoyé, et un renvoi arrive dans la minute.
+  // ---------------------------------------------------------------------------
+  offlineReceipts: defineTable({
+    studentId: v.id("profiles"),
+    eventId: v.string(),
+    kind: v.string(),
+    appliedAt: v.number(),
+  })
+    .index("by_student_event", ["studentId", "eventId"])
+    .index("by_appliedAt", ["appliedAt"]),
+
+  // ---------------------------------------------------------------------------
+  // waitlistEntries — la liste d'attente de la vitrine.
+  //
+  // Le site ne vend rien avant la rentrée 2027-2028 : il recueille les
+  // adresses à prévenir (`waitlist.join`). UNE LIGNE PAR ADRESSE, normalisée
+  // par `waitlistRules.normalizeWaitlistEmail` : la mutation relit `by_email`
+  // avant d'écrire, donc une seconde inscription n'ajoute rien.
+  // ---------------------------------------------------------------------------
+  waitlistEntries: defineTable({
+    email: v.string(),
+    audience: waitlistAudienceValidator,
+    createdAt: v.number(),
+  }).index("by_email", ["email"]),
 });

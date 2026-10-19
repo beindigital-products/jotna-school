@@ -12,9 +12,12 @@ import type { Doc, Id } from "./_generated/dataModel";
 // masquait une divergence éventuelle au lieu de la faire échouer.
 import {
   decideAccess,
+  FREE_ACCESS,
+  topicOpenTo,
   type AccessInput,
   type AccessState,
 } from "./accessRules";
+import { isHiddenClass } from "./curriculum";
 
 /**
  * L'abonnement d'une école que le paywall tient pour COURANT.
@@ -185,12 +188,34 @@ export async function loadAccessInput(
     role: null,
     activeMembership: null,
     hasReleasedMembership: false,
+    hasClass: false,
     subscription: null,
     oldestOverdueDueAt: null,
   };
 
   if (!profile) return empty;
   if (profile.role !== "student") return { ...empty, role: profile.role };
+
+  // ACCÈS LIBRE (`accessRules.FREE_ACCESS`) : ni abonnement ni tranche à
+  // lire. L'inscription active n'est lue que pour rendre l'école à qui en a
+  // une (modules activés par l'école, `modules.ts`).
+  if (FREE_ACCESS) {
+    const activeMembership = await ctx.db
+      .query("schoolMemberships")
+      .withIndex("by_student_status", (q) =>
+        q.eq("studentId", profile._id).eq("status", "active"),
+      )
+      .first();
+    return {
+      ...empty,
+      role: "student",
+      freeAccess: true,
+      hasClass: !!profile.class && !isHiddenClass(profile.class),
+      activeMembership: activeMembership
+        ? { schoolId: activeMembership.schoolId as string }
+        : null,
+    };
+  }
 
   const active = await ctx.db
     .query("schoolMemberships")
@@ -224,12 +249,18 @@ export async function loadAccessInput(
   // contrat.
   const current = await currentSchoolSubscription(ctx, active.schoolId, now);
 
+  // Lu sur le profil déjà chargé : aucune lecture de plus sur le chemin le
+  // plus chaud du dépôt. Une classe masquée (collège, lycée) compte comme
+  // absente — aucune thématique visible ne lui correspond.
+  const hasClass = !!profile.class && !isHiddenClass(profile.class);
+
   if (!current) {
     return {
       ...empty,
       role: "student",
       activeMembership: { schoolId: active.schoolId as string },
       hasReleasedMembership: hasReleased,
+      hasClass,
     };
   }
 
@@ -245,6 +276,7 @@ export async function loadAccessInput(
     role: "student",
     activeMembership: { schoolId: active.schoolId as string },
     hasReleasedMembership: hasReleased,
+    hasClass,
     subscription: {
       status: current.status,
       endsAt: current.endsAt,
@@ -263,6 +295,26 @@ async function currentProfile(
     .query("profiles")
     .withIndex("by_userId", (q) => q.eq("userId", userId as string))
     .unique();
+}
+
+/**
+ * Le profil de l'appelant, QUEL QUE SOIT son rôle — ou `null`.
+ *
+ * Le plus faible de la famille : il n'exige rien, il NOMME. Destiné aux
+ * fonctions qui jugent un LIEN plutôt qu'un rôle — « ce directeur est-il
+ * membre de CETTE école ? » — cas que `callerAdminProfile` et
+ * `callerStaffProfile` ne couvrent pas, leur garde de rôle jetant justement
+ * le directeur. C'est la doctrine que ce fichier énonce déjà : une fonction
+ * qui reçoit un identifiant en argument ne peut pas se contenter d'un rôle.
+ *
+ * Expose `currentProfile`, qui existait déjà et servait en privé à tout ce
+ * module ; aucune garde n'est déplacée ni affaiblie. QUI L'APPELLE DOIT POSER
+ * SA PROPRE GARDE — recevoir un profil n'autorise rien.
+ */
+export async function callerProfile(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Doc<"profiles"> | null> {
+  return await currentProfile(ctx);
 }
 
 /** Pour les REQUÊTES : retourne un statut, ne lève jamais (spec §5.4). */
@@ -320,24 +372,37 @@ export async function catalogReadable(ctx: QueryCtx): Promise<boolean> {
  * - `readable` — le droit d'accès, exactement `catalogReadable` ci-dessus ;
  * - `hiddenClasses` — le droit de voir le collège et le lycée, que
  *   `convex/curriculum.ts` masque à tout le monde sauf à un `admin`, parce que
- *   c'est lui qui les prépare.
+ *   c'est lui qui les prépare ;
+ * - `opensTopic` — la classe d'une thématique est-elle ouverte à l'appelant
+ *   (`accessRules.topicOpenTo`) ? Un élève n'ouvre que celles de sa classe.
  *
  * LES POSER SÉPARÉMENT RELIRAIT `profiles`. C'est précisément le doublon que
  * `catalogReadable` avait supprimé — et il coûtait double aussi en surface
  * d'invalidation, `profiles.preferences` étant réécrit à chaque série, badge ou
  * réglage de son.
  */
-export async function catalogAccess(
-  ctx: QueryCtx,
-): Promise<{ readable: boolean; hiddenClasses: boolean }> {
+export async function catalogAccess(ctx: QueryCtx): Promise<{
+  readable: boolean;
+  hiddenClasses: boolean;
+  opensTopic: (topicClass: string | null | undefined) => boolean;
+}> {
   const profile = await currentProfile(ctx);
-  if (!profile) return { readable: false, hiddenClasses: false };
+  if (!profile) {
+    return { readable: false, hiddenClasses: false, opensTopic: () => false };
+  }
+  const caller = { role: profile.role, studentClass: profile.class ?? null };
+  const opensTopic = (topicClass: string | null | undefined) => topicOpenTo(caller, topicClass);
   if (profile.role !== "student") {
-    return { readable: true, hiddenClasses: profile.role === "admin" };
+    return {
+      readable: true,
+      hiddenClasses: profile.role === "admin",
+      opensTopic,
+    };
   }
   return {
     readable: (await checkAccess(ctx, profile)).ok,
     hiddenClasses: false,
+    opensTopic,
   };
 }
 
@@ -642,7 +707,7 @@ export async function callerMayReadStudent(
 export async function requireAccess(
   ctx: QueryCtx | MutationCtx,
   profile: Doc<"profiles"> | null,
-): Promise<{ schoolId: string; endsAt: number }> {
+): Promise<{ schoolId: string | null; endsAt: number }> {
   const state = await checkAccess(ctx, profile);
   if (!state.ok) {
     throw new ConvexError({ code: "ACCESS_DENIED", reason: state.reason });

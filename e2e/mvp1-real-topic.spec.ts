@@ -22,7 +22,7 @@ test.describe("MVP-1 — real seeded topics", () => {
     // For robustness, the test allows any 200/3xx response.
     const topicId = "kx75b69trm9sbs2j34n0qvsdgd85pm7r";
     const response = await page.goto(
-      `/student/topics/${topicId}/session?palier=1`,
+      `/student/topics/session?id=${topicId}&palier=1`,
     );
     expect(response?.status()).toBeLessThan(500);
     // Either the auth gate shows or the loader spins — both are acceptable.

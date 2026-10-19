@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { Settings, Save, User, UserCircle } from "lucide-react";
 import { refusalMessage } from "@/lib/refusalMessage";
+import { useServerFormSync } from "@/hooks/use-server-form-sync";
+
+/** Préférence d'envoi des bulletins, vraie tant que le parent ne l'a pas coupée. */
+function receiveReportsOf(profile: { preferences?: unknown }): boolean {
+  const prefs = profile.preferences as { receiveReports?: boolean } | undefined;
+  return prefs?.receiveReports ?? true;
+}
 
 export default function ParentSettingsPage() {
   const profile = useQuery(api.profiles.getCurrentProfile);
@@ -18,15 +25,15 @@ export default function ParentSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (profile) {
-      setName(profile.name);
-      const prefs = profile.preferences as
-        | { receiveReports?: boolean }
-        | undefined;
-      setReceiveReports(prefs?.receiveReports ?? true);
-    }
-  }, [profile]);
+  // Le formulaire reprend le profil du serveur quand ses valeurs changent.
+  useServerFormSync(
+    profile,
+    (p) => JSON.stringify([p.name, receiveReportsOf(p)]),
+    (p) => {
+      setName(p.name);
+      setReceiveReports(receiveReportsOf(p));
+    },
+  );
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();

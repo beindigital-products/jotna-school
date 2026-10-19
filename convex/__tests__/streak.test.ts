@@ -279,3 +279,53 @@ describe("approxStarsForValidatedPalier", () => {
     expect(approxStarsForValidatedPalier(6.99)).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// LES JOURS JOUÉS SANS RÉSEAU (`docs/hors-ligne.md`). La tâche de nuit ne les
+// voit pas : elle peut casser une série qu'un palier joué hors ligne
+// prolongeait. Rejoué à la synchronisation, ce jour rétablit la série.
+// ---------------------------------------------------------------------------
+describe("streak — activité rattrapée après une remise à zéro de nuit", () => {
+  it("la tâche de nuit garde la série cassée dans `currentBeforeReset`", () => {
+    const prev = {
+      current: 5,
+      longest: 5,
+      lastActivityYmd: "2026-10-01",
+      freezeAvailableUntilYmd: "2026-09-30",
+    };
+    const t = applyRollover(prev, "2026-10-03");
+    expect(t.next.current).toBe(0);
+    expect(t.next.currentBeforeReset).toBe(5);
+  });
+
+  it("un jour joué hors ligne le lendemain rétablit la série", () => {
+    const rolled = {
+      current: 0,
+      longest: 5,
+      lastActivityYmd: "2026-10-01",
+      freezeAvailableUntilYmd: "2026-09-30",
+      currentBeforeReset: 5,
+    };
+    const t = applyActivity(rolled, "2026-10-02");
+    expect(t.next.current).toBe(6);
+    expect(t.next.longest).toBe(6);
+    expect(t.next.currentBeforeReset).toBeUndefined();
+  });
+
+  it("une vraie absence repart de un, même après une remise à zéro", () => {
+    const rolled = {
+      current: 0,
+      longest: 5,
+      lastActivityYmd: "2026-10-01",
+      freezeAvailableUntilYmd: "2026-09-30",
+      currentBeforeReset: 5,
+    };
+    expect(applyActivity(rolled, "2026-10-06").next.current).toBe(1);
+  });
+
+  it("la tâche de nuit ne réécrit pas une série déjà à zéro", () => {
+    const zero = { current: 0, longest: 4, lastActivityYmd: "2026-09-01", currentBeforeReset: 4 };
+    const t = applyRollover(zero, "2026-10-03");
+    expect(t.next).toBe(zero);
+  });
+});

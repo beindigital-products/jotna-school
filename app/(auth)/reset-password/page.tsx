@@ -2,11 +2,12 @@
 
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 function ResetPasswordForm() {
   const { signIn } = useAuthActions();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialEmail = searchParams.get("email") ?? "";
 
@@ -38,7 +39,14 @@ function ResetPasswordForm() {
       formData.set("newPassword", newPassword);
       formData.set("flow", "reset-verification");
       await signIn("password", formData);
-      window.location.href = "/post-auth";
+  // `router.replace` ET NON `window.location.href` : dans l'application
+  // Capacitor, une navigation de DOCUMENT recharge toujours la racine
+  // `index.html`, quel que soit le chemin demandé
+  // (`CapacitorRouter.route(for:)` renvoie `/index.html` pour tout chemin
+  // sans extension). La redirection se perdait donc sur mobile, et l'écran
+  // revenait à la connexion après une authentification pourtant réussie.
+  // Une navigation interne de Next ne traverse pas ce routeur.
+      router.replace("/post-auth");
     } catch {
       setError("Code invalide ou expiré. Demandez un nouveau code.");
     } finally {

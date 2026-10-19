@@ -43,6 +43,28 @@ export const purgeOldHistory = internalMutation({
   },
 });
 
+/**
+ * Les reçus de synchronisation (`offlineReceipts`) de plus de trente jours.
+ * Un évènement accusé n'est plus renvoyé par l'application, et un renvoi
+ * (accusé perdu) arrive dans la minute : passé un mois, le reçu ne protège
+ * plus de rien.
+ */
+export const purgeOfflineReceipts = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const cutoff = Date.now() - THIRTY_DAYS_MS;
+    const rows = await ctx.db
+      .query("offlineReceipts")
+      .withIndex("by_appliedAt", (q) => q.lt("appliedAt", cutoff))
+      .take(BATCH_SIZE);
+    for (const row of rows) await ctx.db.delete(row._id);
+    if (rows.length === BATCH_SIZE) {
+      await ctx.scheduler.runAfter(0, internal.crons.purgeOfflineReceipts, {});
+    }
+    return { deleted: rows.length };
+  },
+});
+
 const crons = cronJobs();
 
 // Run every Monday at 03:00 UTC.
@@ -77,6 +99,14 @@ crons.cron(
   "mark overdue installments",
   "30 2 * * *",
   internal.billing.markOverdueInstallments,
+  {},
+);
+
+// Les reçus de synchronisation hors ligne, une fois par jour, à 03:30 UTC.
+crons.cron(
+  "purge offlineReceipts > 30d",
+  "30 3 * * *",
+  internal.crons.purgeOfflineReceipts,
   {},
 );
 

@@ -1,12 +1,23 @@
 import { describe, it, expect, vi } from "vitest";
+import type { IndexQuery, Row } from "./fakeDb.types";
 
 // -----------------------------------------------------------------------
 // These tests validate the logic/constraints of the badges mutations
 // by mocking the Convex database context.
 // -----------------------------------------------------------------------
 
-function createMockCtx(data: Record<string, any[]> = {}) {
-  const tables: Record<string, any[]> = { ...data };
+/** Ce que rendent `q.field(nom)` et `q.eq(a, b)` dans le `filter` simulé. */
+type FieldRef = { __field: string };
+type EqCondition = { __eq: true; a: unknown; b: unknown };
+type FilterQuery = {
+  eq: (a: unknown, b: unknown) => EqCondition;
+  field: (name: string) => FieldRef;
+};
+const isFieldRef = (x: unknown): x is FieldRef =>
+  typeof x === "object" && x !== null && "__field" in x;
+
+function createMockCtx(data: Record<string, Row[]> = {}) {
+  const tables: Record<string, Row[]> = { ...data };
 
   return {
     db: {
@@ -14,33 +25,32 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         const rows = tables[table] ?? [];
         return {
           collect: async () => [...rows],
-          filter: (fn: (q: any) => any) => {
-            const q = {
-              eq: (a: any, b: any) => ({ __eq: true, a, b }),
-              field: (name: string) => ({ __field: name }),
+          filter: (fn: (q: FilterQuery) => EqCondition) => {
+            const q: FilterQuery = {
+              eq: (a, b) => ({ __eq: true, a, b }),
+              field: (name) => ({ __field: name }),
             };
             const condition = fn(q);
             const filtered = rows.filter((row) => {
-              if (condition.__eq) {
-                const fieldName =
-                  condition.a?.__field ?? condition.b?.__field;
-                const value = condition.a?.__field
+              const fieldRef = isFieldRef(condition.a)
+                ? condition.a
+                : isFieldRef(condition.b)
                   ? condition.b
-                  : condition.a;
-                return row[fieldName] === value;
-              }
-              return true;
+                  : null;
+              if (!fieldRef) return true;
+              const value = fieldRef === condition.a ? condition.b : condition.a;
+              return row[fieldRef.__field] === value;
             });
             return {
               first: async () => filtered[0] ?? null,
               collect: async () => filtered,
             };
           },
-          withIndex: (_name: string, filter: (q: any) => any) => {
+          withIndex: (_name: string, filter: (q: IndexQuery) => unknown) => {
             let filterField: string | null = null;
-            let filterValue: any = null;
+            let filterValue: unknown = null;
             const q = {
-              eq: (field: string, value: any) => {
+              eq: (field: string, value: unknown) => {
                 filterField = field;
                 filterValue = value;
                 return q;
@@ -64,14 +74,14 @@ function createMockCtx(data: Record<string, any[]> = {}) {
         }
         return null;
       },
-      insert: vi.fn(async (table: string, doc: any) => {
+      insert: vi.fn(async (table: string, doc: Row) => {
         const id = `${table}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const row = { _id: id, ...doc };
         if (!tables[table]) tables[table] = [];
         tables[table].push(row);
         return id;
       }),
-      patch: vi.fn(async (id: string, updates: any) => {
+      patch: vi.fn(async (id: string, updates: Row) => {
         for (const table of Object.values(tables)) {
           const idx = table.findIndex((row) => row._id === id);
           if (idx !== -1) {
@@ -180,7 +190,7 @@ describe("badges", () => {
       // Simulate: check for earned badges
       const earnedResult = await ctx.db
         .query("earnedBadges")
-        .filter((q: any) => q.eq(q.field("badgeId"), "b1"))
+        .filter((q) => q.eq(q.field("badgeId"), "b1"))
         .first();
 
       expect(earnedResult).toBeNull();
@@ -212,7 +222,7 @@ describe("badges", () => {
 
       const earnedResult = await ctx.db
         .query("earnedBadges")
-        .filter((q: any) => q.eq(q.field("badgeId"), "b1"))
+        .filter((q) => q.eq(q.field("badgeId"), "b1"))
         .first();
 
       expect(earnedResult).not.toBeNull();
@@ -268,13 +278,13 @@ describe("badges", () => {
         const allBadges = await ctx.db.query("badges").collect();
         const alreadyEarned = await ctx.db
           .query("earnedBadges")
-          .withIndex("by_studentId", (q: any) => q.eq("studentId", studentId))
+          .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
           .collect();
-        const earnedBadgeIds = new Set(alreadyEarned.map((eb: any) => eb.badgeId));
+        const earnedBadgeIds = new Set(alreadyEarned.map((eb) => eb.badgeId));
 
         const allProgress = await ctx.db
           .query("studentTopicProgress")
-          .withIndex("by_studentId", (q: any) => q.eq("studentId", studentId))
+          .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
           .collect();
 
         const newlyAwarded: string[] = [];
@@ -284,7 +294,7 @@ describe("badges", () => {
 
           if (badge.condition === "complete_topic") {
             const completed = allProgress.filter(
-              (p: any) => p.completedAt != null,
+              (p) => p.completedAt != null,
             );
             if (completed.length > 0) {
               await ctx.db.insert("earnedBadges", {
@@ -292,7 +302,7 @@ describe("badges", () => {
                 studentId,
                 earnedAt: Date.now(),
               });
-              newlyAwarded.push(badge.name);
+              newlyAwarded.push(badge.name as string);
             }
           }
         }
@@ -329,11 +339,11 @@ describe("badges", () => {
         const studentId = "student1";
         const allProgress = await ctx.db
           .query("studentTopicProgress")
-          .withIndex("by_studentId", (q: any) => q.eq("studentId", studentId))
+          .withIndex("by_studentId", (q) => q.eq("studentId", studentId))
           .collect();
 
         const completed = allProgress.filter(
-          (p: any) => p.completedAt != null,
+          (p) => p.completedAt != null,
         );
 
         expect(completed.length).toBe(0);

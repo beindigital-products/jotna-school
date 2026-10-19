@@ -11,6 +11,8 @@
     "jsx": "react-jsx",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    /* Same alias as the root tsconfig, for the tests that import `@/components/...`. */
+    "paths": { "@/*": ["../*"] },
 
     /* These compiler options are required by Convex */
     "target": "ESNext",

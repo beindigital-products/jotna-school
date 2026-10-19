@@ -7,6 +7,8 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Lightbulb, Loader2, X } from "lucide-react";
 import { Pio } from "@/components/student/pio";
+import { useOffline } from "@/components/offline/context";
+import { kidMessages } from "@/lib/kidCopy";
 
 type Explanation = {
   intro: string;
@@ -24,7 +26,12 @@ type Status =
  * "Je veux comprendre" after exhausting all 5 attempts on an exercise.
  *
  * Lifecycle:
- *   - mount → call api.explainMistake.explainExercise
+ *   - an explanation already on the device (in the offline pack, or asked
+ *     before) → shown at once, without network;
+ *   - otherwise, online → call api.explainMistake.explainExercise, and keep
+ *     the answer on the device for next time;
+ *   - otherwise, offline → the right answer and the hints, which the device
+ *     has (`fallback`): the AI can't be asked without network;
  *   - loading → Pio "thinking" + spinner
  *   - ready → intro + numbered steps + conclusion + "J'ai compris"
  *   - error → kid-friendly message + "Tant pis" CTA
@@ -33,25 +40,32 @@ export function ExplainStepByStep({
   exerciseId,
   open,
   onClose,
+  fallback,
 }: {
-  exerciseId: Id<"exercises">;
+  exerciseId: string;
   open: boolean;
   onClose: () => void;
+  /** Ce que l'appareil sait de l'exercice, pour expliquer sans réseau. */
+  fallback?: { correctAnswer: string | null; hints: readonly string[] };
 }) {
   const [status, setStatus] = useState<Status>({ kind: "loading" });
   const explainExercise = useAction(api.explainMistake.explainExercise);
+  const { engine, connected } = useOffline();
+  const stored = engine?.explanationFor(exerciseId) ?? null;
+  const offline = !stored && !connected;
 
   // Lazy initializer pattern keeps the loading reset out of the effect body
   // (`react-hooks/set-state-in-effect` lint). Parent should pass a stable
   // `key={exerciseId}` so the component fully remounts when the kid moves on.
   useEffect(() => {
-    if (!open) return;
+    if (!open || stored || offline) return;
     let cancelled = false;
 
-    explainExercise({ exerciseId })
+    explainExercise({ exerciseId: exerciseId as Id<"exercises"> })
       .then((res) => {
         if (cancelled) return;
         if (res.ok) {
+          engine?.saveExplanation(exerciseId, res.explanation);
           setStatus({
             kind: "ready",
             explanation: res.explanation,
@@ -72,7 +86,26 @@ export function ExplainStepByStep({
     return () => {
       cancelled = true;
     };
-  }, [open, exerciseId, explainExercise]);
+  }, [open, exerciseId, explainExercise, stored, offline, engine]);
+
+  // SANS RÉSEAU NI EXPLICATION GARDÉE : les indices, puis la bonne réponse.
+  const offlineExplanation: Explanation | null =
+    offline && fallback && (fallback.hints.length > 0 || fallback.correctAnswer)
+      ? {
+          intro: kidMessages.offline.explainOffline,
+          steps: [...fallback.hints],
+          conclusion: fallback.correctAnswer
+            ? `La bonne réponse : ${fallback.correctAnswer}`
+            : "Demande à un adulte de regarder avec toi.",
+        }
+      : null;
+  const shown: Status = stored
+    ? { kind: "ready", explanation: stored, cached: true }
+    : offline
+      ? offlineExplanation
+        ? { kind: "ready", explanation: offlineExplanation, cached: true }
+        : { kind: "error", kidMessage: kidMessages.offline.explainOffline }
+      : status;
 
   return (
     <AnimatePresence>
@@ -104,7 +137,7 @@ export function ExplainStepByStep({
             </button>
 
             <div className="overflow-y-auto px-5 pb-5 pt-6 sm:px-6 sm:pt-7">
-              {status.kind === "loading" && (
+              {shown.kind === "loading" && (
                 <div className="flex flex-col items-center gap-4 py-8 text-center">
                   <Pio state="hello" size={88} />
                   <div className="flex items-center gap-2 text-base font-semibold text-slate-700">
@@ -120,11 +153,11 @@ export function ExplainStepByStep({
                 </div>
               )}
 
-              {status.kind === "error" && (
+              {shown.kind === "error" && (
                 <div className="flex flex-col items-center gap-4 py-6 text-center">
                   <Pio state="sad" size={88} />
                   <p className="text-base font-semibold text-slate-700">
-                    {status.kidMessage}
+                    {shown.kidMessage}
                   </p>
                   <button
                     type="button"
@@ -136,9 +169,9 @@ export function ExplainStepByStep({
                 </div>
               )}
 
-              {status.kind === "ready" && (
+              {shown.kind === "ready" && (
                 <ExplanationContent
-                  explanation={status.explanation}
+                  explanation={shown.explanation}
                   onClose={onClose}
                 />
               )}

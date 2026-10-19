@@ -119,12 +119,12 @@ function parseExpression(s: ParserState): number {
 }
 
 function parseTerm(s: ParserState): number {
-  let value = parseFactor(s);
+  let value = parsePower(s);
   while (s.i < s.src.length) {
     const c = s.src[s.i];
     if (c === "*" || c === "/") {
       s.i++;
-      const right = parseFactor(s);
+      const right = parsePower(s);
       if (c === "/") {
         if (right === 0) throw new Error("Division by zero");
         value = value / right;
@@ -138,16 +138,31 @@ function parseTerm(s: ParserState): number {
   return value;
 }
 
+/** `a ^ b`, associatif à droite : « 2^3^2 » vaut 2^9. */
+function parsePower(s: ParserState): number {
+  const base = parseFactor(s);
+  if (s.src[s.i] === "^") {
+    s.i++;
+    const exponent = parsePower(s);
+    return Math.pow(base, exponent);
+  }
+  return base;
+}
+
 function parseFactor(s: ParserState): number {
   if (s.i >= s.src.length) throw new Error("Unexpected end of expression");
   const c = s.src[s.i];
   if (c === "+") {
     s.i++;
-    return parseFactor(s);
+    return parsePower(s);
   }
   if (c === "-") {
     s.i++;
-    return -parseFactor(s);
+    return -parsePower(s);
+  }
+  if (c === "√") {
+    s.i++;
+    return Math.sqrt(parsePower(s));
   }
   if (c === "(") {
     s.i++;

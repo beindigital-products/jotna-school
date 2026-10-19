@@ -10,6 +10,28 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-geist-sans);
+  /* FREDOKA N'ÉTAIT JAMAIS APPLIQUÉE. `app/layout.tsx` la charge sous la
+     variable `--font-display` depuis la décision D16, et des dizaines de
+     titres portent `font-display` — mais Tailwind v4 n'engendre une classe
+     que pour un jeton déclaré ICI. Sans cette ligne, `font-display` n'existait
+     pas dans le CSS construit et tous les titres de l'espace élève tombaient
+     en Poppins. Le mot « inline » évite d'émettre un `--font-display` à la
+     racine qui pointerait sur lui-même : la classe lit directement la
+     variable posée par next/font. */
+  --font-display: var(--font-display);
+
+  /* LA SAVANE DE PIO — palette du monde de jeu (`docs`: G9). Ciel, sable,
+     soleil, feuille, terre : cinq teintes, et tout l'espace élève les
+     partage. Les matières gardent leur `subject.color` par-dessus. */
+  --color-savanna-sky: #7ec8f5;
+  --color-savanna-sky-deep: #3aa0e8;
+  --color-savanna-sand: #f6c452;
+  --color-savanna-sand-deep: #e9a83a;
+  --color-savanna-sun: #ffb020;
+  --color-savanna-leaf: #6ab04c;
+  --color-savanna-leaf-deep: #3f8a2f;
+  --color-savanna-earth: #a5602c;
+  --color-savanna-night: #1e2a4a;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -86,6 +108,142 @@
 /* Dark mode disabled app-wide: force all tokens to light values regardless
    of the system preference or any `.dark` class on ancestors. */
 
+/* ── Monde de Pio : mouvements d'ambiance ─────────────────────────────
+   Tous coupés sous `prefers-reduced-motion` (bloc plus bas). Ils habillent le
+   camp et la carte ; aucun n'est nécessaire à la lecture d'un écran. */
+@keyframes sun-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+@keyframes cloud-drift {
+  from { transform: translateX(-4%); }
+  to { transform: translateX(4%); }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+/* Les pointillés du chemin déjà parcouru avancent en boucle. Le décalage
+   vaut EXACTEMENT une période du motif (`stroke-dasharray="1 24"` → 25) :
+   à la reprise, un tiret retombe pile sur la place du suivant, sans saut.
+   Lent et régulier, pour que ça coule au lieu de sauter. */
+@keyframes trail-dash {
+  to { stroke-dashoffset: -25; }
+}
+@keyframes pop-in {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+/* La poussière derrière les pattes de Pio quand il marche sur la carte. */
+@keyframes dust-puff {
+  0% { transform: translate(0, 0) scale(0.4); opacity: 0.85; }
+  100% { transform: translate(-22px, -16px) scale(1.5); opacity: 0; }
+}
+.pio-dust {
+  animation: dust-puff 0.66s ease-out infinite;
+}
+/* Une réponse fausse secoue ce qu'on a choisi. Les exercices l'appelaient
+   déjà (`animate-[shake_...]`) sans qu'elle existe : rien ne bougeait. */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px) rotate(-1deg); }
+  40% { transform: translateX(8px) rotate(1deg); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+/* Les étoiles qui jaillissent d'une bonne réponse (`--angle` par étoile). */
+@keyframes star-burst {
+  0% { transform: rotate(var(--angle)) translateX(0) scale(0.4); opacity: 1; }
+  100% { transform: rotate(var(--angle)) translateX(120px) scale(1.15); opacity: 0; }
+}
+/* Le nœud fermé qu'on touche : il dit non de la tête. */
+@keyframes head-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* LE BALLON QUI ÉCLATE (`components/arabic/balloon-fx.tsx`). Des animations CSS
+   et non framer-motion : elles tournent sur le compositeur, si bien que
+   l'éclatement reste fluide pendant que le fil JavaScript lance le son et la
+   voix. Chaque éclat porte sa trajectoire en
+   variables (`--x`, `--y`…). Le composant n'affiche rien sous
+   `prefers-reduced-motion`. */
+@keyframes balloon-flash {
+  0% { transform: scale(0.2); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+@keyframes balloon-ring {
+  0% { transform: scale(0.3); opacity: 0.95; }
+  100% { transform: scale(2.3); opacity: 0; }
+}
+@keyframes balloon-shred {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; animation-timing-function: ease-out; }
+  55% { transform: translate(calc(var(--x) * 0.8), var(--y)) rotate(calc(var(--r) * 0.6)); opacity: 1; }
+  100% { transform: translate(var(--x), var(--fall)) rotate(var(--r)); opacity: 0; }
+}
+@keyframes balloon-confetti {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; animation-timing-function: ease-out; }
+  35% { transform: translate(var(--x), var(--peak)) rotate(calc(var(--r) * 0.4)); animation-timing-function: ease-in; }
+  75% { opacity: 1; }
+  100% { transform: translate(var(--x2), var(--fall)) rotate(var(--r)); opacity: 0; }
+}
+@keyframes balloon-sparkle {
+  0% { transform: translate(var(--x), var(--y)) scale(0) rotate(-45deg); opacity: 0; }
+  50% { transform: translate(var(--x), var(--y)) scale(1.25) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) scale(0) rotate(45deg); opacity: 0; }
+}
+/* L'air qui s'échappe du nœud d'un ballon qui se dégonfle. */
+@keyframes balloon-puff {
+  0% { transform: translate(0, 0) scale(0.35); opacity: 0; }
+  40% { transform: translate(calc(var(--x) * 0.5), calc(var(--y) * 0.5)) scale(1.1); opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) scale(1.5); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .savanna-motion, .savanna-motion * {
+    animation: none !important;
+  }
+}
+
+/* Texte lisible par-dessus un décor : un liseré sombre, pas un aplat. */
+@utility text-outline {
+  text-shadow:
+    0 1px 0 rgb(0 0 0 / 0.35),
+    0 2px 8px rgb(0 0 0 / 0.35);
+}
+
+/* Bouton « chunky » : la face avant surélevée d'un bouton de jeu, qui
+   s'enfonce quand on appuie. La couleur de l'épaisseur vient de
+   `--btn-depth`, posée par l'appelant. */
+@utility btn-chunky {
+  --btn-depth: #b45309;
+  box-shadow:
+    0 6px 0 0 var(--btn-depth),
+    0 12px 20px -10px rgb(0 0 0 / 0.45);
+  transform: translateY(0);
+  transition:
+    transform 90ms ease-out,
+    box-shadow 90ms ease-out;
+  &:active {
+    transform: translateY(5px);
+    box-shadow:
+      0 1px 0 0 var(--btn-depth),
+      0 4px 10px -8px rgb(0 0 0 / 0.45);
+  }
+}
+
 @keyframes legendaryPulse {
   0%, 100% { box-shadow: 0 0 20px 4px rgba(251,191,36,0.35); }
   50% { box-shadow: 0 0 28px 8px rgba(251,191,36,0.5); }
@@ -110,3 +268,155 @@
     }
   }
 }
+
+/* Module « Arabe & Coran » — tout ce qui est écrit en arabe porte cette classe.
+   La variable est posée par `next/font` (app/layout.tsx) ; les polices citées
+   ensuite sont des replis installés localement sur certaines machines, et
+   `serif` ferme la liste pour que le texte reste lisible même sans aucune
+   d'elles. */
+.font-arabic {
+  font-family:
+    var(--font-arabic), "Amiri", "Scheherazade New", "Noto Naskh Arabic",
+    "Traditional Arabic", serif;
+  font-feature-settings: "liga" 1, "calt" 1;
+}
+
+/* ── La boîte à outils du jeu (`components/student/game-kit/`) ──────────────
+   Tout ce qui bouge ici bouge en `transform` et en `opacity`, rien d'autre :
+   pas de filtre, pas de couleur, pas d'ombre animée (une ombre de profondeur
+   est une COUCHE dont on déplace le transform). Chaque racine de brique porte
+   `.gk-motion` : sous `prefers-reduced-motion`, tout s'arrête net, animations
+   comme transitions, et la profondeur reste peinte.
+   Voir `docs/direction-jeu-exercices.md`. */
+
+/* Le ressort : une courbe qui dépasse un peu puis se pose. Même sensation que
+   `stiffness: 340, damping: 22` côté framer-motion. */
+@utility gk-spring {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* Un parent qui donne de la perspective à ses enfants inclinés ou tournés. */
+@utility gk-perspective {
+  perspective: 700px;
+}
+/* Un élément dont les enfants vivent dans le même espace 3D (solides). */
+@utility gk-3d {
+  transform-style: preserve-3d;
+}
+/* La face d'un objet épais : un filet de lumière en haut, une ligne d'ombre
+   en bas. Statique : la lumière vient toujours d'en haut à gauche. */
+@utility gk-face-light {
+  box-shadow:
+    inset 0 2px 0 0 rgb(255 255 255 / 0.75),
+    inset 0 -2px 0 0 rgb(0 0 0 / 0.08);
+}
+/* L'anneau de focus clavier des briques du jeu : un contour ciel-600
+   (`#0284c7`, 4,1:1 sur la carte crème : un indicateur d'état veut 3:1) tenu
+   à 2 px de l'objet, le fond faisant le filet clair. Un anneau ciel-300 à
+   80 % ne contrastait qu'à 1,56:1 sur la crème (relu le 18 octobre 2026). Un
+   `outline`, pas une ombre : les racines des briques n'ont pas d'ombre à
+   écraser, et le contour suit l'arrondi sur les moteurs récents. Deux règles
+   plates, pas un `@utility` imbriqué : l'imbrication CSS native manque aux
+   WebView d'avant 2023, et le serveur de développement ne relit pas un
+   `@utility` ajouté en cours de route. */
+.gk-focus {
+  outline: none;
+}
+.gk-focus:focus-visible {
+  outline: 4px solid #0284c7;
+  outline-offset: 2px;
+}
+/* L'horizon de la savane (`stage-backdrop.tsx`), mesuré depuis le haut de la
+   scène. Calé sur l'écran (`data-horizon="screen"`, la coque de la séance),
+   il vaut le pourcentage demandé de `100svh` quand le moteur le sait, de
+   `100vh` sinon : la page qui grandit d'une question à l'autre (une carte
+   plus haute, un indice) ne fait plus sauter le sol, les collines ni le
+   soleil. */
+.gk-stage[data-horizon="screen"] {
+  --gk-horizon: var(--gk-horizon-vh);
+}
+@supports (height: 1svh) {
+  .gk-stage[data-horizon="screen"] {
+    --gk-horizon: var(--gk-horizon-svh);
+  }
+}
+
+/* Une bonne réponse : la tuile gonfle un peu et se pose. Part de 0,96, jamais
+   de 0 : un émoji dans un élément qui part de `scale(0)` peut rester vide sur
+   iOS. */
+@keyframes gk-pop {
+  0% { transform: scale(0.96); }
+  55% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+/* Une mauvaise réponse : la tuile dit non, doucement. Cinq millimètres, pas
+   une gifle : à six ans, l'erreur est une étape, pas une punition. */
+@keyframes gk-shake-soft {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px) rotate(-0.6deg); }
+  50% { transform: translateX(5px) rotate(0.6deg); }
+  75% { transform: translateX(-3px); }
+}
+/* Le reflet qui balaie un bouton prêt à être appuyé. */
+@keyframes gk-shine {
+  from { transform: translateX(-160%) skewX(-18deg); }
+  to { transform: translateX(260%) skewX(-18deg); }
+}
+/* Un solide sur son tourne-disque : incliné de 22° vers le regard, un tour en
+   quatorze secondes. L'inclinaison est dans chaque image pour que rien ne
+   saute à la reprise. */
+@keyframes gk-turntable {
+  from { transform: rotateX(-22deg) rotateY(0deg); }
+  to { transform: rotateX(-22deg) rotateY(360deg); }
+}
+/* Une boule qui roule : ses quartiers tournent, la lumière reste. */
+@keyframes gk-roll {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* Les étoiles de la récompense (`--a` l'angle, `--d` la distance). */
+@keyframes gk-star-fly {
+  0% { transform: rotate(var(--a)) translateX(0) scale(0.5); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: rotate(var(--a)) translateX(var(--d)) scale(1.1); opacity: 0; }
+}
+/* L'anneau de lumière qui s'ouvre au centre de la récompense. */
+@keyframes gk-ring {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+/* Une pièce qui s'élève puis s'efface (`--x`, `--y` son point d'arrivée). */
+@keyframes gk-coin-rise {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) scale(1); opacity: 0; }
+}
+/* Une pièce qui tourne sur son axe. */
+@keyframes gk-spin-y {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+/* Un nuage, une lueur, qui dérive d'un bord à l'autre de sa place. */
+@keyframes gk-drift {
+  from { transform: translate3d(-3%, 0, 0); }
+  to { transform: translate3d(3%, 0, 0); }
+}
+/* Le jeton de progression qui flotte en attendant la question suivante. */
+@keyframes gk-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+/* La voix qui joue, sur le bouton « Écouter » : des barres qui battent depuis
+   leur pied. Un `scaleY`, rien d'autre. */
+@keyframes gk-voice {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gk-motion,
+  .gk-motion * {
+    animation: none !important;
+    transition-duration: 0ms !important;
+  }
+}
+

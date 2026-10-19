@@ -14,20 +14,41 @@ import {
 } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
+import type { ActionCtx } from "../_generated/server";
 import {
   assertVisibleClass,
   visibleClassValidator,
+  type VisibleClassName,
 } from "../curriculum";
+import { effectivePalierCount } from "../palierRules";
+import { exerciseTypeValidator, isAiExerciseType, type ExerciseType } from "../exerciseTypes";
 import {
   buildPalierBasePrompt,
   buildPalierBaseSystemPrompt,
   buildVariationPrompt,
   buildVariationSystemPrompt,
 } from "./prompts";
-import { checkMathExercise } from "../aiGateway/factCheck";
-import { computeExerciseScore } from "./scoring";
+import { repairMathExercise } from "./mathRepair";
+import { repairDragDrop } from "./dragDropRepair";
+import { repairVisualPrompt } from "./visualRepair";
+import { guardVisuals } from "./missingVisual";
+import { exerciseImageIdOf } from "../../lib/exercise-images";
+import { validateFillBlank } from "./fillBlank";
+import { auditExercise, blockingDefects, tallyCodes } from "./exerciseAudit";
+import { computeExerciseScore, exercisesToRequest, hasEnoughValidExercises, PALIER_SIZE } from "./scoring";
+import { gameOriginOf, generateGames, interleave, regenerateGame, type GameAccept } from "./games";
+import { programmeTopic } from "../programme";
+import type { GameOrigin } from "./games/types";
+import {
+  correctAnswerText,
+  inputModeFor,
+  sanitizePayload,
+  shuffleDeterministic,
+  type AnswerInputMode,
+} from "./exerciseRules";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { checkAccess, requireAccess } from "../access";
+import { topicOpenTo } from "../accessRules";
 
 /**
  * Péremption du contenu d'un palier, PARTAGÉ par tous les élèves d'un niveau,
@@ -65,14 +86,6 @@ const REGEN_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const REGEN_HARD_CAP = 3;
 
 const classValidator = visibleClassValidator;
-
-const exerciseTypeValidator = v.union(
-  v.literal("qcm"),
-  v.literal("drag-drop"),
-  v.literal("match"),
-  v.literal("order"),
-  v.literal("short-answer"),
-);
 
 // ===========================================================================
 // READ — bucket lookup
@@ -229,93 +242,10 @@ function stripAnswerFromExercise(
   };
 }
 
-/**
- * Build a client-safe payload that doesn't leak the answer.
- * Server-side deterministic shuffle (Decision 75) for match/order/drag-drop.
- */
-function sanitizePayload(
-  type: Doc<"exercises">["type"],
-  payload: unknown,
-  exerciseId: Id<"exercises">,
-  attemptId: Id<"palierAttempts">,
-): unknown {
-  if (!payload || typeof payload !== "object") return {};
-  const p = payload as Record<string, unknown>;
-
-  switch (type) {
-    case "qcm":
-      return {
-        options: p.options ?? [],
-        // correctIndex stripped — submitted answers go through verifyAttempt
-      };
-    case "match": {
-      const pairs = (p.pairs as Array<{ left: string; right: string }>) ?? [];
-      const left = pairs.map((x) => x.left);
-      const right = pairs.map((x) => x.right);
-      // Shuffle right column with deterministic seed.
-      const seed = `${attemptId}:${exerciseId}:right`;
-      return { left, right: shuffleDeterministic(right, seed) };
-    }
-    case "order": {
-      const seq = (p.correctSequence as string[]) ?? [];
-      const seed = `${attemptId}:${exerciseId}:order`;
-      return { items: shuffleDeterministic(seq, seed) };
-    }
-    case "drag-drop": {
-      const items = (p.items as Array<{ text: string; correctZone: string }>) ?? [];
-      const zones = (p.zones as string[]) ?? [];
-      const seed = `${attemptId}:${exerciseId}:dd`;
-      return {
-        zones,
-        items: shuffleDeterministic(
-          items.map((it) => ({ text: it.text })),
-          seed,
-        ),
-      };
-    }
-    case "short-answer":
-      return {
-        // No accepted answers exposed — verifyAttempt enforces.
-        tolerance: p.tolerance ?? null,
-      };
-    default:
-      return {};
-  }
-}
-
-/**
- * Deterministic Fisher-Yates with a string-seeded PRNG (mulberry32 + FNV-1a).
- * Pure, no crypto imports. Decision 75.
- */
-export function shuffleDeterministic<T>(arr: T[], seed: string): T[] {
-  const rng = mulberry32(fnv1a(seed));
-  const out = [...arr];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-function fnv1a(s: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
-  }
-  return h >>> 0;
-}
-
-function mulberry32(seed: number): () => number {
-  let t = seed >>> 0;
-  return () => {
-    t = (t + 0x6d2b79f5) >>> 0;
-    let r = t;
-    r = Math.imul(r ^ (r >>> 15), r | 1);
-    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
-    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-  };
-}
+// Le payload sans sa réponse, le clavier d'une réponse courte et le mélange
+// reproductible vivent dans `exerciseRules.ts` : l'application qui joue un
+// palier sans réseau montre l'exercice exactement comme ici.
+export { inputModeFor, shuffleDeterministic, type AnswerInputMode };
 
 // ===========================================================================
 // MUTATIONS — palier row + exercises persistence
@@ -345,6 +275,9 @@ export const upsertBucket = internalMutation({
       v.object({
         totalChecked: v.number(),
         divergences: v.number(),
+        repaired: v.optional(v.number()),
+        auditRejected: v.optional(v.number()),
+        auditWarnings: v.optional(v.number()),
       }),
     ),
     preGenerated: v.optional(v.boolean()),
@@ -395,6 +328,15 @@ export const upsertBucket = internalMutation({
   },
 });
 
+/** Un exercice de base du palier : ni variation d'une tentative, ni personnalisé pour un élève. */
+export function isBaseExercise(ex: Doc<"exercises">): boolean {
+  return (
+    ex.palierAttemptId === undefined &&
+    ex.isVariation !== true &&
+    ex.personalizedFor === undefined
+  );
+}
+
 export const insertGeneratedExercises = internalMutation({
   args: {
     palierId: v.id("paliers"),
@@ -414,6 +356,19 @@ export const insertGeneratedExercises = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
+    // UN PALIER RÉGÉNÉRÉ REMPLACE SES EXERCICES, IL NE LES EMPILE PAS. Un
+    // palier périmé garde sa ligne (`upsertBucket` la réutilise) ; sans ce
+    // ménage, ses anciens exercices restaient attachés et la séance en
+    // servait vingt. Les variations (attachées à une tentative) et les
+    // exercices personnalisés restent : ils appartiennent à un élève.
+    const previous = await ctx.db
+      .query("exercises")
+      .withIndex("by_palierId", (q) => q.eq("palierId", args.palierId))
+      .take(200);
+    for (const ex of previous) {
+      if (isBaseExercise(ex)) await ctx.db.delete(ex._id);
+    }
+
     const ids: Id<"exercises">[] = [];
     const now = Date.now();
     for (const ex of args.exercises) {
@@ -461,6 +416,7 @@ export const replaceFailedWithVariations = internalMutation({
   },
   handler: async (ctx, args) => {
     const ids: Id<"exercises">[] = [];
+    const replacement = new Map<string, Id<"exercises">>();
     for (const v of args.variations) {
       const id = await ctx.db.insert("exercises", {
         topicId: args.topicId,
@@ -483,6 +439,19 @@ export const replaceFailedWithVariations = internalMutation({
         needsManualReview: v.needsManualReview === true,
       });
       ids.push(id);
+      replacement.set(v.originalExerciseId as string, id);
+    }
+    // UNE SÉANCE JOUÉE SUR L'APPAREIL porte la liste de ses exercices
+    // (`playedExerciseIds`) : chaque variation y prend la place de
+    // l'exercice qu'elle remplace, sans quoi la note suivante ignorerait
+    // les variations.
+    const attempt = await ctx.db.get(args.palierAttemptId);
+    if (attempt?.playedExerciseIds) {
+      await ctx.db.patch(attempt._id, {
+        playedExerciseIds: attempt.playedExerciseIds.map(
+          (id) => replacement.get(id as string) ?? id,
+        ),
+      });
     }
     return ids;
   },
@@ -621,6 +590,30 @@ export const getBucket = action({
       throw new ConvexError({ code: "ACCESS_DENIED", reason: access.reason });
     }
 
+    // LA CLASSE VIENT DU CLIENT, ET N'ÉTAIT JAMAIS VÉRIFIÉE. `class` et
+    // `topicId` sont deux arguments libres : un élève pouvait demander les
+    // exercices de n'importe quel niveau, et même faire générer un palier
+    // « CM2 » sur une thématique de CE1 — une génération IA facturée à son
+    // école, pour un seau qui n'aurait jamais dû exister. Les deux doivent
+    // désormais valoir la classe de l'élève (`accessRules.topicOpenTo`).
+    // Lue avant tout le reste : un seau déjà généré ne s'ouvre pas davantage.
+    // La même lecture sert plus bas au nombre d'étapes.
+    const located = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
+      subjectId: args.subjectId,
+      topicId: args.topicId,
+    });
+    if (!located || !located.topic) throw new ConvexError("Thématique introuvable");
+    const caller = {
+      role: callerProfile.role,
+      studentClass: callerProfile.class ?? null,
+    };
+    if (
+      located.topic.class !== args.class ||
+      !topicOpenTo(caller, located.topic.class)
+    ) {
+      throw new ConvexError({ code: "ACCESS_DENIED", reason: "wrong_class" });
+    }
+
     if (args.palierIndex > 1) {
       // `callerProfile` est déjà résolu ci-dessus : ce bloc refaisait
       // `getAuthUserId` + `getProfileByUserId` pour la MÊME session, soit une
@@ -647,65 +640,159 @@ export const getBucket = action({
       }
     }
 
-    const existing = await ctx.runQuery(internal.paliers.index.findBucket, {
+    // La thématique doit exister et le palier être une de ses étapes : le
+    // nombre d'étapes est dynamique (`palierRules.effectivePalierCount`), et
+    // un index au-delà ne doit ni générer ni ouvrir quoi que ce soit.
+    const palierCount = effectivePalierCount(located.topic);
+    if (
+      !Number.isInteger(args.palierIndex) ||
+      args.palierIndex < 1 ||
+      args.palierIndex > palierCount
+    ) {
+      throw new ConvexError(
+        `Cette thématique compte ${palierCount} palier${palierCount > 1 ? "s" : ""}.`,
+      );
+    }
+
+    return await generateBucketCore(ctx, {
       subjectId: args.subjectId,
       class: args.class,
       topicId: args.topicId,
       palierIndex: args.palierIndex,
+      userId: callerProfile._id,
     });
-    const now = Date.now();
-    // `forceRegenerate` A DISPARU DES ARGUMENTS, il n'a pas été gardé.
-    //
-    // C'était un booléen PUBLIC qu'aucun écran n'envoyait : il n'existait que
-    // comme surface d'attaque. Posé à `true`, il rendait cette branche de cache
-    // INATTEIGNABLE, donc chaque appel relançait une génération `palier_base`
-    // complète — l'appel le plus cher du produit. Avec `palierIndex: 1`, le
-    // contrôle de progression est sauté par ailleurs, et rien ne limitait la
-    // cadence : un seul compte en règle pouvait épuiser le budget IA MENSUEL de
-    // toutes les écoles, le plafond budgétaire n'étant pas segmenté par école.
-    //
-    // Le régénérer à dessein reste possible et le restera : c'est `expiresAt`
-    // qui décide, et la régénération personnalisée a sa propre voie
-    // (`quotaScope: "system_regen"`, plus bas). Une fraîcheur ne se pilote pas
-    // depuis le client.
-    if (existing && existing.status === "cached" && existing.expiresAt > now) {
-      return {
-        palierId: existing._id,
-        cacheHit: true,
-        qaStatus: existing.qaStatus ?? "auto_ok",
-      };
-    }
+  },
+});
 
-    // Mark generating (or create row with status=generating).
-    await ctx.runMutation(internal.paliers.index.upsertBucket, {
-      subjectId: args.subjectId,
-      class: args.class,
-      topicId: args.topicId,
-      palierIndex: args.palierIndex,
-      status: "generating",
-    });
+export type BucketArgs = {
+  subjectId: Id<"subjects">;
+  class: VisibleClassName;
+  topicId: Id<"topics">;
+  palierIndex: number;
+  /** L'élève à qui imputer la dépense ; absent pour une génération système (pré-génération). */
+  userId?: Id<"profiles">;
+  /** Posé par la pré-génération (`paliers/pregen.ts`), pour distinguer ce contenu à l'audit. */
+  preGenerated?: boolean;
+};
 
-    // Resolve subject + topic for prompt context.
-    const subject = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
-      subjectId: args.subjectId,
-      topicId: args.topicId,
-    });
-    if (!subject || !subject.topic) {
-      throw new Error("Subject or topic not found");
-    }
+/**
+ * LE CŒUR DE `getBucket`, sans son contrôle d'accès : rend le palier en cache
+ * s'il est frais, sinon le génère, le vérifie et le persiste.
+ *
+ * Fonction ordinaire et non action interne : `getBucket` (l'élève) et la
+ * pré-génération (`paliers/pregen.ts`, la ligne de commande) partagent le même
+ * code sans passer par `ctx.runAction`, qui ne se justifie que pour changer
+ * de moteur d'exécution. Les contrôles restent à l'entrée de chaque appelant :
+ * paywall et progression pour l'élève, nom du déploiement pour le script.
+ */
+export async function generateBucketCore(
+  ctx: ActionCtx,
+  args: BucketArgs,
+): Promise<{ palierId: Id<"paliers">; cacheHit: boolean; qaStatus: string }> {
 
-    const systemPrompt = buildPalierBaseSystemPrompt({
+  const existing = await ctx.runQuery(internal.paliers.index.findBucket, {
+    subjectId: args.subjectId,
+    class: args.class,
+    topicId: args.topicId,
+    palierIndex: args.palierIndex,
+  });
+  const now = Date.now();
+  // `forceRegenerate` A DISPARU DES ARGUMENTS, il n'a pas été gardé.
+  //
+  // C'était un booléen PUBLIC qu'aucun écran n'envoyait : il n'existait que
+  // comme surface d'attaque. Posé à `true`, il rendait cette branche de cache
+  // INATTEIGNABLE, donc chaque appel relançait une génération `palier_base`
+  // complète — l'appel le plus cher du produit. Avec `palierIndex: 1`, le
+  // contrôle de progression est sauté par ailleurs, et rien ne limitait la
+  // cadence : un seul compte en règle pouvait épuiser le budget IA MENSUEL de
+  // toutes les écoles, le plafond budgétaire n'étant pas segmenté par école.
+  //
+  // Le régénérer à dessein reste possible et le restera : c'est `expiresAt`
+  // qui décide, et la régénération personnalisée a sa propre voie
+  // (`quotaScope: "system_regen"`, plus bas). Une fraîcheur ne se pilote pas
+  // depuis le client.
+  if (existing && existing.status === "cached" && existing.expiresAt > now) {
+    return {
+      palierId: existing._id,
+      cacheHit: true,
+      qaStatus: existing.qaStatus ?? "auto_ok",
+    };
+  }
+
+  // Mark generating (or create row with status=generating).
+  await ctx.runMutation(internal.paliers.index.upsertBucket, {
+    subjectId: args.subjectId,
+    class: args.class,
+    topicId: args.topicId,
+    palierIndex: args.palierIndex,
+    status: "generating",
+  });
+
+  // Resolve subject + topic for prompt context.
+  const subject = await ctx.runQuery(internal.paliers.index.getSubjectAndTopic, {
+    subjectId: args.subjectId,
+    topicId: args.topicId,
+  });
+  if (!subject || !subject.topic) {
+    throw new Error("Subject or topic not found");
+  }
+
+  const palierCount = effectivePalierCount(subject.topic);
+
+  // LES JEUX DE LA THÉMATIQUE, fabriqués par le code (`paliers/games`) : la
+  // fiche du programme dit lesquels et combien. Le modèle n'écrit que le
+  // reste du palier, et rien du tout quand la thématique est tout en jeux.
+  // La graine porte l'heure de génération : un palier régénéré change de
+  // jeux, comme il change d'exercices du modèle.
+  //
+  // LE CONTRÔLEUR JUGE AUSSI LES GABARITS (`gameAcceptor`) : un exercice fabriqué
+  // avec un défaut `blocking` est refait avec une autre graine, puis abandonné.
+  // Les tests n'en trouvent aucun ; c'est le filet d'une thématique sans exercice
+  // du modèle, où rien d'autre ne relit le palier. Un gabarit abandonné laisse sa
+  // place au modèle (`aiCount`), comme un exercice du modèle écarté.
+  const programme = programmeTopic(subject.topic.programmeKey);
+  const games = programme?.topic.games ?? [];
+  const gameAudit = emptyAuditTally();
+  const gameExos: PersistedShape[] = generateGames(games, {
+    klass: args.class,
+    palierIndex: args.palierIndex,
+    palierCount,
+    seed: `${args.topicId}:${args.palierIndex}:${now}`,
+    accept: gameAcceptor({ class: args.class, subject: subject.subjectName, tally: gameAudit }),
+  }).map((game) => ({
+    type: game.type,
+    prompt: game.prompt,
+    payload: game.payload,
+    answerKey: game.answerKey,
+    hints: game.hints,
+    order: 0,
+    mathExpression: null,
+    needsManualReview: false,
+  }));
+  const aiCount = PALIER_SIZE - gameExos.length;
+
+  let factCheck: MathBatch = {
+    totalChecked: 0,
+    divergences: 0,
+    repaired: 0,
+    unrepairable: 0,
+    audit: emptyAuditTally(),
+    exos: [],
+  };
+  let generationTraceId: string | undefined;
+
+  if (aiCount > 0) {
+    const promptInput = {
       subject: subject.subjectName,
       topic: subject.topic.name,
       class: args.class,
       palierIndex: args.palierIndex,
-    });
-    const userPrompt = buildPalierBasePrompt({
-      subject: subject.subjectName,
-      topic: subject.topic.name,
-      class: args.class,
-      palierIndex: args.palierIndex,
-    });
+      palierCount,
+      topicDescription: subject.topic.description,
+      exerciseCount: exercisesToRequest(aiCount),
+    };
+    const systemPrompt = buildPalierBaseSystemPrompt(promptInput);
+    const userPrompt = buildPalierBasePrompt(promptInput);
 
     const gen = await ctx.runAction(internal.aiGateway.index.generate, {
       purpose: "palier_base",
@@ -725,7 +812,7 @@ export const getBucket = action({
       // `dailyMoreLimitPerKid` (3 par jour), ce qui interdirait à un élève
       // d'ouvrir un quatrième palier dans sa journée. La cadence de CE chemin
       // est déjà bornée par le cache, pas par un quota.
-      userId: callerProfile._id,
+      userId: args.userId,
       metadata: {
         subjectId: args.subjectId,
         topicId: args.topicId,
@@ -745,48 +832,65 @@ export const getBucket = action({
       });
       throw new Error(gen.reason ?? "AI_GENERATION_FAILED");
     }
+    generationTraceId = gen.traceId;
 
-    const parsed = parseExercises(gen.result);
+    const parsed = parseExercises(gen.result).slice(0, exercisesToRequest(aiCount));
     const isMaths = subject.subjectName.toLowerCase().startsWith("math");
-    const factCheck = isMaths
-      ? verifyMathBatch(parsed)
-      : {
-          totalChecked: 0,
-          divergences: 0,
-          exos: parsed
-            .map((ex, i) => toPersistedShape(ex, i))
-            .filter((s): s is PersistedShape => s !== null),
-        };
+    const shapeContext = { class: args.class, subject: subject.subjectName };
+    factCheck = isMaths ? verifyMathBatch(parsed, shapeContext) : shapeBatch(parsed, shapeContext);
 
-    // Persist palier row + exercises.
-    const palierId: Id<"paliers"> = await ctx.runMutation(
-      internal.paliers.index.upsertBucket,
-      {
+    // Trop d'exercices écartés : on ne sert pas un palier qui ne se valide
+    // plus. Il reste `stale`, refait à la prochaine ouverture ou par `pregen:run`.
+    // Les exercices de réserve ne servent qu'à remplacer un exercice écarté : le palier garde `aiCount`.
+    factCheck = { ...factCheck, exos: factCheck.exos.slice(0, aiCount) };
+    if (!hasEnoughValidExercises(factCheck.exos.length, aiCount)) {
+      await ctx.runMutation(internal.paliers.index.upsertBucket, {
         subjectId: args.subjectId,
         class: args.class,
         topicId: args.topicId,
         palierIndex: args.palierIndex,
-        status: "cached",
-        generationTraceId: gen.traceId,
-        qaStatus:
-          factCheck.divergences > 0 && isMaths ? "pending_human" : "auto_ok",
-        factCheckResults: {
-          totalChecked: factCheck.totalChecked,
-          divergences: factCheck.divergences,
-        },
-      },
-    );
+        status: "stale",
+      });
+      throw new Error("TOO_FEW_VALID_EXERCISES");
+    }
+  }
 
-    await ctx.runMutation(internal.paliers.index.insertGeneratedExercises, {
-      palierId,
-      palierIndex: args.palierIndex,
+  // Les jeux se glissent entre les exercices du modèle au lieu de s'empiler
+  // à la fin ; chaque liste garde son ordre (la difficulté du modèle croît).
+  const exos = interleave(factCheck.exos, gameExos).map((ex, i) => ({ ...ex, order: i + 1 }));
+  const qaStatus = factCheck.unrepairable > 0 ? "pending_human" : "auto_ok";
+
+  // Persist palier row + exercises.
+  const palierId: Id<"paliers"> = await ctx.runMutation(
+    internal.paliers.index.upsertBucket,
+    {
+      subjectId: args.subjectId,
+      class: args.class,
       topicId: args.topicId,
-      exercises: factCheck.exos,
-    });
+      palierIndex: args.palierIndex,
+      status: "cached",
+      preGenerated: args.preGenerated,
+      generationTraceId,
+      qaStatus,
+      factCheckResults: {
+        totalChecked: factCheck.totalChecked,
+        divergences: factCheck.divergences,
+        repaired: factCheck.repaired,
+        auditRejected: factCheck.audit.rejected + gameAudit.rejected,
+        auditWarnings: factCheck.audit.warned + gameAudit.warned,
+      },
+    },
+  );
 
-    return { palierId, cacheHit: false, qaStatus: factCheck.divergences > 0 && isMaths ? "pending_human" : "auto_ok" };
-  },
-});
+  await ctx.runMutation(internal.paliers.index.insertGeneratedExercises, {
+    palierId,
+    palierIndex: args.palierIndex,
+    topicId: args.topicId,
+    exercises: exos,
+  });
+
+  return { palierId, cacheHit: false, qaStatus };
+}
 
 export const getSubjectAndTopic = internalQuery({
   args: {
@@ -799,7 +903,14 @@ export const getSubjectAndTopic = internalQuery({
     if (!subject || !topic) return null;
     return {
       subjectName: subject.name,
-      topic: { _id: topic._id, name: topic.name },
+      topic: {
+        _id: topic._id,
+        name: topic.name,
+        description: topic.description,
+        class: topic.class ?? null,
+        palierCount: topic.palierCount ?? null,
+        programmeKey: topic.programmeKey ?? null,
+      },
     };
   },
 });
@@ -893,74 +1004,107 @@ export const regenerateFailedExercises = action({
       };
     }
 
-    const systemPrompt = buildVariationSystemPrompt({
-      class: assertVisibleClass(palier.class),
-      failed: failed.map((f) => ({
-        concept: f.concept,
-        statement: f.statement,
-        correctAnswer: f.correctAnswer,
-        studentAnswer: f.studentAnswer,
-      })),
-      subject: subject.name,
-      topic: topic.name,
-    });
-    const userPrompt = buildVariationPrompt({
-      class: assertVisibleClass(palier.class),
-      failed: failed.map((f) => ({
-        concept: f.concept,
-        statement: f.statement,
-        correctAnswer: f.correctAnswer,
-        studentAnswer: f.studentAnswer,
-      })),
-      subject: subject.name,
-      topic: topic.name,
-    });
-
-    const gen = await ctx.runAction(internal.aiGateway.index.generate, {
-      purpose: "palier_personalized",
-      prompt: userPrompt,
-      systemPrompt,
-      expectJson: true,
-      userId: attempt.userId,
-      quotaScope: "system_regen",
-      metadata: {
-        palierAttemptId: args.palierAttemptId,
-        regen: true,
-      },
+    // UN JEU RATÉ SE REFAIT PAR LE CODE : même jeu, même niveau, autre
+    // graine. Le modèle ne reçoit que les exercices qu'il a écrits — et n'est
+    // pas appelé du tout quand l'enfant n'a raté que des jeux.
+    const klass = assertVisibleClass(palier.class);
+    const gameFailed = failed.filter((f) => f.game !== null);
+    const aiFailed = failed.filter((f) => f.game === null);
+    const regenSeed = `${args.palierAttemptId}:${Date.now()}`;
+    const gameVariations = gameFailed.flatMap((f) => {
+      const game = regenerateGame(
+        f.game,
+        klass,
+        `${regenSeed}:${f.exerciseId}`,
+        gameAcceptor({ class: klass, subject: subject.name }),
+      );
+      if (!game) return [];
+      return [
+        {
+          type: game.type,
+          prompt: game.prompt,
+          payload: game.payload,
+          answerKey: game.answerKey,
+          hints: game.hints,
+          order: f.order,
+          mathExpression: null,
+          needsManualReview: false,
+          originalExerciseId: f.exerciseId as Id<"exercises">,
+        },
+      ];
     });
 
-    if (!gen.ok) {
-      await ctx.runMutation(internal.paliers.index.updateAttemptStatus, {
-        palierAttemptId: args.palierAttemptId,
-        status: "regen_failed",
+    let aiVariations: (PersistedShape & { originalExerciseId: Id<"exercises"> })[] = [];
+    if (aiFailed.length > 0) {
+      const systemPrompt = buildVariationSystemPrompt({
+        class: klass,
+        failed: aiFailed.map((f) => ({
+          concept: f.concept,
+          statement: f.statement,
+          correctAnswer: f.correctAnswer,
+          studentAnswer: f.studentAnswer,
+        })),
+        subject: subject.name,
+        topic: topic.name,
       });
-      return {
-        ok: false,
-        reason: gen.reason ?? "AI_GENERATION_FAILED",
-        kidMessage: gen.kidMessage,
-      };
+      const userPrompt = buildVariationPrompt({
+        class: klass,
+        failed: aiFailed.map((f) => ({
+          concept: f.concept,
+          statement: f.statement,
+          correctAnswer: f.correctAnswer,
+          studentAnswer: f.studentAnswer,
+        })),
+        subject: subject.name,
+        topic: topic.name,
+      });
+
+      const gen = await ctx.runAction(internal.aiGateway.index.generate, {
+        purpose: "palier_personalized",
+        prompt: userPrompt,
+        systemPrompt,
+        expectJson: true,
+        userId: attempt.userId,
+        quotaScope: "system_regen",
+        metadata: {
+          palierAttemptId: args.palierAttemptId,
+          regen: true,
+        },
+      });
+
+      if (!gen.ok) {
+        await ctx.runMutation(internal.paliers.index.updateAttemptStatus, {
+          palierAttemptId: args.palierAttemptId,
+          status: "regen_failed",
+        });
+        return {
+          ok: false,
+          reason: gen.reason ?? "AI_GENERATION_FAILED",
+          kidMessage: gen.kidMessage,
+        };
+      }
+
+      const parsed = parseExercises(gen.result);
+      if (parsed.length === 0 && gameVariations.length === 0) {
+        return { ok: false, reason: "EMPTY_VARIATIONS" };
+      }
+      const isMaths = subject.name.toLowerCase().startsWith("math");
+      const shapeContext = { class: klass, subject: subject.name };
+      const factCheck: MathBatch = isMaths
+        ? verifyMathBatch(parsed, shapeContext)
+        : shapeBatch(parsed, shapeContext);
+
+      // Pair variations with originals (1-to-1, in order).
+      aiVariations = factCheck.exos.slice(0, aiFailed.length).map((v, i) => ({
+        ...v,
+        originalExerciseId: aiFailed[i].exerciseId as Id<"exercises">,
+      }));
     }
 
-    const parsed = parseExercises(gen.result);
-    if (parsed.length === 0) {
+    const variations = [...aiVariations, ...gameVariations];
+    if (variations.length === 0) {
       return { ok: false, reason: "EMPTY_VARIATIONS" };
     }
-    const isMaths = subject.name.toLowerCase().startsWith("math");
-    const factCheck = isMaths
-      ? verifyMathBatch(parsed)
-      : {
-          totalChecked: 0,
-          divergences: 0,
-          exos: parsed
-            .map((ex, i) => toPersistedShape(ex, i))
-            .filter((s): s is PersistedShape => s !== null),
-        };
-
-    // Pair variations with originals (1-to-1, in order).
-    const variations = factCheck.exos.slice(0, failed.length).map((v, i) => ({
-      ...v,
-      originalExerciseId: failed[i].exerciseId as Id<"exercises">,
-    }));
 
     await ctx.runMutation(internal.paliers.index.replaceFailedWithVariations, {
       palierAttemptId: args.palierAttemptId,
@@ -1003,6 +1147,9 @@ export const loadRegenContext = internalQuery({
       statement: string;
       correctAnswer: string;
       studentAnswer: string;
+      order: number;
+      /** Le jeu qui a fabriqué l'exercice : il se refait sans le modèle. */
+      game: GameOrigin | null;
     }> = [];
     for (const exoId of failedIds) {
       const exo = await ctx.db.get(exoId);
@@ -1021,6 +1168,8 @@ export const loadRegenContext = internalQuery({
         statement: exo.prompt,
         correctAnswer: exo.answerKey,
         studentAnswer: last?.submittedAnswer ?? "(pas de réponse)",
+        order: exo.order,
+        game: gameOriginOf(exo.payload),
       });
     }
 
@@ -1059,6 +1208,28 @@ export const startPalierAttempt = mutation({
 
     const palier = await ctx.db.get(args.palierId);
     if (!palier) throw new Error("Palier introuvable");
+
+    // Une seule lecture de la thématique pour deux contrôles.
+    const topic = await ctx.db.get(palier.topicId);
+
+    // Classe de l'élève (`accessRules.topicOpenTo`), jugée sur la THÉMATIQUE
+    // et non sur `palier.class` seul : un seau créé avant que `getBucket`
+    // vérifie la classe peut porter un niveau qui n'est pas celui de sa
+    // thématique.
+    const caller = { role: profile.role, studentClass: profile.class ?? null };
+    if (
+      !topic ||
+      !topicOpenTo(caller, topic.class) ||
+      !topicOpenTo(caller, palier.class)
+    ) {
+      throw new ConvexError({ code: "ACCESS_DENIED", reason: "wrong_class" });
+    }
+
+    // Le nombre d'étapes d'une thématique peut baisser depuis l'administration :
+    // un palier généré au-delà reste en base, mais ne s'ouvre plus.
+    if (palier.palierIndex > effectivePalierCount(topic)) {
+      throw new ConvexError("Ce palier n'est plus une étape de cette thématique.");
+    }
 
     if (palier.palierIndex > 1) {
       for (let i = 1; i < palier.palierIndex; i++) {
@@ -1219,7 +1390,7 @@ function parseExercises(raw: unknown): RawGenExercise[] {
 }
 
 interface PersistedShape {
-  type: "qcm" | "drag-drop" | "match" | "order" | "short-answer";
+  type: ExerciseType;
   prompt: string;
   payload: unknown;
   answerKey: string;
@@ -1236,104 +1407,305 @@ function validatePayload(
   if (!raw || typeof raw !== "object") return { valid: false, payload: raw };
   const p = raw as Record<string, unknown>;
 
+  // LE PAYLOAD PERSISTÉ NE GARDE QUE LES CHAMPS CONNUS. Le modèle ajoute
+  // parfois des clés libres (un dictionnaire dont les clés sont des phrases),
+  // et Convex refuse un nom de champ hors ASCII : « Field name Aminata va au
+  // marché. has invalid character 'é' » faisait échouer tout le palier. On
+  // reconstruit donc l'objet champ par champ, au lieu de recopier le reste.
+  const optional = {
+    ...(typeof p.explanation === "string" ? { explanation: p.explanation } : {}),
+    ...(typeof p.concept === "string" ? { concept: p.concept } : {}),
+    // L'image d'énoncé : un identifiant du catalogue (`lib/exercise-images.ts`),
+    // ou rien. Un identifiant inconnu tombe.
+    ...(exerciseImageIdOf(p) ? { image: exerciseImageIdOf(p) } : {}),
+  };
+
   switch (type) {
     case "qcm": {
       const opts = Array.isArray(p.options) ? p.options.filter((o): o is string => typeof o === "string") : [];
       if (opts.length < 2) return { valid: false, payload: raw };
       if (typeof p.correctIndex !== "number" || p.correctIndex < 0 || p.correctIndex >= opts.length) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, options: opts } };
+      return { valid: true, payload: { ...optional, options: opts, correctIndex: p.correctIndex } };
     }
     case "match": {
       const pairs = Array.isArray(p.pairs)
-        ? p.pairs.filter(
-            (pair): pair is { left: string; right: string } =>
-              !!pair && typeof pair === "object" && typeof (pair as Record<string, unknown>).left === "string" && typeof (pair as Record<string, unknown>).right === "string",
-          )
+        ? p.pairs
+            .filter(
+              (pair): pair is { left: string; right: string } =>
+                !!pair && typeof pair === "object" && typeof (pair as Record<string, unknown>).left === "string" && typeof (pair as Record<string, unknown>).right === "string",
+            )
+            .map((pair) => ({ left: pair.left, right: pair.right }))
         : [];
       if (pairs.length < 2) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, pairs } };
+      // Les paires valables en plus (une proposition qui va à deux éléments) :
+      // seulement entre des mots qui sont bien à l'écran, et pas déjà dans
+      // `pairs`. Le reste est écarté, l'exercice reste jouable.
+      const lefts = new Set(pairs.map((pair) => pair.left));
+      const rights = new Set(pairs.map((pair) => pair.right));
+      const known = new Set(pairs.map((pair) => JSON.stringify([pair.left, pair.right])));
+      const accepted: { left: string; right: string }[] = [];
+      if (Array.isArray(p.accepted)) {
+        for (const pair of p.accepted as unknown[]) {
+          if (!pair || typeof pair !== "object") continue;
+          const { left, right } = pair as Record<string, unknown>;
+          if (typeof left !== "string" || typeof right !== "string") continue;
+          if (!lefts.has(left) || !rights.has(right)) continue;
+          const id = JSON.stringify([left, right]);
+          if (known.has(id)) continue;
+          known.add(id);
+          accepted.push({ left, right });
+        }
+      }
+      return {
+        valid: true,
+        payload: { ...optional, pairs, ...(accepted.length > 0 ? { accepted } : {}) },
+      };
     }
     case "order": {
       const seq = Array.isArray(p.correctSequence) ? p.correctSequence.filter((s): s is string => typeof s === "string") : [];
       if (seq.length < 2) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, correctSequence: seq } };
+      return { valid: true, payload: { ...optional, correctSequence: seq } };
     }
     case "drag-drop": {
       const zones = Array.isArray(p.zones) ? p.zones.filter((z): z is string => typeof z === "string") : [];
       const items = Array.isArray(p.items)
-        ? p.items.filter(
-            (it): it is { text: string; correctZone: string } =>
-              !!it && typeof it === "object" && typeof (it as Record<string, unknown>).text === "string" && typeof (it as Record<string, unknown>).correctZone === "string",
-          )
+        ? p.items
+            .filter(
+              (it): it is { text: string; correctZone: string } =>
+                !!it && typeof it === "object" && typeof (it as Record<string, unknown>).text === "string" && typeof (it as Record<string, unknown>).correctZone === "string",
+            )
+            .map((it) => ({ text: it.text, correctZone: it.correctZone }))
         : [];
       if (zones.length < 2 || items.length < 2) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, zones, items } };
+      return { valid: true, payload: { ...optional, zones, items } };
     }
     case "short-answer": {
       const accepted = Array.isArray(p.acceptedAnswers) ? p.acceptedAnswers.filter((a): a is string => typeof a === "string") : [];
       if (accepted.length === 0) return { valid: false, payload: raw };
-      return { valid: true, payload: { ...p, acceptedAnswers: accepted } };
+      return {
+        valid: true,
+        payload: {
+          ...optional,
+          acceptedAnswers: accepted,
+          ...(typeof p.tolerance === "string" || typeof p.tolerance === "number" ? { tolerance: p.tolerance } : {}),
+          ...(p.exactSpelling === true ? { exactSpelling: true } : {}),
+        },
+      };
     }
+    case "fill-blank":
+      return validateFillBlank(p, optional);
     default:
       return { valid: false, payload: raw };
   }
 }
 
-function toPersistedShape(ex: RawGenExercise, idx?: number): PersistedShape | null {
-  const t = (ex.type ?? "short-answer") as PersistedShape["type"];
-  const allowed: PersistedShape["type"][] = [
-    "qcm",
-    "drag-drop",
-    "match",
-    "order",
-    "short-answer",
-  ];
-  const safeType = allowed.includes(t) ? t : "short-answer";
-  const prompt = ex.statement ?? ex.prompt ?? "";
+export { validateFillBlank };
+
+/**
+ * CE QUE LE CONTRÔLEUR A VU PENDANT UNE GÉNÉRATION (`paliers/exerciseAudit.ts`) :
+ * les exercices écartés (au moins un défaut `blocking`), ceux qui passent avec
+ * des avertissements, et le détail par code. Un lot l'accumule ; la
+ * génération d'un palier en range deux totaux dans `factCheckResults`.
+ */
+export type AuditTally = {
+  rejected: number;
+  warned: number;
+  byCode: Record<string, number>;
+};
+
+export const emptyAuditTally = (): AuditTally => ({ rejected: 0, warned: 0, byCode: {} });
+
+/** Pour qui l'exercice est écrit : la classe et la matière règlent la langue et la longueur de l'énoncé. */
+type ShapeContext = {
+  class?: string;
+  subject?: string;
+  tally?: AuditTally;
+  /** Les mathématiques réparent d'abord (`mathRepair`), puis contrôlent : `auditShape`. */
+  deferAudit?: boolean;
+};
+
+/**
+ * LE CONTRÔLEUR STRUCTUREL, DERNIÈRE PORTE DU LOT : un exercice qui a un défaut
+ * `blocking` (phrase coupée, bonne réponse absente des options, options
+ * identiques, zone qui n'existe pas…) est écarté ; les avertissements ne
+ * retirent rien mais sont comptés. Rend `false` quand l'exercice est écarté.
+ */
+function auditShape(shape: PersistedShape, ctx: ShapeContext | undefined): boolean {
+  const defects = auditExercise({
+    type: shape.type,
+    prompt: shape.prompt,
+    payload: shape.payload,
+    answerKey: shape.answerKey,
+    hints: shape.hints,
+    class: ctx?.class,
+    subject: ctx?.subject,
+  });
+  const blocking = blockingDefects(defects);
+  if (ctx?.tally) {
+    tallyCodes(defects, ctx.tally.byCode);
+    if (blocking.length > 0) ctx.tally.rejected += 1;
+    else if (defects.length > 0) ctx.tally.warned += 1;
+  }
+  if (blocking.length > 0) {
+    console.log(
+      `[audit] exercice écarté : ${blocking.map((defect) => defect.code).join(", ")} : ${shape.prompt.slice(0, 80)}`,
+    );
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Le contrôleur au service des gabarits (`paliers/games`) : accepte un exercice
+ * fabriqué quand il n'a aucun défaut `blocking`. Rien à réparer ici, le code ne
+ * se trompe pas de réponse : un défaut est un bug du gabarit, à refaire ou à taire.
+ */
+function gameAcceptor(ctx: ShapeContext): GameAccept {
+  return (game) =>
+    auditShape(
+      { type: game.type, prompt: game.prompt, payload: game.payload, answerKey: game.answerKey, hints: game.hints, order: 0 },
+      ctx,
+    );
+}
+
+function toPersistedShape(ex: RawGenExercise, idx?: number, ctx?: ShapeContext): PersistedShape | null {
+  // Le modèle n'écrit que les types classiques et la phrase à trous : un jeu
+  // (frise, dessin, écoute, couleurs) se fabrique par le code, jamais par lui.
+  const t = ex.type ?? "short-answer";
+  const safeType: PersistedShape["type"] = isAiExerciseType(t) ? t : "short-answer";
+  let prompt = ex.statement ?? ex.prompt ?? "";
   if (!prompt) return null;
 
-  const { valid, payload } = validatePayload(safeType, ex.payload ?? {});
-  if (!valid) return null;
+  const validated = validatePayload(safeType, ex.payload ?? {});
+  if (!validated.valid) return null;
+  let type: PersistedShape["type"] = safeType;
+  let payload: unknown = validated.payload;
 
-  const answerKey = typeof ex.correctAnswer === "string" ? ex.correctAnswer : String(ex.correctAnswer ?? "");
+  let answerKey = typeof ex.correctAnswer === "string" ? ex.correctAnswer : String(ex.correctAnswer ?? "");
+  // Une phrase à trous sans réponse écrite se répond toute seule : la phrase
+  // complète, trous remplis.
+  if (!answerKey && type === "fill-blank") answerKey = correctAnswerText({ type, payload }) ?? "";
   if (!answerKey) return null;
 
+  // UN GLISSER-DÉPOSER QUE L'ENFANT NE COMPRENDRAIT PAS (zones « Zone A »,
+  // étiquette identique à sa zone, zone cible absente) est réparé quand on
+  // sait le faire, sinon écarté du lot : voir `dragDropRepair.ts`.
+  if (type === "drag-drop") {
+    const repaired = repairDragDrop({ prompt, payload, answerKey });
+    if (repaired.kind === "unrepairable") return null;
+    if (repaired.kind !== "ok") payload = repaired.payload;
+    if (repaired.kind === "order" || repaired.kind === "qcm" || repaired.kind === "match") type = repaired.kind;
+    if (repaired.kind !== "ok" && repaired.kind !== "cleaned") answerKey = repaired.answerKey;
+  }
+
+  // UN ÉNONCÉ QUI PARLE D'UNE IMAGE ABSENTE (« Combien de mangues vois-tu ? »
+  // sans une mangue) reçoit ses émojis quand on sait les écrire, sinon il est
+  // écarté du lot : voir `visualRepair.ts`. Cette réparation passe AVANT le
+  // garde-fou ci-dessous, qui écarte ce qu'elle n'a pas su sauver.
+  const visual = repairVisualPrompt({ type, prompt, payload, answerKey });
+  if (visual.kind === "unrepairable") return null;
+  if (visual.kind === "repaired") {
+    prompt = visual.prompt;
+    if (visual.payload !== undefined) payload = visual.payload;
+  }
+
+  // UNE QUESTION SANS SA SCÈNE (« Combien de billes as-tu ? » et rien à
+  // l'écran) est écartée du lot : l'enfant ne la comprendrait pas. Des objets
+  // dessinés en émojis se comptent : la réponse attendue est leur nombre réel,
+  // pas celui que le modèle croit avoir écrit. Voir `missingVisual.ts`.
   const hintsArr = Array.isArray(ex.hints) ? (ex.hints as unknown[]).map(String) : [];
-  return {
-    type: safeType,
+  const guarded = guardVisuals({
+    type,
     prompt,
     payload,
     answerKey,
-    hints: hintsArr.slice(0, 3),
-    order: typeof idx === "number" ? idx + 1 : 1,
+    hints: hintsArr,
     mathExpression: ex.mathExpression ?? null,
+  });
+  if (guarded.kind === "rejected") return null;
+  const shape: PersistedShape = {
+    type,
+    prompt,
+    payload: guarded.payload,
+    answerKey: guarded.answerKey,
+    hints: guarded.hints.slice(0, 3),
+    order: typeof idx === "number" ? idx + 1 : 1,
+    mathExpression: guarded.mathExpression,
     needsManualReview: false,
   };
+  if (ctx?.deferAudit) return shape;
+  return auditShape(shape, ctx) ? shape : null;
 }
 
-function verifyMathBatch(parsed: RawGenExercise[]): {
+type MathBatch = {
   totalChecked: number;
+  /** Réponses du modèle qui ne valaient pas leur expression, corrigées ou non. */
   divergences: number;
+  /** Divergences corrigées avec la valeur calculée (`paliers/mathRepair.ts`). */
+  repaired: number;
+  /** Divergences qu'on ne sait pas corriger : l'exercice reste à relire. */
+  unrepairable: number;
+  /** Ce que le contrôleur structurel a écarté ou signalé dans ce lot. */
+  audit: AuditTally;
   exos: PersistedShape[];
-} {
+};
+
+/** Un lot non mathématique : rien à calculer, tout à contrôler. */
+export function shapeBatch(parsed: RawGenExercise[], ctx: ShapeContext): MathBatch {
+  const audit = ctx.tally ?? emptyAuditTally();
+  const exos = parsed
+    .map((ex, i) => toPersistedShape(ex, i, { ...ctx, tally: audit }))
+    .filter((shape): shape is PersistedShape => shape !== null);
+  return { totalChecked: 0, divergences: 0, repaired: 0, unrepairable: 0, audit, exos };
+}
+
+/**
+ * L'ARITHMÉTIQUE A RAISON SUR LE MODÈLE. On calcule chaque expression ; une
+ * réponse attendue qui diverge est remplacée par la valeur calculée (QCM :
+ * l'option qui la vaut ; réponse courte : la valeur et sa forme à virgule).
+ * Seules les divergences qu'on ne sait pas corriger (expression illisible,
+ * clé en fraction) laissent l'exercice à relire, et le palier en
+ * `pending_human`.
+ */
+export function verifyMathBatch(parsed: RawGenExercise[], ctx: ShapeContext = {}): MathBatch {
   let totalChecked = 0;
   let divergences = 0;
+  let repaired = 0;
+  let unrepairable = 0;
+  const audit = ctx.tally ?? emptyAuditTally();
   const exos: PersistedShape[] = [];
   for (let i = 0; i < parsed.length; i++) {
     const raw = parsed[i];
-    const shape = toPersistedShape(raw, i);
+    // Le calcul répare avant que le contrôleur ne juge : une clé de réponse
+    // que `mathRepair` corrige ne doit pas coûter l'exercice.
+    const shape = toPersistedShape(raw, i, { ...ctx, tally: audit, deferAudit: true });
     if (!shape) continue;
-    if (raw.mathExpression) {
-      totalChecked++;
-      const result = checkMathExercise(raw.mathExpression, shape.answerKey);
-      if (!result.ok) {
-        divergences++;
-        shape.needsManualReview = true;
-      }
+    const outcome = repairMathExercise({
+      type: shape.type,
+      prompt: shape.prompt,
+      payload: shape.payload,
+      answerKey: shape.answerKey,
+      mathExpression: shape.mathExpression,
+    });
+    if (outcome.kind !== "skipped") totalChecked++;
+    if (outcome.kind === "repaired") {
+      divergences++;
+      repaired++;
+      shape.payload = outcome.payload;
+      shape.answerKey = outcome.answerKey;
+    } else if (outcome.kind === "unrepairable") {
+      divergences++;
+      unrepairable++;
+      shape.needsManualReview = true;
+    }
+    if (!auditShape(shape, { ...ctx, tally: audit })) {
+      // Écarté : il n'y a plus d'exercice à relire.
+      if (shape.needsManualReview) unrepairable--;
+      continue;
     }
     exos.push(shape);
   }
-  return { totalChecked, divergences, exos };
+  return { totalChecked, divergences, repaired, unrepairable, audit, exos };
 }
 
 function extractConcept(exo: Doc<"exercises">): string | null {

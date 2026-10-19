@@ -14,177 +14,27 @@
  * schema.ts:46). See `students.ts` for the StudentStreakState type.
  */
 
-import { internalMutation, mutation } from "./_generated/server";
+import { internalMutation, mutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
-import {
-  readStudentPreferences,
-  type StudentPreferences,
-  type StudentStreakState,
-} from "./students";
+import { readStudentPreferences, type StudentPreferences } from "./students";
+import { applyActivity, applyRollover, timestampToYmd, todayYmd } from "./streakRules";
 import type { Doc, Id } from "./_generated/dataModel";
 import { requireAccess } from "./access";
 
-// ---------------------------------------------------------------------------
-// Date helpers — Africa/Dakar timezone (UTC+0, no DST).
-// ---------------------------------------------------------------------------
-
-/** Convert a unix timestamp to a YYYY-MM-DD string in Africa/Dakar. */
-export function timestampToYmd(ts: number): string {
-  // Africa/Dakar is UTC+0 with no DST, so the UTC date IS the local date.
-  const d = new Date(ts);
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-export function todayYmd(): string {
-  return timestampToYmd(Date.now());
-}
-
-/** Days from `from` to `to` (both YYYY-MM-DD). Negative if `to` is before. */
-export function daysBetween(fromYmd: string, toYmd: string): number {
-  const [fy, fm, fd] = fromYmd.split("-").map(Number);
-  const [ty, tm, td] = toYmd.split("-").map(Number);
-  const fromTs = Date.UTC(fy, fm - 1, fd);
-  const toTs = Date.UTC(ty, tm - 1, td);
-  return Math.round((toTs - fromTs) / (24 * 60 * 60 * 1000));
-}
-
-// ---------------------------------------------------------------------------
-// Streak transition logic (pure function, exported for tests).
-// ---------------------------------------------------------------------------
-
-const FREEZE_INTERVAL_DAYS = 7;
-
-export type StreakTransition = {
-  prev: StudentStreakState | undefined;
-  next: StudentStreakState;
-  freezeUsed: boolean;
-};
-
-/**
- * Compute the next streak state given an activity on `todayYmd`.
- * - If today === lastActivityYmd: noop.
- * - If today === lastActivityYmd + 1: increment current.
- * - If a single day was skipped AND freeze is available: freeze, increment.
- * - Otherwise: reset to 1.
- */
-export function applyActivity(
-  prev: StudentStreakState | undefined,
-  todayYmd: string,
-): StreakTransition {
-  if (!prev || prev.lastActivityYmd === undefined) {
-    return {
-      prev,
-      next: {
-        current: 1,
-        longest: 1,
-        lastActivityYmd: todayYmd,
-        freezeAvailableUntilYmd: addDaysYmd(todayYmd, FREEZE_INTERVAL_DAYS),
-      },
-      freezeUsed: false,
-    };
-  }
-  const gap = daysBetween(prev.lastActivityYmd, todayYmd);
-  if (gap <= 0) {
-    return { prev, next: prev, freezeUsed: false };
-  }
-  if (gap === 1) {
-    const current = prev.current + 1;
-    return {
-      prev,
-      next: {
-        current,
-        longest: Math.max(prev.longest, current),
-        lastActivityYmd: todayYmd,
-        freezeAvailableUntilYmd:
-          prev.freezeAvailableUntilYmd ??
-          addDaysYmd(todayYmd, FREEZE_INTERVAL_DAYS),
-      },
-      freezeUsed: false,
-    };
-  }
-  // gap >= 2 — at least one day was skipped.
-  const freezeAvailable =
-    prev.freezeAvailableUntilYmd !== undefined &&
-    daysBetween(prev.freezeAvailableUntilYmd, todayYmd) <= 0;
-  if (gap === 2 && freezeAvailable) {
-    const current = prev.current + 1;
-    return {
-      prev,
-      next: {
-        current,
-        longest: Math.max(prev.longest, current),
-        lastActivityYmd: todayYmd,
-        // Freeze consumed; new freeze only available after FREEZE_INTERVAL_DAYS.
-        freezeAvailableUntilYmd: addDaysYmd(todayYmd, FREEZE_INTERVAL_DAYS),
-      },
-      freezeUsed: true,
-    };
-  }
-  // Streak broken — reset to 1.
-  return {
-    prev,
-    next: {
-      current: 1,
-      longest: prev.longest,
-      lastActivityYmd: todayYmd,
-      freezeAvailableUntilYmd: addDaysYmd(todayYmd, FREEZE_INTERVAL_DAYS),
-    },
-    freezeUsed: false,
-  };
-}
-
-/**
- * Compute the next streak state given that today is `todayYmd` and no
- * activity occurred (rollover check). Used by the daily cron.
- * - If lastActivityYmd is today or yesterday: noop (still alive).
- * - If 2-day gap and freeze available: freeze-protected, mark as active.
- *   (We can't actually mark today as "active" without activity; instead we
- *   leave lastActivityYmd intact and just don't reset.)
- * - Otherwise: reset to 0 (preserves longest).
- */
-export function applyRollover(
-  prev: StudentStreakState | undefined,
-  todayYmd: string,
-): StreakTransition {
-  if (!prev || prev.lastActivityYmd === undefined) {
-    return { prev, next: prev ?? { current: 0, longest: 0 }, freezeUsed: false };
-  }
-  const gap = daysBetween(prev.lastActivityYmd, todayYmd);
-  if (gap <= 1) {
-    return { prev, next: prev, freezeUsed: false };
-  }
-  // Streak is at risk. The cron is just a safeguard — actual freeze use only
-  // happens on the next applyActivity. So here we only RESET if too much time
-  // has passed (gap > 2 with freeze, or gap > 1 without freeze).
-  const freezeAvailable =
-    prev.freezeAvailableUntilYmd !== undefined &&
-    daysBetween(prev.freezeAvailableUntilYmd, todayYmd) <= 0;
-  const tolerance = freezeAvailable ? 2 : 1;
-  if (gap <= tolerance) {
-    return { prev, next: prev, freezeUsed: false };
-  }
-  return {
-    prev,
-    next: {
-      current: 0,
-      longest: prev.longest,
-      lastActivityYmd: prev.lastActivityYmd,
-      freezeAvailableUntilYmd: prev.freezeAvailableUntilYmd,
-    },
-    freezeUsed: false,
-  };
-}
-
-function addDaysYmd(ymd: string, days: number): string {
-  const [y, m, d] = ymd.split("-").map(Number);
-  const ts = Date.UTC(y, m - 1, d) + days * 24 * 60 * 60 * 1000;
-  return timestampToYmd(ts);
-}
+// Les dates et les transitions de la série sont pures, dans `streakRules.ts` :
+// l'application qui joue sans réseau les applique aussi. Réexportées ici pour
+// les lecteurs historiques et les tests.
+export {
+  addDaysYmd,
+  applyActivity,
+  applyRollover,
+  daysBetween,
+  timestampToYmd,
+  todayYmd,
+  type StreakTransition,
+} from "./streakRules";
 
 // ---------------------------------------------------------------------------
 // Mutations
@@ -225,30 +75,52 @@ export const setSoundEnabled = mutation({
  * explicitly opted out via parentSettings.streaksEnabled = false.
  */
 export const recordKidActivity = internalMutation({
-  args: { studentId: v.id("profiles") },
+  args: {
+    studentId: v.id("profiles"),
+    /** Le moment de l'activité : maintenant, ou le jour d'un palier joué sans réseau. */
+    at: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
-    const profile = await ctx.db.get(args.studentId);
-    if (!profile || profile.role !== "student") return;
-
-    const parentSettings = await ctx.db
-      .query("parentSettings")
-      .withIndex("by_kid", (q) => q.eq("kidId", args.studentId))
-      .take(10);
-    const streaksEnabled = !parentSettings.some(
-      (s) => s.streaksEnabled === false,
-    );
-    if (!streaksEnabled) return;
-
-    const prefs = readStudentPreferences(profile);
-    const transition = applyActivity(prefs.streak, todayYmd());
-    if (transition.next === transition.prev) return;
-    const nextPrefs: StudentPreferences = {
-      ...prefs,
-      streak: transition.next,
-    };
-    await ctx.db.patch(args.studentId, { preferences: nextPrefs });
+    await recordStreakActivity(ctx, args.studentId, args.at ?? Date.now());
   },
 });
+
+/**
+ * Fait avancer la série d'un élève pour une activité à l'instant `at`.
+ *
+ * Fonction ordinaire, appelée dans la transaction de qui termine un palier
+ * (`palierAttempts.submitPalier`, la synchronisation `offline/sync.ts`) : un
+ * palier joué sans réseau compte pour le jour où l'enfant l'a joué, pas pour
+ * celui où le téléphone a retrouvé le réseau.
+ */
+export async function recordStreakActivity(
+  ctx: MutationCtx,
+  studentId: Id<"profiles">,
+  at: number,
+): Promise<void> {
+  const profile = await ctx.db.get(studentId);
+  if (!profile || profile.role !== "student") return;
+
+  const parentSettings = await ctx.db
+    .query("parentSettings")
+    .withIndex("by_kid", (q) => q.eq("kidId", studentId))
+    .take(10);
+  const streaksEnabled = !parentSettings.some(
+    (s) => s.streaksEnabled === false,
+  );
+  if (!streaksEnabled) return;
+
+  const prefs = readStudentPreferences(profile);
+  // Jamais dans le futur : une horloge de téléphone en avance ne crée pas
+  // de jour de série.
+  const transition = applyActivity(prefs.streak, timestampToYmd(Math.min(at, Date.now())));
+  if (transition.next === transition.prev) return;
+  const nextPrefs: StudentPreferences = {
+    ...prefs,
+    streak: transition.next,
+  };
+  await ctx.db.patch(studentId, { preferences: nextPrefs });
+}
 
 /**
  * Internal: daily streak rollover. Iterates students and resets streaks

@@ -15,6 +15,30 @@ export const PALIER_SIZE = 10;
 export const PALIER_VALIDATION_THRESHOLD = 7;
 export const MAX_ATTEMPTS_PER_EXERCISE = 5;
 
+/**
+ * Un lot du modèle dont trop d'exercices sont écartés (contrôleur structurel,
+ * garde de la scène, glisser-déposer irréparable) ne se sert pas : un palier de
+ * trois exercices ne se valide pas à 7 sur 10 et l'enfant y perd son temps. Il
+ * reste à régénérer. Même proportion que le seuil de validation.
+ */
+/**
+ * Les exercices de RÉSERVE qu'on demande au modèle quand des gabarits remplissent
+ * une partie du palier. Le seuil de `hasEnoughValidExercises` exige 3 exercices
+ * valides sur 3 demandés : un seul écarté par le contrôleur ferait échouer le
+ * palier. On en demande deux de plus, et `generateBucketCore` garde les premiers
+ * valides.
+ */
+export const SPARE_AI_EXERCISES = 2;
+
+/** Combien d'exercices demander au modèle pour en garder `needed` : de la réserve dès qu'un gabarit partage le palier. */
+export function exercisesToRequest(needed: number): number {
+  return needed > 0 && needed < PALIER_SIZE ? needed + SPARE_AI_EXERCISES : needed;
+}
+
+export function hasEnoughValidExercises(valid: number, requested: number): boolean {
+  return valid >= Math.ceil((requested * PALIER_VALIDATION_THRESHOLD) / PALIER_SIZE);
+}
+
 export interface AttemptForScoring {
   attemptNumber: number; // 1-based
   isCorrect: boolean;
@@ -135,6 +159,25 @@ export function scoreToStarsSingle(score: number): number {
   if (score >= 6) return 2;
   if (score >= 3) return 1;
   return 0;
+}
+
+/**
+ * UN INDICE N'EST PAS UN ESSAI. `requestHint` pose une ligne d'`attempts`
+ * sentinelle (`attemptNumber: 0`) pour que le score déduise l'indice ; le
+ * compte des essais et le numéro du suivant ne regardent que les lignes
+ * numérotées. Les compter faisait sauter l'enfant de « encore 4 essais » à
+ * « encore 2 » après un seul indice, et gonflait le numéro d'essai que la
+ * grille de score punit.
+ */
+export function countRealAttempts(rows: readonly { attemptNumber: number }[]): number {
+  let n = 0;
+  for (const row of rows) if (row.attemptNumber > 0) n += 1;
+  return n;
+}
+
+/** Essais restants après `realAttempts` essais joués. Jamais négatif. */
+export function attemptsRemainingAfter(realAttempts: number): number {
+  return Math.max(0, MAX_ATTEMPTS_PER_EXERCISE - realAttempts);
 }
 
 function clampAttempt(n: number): number {

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { decideProfileUpdate, wantsReportEmail } from "../profileRules";
+import {
+  decideProfileUpdate,
+  isDashboardTourDone,
+  wantsReportEmail,
+} from "../profileRules";
 
 describe("decideProfileUpdate", () => {
   it("n'écrit que les champs fournis", () => {
@@ -137,5 +141,45 @@ describe("wantsReportEmail", () => {
 
     const back = decideProfileUpdate({ receiveReports: true }, {});
     expect(back.ok && wantsReportEmail(back.patch.preferences)).toBe(true);
+  });
+});
+
+describe("visite guidée du tableau de bord", () => {
+  it("pose le drapeau sans effacer les autres préférences", () => {
+    const d = decideProfileUpdate(
+      { dashboardTourDone: true },
+      { receiveReports: false, streak: 3 },
+    );
+    expect(d).toEqual({
+      ok: true,
+      patch: {
+        preferences: {
+          receiveReports: false,
+          streak: 3,
+          dashboardTourDone: true,
+        },
+      },
+    });
+  });
+
+  it("garde le drapeau quand un autre écran règle les rapports", () => {
+    const d = decideProfileUpdate(
+      { receiveReports: true },
+      { dashboardTourDone: true },
+    );
+    expect(d).toEqual({
+      ok: true,
+      patch: {
+        preferences: { dashboardTourDone: true, receiveReports: true },
+      },
+    });
+  });
+
+  it("n'est passée que sur un true explicite", () => {
+    expect(isDashboardTourDone(undefined)).toBe(false);
+    expect(isDashboardTourDone("oui")).toBe(false);
+    expect(isDashboardTourDone({ dashboardTourDone: "true" })).toBe(false);
+    expect(isDashboardTourDone({ dashboardTourDone: false })).toBe(false);
+    expect(isDashboardTourDone({ dashboardTourDone: true })).toBe(true);
   });
 });

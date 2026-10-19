@@ -8,6 +8,8 @@ import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { callerMayReadStudent, studentIdsTaughtBy } from "./access";
+import { isFinished } from "./progressionRules";
+import { buildTopicReport } from "./reportRules";
 
 // ---------------------------------------------------------------------------
 // Public Queries
@@ -250,9 +252,17 @@ export const getGuardians = internalQuery({
 // ---------------------------------------------------------------------------
 
 /**
- * Generate a topic report for a student + topic.
- * Analyses all attempts for exercises in the topic, computes score,
- * strengths, weaknesses, frequent mistakes, then schedules the email.
+ * LE BULLETIN D'UNE THÉMATIQUE, produit quand l'élève la franchit
+ * (`palierAttempts.submitPalier`), puis envoyé aux tuteurs qui le veulent
+ * (`reportsEmail.sendEmail`). Un seul par élève et par thématique : elle ne
+ * se franchit qu'une fois, et un second appel ne doit pas réécrire aux
+ * parents.
+ *
+ * Les réponses viennent des tentatives finies sur les paliers de la
+ * thématique. Il lisait autrefois les cinquante premiers exercices de la
+ * thématique et comptait chaque indice comme une mauvaise réponse. Le calcul
+ * vit dans `reportRules.buildTopicReport`. Planifié, il ne lève pas : sans
+ * réponse, il ne produit rien.
  */
 export const generate = internalMutation({
   args: {
@@ -260,75 +270,54 @@ export const generate = internalMutation({
     topicId: v.id("topics"),
   },
   handler: async (ctx, args) => {
-    // Fetch all exercises for this topic
-    const exercises = await ctx.db
-      .query("exercises")
-      .withIndex("by_topicId", (q) => q.eq("topicId", args.topicId))
-      .take(50);
+    const existing = await ctx.db
+      .query("topicReports")
+      .withIndex("by_studentId_topicId", (q) =>
+        q.eq("studentId", args.studentId).eq("topicId", args.topicId),
+      )
+      .first();
+    if (existing) return existing._id;
 
-    if (exercises.length === 0) {
-      throw new Error("Aucun exercice trouvé pour cette thématique");
-    }
-
-    let totalAttempts = 0;
-    let correctAttempts = 0;
-    const typeScores: Record<string, { correct: number; total: number }> = {};
-    const frequentMistakes: string[] = [];
-
-    for (const exercise of exercises) {
-      const attempts = await ctx.db
-        .query("attempts")
-        .withIndex("by_studentId_exerciseId", (q) =>
-          q.eq("studentId", args.studentId).eq("exerciseId", exercise._id),
+    const paliers = await ctx.db
+      .query("paliers")
+      .withIndex("by_topic_class", (q) => q.eq("topicId", args.topicId))
+      .take(100);
+    const answersByExercise = new Map<Id<"exercises">, { isCorrect: boolean }[]>();
+    for (const palier of paliers) {
+      const palierAttempts = await ctx.db
+        .query("palierAttempts")
+        .withIndex("by_user_palier", (q) =>
+          q.eq("userId", args.studentId).eq("palierId", palier._id),
         )
-        .take(100);
-
-      if (attempts.length === 0) continue;
-
-      const exerciseCorrect = attempts.filter((a) => a.isCorrect).length;
-      totalAttempts += attempts.length;
-      correctAttempts += exerciseCorrect;
-
-      // Aggregate by exercise type
-      if (!typeScores[exercise.type]) {
-        typeScores[exercise.type] = { correct: 0, total: 0 };
-      }
-      typeScores[exercise.type].correct += exerciseCorrect;
-      typeScores[exercise.type].total += attempts.length;
-
-      // Frequent mistakes: exercises attempted 3+ times with majority failures
-      if (attempts.length >= 3 && exerciseCorrect / attempts.length < 0.5) {
-        frequentMistakes.push(exercise.prompt);
+        .take(200);
+      for (const palierAttempt of palierAttempts) {
+        if (!isFinished(palierAttempt)) continue;
+        const rows = await ctx.db
+          .query("attempts")
+          .withIndex("by_palierAttemptId", (q) => q.eq("palierAttemptId", palierAttempt._id))
+          .take(500);
+        for (const row of rows) {
+          // Une ligne d'indice (`attemptNumber: 0`) n'est pas une réponse.
+          if (row.attemptNumber <= 0) continue;
+          const answers = answersByExercise.get(row.exerciseId) ?? [];
+          answers.push({ isCorrect: row.isCorrect });
+          answersByExercise.set(row.exerciseId, answers);
+        }
       }
     }
 
-    // Calculate score
-    const score = totalAttempts > 0 ? correctAttempts / totalAttempts : 0;
-
-    // Identify strengths (exercise types with >80% success)
-    const strengths: string[] = [];
-    for (const [type, stats] of Object.entries(typeScores)) {
-      if (stats.total > 0 && stats.correct / stats.total > 0.8) {
-        strengths.push(formatExerciseType(type));
-      }
+    const exercises = [];
+    for (const [exerciseId, answers] of answersByExercise) {
+      const exercise = await ctx.db.get(exerciseId);
+      if (exercise) exercises.push({ type: exercise.type, prompt: exercise.prompt, answers });
     }
+    const content = buildTopicReport(exercises);
+    if (!content) return null;
 
-    // Identify weaknesses (exercise types with <50% success)
-    const weaknesses: string[] = [];
-    for (const [type, stats] of Object.entries(typeScores)) {
-      if (stats.total > 0 && stats.correct / stats.total < 0.5) {
-        weaknesses.push(formatExerciseType(type));
-      }
-    }
-
-    // Create the report record
     const reportId = await ctx.db.insert("topicReports", {
       studentId: args.studentId,
       topicId: args.topicId,
-      score,
-      strengths,
-      weaknesses,
-      frequentMistakes,
+      ...content,
     });
 
     // Schedule the email immediately (sendEmail is in reportsEmail.ts)
@@ -347,18 +336,3 @@ export const markEmailSent = internalMutation({
     await ctx.db.patch(args.reportId, { emailSentAt: Date.now() });
   },
 });
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function formatExerciseType(type: string): string {
-  const labels: Record<string, string> = {
-    qcm: "Questions à choix multiples",
-    "drag-drop": "Glisser-déposer",
-    match: "Association",
-    order: "Remise en ordre",
-    "short-answer": "Réponse courte",
-  };
-  return labels[type] ?? type;
-}

@@ -3,7 +3,11 @@
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import OpenAI from "openai";
+import {
+  createAiClient,
+  providerModelId,
+  resolveAiClientConfig,
+} from "./aiGateway/client";
 import {
   exerciseExtractionSchema,
   type ExtractionResponse,
@@ -115,12 +119,16 @@ export const extract = internalAction({
       const arrayBuffer = await response.arrayBuffer();
       const base64Content = Buffer.from(arrayBuffer).toString("base64");
 
-      const openai = new OpenAI();
+      const clientConfig = resolveAiClientConfig();
+      if (!clientConfig) {
+        throw new Error("AI_GATEWAY_API_KEY and OPENAI_API_KEY missing");
+      }
+      const openai = createAiClient(clientConfig);
 
       const completion = await openai.responses.create({
         // Depuis le registre : le tarif et le modèle appelé ne peuvent pas
         // diverger.
-        model: cfg.defaultModel,
+        model: providerModelId(cfg.defaultModel, clientConfig.viaGateway),
         store: false,
         instructions: `Tu es un assistant pédagogique spécialisé dans la création d'exercices pour les élèves de CE2 à CM2 (8-11 ans).
 Analyse le document PDF fourni et extrais tous les exercices que tu peux identifier.
@@ -142,7 +150,7 @@ Si un exercice contient une liste d'items à traiter, NE RENVOIE PAS un seul exe
 
 Pour chaque exercice, détermine le type d'INTERACTION le plus adapté à une application web interactive (PAS à un exercice papier):
 - qcm: Question à choix multiples. Payload: {options: string[], correctIndex: number, explanation?: string}
-- match: Association de paires gauche↔droite en cliquant. Payload: {pairs: [{left: string, right: string}]}
+- match: Association de paires gauche↔droite en cliquant. Payload: {pairs: [{left: string, right: string}], accepted?: [{left: string, right: string}]} (accepted : autres paires aussi justes quand une proposition va à deux éléments)
 - order: Remise en ordre par drag-and-drop d'une séquence. Payload: {correctSequence: string[]}
 - drag-drop: Glisser-déposer des éléments dans des zones cibles. Payload: {zones: string[], items: [{text: string, correctZone: string}]}
 - short-answer: Réponse courte à taper au clavier. Payload: {acceptedAnswers: string[], tolerance?: string}

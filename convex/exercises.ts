@@ -9,6 +9,7 @@ import { ConvexError, v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { callerIsAdmin, callerIsStaff, callerStaffProfile } from "./access";
 import { isHiddenClass } from "./curriculum";
+import { exerciseTypeValidator } from "./exerciseTypes";
 
 // ---------------------------------------------------------------------------
 // Queries
@@ -190,7 +191,8 @@ const UPLOAD_EXERCISES_LIMIT = 200;
  * L'ARGUMENT D'ORIGINE ÉTAIT PLUS ÉTROIT, ET IL A CESSÉ D'ÊTRE VRAI : il
  * disait que `professeur` n'est pas un rôle de confiance parce que
  * `convex/auth.ts` l'accepte à l'auto-inscription. Cette branche a fermé cette
- * porte (`roleRules.decideSignupRole` refuse les trois rôles d'autorité). La
+ * porte (`roleRules.decideProvisionedRole` refuse `admin`, et les rôles du
+ * personnel ne se posent que par un chemin gardé `callerIsAdmin`). La
  * garde reste néanmoins juste — pour la raison ci-dessus, qui ne dépend
  * d'aucune porte d'inscription. Une justification périmée est plus dangereuse
  * qu'absente : le prochain lecteur vérifie la prémisse, la trouve fausse, et
@@ -222,13 +224,7 @@ async function staffMayTouchExercise(
 export const create = mutation({
   args: {
     topicId: v.id("topics"),
-    type: v.union(
-      v.literal("qcm"),
-      v.literal("drag-drop"),
-      v.literal("match"),
-      v.literal("order"),
-      v.literal("short-answer"),
-    ),
+    type: exerciseTypeValidator,
     prompt: v.string(),
     payload: v.any(),
     answerKey: v.string(),
@@ -260,15 +256,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     id: v.id("exercises"),
-    type: v.optional(
-      v.union(
-        v.literal("qcm"),
-        v.literal("drag-drop"),
-        v.literal("match"),
-        v.literal("order"),
-        v.literal("short-answer"),
-      ),
-    ),
+    type: v.optional(exerciseTypeValidator),
     prompt: v.optional(v.string()),
     payload: v.optional(v.any()),
     answerKey: v.optional(v.string()),

@@ -2,26 +2,56 @@
 
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { useBrowserOnline } from "@/components/offline/use-browser-online";
+import { useIsNativeApp } from "@/hooks/use-native-app";
+import { kidMessages } from "@/lib/kidCopy";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Se connecter demande le réseau, même dans l'application qui joue sans :
+  // c'est la seule étape qui ne peut pas se faire hors ligne. Le hors-ligne
+  // n'existe que dans l'application iOS/Android (`docs/hors-ligne.md`).
+  const online = useBrowserOnline();
+  const native = useIsNativeApp();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await signIn("password", { email, password, flow: "signIn" });
-      window.location.href = "/post-auth";
+      // UN CODE DE CONNEXION SE TAPE EN MINUSCULES AUSSI. L'identifiant est
+      // mis en minuscules par le serveur, mais le mot de passe d'un élève est
+      // le code tel qu'imprimé, en MAJUSCULES (`studentAccounts.createStudent`,
+      // `studentImportRun`). Un enfant qui tape « awa-4821 » deux fois doit
+      // entrer : quand l'identifiant n'est pas une adresse et que le mot de
+      // passe est le même code, on l'envoie en majuscules.
+      const isCode = !email.includes("@");
+      const samePassword =
+        isCode && password.trim().toUpperCase() === email.trim().toUpperCase();
+      await signIn("password", {
+        email,
+        password: samePassword ? password.trim().toUpperCase() : password,
+        flow: "signIn",
+      });
+  // `router.replace` ET NON `window.location.href` : dans l'application
+  // Capacitor, une navigation de DOCUMENT recharge toujours la racine
+  // `index.html`, quel que soit le chemin demandé
+  // (`CapacitorRouter.route(for:)` renvoie `/index.html` pour tout chemin
+  // sans extension). La redirection se perdait donc sur mobile, et l'écran
+  // revenait à la connexion après une authentification pourtant réussie.
+  // Une navigation interne de Next ne traverse pas ce routeur.
+      router.replace("/post-auth");
     } catch {
-      setError("Email ou mot de passe incorrect");
+      setError("Identifiant ou mot de passe incorrect");
     } finally {
       setLoading(false);
     }
@@ -37,15 +67,45 @@ export default function LoginPage() {
         </div>
       )}
 
+      {native && !online && (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-800">
+          <p className="font-semibold">{kidMessages.offline.firstConnectionTitle}</p>
+          <p>{kidMessages.offline.firstConnectionBody}</p>
+        </div>
+      )}
+
       <div>
-        <label className="block text-sm font-medium mb-1">Email</label>
+        <label className="block text-sm font-medium mb-1">
+          Email ou code de connexion
+        </label>
+        {/*
+          `type="text"` ET NON `type="email"`, PARCE QU'UN ÉLÈVE N'A PAS
+          D'ADRESSE. Son identifiant est le code imprimé sur son billet —
+          `CM1A-9180` — et `studentImportRun` le pose tel quel comme
+          identifiant de compte. Avec `type="email"`, la validation native du
+          navigateur refusait la saisie avant tout appel réseau : « Enter an
+          email address ». Aucun élève créé par une école ne pouvait se
+          connecter, sur aucune plateforme.
+
+          `autoCapitalize="none"` et `autoCorrect="off"` : sur mobile, le
+          clavier mettait une majuscule initiale et corrigeait le code. La
+          casse n'est pas le problème — `convex/auth.ts` met en minuscules à
+          la connexion — mais une correction automatique, si.
+        */}
         <input
-          type="email"
+          type="text"
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
+        <p className="mt-1 text-xs text-gray-500">
+          Élève : saisissez le code de votre billet, comme mot de passe aussi.
+        </p>
       </div>
 
       <div>
@@ -86,9 +146,9 @@ export default function LoginPage() {
       </button>
 
       <p className="text-center text-sm text-gray-600">
-        Pas de compte ?{" "}
+        Pas encore de compte ?{" "}
         <Link href="/register" className="font-medium text-amber-700 hover:underline">
-          Créer un compte
+          Créer un compte gratuit
         </Link>
       </p>
     </form>

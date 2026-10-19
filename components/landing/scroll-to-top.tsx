@@ -4,15 +4,59 @@ import { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
+/** Au-delà de cette distance, la page est « longue » : le bouton a un sens. */
+const SHOW_AFTER_PX = 400;
+/** Sur téléphone, le bouton se retire après ce délai sans défilement. */
+const PHONE_IDLE_MS = 2500;
+/** Un défilement plus petit n'est pas un geste : on l'ignore. */
+const JITTER_PX = 4;
+
+/**
+ * SUR TÉLÉPHONE, LE BOUTON NE RESTE PAS : il recouvrait l'extrémité droite de
+ * « Valider » dans la démonstration des exercices (le bouton est fixe, en bas à
+ * droite, et « Valider » prend toute la largeur) ; toucher cette zone remontait
+ * la page au lieu de valider. Il n'apparaît donc que quand on REMONTE la page,
+ * le geste qui veut un retour en haut, puis il se retire quand on redescend ou
+ * après un court temps sans défilement. À partir de 640 px (`sm`), il y a de la
+ * place à côté du contenu : il reste affiché, comme avant.
+ */
 export function ScrollToTop() {
   const [visible, setVisible] = useState(false);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    const handler = () => setVisible(window.scrollY > 400);
+    const phone = window.matchMedia("(max-width: 639px)");
+    let lastY = window.scrollY;
+    let idle: ReturnType<typeof setTimeout> | undefined;
+
+    const handler = () => {
+      const y = window.scrollY;
+      clearTimeout(idle);
+      if (y <= SHOW_AFTER_PX) {
+        setVisible(false);
+      } else if (!phone.matches) {
+        setVisible(true);
+      } else if (y < lastY - JITTER_PX) {
+        setVisible(true);
+        idle = setTimeout(() => setVisible(false), PHONE_IDLE_MS);
+      } else if (y > lastY + JITTER_PX) {
+        setVisible(false);
+      }
+      lastY = y;
+    };
+    // L'écran change de largeur (rotation) : on repart de l'état du moment.
+    const onResize = () => {
+      clearTimeout(idle);
+      setVisible(!phone.matches && window.scrollY > SHOW_AFTER_PX);
+    };
     handler();
     window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
+    phone.addEventListener("change", onResize);
+    return () => {
+      clearTimeout(idle);
+      window.removeEventListener("scroll", handler);
+      phone.removeEventListener("change", onResize);
+    };
   }, []);
 
   const handleClick = () => {

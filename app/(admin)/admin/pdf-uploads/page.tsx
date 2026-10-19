@@ -336,7 +336,7 @@ export default function PdfUploadsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <Link
-                            href={`/admin/pdf-uploads/${upload._id}`}
+                            href={`/admin/pdf-uploads/detail?id=${upload._id}`}
                             className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600"
                             title="Voir le detail"
                           >

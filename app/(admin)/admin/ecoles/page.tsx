@@ -223,7 +223,7 @@ export default function SchoolsPage() {
           {schools.map((school) => (
             <Link
               key={school._id}
-              href={`/admin/ecoles/${school._id}`}
+              href={`/admin/ecoles/detail?id=${school._id}`}
               className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-indigo-200"
             >
               <div className="flex items-center gap-4">

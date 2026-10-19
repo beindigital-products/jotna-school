@@ -21,6 +21,11 @@ const TYPE_LABELS: Record<string, string> = {
   match: "Associer",
   order: "Ordonner",
   "short-answer": "Reponse courte",
+  "fill-blank": "Phrase à trous",
+  pattern: "Frise",
+  "pixel-art": "Dessin",
+  listen: "Écoute",
+  "color-mix": "Couleurs",
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -29,6 +34,11 @@ const TYPE_COLORS: Record<string, string> = {
   match: "bg-amber-100 text-amber-700",
   order: "bg-green-100 text-green-700",
   "short-answer": "bg-rose-100 text-rose-700",
+  "fill-blank": "bg-indigo-100 text-indigo-700",
+  pattern: "bg-orange-100 text-orange-700",
+  "pixel-art": "bg-fuchsia-100 text-fuchsia-700",
+  listen: "bg-sky-100 text-sky-700",
+  "color-mix": "bg-lime-100 text-lime-700",
 };
 
 export default function DraftsPage() {
@@ -146,7 +156,7 @@ export default function DraftsPage() {
                   <td className="whitespace-nowrap px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Link
-                        href={`/admin/exercises/${exercise._id}/edit`}
+                        href={`/admin/exercises/edit?id=${exercise._id}`}
                         className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-indigo-50 hover:text-indigo-600"
                         title="Modifier"
                       >

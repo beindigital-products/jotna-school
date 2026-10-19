@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   decideAccess,
+  FREE_ACCESS_ENDS_AT,
   PAST_DUE_GRACE_MS,
+  topicOpenTo,
   type AccessInput,
 } from "../accessRules";
 
@@ -15,6 +17,7 @@ function base(overrides: Partial<AccessInput> = {}): AccessInput {
     role: "student",
     activeMembership: { schoolId: "school_1" },
     hasReleasedMembership: false,
+    hasClass: true,
     subscription: { status: "active", endsAt: NOW + 100 * DAY },
     oldestOverdueDueAt: null,
     ...overrides,
@@ -50,6 +53,27 @@ describe("decideAccess — rattachement école", () => {
     expect(
       decideAccess(base({ activeMembership: null, hasReleasedMembership: true })),
     ).toEqual({ ok: false, reason: "seat_released" });
+  });
+});
+
+describe("decideAccess — classe", () => {
+  it("refuse un élève inscrit dont la classe n'est pas renseignée", () => {
+    expect(decideAccess(base({ hasClass: false }))).toEqual({
+      ok: false,
+      reason: "no_class",
+    });
+  });
+
+  it("dit l'absence de classe avant tout motif d'abonnement", () => {
+    expect(
+      decideAccess(base({ hasClass: false, subscription: null })),
+    ).toEqual({ ok: false, reason: "no_class" });
+  });
+
+  it("garde no_school quand l'élève n'a ni école ni classe", () => {
+    expect(
+      decideAccess(base({ activeMembership: null, hasClass: false })),
+    ).toEqual({ ok: false, reason: "no_school" });
   });
 });
 
@@ -173,5 +197,69 @@ describe("decideAccess — délai de grâce past_due", () => {
         }),
       ),
     ).toEqual({ ok: false, reason: "expired" });
+  });
+});
+
+describe("topicOpenTo — la classe de l'élève", () => {
+  it("ouvre à un élève les thématiques de sa classe", () => {
+    expect(topicOpenTo({ role: "student", studentClass: "CM1" }, "CM1")).toBe(
+      true,
+    );
+  });
+
+  it("ferme à un élève les thématiques d'une autre classe", () => {
+    expect(topicOpenTo({ role: "student", studentClass: "CM1" }, "CE2")).toBe(
+      false,
+    );
+  });
+
+  it("échoue en fermé pour un élève sans classe", () => {
+    expect(topicOpenTo({ role: "student", studentClass: null }, "CM1")).toBe(
+      false,
+    );
+  });
+
+  it("échoue en fermé pour une thématique sans classe", () => {
+    expect(
+      topicOpenTo({ role: "student", studentClass: "CM1" }, undefined),
+    ).toBe(false);
+  });
+
+  it("laisse le personnel consulter toutes les classes", () => {
+    for (const role of ["professeur", "admin"]) {
+      expect(topicOpenTo({ role, studentClass: null }, "CE2")).toBe(true);
+    }
+  });
+});
+
+describe("decideAccess — accès libre", () => {
+  const free = (overrides: Partial<AccessInput> = {}) =>
+    base({ freeAccess: true, subscription: null, ...overrides });
+
+  it("ouvre l'accès sans école ni abonnement quand l'élève a une classe", () => {
+    expect(decideAccess(free({ activeMembership: null }))).toEqual({
+      ok: true,
+      schoolId: null,
+      endsAt: FREE_ACCESS_ENDS_AT,
+    });
+  });
+
+  it("rend l'école de l'inscription active", () => {
+    const state = decideAccess(free());
+    expect(state.ok && state.schoolId).toBe("school_1");
+  });
+
+  it("refuse toujours un élève sans classe", () => {
+    expect(decideAccess(free({ hasClass: false }))).toEqual({
+      ok: false,
+      reason: "no_class",
+    });
+  });
+
+  it("refuse toujours un non-élève", () => {
+    expect(decideAccess(free({ role: "parent" }))).toEqual({
+      ok: false,
+      reason: "not_student",
+    });
   });
 });

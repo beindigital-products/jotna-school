@@ -1,7 +1,7 @@
-import { query, mutation, action, internalMutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { v, ConvexError } from "convex/values";
-import { createAccount, getAuthUserId } from "@convex-dev/auth/server";
-import { internal } from "./_generated/api";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { decideLinkChild } from "./linkRules";
 import { decideProfileUpdate } from "./profileRules";
 import type { ProfileUpdateDecision } from "./profileRules";
@@ -154,9 +154,9 @@ export const getChildren = query({
  * Insérer un profil portant le `userId` d'un compte existant fait donc lever
  * cette lecture pour cette personne, qui ne peut plus charger son profil.
  *
- * La voie légitime pour un écran est `createChildAccount` ci-dessous : elle
- * authentifie le parent, crée le compte de l'enfant via `createAccount`, et
- * laisse `linkChildToParent` écrire le lien.
+ * Elle n'a plus de voie légitime de remplacement, et n'en a plus besoin :
+ * depuis le passage au modèle B2B, les comptes élèves naissent de l'import
+ * d'une école (`studentImportRun`), jamais d'un écran parent.
  *
  * Le corps est inchangé : seul le mot d'enregistrement a changé.
  */
@@ -249,6 +249,7 @@ export const updateProfile = mutation({
     name: v.optional(v.string()),
     avatar: v.optional(v.string()),
     receiveReports: v.optional(v.boolean()),
+    dashboardTourDone: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -279,100 +280,65 @@ export const updateProfile = mutation({
   },
 });
 
-/**
- * Create a child account from the parent's session, without altering that session.
- *
- * Uses Convex Auth's `createAccount` helper to create the child's auth
- * account server-side — this does NOT sign the parent out. The
- * `createOrUpdateUser` callback in convex/auth.ts auto-creates the child's
- * profile row (role=student). We then insert the studentGuardians link.
- */
-export const createChildAccount = action({
-  args: {
-    name: v.string(),
-    email: v.string(),
-    password: v.string(),
-  },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<{ childUserId: string }> => {
-    const parentUserId = await getAuthUserId(ctx);
-    if (!parentUserId) {
-      throw new Error("Non authentifié");
-    }
-
-    if (args.password.length < 6) {
-      // Un parent lit cette phrase sur l'écran d'ajout d'enfant.
-      throw new ConvexError(
-        "Le mot de passe doit contenir au moins 6 caractères.",
-      );
-    }
-
-    const { user } = await createAccount(ctx, {
-      provider: "password",
-      account: {
-        id: args.email,
-        secret: args.password,
-      },
-      profile: {
-        email: args.email,
-        name: args.name,
-        role: "student",
-      } as unknown as Parameters<typeof createAccount>[1]["profile"],
-    });
-
-    await ctx.runMutation(internal.profiles.linkChildToParent, {
-      childUserId: user._id,
-      parentUserId,
-    });
-
-    return { childUserId: user._id };
+// ---------------------------------------------------------------------------
+// L'AVATAR DE L'ÉLÈVE — il choisit une photo, on la range dans le stockage
+// Convex et on pose son URL sur le profil.
+//
+// `generateAvatarUploadUrl` rend une URL d'envoi (un droit d'ÉCRIRE dans le
+// stockage du projet) : réservée à un profil authentifié, qui de toute façon
+// ne peut changer que SON avatar. `setMyAvatar` prend l'identifiant du fichier
+// déposé, en lit l'URL de service et la pose sur le profil de la SESSION.
+//
+// On garde l'URL, pas l'identifiant de stockage : le champ `avatar` est une
+// chaîne, et un avatar remplacé laisse au plus un fichier orphelin, sans
+// conséquence de sécurité. La photo est déjà réduite à un carré côté client,
+// donc le fichier reste léger — le terrain, c'est Dakar, la donnée est chère.
+// ---------------------------------------------------------------------------
+export const generateAvatarUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new ConvexError("Non authentifié");
+    return await ctx.storage.generateUploadUrl();
   },
 });
 
-/**
- * Internal: link an existing child profile to a parent profile.
- * Called from the `createChildAccount` action after `createAccount` has
- * created both user rows and the child's profile row.
- */
-export const linkChildToParent = internalMutation({
-  args: {
-    childUserId: v.id("users"),
-    parentUserId: v.id("users"),
-  },
+export const setMyAvatar = mutation({
+  args: { storageId: v.string() },
   handler: async (ctx, args) => {
-    const childProfile = await ctx.db
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new ConvexError("Non authentifié");
+
+    const profile = await ctx.db
       .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", args.childUserId))
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
       .unique();
-    if (!childProfile) {
-      throw new Error("Profil enfant introuvable");
-    }
+    if (!profile) throw new ConvexError("Profil introuvable");
 
-    const parentProfile = await ctx.db
-      .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", args.parentUserId))
-      .unique();
-    if (!parentProfile) {
-      throw new Error("Profil parent introuvable");
-    }
+    const url = await ctx.storage.getUrl(args.storageId as Id<"_storage">);
+    if (!url) throw new ConvexError("Image introuvable après l'envoi.");
 
-    const existing = await ctx.db
-      .query("studentGuardians")
-      .withIndex("by_guardianId", (q) => q.eq("guardianId", parentProfile._id))
-      .take(200);
-    if (existing.some((l) => l.studentId === childProfile._id)) {
-      return;
-    }
-
-    await ctx.db.insert("studentGuardians", {
-      studentId: childProfile._id,
-      guardianId: parentProfile._id,
-      relation: "parent",
-    });
+    await ctx.db.patch(profile._id, { avatar: url });
   },
 });
+
+/**
+ * `createChildAccount` ET `linkChildToParent` ONT ÉTÉ RETIRÉS.
+ *
+ * Cette action laissait N'IMPORTE QUEL compte authentifié fabriquer un compte
+ * élève, à l'adresse et au mot de passe qu'il choisissait, puis se déclarer
+ * son tuteur. C'était la contrepartie assumée d'un produit où un parent
+ * inscrivait lui-même ses enfants.
+ *
+ * LE PRODUIT A CHANGÉ : les élèves appartiennent à l'école, qui les crée par
+ * `studentImportRun` et remet un code à la famille. Un parent n'entre plus
+ * qu'avec ce code (`parentLink.signUpWithCode`), et ne crée plus personne.
+ * Laisser cette action ouverte aurait rouvert, derrière un compte parent, la
+ * création de comptes que `Password.profile()` refuse désormais en façade.
+ *
+ * L'écran qui l'appelait — `/parent/children/add` — est parti avec elle.
+ * Ajouter un enfant se fait par `/parent/children/code`.
+ */
 
 /**
  * Rattache un élève existant au tuteur AUTHENTIFIÉ — INTERNE, aucun appelant.

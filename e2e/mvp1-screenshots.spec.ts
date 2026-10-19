@@ -12,7 +12,7 @@ test.describe("MVP-1 — visual screenshots", () => {
   });
 
   test("student session page (no auth)", async ({ page }) => {
-    await page.goto("/student/topics/dummy/session?palier=1");
+    await page.goto("/student/topics/session?id=dummy&palier=1");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
     await page.screenshot({

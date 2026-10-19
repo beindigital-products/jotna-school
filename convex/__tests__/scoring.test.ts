@@ -6,8 +6,11 @@ import {
   scoreToStars,
   scoreToStarsSingle,
   PALIER_SIZE,
+  hasEnoughValidExercises,
   PALIER_VALIDATION_THRESHOLD,
   MAX_ATTEMPTS_PER_EXERCISE,
+  countRealAttempts,
+  attemptsRemainingAfter,
 } from "../paliers/scoring";
 
 describe("scoring constants", () => {
@@ -240,4 +243,43 @@ describe("scoreToStars (Decision 81)", () => {
     expect(scoreToStarsSingle(s)).toBe(exp),
   );
   it("sums per-exo", () => expect(scoreToStars([10, 6, 4, 0])).toBe(6));
+});
+
+describe("countRealAttempts / attemptsRemainingAfter — un indice n'est pas un essai", () => {
+  const wrong = (n: number) => ({ attemptNumber: n });
+  const hint = () => ({ attemptNumber: 0 });
+
+  it("ignore les lignes d'indice", () => {
+    expect(countRealAttempts([])).toBe(0);
+    expect(countRealAttempts([hint()])).toBe(0);
+    expect(countRealAttempts([wrong(1), hint(), wrong(2), hint(), hint()])).toBe(2);
+  });
+
+  it("décompte 4, 3, 2, 1, 0 quel que soit le nombre d'indices entre deux essais", () => {
+    const rows: { attemptNumber: number }[] = [];
+    const seen: number[] = [];
+    for (let i = 1; i <= MAX_ATTEMPTS_PER_EXERCISE; i++) {
+      const attemptNumber = countRealAttempts(rows) + 1;
+      rows.push(wrong(attemptNumber), hint());
+      seen.push(attemptsRemainingAfter(attemptNumber));
+    }
+    expect(seen).toEqual([4, 3, 2, 1, 0]);
+  });
+
+  it("jamais négatif", () => expect(attemptsRemainingAfter(9)).toBe(0));
+});
+
+describe("hasEnoughValidExercises : un lot du modèle trop entamé ne se sert pas", () => {
+  it("demande 7 exercices valides sur 10, comme le seuil de validation", () => {
+    expect(hasEnoughValidExercises(10, 10)).toBe(true);
+    expect(hasEnoughValidExercises(7, 10)).toBe(true);
+    expect(hasEnoughValidExercises(6, 10)).toBe(false);
+    expect(hasEnoughValidExercises(0, 10)).toBe(false);
+  });
+
+  it("garde la proportion quand des jeux complètent le palier", () => {
+    expect(hasEnoughValidExercises(3, 4)).toBe(true);
+    expect(hasEnoughValidExercises(2, 4)).toBe(false);
+    expect(hasEnoughValidExercises(0, 0)).toBe(true);
+  });
 });

@@ -55,7 +55,7 @@ test.describe("Palier progression guard", () => {
 
     // Go directly to palier 2 — should be blocked
     await page.goto(
-      `/student/topics/${TOPIC_ID}/session?palier=2`,
+      `/student/topics/session?id=${TOPIC_ID}&palier=2`,
     );
     await page.waitForTimeout(10_000);
 
@@ -95,7 +95,7 @@ test.describe("Palier progression guard", () => {
     await registerFreshStudent(page);
 
     await page.goto(
-      `/student/topics/${TOPIC_ID}/session?palier=9`,
+      `/student/topics/session?id=${TOPIC_ID}&palier=9`,
     );
     await page.waitForTimeout(10_000);
 
@@ -125,7 +125,7 @@ test.describe("Palier progression guard", () => {
     await registerFreshStudent(page);
 
     await page.goto(
-      `/student/topics/${TOPIC_ID}/session?palier=1`,
+      `/student/topics/session?id=${TOPIC_ID}&palier=1`,
     );
     await page.waitForTimeout(15_000);
 
@@ -165,7 +165,7 @@ test.describe("Palier progression guard", () => {
       page.getByRole("heading", { name: /Tu veux quitter/i }),
     ).toBeHidden();
 
-    await page.locator("button.border-3").first().click();
+    await page.locator("button[data-option]").first().click();
     await page.getByRole("button", { name: /^Valider$/ }).click();
     await expect(page.getByText(/Question 2\/10/i)).toBeVisible({
       timeout: 10_000,
@@ -179,7 +179,7 @@ test.describe("Palier progression guard", () => {
       .getByRole("dialog")
       .getByRole("button", { name: /^Sauvegarder et quitter$/i })
       .click();
-    await page.goto(`/student/topics/${TOPIC_ID}/session?palier=1`);
+    await page.goto(`/student/topics/session?id=${TOPIC_ID}&palier=1`);
     await expect(page.getByText(/Question 2\/10/i)).toBeVisible({
       timeout: 30_000,
     });

@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Jotna School
 
-## Getting Started
+Jotna School relie l'école, les professeurs, les parents et les élèves.
 
-First, run the development server:
+- **Le site web** sert l'école (rôle `admin`), les professeurs et les parents :
+  leurs tableaux de bord, plus la vitrine destinée aux écoles.
+- **L'application iOS et Android** (Capacitor) porte en plus l'espace élève :
+  le Monde de Pio et le module Arabe & Coran. Tous les rôles peuvent s'y
+  connecter.
+
+Les deux sont construits à partir du même code, selon deux cibles de build
+(voir plus bas).
+
+## La pile
+
+- Next.js 16 en export statique (`output: "export"`), React, Tailwind CSS 4.
+- Convex pour la base de données, les fonctions serveur et l'authentification
+  (`convex/`).
+- Capacitor 8 pour les applications iOS (`ios/`) et Android (`android/`).
+- Vitest pour les tests unitaires, Playwright pour les parcours (`e2e/`).
+
+## Démarrer
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+npx convex dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npx convex dev` relie le dossier à un déploiement Convex de développement,
+écrit `.env.local` (`CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL`) et pousse
+les fonctions à chaque changement. Dans un autre terminal :
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Un seul build
 
-## Learn More
+Le même code sert le site web (école, professeurs, parents, élèves) et
+l'application iOS/Android. `pnpm dev` et `pnpm build` suffisent ; `pnpm
+ios:sync` et `pnpm android:sync` rebâtissent puis synchronisent Capacitor.
+Détails dans `docs/capacitor-ios.md`. Seule l'application joue sans réseau
+(`docs/hors-ligne.md`).
 
-To learn more about Next.js, take a look at the following resources:
+## Vérifier
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm lint
+pnpm tsc --noEmit
+pnpm test --run
+pnpm test:e2e
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+La CI (`.github/workflows/ci.yml`) lance le lint, le typage, les tests
+unitaires et les deux builds. Les tests Playwright ne tournent qu'en local.
 
-## Deploy on Vercel
+## Documentation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Fichier | Sujet |
+| --- | --- |
+| `docs/comptes-et-acces.md` | Les comptes créés par l'école, les rôles, les accès |
+| `docs/encaissement-mise-en-service.md` | Les paiements et la mise en service de l'encaissement |
+| `docs/paliers-et-exercices.md` | Les paliers et la génération des exercices |
+| `docs/progression-niveau-etoiles-trophees.md` | Le niveau, les étoiles, la série, les missions et les trophées |
+| `docs/monde-de-pio.md` | L'espace élève, pensé comme un jeu |
+| `docs/module-arabe-coran.md` | Le module Arabe & Coran |
+| `docs/pio-animations.md` | Les animations vidéo de Pio |
+| `docs/capacitor-ios.md` | Les applications iOS et Android, les deux cibles de build |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Pour les agents
+
+`AGENTS.md` et `CLAUDE.md` donnent les règles propres au dépôt. Un graphe de
+connaissance du code et des docs vit dans `graphify-out/` : `graphify query
+"<question>"` l'interroge, et `graphify update .` le remet à jour après un
+changement de code.

@@ -8,7 +8,8 @@ import {
   blockedStudent,
   studentIdsTaughtBy,
 } from "./access";
-import { verifyAnswer } from "./answerRules";
+import { verifyDragDrop, verifyMatch } from "./paliers/answerCheck";
+import { correctAnswerText, verifyAnswer } from "./paliers/exerciseRules";
 
 /**
  * Compute where the current student should resume in a given topic session.
@@ -146,6 +147,27 @@ export const getExerciseAndAttempts = internalQuery({
 });
 
 // ---------------------------------------------------------------------------
+// Answer verification helpers
+// ---------------------------------------------------------------------------
+
+function verifyQcm(submittedAnswer: string, payload: { correctIndex: number }): boolean {
+  return parseInt(submittedAnswer, 10) === payload.correctIndex;
+}
+
+function verifyOrder(
+  submittedAnswer: string,
+  payload: { correctSequence: string[] },
+): boolean {
+  try {
+    const submitted: string[] = JSON.parse(submittedAnswer);
+    if (submitted.length !== payload.correctSequence.length) return false;
+    return submitted.every((item, i) => item === payload.correctSequence[i]);
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
 
@@ -206,17 +228,25 @@ export const submit = mutation({
       throw new Error("Exercice introuvable");
     }
 
-    // UNE SEULE SÉMANTIQUE DE CORRECTION, celle d'`answerRules.ts`. Ce fichier
-    // portait sa propre copie des cinq vérificateurs, identique à celle de
-    // `palierAttempts.ts` : deux mutations publiques corrigeaient le même
-    // exercice avec deux codes distincts que rien n'obligeait à rester égaux.
-    // Un type hors de l'union du schéma rend désormais `false` au lieu de
-    // lever ; le validateur d'`exercises.type` rend ce cas inatteignable.
-    const isCorrect = verifyAnswer(
-      exercise.type,
-      exercise.payload,
-      args.submittedAnswer,
-    );
+    // Verify the answer based on exercise type
+    let isCorrect = false;
+    switch (exercise.type) {
+      case "qcm":
+        isCorrect = verifyQcm(args.submittedAnswer, exercise.payload);
+        break;
+      case "match":
+        isCorrect = verifyMatch(args.submittedAnswer, exercise.payload);
+        break;
+      case "order":
+        isCorrect = verifyOrder(args.submittedAnswer, exercise.payload);
+        break;
+      case "drag-drop":
+        isCorrect = verifyDragDrop(args.submittedAnswer, exercise.payload);
+        break;
+      default:
+        // La réponse courte, la phrase à trous et les jeux : la règle partagée avec les paliers.
+        isCorrect = verifyAnswer(exercise, args.submittedAnswer);
+    }
 
     // Create the attempt record
     const attemptId = await ctx.db.insert("attempts", {
@@ -291,6 +321,8 @@ export const submit = mutation({
         case "short-answer":
           correctAnswer = exercise.payload.acceptedAnswers[0];
           break;
+        default:
+          correctAnswer = correctAnswerText(exercise) ?? undefined;
       }
     }
 

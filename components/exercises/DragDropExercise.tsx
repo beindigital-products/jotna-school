@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Check, X } from "lucide-react";
+import { AlertTriangle, Check } from "lucide-react";
 import ExercisePrompt from "./ExercisePrompt";
+import { payloadImage } from "./ExerciseImage";
+import { ExerciseActions } from "./game-parts";
 import {
   DndContext,
   DragOverlay,
@@ -14,8 +16,73 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
+import { dragDropAnswer } from "@/lib/exerciseAnswers";
+import { ActionButton3D, GESTURE_ACCENT, Reward, Tile3D, useGameFeel, type TileState } from "@/components/student/game-kit";
+import { graphemeCount } from "@/components/student/game-kit/choix-texte";
+import { DropBox } from "@/components/student/game-kit/gestes-cases";
+import type { ItemImage } from "@/lib/item-images";
+import { useTilePictures } from "./item-pictures";
+import { glyphTilesOf, isDenseTileCount, TilePicture, TileSticker, tileName } from "./tile-picture";
 
+/**
+ * LE GLISSER-DÉPOSER SE JOUE AVEC DE VRAIES BOÎTES
+ * (`docs/direction-jeu-exercices.md`). Les cases sont des boîtes épaisses,
+ * vues de face et un peu de dessus (`DropBox`), avec leur nom sur une plaque ;
+ * les étiquettes sont des tuiles épaisses (`Tile3D`) dans le bac de sable.
+ * Saisie, une étiquette se soulève sous le doigt (l'`DragOverlay` la porte,
+ * plus grande, l'ombre loin, un peu penchée) et laisse son creux dans le bac ;
+ * la boîte survolée s'allume et s'enfonce ; lâchée, l'étiquette s'y pose avec
+ * un ressort et le téléphone claque dans la main. Toucher l'étiquette puis la
+ * boîte fait la même chose : les boîtes s'allument alors toutes pour dire
+ * « ici ». L'accent de la famille « glisser » est l'ambre du sable.
+ *
+ * LE GESTE NE CHANGE PAS : capteur pointeur à 8 px, `touch-action: none` sur
+ * l'étiquette, le toucher en deux temps, la correction au clavier (Entrée ou
+ * Espace choisit l'étiquette). Le DOM garde ses repères : le bac porte
+ * `border-dashed`, chaque case est le parent direct de son `h4` et contient
+ * ses étiquettes, une étiquette porte `aria-roledescription="draggable"` et
+ * `aria-pressed` quand elle est choisie.
+ *
+ * LE BAC VIENT AVANT LES BOÎTES. Avec les boîtes d'abord (trois boîtes
+ * d'environ 140 px), les étiquettes étaient sous le dock sur un téléphone :
+ * l'enfant lisait « Glisse les étiquettes » sans rien voir à glisser, et
+ * devait défiler puis remonter vers les boîtes (relu le 18 octobre 2026,
+ * 390 × 844 et 360 × 640, Android 412 × 840). Sous l'énoncé, les étiquettes
+ * sont la première chose qu'on touche, et le geste va vers le bas, dans les
+ * boîtes. Le bac reste en place quand il se vide (une hauteur minimale d'une
+ * rangée, « Tout est rangé ! ») : les boîtes ne sautent pas sous le doigt au
+ * moment où la dernière étiquette s'y pose.
+ *
+ * « Valider » est posé dans la barre d'action (`ExerciseActions`,
+ * `game-parts.tsx`) : pour un enfant qui apprend à lire, « Écouter » vient
+ * juste au-dessus, comme au QCM.
+ *
+ * EN CI, UNE ÉTIQUETTE OU UNE CASE QUI NOMME UNE CHOSE MONTRE SON IMAGE
+ * (`item-pictures.tsx`) : « Lion », « Poule » ou « La table » ne se lisent pas
+ * encore à six ans. Les étiquettes et les noms des cases se résolvent sur leur
+ * texte (`useTilePictures`), avec l'énoncé, l'image d'énoncé et, pour chaque
+ * groupe, ce que l'AUTRE montre : ses tuiles « que des émojis » (des cases en
+ * émojis et des étiquettes en mots, c'est « range le mot sous son image », où
+ * l'image sur le mot donnerait la réponse, donc aucune image) et ses textes
+ * (`counterpart` : la même image sur les étiquettes et sur les cases se
+ * relierait par son dessin). Une étiquette à image la garde partout où elle va :
+ * dans le bac, dans une boîte et sous le doigt (l'`DragOverlay` la porte avec
+ * elle) ; elle pose sa pastille au-dessus de son mot sur un téléphone, à côté de
+ * lui à 640 px de large et plus (`tile-picture.tsx` dit la mise en page et sa
+ * hauteur ; dès quatre étiquettes, la pastille se serre). Une case dont le nom
+ * est celui d'une chose (« La poule ») pose la sienne dans sa plaque, devant son
+ * nom, à côté quand la boîte est assez large et au-dessus sinon (`DropBox`) ; une
+ * catégorie (« Naturel », « Fixe », « Fruits ») n'est pas au catalogue et reste
+ * telle quelle. LA PRISE NE CHANGE PAS : l'étiquette reste `touch-none`,
+ * de 56 px de haut au moins, et sa pastille, qui ne reçoit ni le toucher ni la
+ * sélection (`ItemPicture`), n'en vole aucun. La réponse part toujours en `dragDropAnswer`
+ * des textes d'origine, émoji compris. Sans `ItemPicturesProvider` (les autres
+ * classes, la vitrine, les aperçus des professeurs) ou pour une tuile sans
+ * image, le DOM est celui d'avant.
+ */
 interface DragDropPayload {
+  /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
+  image?: string;
   zones?: string[];
   items?: { text: string }[];
 }
@@ -29,51 +96,119 @@ interface DragDropExerciseProps {
   isCorrect: boolean | null;
 }
 
-const zoneColors = [
-  { bg: "bg-blue-50", border: "border-blue-300", header: "bg-blue-200 text-blue-900", item: "bg-blue-100 border-blue-200 text-blue-800" },
-  { bg: "bg-pink-50", border: "border-pink-300", header: "bg-pink-200 text-pink-900", item: "bg-pink-100 border-pink-200 text-pink-800" },
-  { bg: "bg-amber-50", border: "border-amber-300", header: "bg-amber-200 text-amber-900", item: "bg-amber-100 border-amber-200 text-amber-800" },
-  { bg: "bg-green-50", border: "border-green-300", header: "bg-green-200 text-green-900", item: "bg-green-100 border-green-200 text-green-800" },
-  { bg: "bg-purple-50", border: "border-purple-300", header: "bg-purple-200 text-purple-900", item: "bg-purple-100 border-purple-200 text-purple-800" },
-];
+/** L'ambre du sable : l'accent du geste « glisser ». */
+const GRAB_TONE = GESTURE_ACCENT.glisser.optionIndex;
+
+/** La tuile en l'air se pose avec le ressort de la boîte à outils. */
+const DROP_SPRING = { duration: 280, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)" };
+
+/*
+ * UNE ÉTIQUETTE EST SA POSITION, PAS SON TEXTE. Deux étiquettes peuvent se
+ * ressembler (les deux « a » de « banane ») : suivies par leur texte, poser
+ * l'une déplaçait l'autre. Zones et étiquettes portent donc un identifiant
+ * tiré de leur rang ; le texte ne sert qu'à l'affichage et à la réponse
+ * (`lib/exerciseAnswers.ts`).
+ */
+const zoneId = (index: number) => `zone-${index}`;
+const itemId = (index: number) => `etiquette-${index}`;
+
+/*
+ * LA RANGÉE DU BAC GARDE SES 72 PX (4,5 rem), avec ou sans image. Le bac vide garde la
+ * hauteur d'UNE rangée, pour que les boîtes ne remontent pas sous le doigt quand la
+ * dernière étiquette s'y pose (mesuré le 19 octobre 2026). Une étiquette à pastille
+ * ne dépasse pas cette hauteur : 68,5 px en pile avec la pastille de 32 px (dès quatre
+ * étiquettes), 72,5 px avec celle de 36 px (0,5 px de plus quand la dernière part,
+ * qu'on ne voit pas), 56 à 68 px à côté du mot à 640 px de large et plus. La classe est
+ * donc celle d'avant les images, et le DOM du bac ne change pas.
+ */
+
+/**
+ * LES BOÎTES EN DEUX COLONNES DÈS LE TÉLÉPHONE quand tout est court : des noms
+ * d'un mot de dix graphèmes au plus (« Ronds », « Jour », « an »), des
+ * étiquettes aussi courtes (des formes, des syllabes, un mot), quatre boîtes
+ * au plus. Trois boîtes empilées sur une colonne poussaient le bac et la barre
+ * d'action bien sous le premier écran d'un téléphone (mesuré : 348 px à
+ * 390 × 844, `scripts/shoot-exercises.mjs`). Un nom long (« Aliments de
+ * construction ») ou une phrase à ranger garde la colonne sur un téléphone,
+ * deux colonnes à partir de 640 px comme avant.
+ */
+export function boxesSideBySide(zones: readonly string[], items: readonly string[]): boolean {
+  const short = (text: string) => graphemeCount(text.trim()) <= 10 && text.trim().split(/\s+/u).length === 1;
+  return zones.length >= 2 && zones.length <= 4 && zones.every(short) && items.every(short);
+}
+
+/** L'état d'une étiquette posée selon le verdict, ou son choix. */
+export function itemTileState(verdict: boolean | null, inZone: boolean, selected: boolean): TileState {
+  if (inZone && verdict === true) return "juste";
+  if (inZone && verdict === false) return "fausse";
+  return selected ? "choisie" : "repos";
+}
 
 function DroppableZone({
   id,
+  label,
+  image,
+  dense,
   colorIndex,
+  armed,
+  verdict,
+  onChoose,
   children,
 }: {
   id: string;
+  label: string;
+  /** L'image qui nomme la case, ou `null` (une catégorie : Naturel, Fixe). */
+  image: ItemImage | null;
+  /** Quatre étiquettes ou plus : la pastille de la plaque se serre comme celle des étiquettes. */
+  dense: boolean;
   colorIndex: number;
+  /** Une étiquette est choisie : toucher cette case l'y pose. */
+  armed: boolean;
+  verdict: boolean | null;
+  onChoose: () => void;
   children: React.ReactNode;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id });
-  const color = zoneColors[colorIndex % zoneColors.length];
 
   return (
-    <div
+    <DropBox
       ref={setNodeRef}
-      className={`rounded-2xl border-3 ${color.border} ${color.bg} p-4 min-h-[120px] transition-all ${
-        isOver ? "scale-[1.02] shadow-lg ring-2 ring-offset-2 ring-indigo-300" : ""
-      }`}
+      tone={colorIndex}
+      label={tileName(label, image)}
+      picture={image ? <TileSticker image={image} text={label} dense={dense} /> : undefined}
+      armed={armed}
+      over={isOver}
+      state={verdict === true ? "juste" : verdict === false ? "fausse" : "repos"}
+      onClick={armed ? onChoose : undefined}
     >
-      <h4
-        className={`mb-3 rounded-xl ${color.header} px-3 py-2 text-center text-base font-bold`}
-      >
-        {id}
-      </h4>
-      <div className="space-y-2">{children}</div>
-    </div>
+      {children}
+    </DropBox>
   );
 }
 
 function DraggableItem({
   id,
+  label,
+  image,
+  dense,
   disabled,
   inZone,
+  selected,
+  verdict,
+  onChoose,
 }: {
   id: string;
+  label: string;
+  /** L'image qui montre ce que nomme l'étiquette, ou `null`. */
+  image: ItemImage | null;
+  /** Quatre étiquettes ou plus : la pastille se serre. */
+  dense: boolean;
   disabled: boolean;
   inZone: boolean;
+  /** Choisie par un toucher : elle attend qu'on touche sa case. */
+  selected: boolean;
+  verdict: boolean | null;
+  onChoose: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
@@ -81,21 +216,45 @@ function DraggableItem({
   });
 
   return (
+    // La largeur suit le contenu : une forme est une petite tuile, un mot une
+    // plus longue. Le toucher est pris ici, sur l'enveloppe : `Tile3D` réserve
+    // `onClick` à sa forme bouton, et le clic de l'étiquette remonte jusqu'ici.
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`
-        rounded-xl border-2 px-4 py-3 text-center text-base font-bold transition-all
-        ${isDragging ? "opacity-50" : ""}
-        ${inZone
-          ? "border-gray-200 bg-white text-gray-800 shadow-sm"
-          : "border-indigo-200 bg-indigo-50 text-indigo-800 shadow-md hover:shadow-lg"
-        }
-        ${disabled ? "cursor-not-allowed opacity-70" : "cursor-grab active:cursor-grabbing"}
-      `}
+      className={`min-w-[4rem] max-w-full ${inZone ? "" : "flex-none"}`}
+      onClick={(event) => {
+        // Toucher une étiquette ne touche pas la case qui la contient.
+        event.stopPropagation();
+        if (!disabled) onChoose();
+      }}
     >
-      {id}
+      <Tile3D
+        as="div"
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        aria-pressed={selected}
+        tone={GRAB_TONE}
+        state={itemTileState(verdict, inZone, selected)}
+        // En l'air, c'est l'`DragOverlay` qui la montre : ici reste son creux.
+        elevation={isDragging ? "plat" : undefined}
+        disabled={disabled}
+        align="center"
+        onKeyDown={(event) => {
+          if (disabled || (event.key !== "Enter" && event.key !== " ")) return;
+          event.preventDefault();
+          onChoose();
+        }}
+        // `touch-none` : sans lui, au doigt, le glissé défile la page et le
+        // navigateur annule le geste (voir `OrderExercise`). `select-none` et
+        // `-webkit-touch-callout` : pas de loupe ni de sélection d'iOS sur un
+        // appui long.
+        className={`touch-none [-webkit-touch-callout:none] ${isDragging ? "opacity-40" : ""} ${
+          disabled ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
+        }`}
+        data-in-zone={inZone || undefined}
+      >
+        <TilePicture text={label} image={image} dense={dense} />
+      </Tile3D>
     </div>
   );
 }
@@ -113,21 +272,46 @@ export default function DragDropExercise({
     ? payload.items.filter((it): it is { text: string } => !!it && typeof it === "object" && typeof (it as Record<string, unknown>).text === "string")
     : [];
 
-  // Track which zone each item is in (null = unplaced)
-  const [assignments, setAssignments] = useState<Record<string, string | null>>(
-    () => {
-      const initial: Record<string, string | null> = {};
-      for (const item of items) {
-        initial[item.text] = null;
-      }
-      return initial;
-    },
+  // La zone de chaque étiquette, PAR POSITION : `zoneOfItem[i]` est le rang
+  // de la zone où est posée `items[i]` (null = pas encore posée).
+  const [zoneOfItem, setZoneOfItem] = useState<(number | null)[]>(() =>
+    items.map(() => null),
   );
+
+  // Les hooks avant le retour anticipé : leur ordre ne doit pas dépendre
+  // du payload.
+  const [activeId, setActiveId] = useState<string | null>(null);
+  // L'étiquette choisie par un toucher, par position. Glisser reste possible ;
+  // toucher l'étiquette puis sa case est l'autre façon, et la seule qui ne
+  // dépend pas de la taille de l'écran : sur un téléphone, l'étiquette et sa
+  // case ne tiennent pas toujours ensemble à l'écran, et le glissé qui
+  // approche du bord fait défiler la page sous le doigt.
+  const [chosen, setChosen] = useState<number | null>(null);
+  // 8 px avant de partir en glissé : sans cela, un simple toucher est déjà un
+  // glissé et dnd-kit avale le clic qui le suit.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const feel = useGameFeel();
+
+  // La récompense rejoue à chaque passage à « juste ».
+  const [fire, setFire] = useState(0);
+  const [seenVerdict, setSeenVerdict] = useState(isCorrect);
+  if (isCorrect !== seenVerdict) {
+    setSeenVerdict(isCorrect);
+    if (isCorrect === true) setFire((n) => n + 1);
+  }
+
+  // L'image de chaque étiquette et de chaque case (CI) : chaque groupe se résout
+  // avec les tuiles « que des émojis » de l'autre. Avant le retour anticipé :
+  // l'ordre des hooks ne dépend pas de la donnée.
+  const itemTexts = items.map((item) => item.text);
+  const exerciseImage = payloadImage(payload);
+  const itemPictures = useTilePictures(itemTexts, { prompt, glyphTiles: glyphTilesOf(zones), counterpart: zones, exerciseImage });
+  const zonePictures = useTilePictures(zones, { prompt, glyphTiles: glyphTilesOf(itemTexts), counterpart: itemTexts, exerciseImage });
 
   if (zones.length < 2 || items.length < 2) {
     return (
       <div className="space-y-4">
-        <ExercisePrompt prompt={prompt} />
+        <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
         <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-amber-600" aria-hidden />
           <p className="font-bold text-amber-900">Cet exercice est cassé, on te le saute.</p>
@@ -138,53 +322,81 @@ export default function DragDropExercise({
     );
   }
 
-  const [activeId, setActiveId] = useState<string | null>(null);
-
-  const sensors = useSensors(useSensor(PointerSensor));
-
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+    feel.vibrate("tap");
+  };
+
+  const zoneIds = zones.map((_, index) => zoneId(index));
+  const itemIds = items.map((_, index) => itemId(index));
+
+  /** Pose une étiquette dans une case : l'état change, et la main le sent. */
+  const place = (item: number, zone: number) => {
+    setZoneOfItem((prev) => prev.map((current, index) => (index === item ? zone : current)));
+    feel.vibrate("select");
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
+    if (!over) return;
 
-    if (over && zones.includes(over.id as string)) {
-      setAssignments((prev) => ({
-        ...prev,
-        [active.id as string]: over.id as string,
-      }));
+    const zone = zoneIds.indexOf(String(over.id));
+    const item = itemIds.indexOf(String(active.id));
+    if (zone < 0 || item < 0) return;
+    place(item, zone);
+    setChosen(null);
+  };
+
+  // Toucher une étiquette :
+  //  - la choisie : on la relâche ;
+  //  - une étiquette déjà POSÉE dans une case, alors qu'une autre est choisie :
+  //    c'est toucher cette case (le centre d'une case pleine tombe sur une
+  //    étiquette, pas sur le fond) ; la choisie y est posée ;
+  //  - sinon : c'est la nouvelle étiquette choisie.
+  const choose = (item: number) => {
+    if (disabled) return;
+    if (chosen === item) {
+      setChosen(null);
+      return;
     }
+    const zone = zoneOfItem[item];
+    if (chosen !== null && zone !== null && zoneOfItem[chosen] !== zone) {
+      place(chosen, zone);
+      setChosen(null);
+      return;
+    }
+    setChosen(item);
+    feel.vibrate("tap");
+  };
+  const putChosenIn = (zone: number) => {
+    if (chosen === null || disabled) return;
+    place(chosen, zone);
+    setChosen(null);
   };
 
   const handleSubmit = () => {
-    const answer: Record<string, string> = {};
-    for (const [item, zone] of Object.entries(assignments)) {
-      if (zone) answer[item] = zone;
-    }
-    onSubmit(JSON.stringify(answer));
+    onSubmit(
+      dragDropAnswer(
+        items.map((item) => item.text),
+        zoneOfItem.map((zone) => (zone === null ? null : zones[zone])),
+      ),
+    );
   };
 
-  const unplacedItems = items.filter((item) => assignments[item.text] === null);
+  const unplacedItems = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ index }) => zoneOfItem[index] === null);
   const allPlaced = unplacedItems.length === 0;
+  const activeIndex = activeId ? itemIds.indexOf(activeId) : -1;
+  const activeLabel = activeIndex >= 0 ? items[activeIndex]?.text : undefined;
+  const sideBySide = boxesSideBySide(zones, items.map((item) => item.text));
+  const dense = isDenseTileCount(items.length);
 
   return (
-    <div className="space-y-6">
-      <ExercisePrompt prompt={prompt} />
-
-      {isCorrect === true && (
-        <div className="flex items-center gap-2 rounded-2xl bg-green-100 border-2 border-green-300 px-4 py-3 text-green-800 font-semibold">
-          <Check className="h-5 w-5" />
-          Parfait, tout est bien place !
-        </div>
-      )}
-      {isCorrect === false && (
-        <div className="flex items-center gap-2 rounded-2xl bg-red-100 border-2 border-red-300 px-4 py-3 text-red-800 font-semibold animate-[shake_0.5s_ease-in-out]">
-          <X className="h-5 w-5" />
-          Essaie encore !
-        </div>
-      )}
+    // Sur un écran court (667 px ou moins), les blocs se resserrent, comme au QCM.
+    <div className="space-y-6 [@media(max-height:667px)]:space-y-4">
+      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
       <DndContext
         sensors={sensors}
@@ -192,62 +404,108 @@ export default function DragDropExercise({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* Zones */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {zones.map((zone, i) => {
-            const zoneItems = items.filter(
-              (item) => assignments[item.text] === zone,
-            );
-            return (
-              <DroppableZone key={zone} id={zone} colorIndex={i}>
-                {zoneItems.map((item) => (
-                  <DraggableItem
-                    key={item.text}
-                    id={item.text}
-                    disabled={disabled}
-                    inZone={true}
-                  />
-                ))}
-              </DroppableZone>
-            );
-          })}
+        {/* Le bac : les étiquettes qui attendent, sur le sable, AVANT les boîtes. */}
+        <div
+          data-tray
+          className="rounded-3xl border-2 border-dashed border-[#d6c39a] bg-[#fff1cc]/80 px-4 pb-3 pt-3 shadow-[inset_0_2px_6px_rgb(60_30_0_/_0.08)]"
+        >
+          <p
+            aria-live="polite"
+            className="mb-3 text-center font-display text-base font-extrabold leading-snug text-amber-900/85"
+          >
+            {chosen !== null ? (
+              `Touche la case où poser « ${items[chosen].text} »`
+            ) : allPlaced ? (
+              "Tout est rangé !"
+            ) : (
+              // Court : la consigne a déjà dit quoi ranger où ; sur un
+              // téléphone, une ligne de moins garde le bac plus haut. La seconde
+              // ligne, le geste au toucher, à 85 % : 5,7:1 sur le sable (à 65 %,
+              // 3,5:1, sous les 4,5:1 d'un petit texte).
+              <>
+                Glisse les étiquettes
+                <span className="mt-1 block text-sm font-bold text-amber-900/85">
+                  Ou touche l&apos;étiquette, puis la case.
+                </span>
+              </>
+            )}
+          </p>
+          <div className="flex min-h-[4.5rem] flex-wrap items-start justify-center gap-4">
+            {unplacedItems.map(({ item, index }) => (
+              <DraggableItem
+                key={itemIds[index]}
+                id={itemIds[index]}
+                label={item.text}
+                image={itemPictures[index]}
+                dense={dense}
+                disabled={disabled}
+                inZone={false}
+                selected={chosen === index}
+                verdict={isCorrect}
+                onChoose={() => choose(index)}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Unplaced items */}
-        {unplacedItems.length > 0 && (
-          <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-4">
-            <p className="mb-3 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">
-              Glisse les elements dans les bonnes zones
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              {unplacedItems.map((item) => (
-                <DraggableItem
-                  key={item.text}
-                  id={item.text}
-                  disabled={disabled}
-                  inZone={false}
-                />
-              ))}
-            </div>
+        {/* Les boîtes, et la récompense au milieu d'elles. */}
+        <div className="relative">
+          <div className={`grid gap-4 ${sideBySide ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`} data-boxes={sideBySide ? "deux-colonnes" : "une-colonne"}>
+            {zones.map((zone, zoneIndex) => (
+              <DroppableZone
+                key={zoneIds[zoneIndex]}
+                id={zoneIds[zoneIndex]}
+                label={zone}
+                image={zonePictures[zoneIndex]}
+                dense={dense}
+                colorIndex={zoneIndex}
+                armed={chosen !== null && zoneOfItem[chosen] !== zoneIndex}
+                verdict={isCorrect}
+                onChoose={() => putChosenIn(zoneIndex)}
+              >
+                {items.map((item, index) =>
+                  zoneOfItem[index] === zoneIndex ? (
+                    <DraggableItem
+                      key={itemIds[index]}
+                      id={itemIds[index]}
+                      label={item.text}
+                      image={itemPictures[index]}
+                      dense={dense}
+                      disabled={disabled}
+                      inZone={true}
+                      selected={chosen === index}
+                      verdict={isCorrect}
+                      onChoose={() => choose(index)}
+                    />
+                  ) : null,
+                )}
+              </DroppableZone>
+            ))}
           </div>
-        )}
+          <Reward fire={fire > 0 ? fire : null} />
+        </div>
 
-        <DragOverlay>
-          {activeId ? (
-            <div className="rounded-xl border-2 border-indigo-400 bg-indigo-100 px-4 py-3 text-center text-base font-bold text-indigo-800 shadow-xl">
-              {activeId}
-            </div>
+        {/* L'étiquette en l'air : soulevée, un peu penchée, elle se pose avec un ressort. */}
+        <DragOverlay dropAnimation={feel.reducedMotion ? null : DROP_SPRING}>
+          {activeLabel !== undefined ? (
+            <Tile3D as="div" tone={GRAB_TONE} state="choisie" elevation="saisie" align="center" className="rotate-[-2deg] cursor-grabbing">
+              <TilePicture text={activeLabel} image={itemPictures[activeIndex]} dense={dense} />
+            </Tile3D>
           ) : null}
         </DragOverlay>
       </DndContext>
 
-      <button
-        onClick={handleSubmit}
-        disabled={disabled || !allPlaced}
-        className="w-full rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 px-6 py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-      >
-        Valider
-      </button>
+      <ExerciseActions>
+        {/* La coche : le même « Valider » que le QCM, pour que le dock ne change pas de visage d'une question à l'autre. */}
+        <ActionButton3D
+          shine={allPlaced && !disabled}
+          disabled={disabled || !allPlaced}
+          onClick={handleSubmit}
+          icon={<Check className="h-6 w-6" strokeWidth={3} aria-hidden />}
+        >
+          Valider
+        </ActionButton3D>
+      </ExerciseActions>
     </div>
   );
 }

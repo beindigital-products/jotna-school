@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { Volume2, Volume1 } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { useStudentActions } from "@/hooks/use-student-data";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +40,8 @@ export function SoundOptInDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const setSoundEnabled = useMutation(api.streak.setSoundEnabled);
+  // Le choix s'écrit au journal de l'appareil, et part au serveur avec le réseau.
+  const { setSoundEnabled } = useStudentActions();
   const [previewed, setPreviewed] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -57,28 +57,18 @@ export function SoundOptInDialog({
     setSoundEnabledLocal(true);
     markOptInAsked(userId);
     void preloadAll();
-    try {
-      await setSoundEnabled({ enabled: true });
-    } catch {
-      // Mutation will queue offline; UI proceeds either way.
-    } finally {
-      setBusy(false);
-      onOpenChange(false);
-    }
+    setSoundEnabled(true);
+    setBusy(false);
+    onOpenChange(false);
   };
 
   const handleDecline = async () => {
     setBusy(true);
     setSoundEnabledLocal(false);
     markOptInAsked(userId);
-    try {
-      await setSoundEnabled({ enabled: false });
-    } catch {
-      // Mutation will queue offline; UI proceeds either way.
-    } finally {
-      setBusy(false);
-      onOpenChange(false);
-    }
+    setSoundEnabled(false);
+    setBusy(false);
+    onOpenChange(false);
   };
 
   // ESC / outside-click → treat as decline so we don't re-prompt next visit.

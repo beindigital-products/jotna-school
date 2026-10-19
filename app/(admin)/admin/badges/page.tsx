@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { refusalMessage } from "@/lib/refusalMessage";
+import { BADGE_CONDITIONS, badgeParams, isSupportedCondition } from "@/convex/badgeRules";
 import {
   Award,
   Plus,
@@ -14,11 +16,10 @@ import {
   X,
 } from "lucide-react";
 
-const CONDITION_LABELS: Record<string, string> = {
-  complete_topic: "Compléter un thème",
-  perfect_score: "Score parfait",
-  streak_3: "3 thèmes consécutifs",
-};
+// Les conditions que le moteur sait attribuer (`convex/badgeRules.ts`).
+const CONDITION_LABELS: Record<string, string> = Object.fromEntries(
+  BADGE_CONDITIONS.map((c) => [c.key, c.label]),
+);
 
 export default function AdminBadgesPage() {
   const badges = useQuery(api.badges.list);
@@ -32,7 +33,8 @@ export default function AdminBadgesPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [icon, setIcon] = useState("");
-  const [condition, setCondition] = useState("complete_topic");
+  const [condition, setCondition] = useState("paliers_validated_total");
+  const [threshold, setThreshold] = useState<string>("");
   const [subjectId, setSubjectId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -42,7 +44,8 @@ export default function AdminBadgesPage() {
     setName("");
     setDescription("");
     setIcon("");
-    setCondition("complete_topic");
+    setCondition("paliers_validated_total");
+    setThreshold("");
     setSubjectId("");
     setEditingId(null);
     setShowForm(false);
@@ -54,6 +57,7 @@ export default function AdminBadgesPage() {
     description: string;
     icon: string;
     condition: string;
+    conditionParams?: unknown;
     subjectId?: string;
   }) => {
     setEditingId(badge._id);
@@ -61,6 +65,8 @@ export default function AdminBadgesPage() {
     setDescription(badge.description);
     setIcon(badge.icon);
     setCondition(badge.condition);
+    const params = badgeParams(badge.condition, badge.conditionParams);
+    setThreshold(typeof params.count === "number" ? String(params.count) : "");
     setSubjectId(badge.subjectId ?? "");
     setShowForm(true);
   };
@@ -70,14 +76,22 @@ export default function AdminBadgesPage() {
     setIsSubmitting(true);
     setError(null);
     try {
+      // Le seuil saisi complète les paramètres par défaut de la condition ;
+      // une matière liée sert aussi de paramètre (maîtrise d'une matière).
+      const conditionParams = {
+        ...badgeParams(condition, undefined),
+        ...(threshold.trim() !== "" && Number.isFinite(Number(threshold)) ? { count: Number(threshold) } : {}),
+        ...(subjectId ? { subjectId } : {}),
+      };
       if (editingId) {
         await updateBadge({
-          id: editingId as any,
+          id: editingId as Id<"badges">,
           name,
           description,
           icon,
           condition,
-          subjectId: subjectId ? (subjectId as any) : undefined,
+          conditionParams,
+          subjectId: subjectId ? (subjectId as Id<"subjects">) : undefined,
         });
       } else {
         await createBadge({
@@ -85,7 +99,8 @@ export default function AdminBadgesPage() {
           description,
           icon,
           condition,
-          subjectId: subjectId ? (subjectId as any) : undefined,
+          conditionParams,
+          subjectId: subjectId ? (subjectId as Id<"subjects">) : undefined,
         });
       }
       resetForm();
@@ -99,7 +114,7 @@ export default function AdminBadgesPage() {
   const handleDelete = async (id: string) => {
     setError(null);
     try {
-      await removeBadge({ id: id as any });
+      await removeBadge({ id: id as Id<"badges"> });
       setDeleteConfirm(null);
     } catch (err) {
       setError(
@@ -200,10 +215,28 @@ export default function AdminBadgesPage() {
                   onChange={(e) => setCondition(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                 >
-                  <option value="complete_topic">Compléter un thème</option>
-                  <option value="perfect_score">Score parfait</option>
-                  <option value="streak_3">3 thèmes consécutifs</option>
+                  {BADGE_CONDITIONS.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label}
+                    </option>
+                  ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Seuil (optionnel)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={threshold}
+                  onChange={(e) => setThreshold(e.target.value)}
+                  placeholder={String(badgeParams(condition, undefined).count ?? "")}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Vide : le seuil par défaut de la condition. Les autres réglages (temps, heure) gardent leurs défauts.
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -290,6 +323,11 @@ export default function AdminBadgesPage() {
                   <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
                     {CONDITION_LABELS[badge.condition] ?? badge.condition}
                   </span>
+                  {!isSupportedCondition(badge.condition) && (
+                    <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                      Condition inconnue : jamais attribué
+                    </span>
+                  )}
                   {linkedSubject && (
                     <span
                       className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
@@ -302,7 +340,7 @@ export default function AdminBadgesPage() {
 
                 <div className="mt-4 flex items-center gap-2">
                   <button
-                    onClick={() => startEdit(badge as any)}
+                    onClick={() => startEdit(badge)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     <Pencil className="h-3.5 w-3.5" />

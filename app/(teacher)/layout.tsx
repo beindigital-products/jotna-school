@@ -7,6 +7,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
   LayoutDashboard,
+  School,
   Users,
   FileBarChart,
   Settings,
@@ -29,6 +30,8 @@ import {
 } from "@/components/ui/sidebar";
 import { UserMenu } from "@/components/ui/user-menu";
 import { RoleGate } from "@/components/RoleGate";
+import { DashboardTour } from "@/components/onboarding/dashboard-tour";
+import { roleHomePath } from "@/lib/auth";
 
 const sidebarLinks = [
   {
@@ -36,6 +39,7 @@ const sidebarLinks = [
     label: "Tableau de bord",
     icon: LayoutDashboard,
   },
+  { href: "/teacher/classes", label: "Mes classes", icon: School },
   { href: "/teacher/students", label: "Mes élèves", icon: Users },
   { href: "/teacher/reports", label: "Rapports", icon: FileBarChart },
   { href: "/teacher/settings", label: "Paramètres", icon: Settings },
@@ -57,8 +61,10 @@ export default function TeacherLayout({
     if (profile.role !== "professeur" && profile.role !== "admin") {
       if (profile.role === "parent") {
         router.replace("/parent/dashboard");
+      } else if (profile.role === "directeur") {
+        router.replace(roleHomePath("directeur"));
       } else if (profile.role === "student") {
-        router.replace("/student/home");
+        router.replace(roleHomePath("student"));
       } else {
         router.replace("/login");
       }
@@ -93,7 +99,12 @@ export default function TeacherLayout({
                       <SidebarMenuItem key={link.href}>
                         <SidebarMenuButton
                           isActive={isActive}
-                          render={<Link href={link.href} />}
+                          render={
+                            <Link
+                              href={link.href}
+                              data-tour={`nav-${link.href.split("/").pop()}`}
+                            />
+                          }
                           className={isActive ? "bg-amber-50 text-amber-800 font-semibold border-r-2 border-amber-600 rounded-none transition-all duration-200" : ""}
                         >
                           <Icon className={isActive ? "text-amber-600" : ""} />
@@ -108,11 +119,13 @@ export default function TeacherLayout({
           </SidebarContent>
 
           <SidebarFooter>
-            <UserMenu
-              profileHref="/teacher/settings"
-              settingsHref="/teacher/settings"
-              fallbackLabel="Professeur"
-            />
+            <div data-tour="user-menu">
+              <UserMenu
+                profileHref="/teacher/settings"
+                settingsHref="/teacher/settings"
+                fallbackLabel="Professeur"
+              />
+            </div>
           </SidebarFooter>
         </Sidebar>
 
@@ -125,6 +138,7 @@ export default function TeacherLayout({
           </header>
           <main className="flex-1 p-4 lg:p-8">{children}</main>
         </SidebarInset>
+        <DashboardTour role="teacher" />
       </SidebarProvider>
     </RoleGate>
   );

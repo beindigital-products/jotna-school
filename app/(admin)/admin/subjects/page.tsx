@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { BookOpen, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 import { refusalMessage } from "@/lib/refusalMessage";
@@ -18,7 +19,7 @@ export default function SubjectsPage() {
   const [color, setColor] = useState("#6366f1");
   const [order, setOrder] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Id<"subjects"> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -39,10 +40,10 @@ export default function SubjectsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: Id<"subjects">) => {
     setError(null);
     try {
-      await removeSubject({ id: id as any });
+      await removeSubject({ id });
       setDeleteConfirm(null);
     } catch (err) {
       setError(refusalMessage(err, "Erreur lors de la suppression"));
@@ -202,18 +203,18 @@ function SubjectCard({
   onDelete,
 }: {
   subject: {
-    _id: string;
+    _id: Id<"subjects">;
     name: string;
     icon: string;
     color: string;
     order: number;
   };
-  deleteConfirm: string | null;
-  setDeleteConfirm: (id: string | null) => void;
-  onDelete: (id: string) => void;
+  deleteConfirm: Id<"subjects"> | null;
+  setDeleteConfirm: (id: Id<"subjects"> | null) => void;
+  onDelete: (id: Id<"subjects">) => void;
 }) {
   const topics = useQuery(api.topics.listBySubject, {
-    subjectId: subject._id as any,
+    subjectId: subject._id,
   });
   const topicCount = topics?.length ?? 0;
 
@@ -243,7 +244,7 @@ function SubjectCard({
 
       <div className="mt-4 flex items-center gap-2">
         <Link
-          href={`/admin/subjects/${subject._id}`}
+          href={`/admin/subjects/detail?id=${subject._id}`}
           className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <Pencil className="h-3.5 w-3.5" />

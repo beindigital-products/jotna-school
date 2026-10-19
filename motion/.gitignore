@@ -1,0 +1,9 @@
+node_modules/
+out/
+# Copie des médias de l'application, refaite par `npm run sync-assets`.
+public/app/
+
+# La musique Mixkit ne se redistribue pas seule (dépôt public) :
+# `scripts/prepare-audio.sh` la télécharge depuis Mixkit.
+audio-src/music/
+public/audio/music/

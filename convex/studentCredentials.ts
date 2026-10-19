@@ -8,6 +8,7 @@ import {
 } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import { buildLoginCode, normalizeCode } from "./importCodes";
+import { buildChildLoginCode } from "./openAccessRules";
 import { secureRandomInt } from "./secureRandom";
 
 // ---------------------------------------------------------------------------
@@ -61,6 +62,13 @@ type ResetTarget = {
   studentName: string;
   level: string;
   label: string;
+  /**
+   * `class` : préfixe de classe (`CM1A-4821`), pour les élèves d'une vraie
+   * école. `name` : préfixe du prénom (`AWA-4821`), pour un enfant créé par
+   * un parent ou rangé dans l'espace personnel d'un professeur — voir
+   * `openAccessRules.buildChildLoginCode`.
+   */
+  prefix: "class" | "name";
   /** `profiles.userId` — l'identifiant du COMPTE, pas celui du profil. */
   userId: string;
 };
@@ -115,13 +123,31 @@ export const resetTarget = internalQuery({
       }
 
       if (allowed) {
+        const school = await ctx.db.get(schoolClass.schoolId);
         return {
           studentName: student.name,
           level: schoolClass.class,
           label: schoolClass.label,
+          prefix: school?.kind === "personal" ? "name" : "class",
           userId: student.userId,
         };
       }
+    }
+
+    // ACCÈS LIBRE : le parent qui porte un lien vers l'enfant peut lui
+    // redonner un code, comme le professeur de sa classe.
+    const guardianLinks = await ctx.db
+      .query("studentGuardians")
+      .withIndex("by_studentId", (q) => q.eq("studentId", args.studentId))
+      .take(20);
+    if (guardianLinks.some((link) => link.guardianId === caller._id)) {
+      return {
+        studentName: student.name,
+        level: student.class ?? "",
+        label: "",
+        prefix: "name",
+        userId: student.userId,
+      };
     }
 
     return null;
@@ -239,11 +265,14 @@ export const resetStudentLoginCode = action({
 
     let printable: string | null = null;
     for (let attempt = 0; attempt < CODE_ATTEMPTS; attempt++) {
-      const candidate = buildLoginCode(
-        target.level,
-        target.label,
-        secureRandomInt,
-      );
+      const candidate =
+        target.prefix === "class"
+          ? buildLoginCode(target.level, target.label, secureRandomInt)
+          : buildChildLoginCode(
+              target.studentName,
+              secureRandomInt,
+              attempt < CODE_ATTEMPTS / 2 ? 4 : 6,
+            );
       const taken = await ctx.runQuery(internal.studentCredentials.codeTaken, {
         code: normalizeCode(candidate),
       });
