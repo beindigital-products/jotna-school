@@ -218,17 +218,59 @@ describe("pictureForTile : les tuiles de la production (CI)", () => {
 
   it.each([
     "orange",
-    "Fruits du baobab",
-    "Fruits du fromager",
     "Mille",
     "les chats",
     "3 pommes",
     "🍎 3 pommes",
     "🍎",
     "Fatou",
-    "L'après-midi",
   ])("%j ne reçoit rien", (text) => {
     expect(pictureForTile(text)).toBeNull();
+  });
+
+  // La vague 2 : les tuiles que la production nommait encore sans image (les parties de la
+  // plante, les plats, le corps, les feux, des lieux, des objets) et les gabarits du code.
+  it.each([
+    ["Tige", "tige"],
+    ["Racine", "racine"],
+    ["Fruit", "fruit"],
+    ["Fruits du baobab", "fruit-du-baobab"],
+    ["Fruits du fromager", "fruit-du-fromager"],
+    ["Yassa", "yassa"],
+    ["Mafé", "mafe"],
+    ["Thiéboudienne", "thieboudienne"],
+    ["L'après-midi", "apres-midi"],
+    ["auto", "voiture"],
+    ["Feuilles", "feuille"],
+    ["Fleurs", "fleur"],
+    ["Les livres", "livre"],
+    ["📚 les livres", "livre"],
+    ["La fenêtre", "fenetre"],
+    ["Le nez", "nez"],
+    ["Les yeux", "yeux"],
+    ["L'œil", "yeux"],
+    ["Les oreilles", "oreille"],
+    ["la langue", "langue"],
+    ["feu rouge", "feu-rouge"],
+    ["Le feu vert", "feu-vert"],
+    ["Un passage pour piétons", "passage-pour-pietons"],
+    ["La salle de classe", "salle-de-classe"],
+    ["la savane", "savane"],
+    ["Le marché", "marche"],
+    ["La ferme", "ferme"],
+  ])("%j (vague 2) reçoit l'image %j", (text, id) => {
+    expect(idOf(text)).toBe(id);
+  });
+
+  // Un verbe s'écrit comme un nom : seul et sans article, « ferme » ne reçoit pas la ferme, sauf
+  // au milieu d'autres lieux, où le doute n'existe plus.
+  it("« ferme », « marche » et « tente » seuls ne reçoivent rien, mais prennent leur image parmi des lieux", () => {
+    for (const verb of ["ferme", "marche", "tente"]) expect(pictureForTile(verb), verb).toBeNull();
+    expect(idsOf(resolveTilePictures(["Ferme", "la maison", "l'arbre"], { prompt: "Où va-t-on ?" }))).toEqual([
+      "ferme",
+      "maison",
+      "arbre",
+    ]);
   });
 
   // Le cylindre, le matin et le pilon avaient été refusés au studio après trois tours (pas
@@ -331,7 +373,7 @@ describe("pictureForTile : la correspondance est exacte, jamais partielle", () =
     "un chat noir",
     "pomme verte",
     "midi et demi",
-    "Fruits du baobab",
+    "Fruits du manguier",
     "le chat dort",
     "la table de 2",
     "L'eau minérale",
@@ -1034,7 +1076,7 @@ describe("QCM : une tuile à lettres sans image désigne la réponse (garde-fou 
     const bare = explainTilePictures(["le matin", "le soir", "midi"], { prompt: "Le soleil se lève. Quel moment est-ce ?", choice: true });
     expect(idsOf(bare.recognized)).toEqual(["matin", "soir", "midi"]);
     expect(bare.guard).toBeNull();
-    const missing = explainTilePictures(["le soir", "midi", "l'après-midi"], { prompt: "Quand dîne-t-on ?", choice: true });
+    const missing = explainTilePictures(["le soir", "midi", "le crépuscule"], { prompt: "Quand dîne-t-on ?", choice: true });
     expect(missing.guard).toBe("d");
     expect(idsOf(missing.pictures)).toEqual([null, null, null]);
   });

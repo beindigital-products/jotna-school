@@ -15,6 +15,30 @@ ne s'allume que dans la coque native, et le web lit Convex. Les pages élève
 passent par `hooks/use-student-data.ts`, qui choisit la source. Détails :
 `docs/hors-ligne.md`.
 
+# Les élèves de CI ne lisent pas : une chose nommée a son image
+
+RÈGLE PERMANENTE (demande du propriétaire, 19 octobre 2026), pour tout contenu de
+CI : en CI (6 ans), toute tuile (option, étiquette, case, élément à ranger ou à
+relier) qui NOMME une chose (animal, aliment, plante, partie du corps, objet,
+véhicule, lieu, moment du jour, forme) montre son image ET garde son nom écrit.
+Gabarits du code, banques écrites à la main, démo, consigne de génération : tout.
+
+- L'image se résout à l'affichage, dans un catalogue fermé : `lib/item-images.ts`,
+  fichiers `public/objets/`. Le nom d'une tuile doit être un mot du catalogue, au
+  singulier, avec son article (« le chat », « la mangue »). Détails et procédure :
+  `docs/paliers-et-exercices.md`, « Des images sur les tuiles (CI) ».
+- Une chose qui n'est pas au catalogue : fabriquer son image d'abord (studio, la
+  regarder, `scripts/build-item-images.mjs`), l'ajouter au catalogue, PUIS écrire le
+  contenu. Jamais de tuile sans image en CI, jamais de nom hors catalogue « pour
+  l'instant ».
+- Ce qui tient la règle, à ne pas affaiblir pour faire passer un contenu : la consigne
+  de génération (`tilePicturesRule`, `convex/paliers/prompts.ts`) liste le catalogue au
+  modèle ; le contrôleur (`ci_tile_without_picture`, `convex/paliers/exerciseAudit.ts`)
+  signale ce qui y échappe ; `convex/__tests__/templatePictures.test.ts` casse si un
+  gabarit du code nomme une chose sans image.
+- L'écran retire lui-même l'image quand elle donnerait la réponse (lire ou décoder,
+  nommer une forme, relier un mot à l'émoji de la même chose) : ce n'est pas un trou.
+
 <!-- convex-ai-start -->
 This project uses [Convex](https://convex.dev) as its backend.
 

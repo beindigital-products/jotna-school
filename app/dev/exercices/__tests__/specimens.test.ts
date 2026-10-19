@@ -180,12 +180,12 @@ describe("les spécimens de tuiles qui nomment une chose", () => {
       expect(idsOf(other ?? [])).toEqual([null, null, null, null]);
     });
 
-    it("drag-drop-savane : les quatre étiquettes ont leur image, les deux boîtes (savane, ferme) n'en ont pas", () => {
+    it("drag-drop-savane : les quatre étiquettes et les deux boîtes (savane, ferme) ont leur image", () => {
       const { main, other } = tilesOf(specimens["drag-drop-savane"]);
       expect([...main].sort()).toEqual(["Chèvre", "Hyène", "Lion", "Poule"]);
       expect(idsOf(main).every((id) => id !== null)).toBe(true);
       expect([...(other ?? [])].sort()).toEqual(["Ferme", "Savane"]);
-      expect(idsOf(other ?? [])).toEqual([null, null]);
+      expect(idsOf(other ?? [])).toEqual(["savane", "ferme"]);
     });
   });
 

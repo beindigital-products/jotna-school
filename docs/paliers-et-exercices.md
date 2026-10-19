@@ -373,6 +373,7 @@ les `blocking` d'abord :
 | Phrase à trous | `fill_blank_invalid` (`validateFillBlank` refuse : trous et jeux de mots en nombre différent, bonne réponse absente des mots), `fill_blank_word_unknown` (CI et CP : le trou d'une lettre ou d'une syllabe écrit un mot absent de `paliers/knownWords.ts`, « ___ngue » avec « m »), `fill_blank_word_unreadable` (« Le mot est ___ (pa, ra, ni) » : le mot n'est écrit nulle part), `fill_blank_article_gender` (« Le ___ » avec « poule », « Un ___ » avec « mangue » : l'article collé au trou n'est pas du genre du mot ; seuls les noms de `paliers/genders.ts`, dont le genre est sûr, sont jugés ; « mon, ton, son » devant une voyelle sont laissés) | `fill_blank_off_limits` (plus de 4 trous, moins de 2 ou plus de 5 mots) |
 | Indices | | `hints_few` (moins de 2), `hint_empty`, `hints_duplicated`, `hint_gives_answer` (le 1er écrit le bon choix sans parler des autres), `hint_dangling_visual` |
 | Texte | `text_placeholder` (« undefined », « null », « NaN »), `text_replacement_char` (�) | `text_double_space`, `text_markup` (`**`, `#`, backtick, balise), `text_english_in_young_class` (anglais dans un énoncé de CI ou de CP hors Anglais), `text_foreign_currency` (euros, dollars : FCFA seul) |
+| Images (CI) | | `ci_tile_without_picture` (en CI, une tuile « article + un nom » dont la chose n'a pas d'image au catalogue ; voir « Des images sur les tuiles (CI) » : jamais bloquant, et l'écran retire lui-même les images quand l'énoncé demande de lire, de décoder ou de nommer) |
 
 **La prudence est la règle.** Un faux positif écarte un bon exercice et le
 palier se refait pour rien : un défaut n'est `blocking` que si aucun exercice
@@ -515,11 +516,53 @@ mot. Le propriétaire a joué une séance de CI en production et l'a dit
 l'élève doit voir de quel animal on parle, et pour les classes de CI il faut
 toujours mettre l'image de référence.
 
-**La règle.** En CI, toute tuile qui nomme une chose (animal, aliment, objet,
-véhicule, lieu, solide, moment du jour, forme) montre une vraie image de
-référence, un dessin propre, et garde son nom écrit. L'image ne remplace pas
-le mot : l'enfant reconnaît la chose, et le mot reste là pour qu'il apprenne à
-le lire.
+**La règle.** En CI, toute tuile qui nomme une chose (animal, aliment, plante,
+partie du corps, objet, véhicule, signal de route, lieu, solide, moment du
+jour, forme) montre une vraie image de référence, un dessin propre, et garde
+son nom écrit. L'image ne remplace pas le mot : l'enfant reconnaît la chose, et
+le mot reste là pour qu'il apprenne à le lire.
+
+**Une règle permanente.** Le propriétaire a demandé (19 octobre 2026) que la
+règle ne dépende de la mémoire de personne : elle est écrite dans les
+instructions de génération et tenue à quatre endroits, du plus tôt au plus
+tard. À ne pas affaiblir pour faire passer un contenu.
+
+1. Les instructions de génération. `tilePicturesRule()`
+   (`convex/paliers/prompts.ts`) lit le catalogue (`ITEM_IMAGES`) et écrit au
+   modèle, pour la classe CI seulement, la liste fermée des mots qu'il peut
+   mettre sur une tuile, groupe par groupe, et ce qu'il doit en faire : nommer
+   une chose avec ces mots exactement, au singulier ; ne nommer aucune chose
+   qui n'y est pas ; ne pas mêler, dans un même exercice, des choses de la liste
+   et d'autres (l'écran retirerait toutes les images) ; garder les catégories
+   (« Fruits », « Naturel ») en mots, sans image ; garder l'émoji devant un mot
+   anglais ; et les exceptions où l'écran retire lui-même l'image. Elle est
+   ajoutée à `readingLearnerRules("CI")`, donc aux trois consignes système (base,
+   personnalisée, variation). La liste suit le catalogue toute seule : une image
+   ajoutée est annoncée au modèle à la génération suivante, rien n'est à
+   recopier.
+2. Le contrôleur. `ci_tile_without_picture` (`convex/paliers/exerciseAudit.ts`)
+   est un avertissement : en CI, une tuile de QCM, de mise en ordre,
+   d'association ou de glisser-déposer qui a la forme « article + un nom »
+   (« le diplodocus ») sans image au catalogue. Il ne bloque jamais (l'exercice
+   reste jouable), il se lit dans le rapport d'audit et dit quel mot manque. Il se
+   tait quand l'énoncé demande de lire, de décoder ou de nommer, parce que
+   l'écran retire alors les images lui-même, et il ne juge ni un mot seul (un
+   prénom, une syllabe), ni un groupe de plusieurs mots, ni un verbe à
+   l'infinitif (« le cacher »). Sur l'export de production du 19 octobre 2026,
+   il signalait 4 exercices avant la vague 2 (de vrais manques), et aucun après.
+3. Les tests des gabarits. `convex/__tests__/templatePictures.test.ts` casse si
+   un gabarit du code (les listes de choses de `convex/paliers/games/things.ts`,
+   les moments de la journée, les noms des formes et des solides) nomme une
+   chose sans image, et fait passer plus de mille exercices fabriqués dans le
+   contrôleur. Un gabarit qui ajoute une chose à sa liste doit d'abord lui
+   fabriquer son image.
+4. Le catalogue lui-même. `lib/__tests__/item-images.test.ts` : chaque entrée a
+   son fichier, chaque fichier son entrée, un mot ou un émoji ne va qu'à une
+   seule image. `AGENTS.md` porte la règle pour tout agent qui touche au contenu.
+
+Quand une chose n'a pas d'image : la fabriquer d'abord (« Ajouter une image »,
+plus bas), l'ajouter au catalogue, PUIS écrire le contenu qui la nomme. Jamais de
+tuile sans image en CI, jamais de nom hors catalogue « pour l'instant ».
 
 **Le principe : l'image se résout à l'affichage.** Aucune donnée ne change. Le
 texte d'une tuile reste la chaîne que le serveur a envoyée, et la réponse qui
@@ -535,10 +578,11 @@ chaîne est un nom du catalogue.
 **Où ça vit**
 
 - Le catalogue est `lib/item-images.ts` (`ITEM_IMAGES`, un module pur). Il
-  compte 98 entrées : 92 images fabriquées au studio et six formes dessinées
-  par le code (carré, rond, triangle, rectangle, cœur, étoile), soit 21
-  animaux, 19 aliments, 23 objets, 3 vêtements, 7 transports, 11 lieux et
-  éléments de la nature, 4 solides, 4 moments du jour et 6 formes. Chaque
+  compte 168 entrées : 162 images fabriquées au studio et six formes dessinées
+  par le code (carré, rond, triangle, rectangle, cœur, étoile), soit 25
+  animaux, 33 aliments et plats, 9 plantes et parties de plante, 14 parties du
+  corps, 34 objets, 6 vêtements, 7 transports, 4 signaux de route, 21 lieux et
+  éléments de la nature, 4 solides, 5 moments du jour et 6 formes. Chaque
   entrée a son fichier `public/objets/<id>.webp` (384 × 384, fond blanc). Les
   noms FRANÇAIS sont dans `words`, les noms ANGLAIS à part dans `english` (un
   mot anglais seul n'est pas fiable : voir plus bas) ; `emoji` est la liste
@@ -591,7 +635,8 @@ chaîne est un nom du catalogue.
    reçoivent rien.
 2. Un mot ambigu (`ambiguousBare`) n'a son image qu'avec un article (« une
    orange ») ou avec l'émoji de la chose en tête (« 🍊 orange »). Seul,
-   « orange » peut être la couleur, « Pierre » le prénom.
+   « orange » peut être la couleur, « Pierre » le prénom, « ferme » et « marche »
+   (le marché, sans son accent) des verbes, « tente » aussi.
 3. Repli : une tuile « 🐕 Rex » ou « 🍎 une belle pomme », dont le mot n'est pas
    au catalogue, reçoit l'image de son émoji de tête. Il faut un seul émoji en
    tête, aucun chiffre ni nombre écrit en lettres dans le reste (« 🍎 trois
@@ -616,7 +661,9 @@ Une tuile seule ne sait pas toujours ce qu'elle est ; ses voisines le lui disent
   seule parmi des aliments (« pomme, orange, banane » : « Mets ces fruits dans
   l'ordre alphabétique ») est le fruit ; parmi des couleurs elle ne reçoit rien.
   « Pierre » parmi des lieux et de la nature (« Pierre, Seau, Pirogue, Sable ») est
-  la pierre ; parmi des prénoms elle ne reçoit rien. Sans cela, la seule tuile
+  la pierre ; parmi des prénoms elle ne reçoit rien. « Ferme » ou « Marche »
+  parmi d'autres lieux (« la maison », « l'arbre ») sont la ferme et le marché ;
+  seuls au milieu de verbes, ils ne reçoivent rien. Sans cela, la seule tuile
   sans image au milieu des fruits de la liste désignait celle-là.
 
 **Les garde-fous** (`explainTilePictures`, titres dans `TILE_GUARDS`)
@@ -760,7 +807,12 @@ exercices coupés et par quel garde-fou, les mots les plus fréquents sans image
 et les règles proposées (R1 à R6, adoptées, coupent 0 de plus). Sur l'export
 du 19 octobre 2026 : 573 tuiles avec image, soit 78,3 % des tuiles qui nomment
 une chose (71,2 % avant la relecture) ; en comptant aussi les tuiles que les
-garde-fous retirent, 59,2 % (62,2 % avant).
+garde-fous retirent, 59,2 % (62,2 % avant). Avec la vague 2 : 681 tuiles avec
+image, soit 93,7 % des tuiles qui nomment une chose, et 196 exercices sur 850 ont
+au moins une image (183 avant) ; en comptant celles que les garde-fous retirent,
+69,7 %. Quatre tuiles qui nomment une chose restent sans image : « marché » (un
+verbe, à raison), « milier » (qui n'est pas du français), « Soleils » (un pluriel)
+et « Tente » (un mot ambigu, seul parmi des formes).
 
 **Ajouter une image**
 
@@ -795,9 +847,14 @@ garde-fous retirent, 59,2 % (62,2 % avant).
    quasi-blancs que laissent les générateurs (les trois canaux à 246 sur 255
    au moins), et tout fond clair relié au bord de l'image (les trois canaux à
    236 au moins) : la souris avait un fond rose pâle, à peine visible seul, qui
-   se devine comme un carré sur l'autocollant blanc. Les scènes de ciel
-   (`midi`, `soir`, `nuit`, `matin`) gardent leur ciel intact. Il signale une image
-   sans entrée. Les six formes ne passent pas par le studio : un générateur
+   se devine comme un carré sur l'autocollant blanc. Les scènes carrées (la
+   liste `SCENES` du script : le moment du jour, le ciel, la savane, la ferme, le
+   jardin, le marché, la salle de classe…) gardent leurs couleurs intactes : une
+   scène nouvelle s'ajoute à cette liste, sinon son ciel pâle est pris pour un
+   fond. Un sujet qui occupe moins de la moitié du carré (la balle, à 35 %) est
+   agrandi jusqu'à 60 %, depuis le PNG d'origine. Un fichier de plus de 40 Ko (le
+   jardin, 45 Ko) est ré-encodé à une qualité plus basse, par pas de 5. Le script
+   signale une image sans entrée. Les six formes ne passent pas par le studio : un générateur
    dessine mal un carré parfait. `node scripts/build-item-images.mjs` sans
    argument les redessine en SVG (couleur franche, contour brun épais, reflet
    doux).
@@ -808,12 +865,13 @@ garde-fous retirent, 59,2 % (62,2 % avant).
    garde-fous ont leurs tests dans `lib/__tests__/item-pictures.test.ts`, les
    écrans dans `components/exercises/__tests__/`.
 
-**Le coût.** 114 générations en tout, environ 5,47 $ à 0,048 $ pièce : 104 pour
+**Le coût.** 192 générations en tout, environ 9,22 $ à 0,048 $ pièce : 104 pour
 la première vague (essais pilotes et images refaites comprises, environ
-4,99 $), 10 pour la seconde (le cylindre, le matin et le pilon refaits, puis
-l'eau, la fleur, la feuille, le lit, le bissap, le fromager et la moto, une
-génération chacun, 0,48 $). Les six formes ne coûtent rien. Les 98 fichiers
-pèsent ensemble environ 0,8 Mo.
+4,99 $), 10 pour la reprise qui a suivi (le cylindre, le matin et le pilon
+refaits, puis l'eau, la fleur, la feuille, le lit, le bissap, le fromager et la
+moto, une génération chacun, 0,48 $) et 78 pour la vague 2 (70 images et 8
+reprises, environ 3,74 $). Les six formes ne coûtent rien. Les 168 fichiers
+pèsent ensemble environ 1,4 Mo.
 
 **Les images refusées, puis refaites.** À la première vague, trois images
 avaient été refusées après trois tours de studio : le cylindre (un corps bleu
@@ -829,6 +887,31 @@ Sept images se sont ajoutées pour les mots les plus fréquents des paliers de
 CI qui n'en avaient pas (l'eau 13 tuiles, la fleur 11, la feuille 10, le lit, le bissap
 et le fromager 7 chacun) et la moto, qui empruntait l'image du scooter.
 
+**La vague 2 (19 octobre 2026).** Soixante-dix images de plus, pour tout ce que
+les paliers de CI en production nommaient encore sans image. La liste vient de la
+lecture des 1 205 exercices de CI de l'export et des gabarits du code : 58 noms de
+choses (la tige, le fruit, la racine, le yassa, l'après-midi, la fenêtre, le mafé,
+le rat…), trois choses que des gabarits nomment sans image (le pantalon, la
+chaussette, le cartable) et neuf parties du corps du programme de CI (le nez, la
+langue, la tête, les cheveux, le bras, les jambes, les pieds, les doigts,
+l'oreille), sans lesquelles la règle ne tient pas sur un thème « mon corps » ou
+« les cinq sens ». Trois groupes sont nouveaux : `plantes`, `corps` et
+`signalisation` (les trois feux et le passage piéton). Neuf images sont des
+scènes carrées pleines (le ciel, la savane, la montagne, la ferme, le jardin, le
+marché, la salle de classe, le passage piéton, l'après-midi) : une case de
+glisser-déposer « Savane » ou « Ferme » montre désormais sa scène, et l'élève
+joue sans lire. Quatre mots ne sont pas des images mais des mots de plus pour une
+image qui existe : « auto » (la voiture), « feuilles » (la feuille), « fleurs »
+(la fleur) et « livres » (le livre, que le gabarit « les livres » nomme au
+pluriel). Restent volontairement sans image : les pluriels (« Ronds », « Fruits »)
+et les groupes à préposition, qu'une image au singulier trahirait ; « main droite »
+et « main gauche », qu'une main dessinée trancherait ; les personnes et les
+prénoms ; « milier », que le modèle a écrit pour le plant de mil et qui n'est pas
+du français (la tuile reste signalée par le contrôleur). Huit images ont été
+refaites après relecture (un doigt manquant, un short coupé par le bord, une
+peau trop claire…). `ferme`, `marché` (« marche » sans son accent) et `tente`
+sont des mots ambigus : seuls, ils pourraient être des verbes.
+
 **Élargir au CP.** Une ligne : dans `lib/item-pictures.ts`,
 `PICTURE_TILE_CLASSES = ["CI", "CP"]`. `READING_LEARNER_CLASSES`
 (`convex/curriculum.ts`) règle la voix de Pio et reste une autre liste : les
@@ -837,25 +920,27 @@ galerie et la séance factice montre les images à un spécimen de CP. Le budget
 de hauteur a été mesuré sur des spécimens de CI : le mesurer de nouveau sur des
 exercices de CP.
 
-**Ordre de déploiement.** Le web seulement : un déploiement du site, sans
-Convex (aucune fonction ne change) et sans régénérer de palier. Les élèves du
-web voient les images dès que le site est en ligne. Les images sont des
-fichiers statiques de l'export : les applications iOS et Android les reçoivent
-avec une reconstruction ou une mise à jour à distance, comme tout fichier
-statique (`docs/capacitor-ios.md`), et gardent les écrans d'avant en
-attendant.
+**Ordre de déploiement.** Pour que l'élève voie les images, le web seulement : un
+déploiement du site, sans Convex et sans régénérer de palier. Les élèves du web
+voient les images dès que le site est en ligne. Les images sont des fichiers
+statiques de l'export : les applications iOS et Android les reçoivent avec une
+reconstruction ou une mise à jour à distance, comme tout fichier statique
+(`docs/capacitor-ios.md`), et gardent les écrans d'avant en attendant. La
+consigne de génération (`tilePicturesRule`) et le contrôleur
+(`ci_tile_without_picture`) vivent dans `convex/` : ils n'agissent qu'après un
+déploiement Convex, et la consigne ne change que les exercices générés ensuite,
+ceux qui sont déjà en base gardent leurs tuiles et reçoivent leurs images à
+l'écran.
 
 **Ce qui reste à faire.** Regarder une séance de CI sur le web après le
 déploiement, puis sur un téléphone ; les mesures de hauteur sont celles de
 Chromium, pas de Safari ni du WebView Android (l'appui long sur une pastille,
 la césure des mots, les unités `cqw` du repli sont à voir sur le simulateur
-iPhone 17 avec `scripts/native-loop-ios.sh`). Les tuiles dont le mot n'est pas
-au catalogue restent sans image : les plus fréquentes de l'export sont la tige
-(7), le fruit (6), la racine (6), le yassa (6), l'après-midi (4), l'auto (4), la
-fenêtre (4), le mafé (4) et le rat (4) ; les parties de la plante (tige,
-racine, fruit) sont les plus utiles, parce qu'avec « fleur » et « feuille » déjà
-illustrées, elles laissent des mises en ordre aux images partielles. Deux
-décisions attendent le propriétaire : les 12 exercices « Quel est le nom de
+iPhone 17 avec `scripts/native-loop-ios.sh`). Sur l'export de production, plus
+aucune tuile qui nomme une chose n'est sans image, sauf quatre (voir « La
+couverture sur le contenu réel »). Les choses que le contenu à venir nommera sans
+image seront signalées par le contrôleur, et se règlent par une image au
+catalogue. Deux décisions attendent le propriétaire : les 12 exercices « Quel est le nom de
 cette forme ? » (6) et « Quel est le nom du solide… ? » (6), où l'enfant ne peut
 pas lire les noms des options et où l'image donnerait la réponse, restent sans
 image ; et les 24 exercices de position, coupés par le garde-fou b sans fuite

@@ -7,8 +7,9 @@
  * Le propriétaire a joué une séance de CI en production, et l'a dit (demande du
  * 19 octobre 2026) : pour ranger des animaux du plus grand au plus petit, l'élève
  * doit VOIR de quel animal on parle. La règle : EN CI, TOUTE TUILE QUI NOMME UNE
- * CHOSE (animal, aliment, objet, véhicule, lieu, solide, moment du jour, forme)
- * MONTRE UNE VRAIE IMAGE DE RÉFÉRENCE, un dessin propre, ET GARDE SON NOM ÉCRIT.
+ * CHOSE (animal, aliment, plante, partie du corps, objet, véhicule, signal de
+ * route, lieu, solide, moment du jour, forme) MONTRE UNE VRAIE IMAGE DE
+ * RÉFÉRENCE, un dessin propre, ET GARDE SON NOM ÉCRIT.
  *
  * ELLE SE RÉSOUT À L'AFFICHAGE, depuis ce catalogue fermé : aucune donnée ne
  * change, rien n'est régénéré, un déploiement du site suffit. Le texte d'une
@@ -83,15 +84,32 @@
  * du scooter : sans elles, une tuile sans image au milieu de tuiles illustrées
  * désigne la bonne réponse par élimination.
  *
+ * LA RÈGLE EST PERMANENTE (AGENTS.md, « Les élèves de CI ne lisent pas »), pas une
+ * liste à compléter un jour : la consigne de génération emprunte ses mots à ce
+ * catalogue (`tilePicturesRule`, `convex/paliers/prompts.ts`), le contrôleur signale
+ * une tuile qui nomme une chose absente d'ici (`ci_tile_without_picture`,
+ * `convex/paliers/exerciseAudit.ts`), et `convex/__tests__/templatePictures.test.ts`
+ * casse si un gabarit du code en nomme une. Une chose sans image n'a qu'une issue :
+ * son image, ajoutée ici AVANT le contenu qui la nomme.
+ *
+ * LA VAGUE 2 a ajouté soixante-dix images, pour les mots que les paliers de CI en
+ * production nommaient encore sans image : les parties de la plante, les plats, le
+ * corps et les cinq sens, les feux et le passage piéton, des lieux et des scènes (la
+ * savane, la ferme, le marché, la salle de classe), des objets, des vêtements et
+ * l'après-midi. Les groupes `plantes`, `corps` et `signalisation` sont nouveaux.
+ *
  * Module pur, sans dépendance : il sert à l'écran, aux garde-fous et aux tests.
  */
 
 export type ItemImageGroup =
   | "animaux"
   | "aliments"
+  | "plantes"
+  | "corps"
   | "objets"
   | "vetements"
   | "transports"
+  | "signalisation"
   | "lieux"
   | "solides"
   | "moments"
@@ -126,7 +144,8 @@ export type ItemImage = {
 /**
  * Les images fabriquées. Une entrée = un fichier `public/objets/<id>.webp`.
  * L'ordre est celui de l'inventaire : les animaux, les aliments, les objets, les
- * vêtements, les transports, les lieux, les solides, les moments du jour, les formes.
+ * vêtements, les transports, les lieux, les solides, les moments du jour, les formes ;
+ * la vague 2 vient à la suite, groupe par groupe.
  */
 export const ITEM_IMAGES: readonly ItemImage[] = [
   // Les animaux
@@ -250,7 +269,7 @@ export const ITEM_IMAGES: readonly ItemImage[] = [
     about: "a small desk lamp with a round shade, switched on, with a soft yellow glow" },
   { id: "poupee", alt: "Une poupée", group: "objets", words: ["poupée"], english: ["doll"], emoji: [],
     about: "a rag doll with brown skin, braided black hair and a colourful dress, standing" },
-  { id: "livre", alt: "Un livre", group: "objets", words: ["livre"], english: ["book"], emoji: ["📕", "📖"],
+  { id: "livre", alt: "Un livre", group: "objets", words: ["livre", "livres"], english: ["book"], emoji: ["📕", "📖", "📚"],
     about: "a closed book with a red cover, plain cover without a title" },
   { id: "savon", alt: "Un savon", group: "objets", words: ["savon"], english: ["soap"], emoji: ["🧼"],
     about: "a rectangular bar of blue soap with white bubbles on top" },
@@ -270,7 +289,7 @@ export const ITEM_IMAGES: readonly ItemImage[] = [
     about: "a straw hat with a wide brim and a red ribbon" },
 
   // Les transports
-  { id: "voiture", alt: "Une voiture", group: "transports", words: ["voiture"], english: ["car"], emoji: ["🚗"],
+  { id: "voiture", alt: "Une voiture", group: "transports", words: ["voiture", "auto"], english: ["car"], emoji: ["🚗"],
     about: "a small orange car seen from the side, four wheels, windows" },
   { id: "bus", alt: "Un bus", group: "transports", words: ["bus"], emoji: ["🚌"],
     about: "a yellow bus seen from the side, with windows and wheels" },
@@ -304,9 +323,9 @@ export const ITEM_IMAGES: readonly ItemImage[] = [
     about: "a small house with a red roof, a door and two windows" },
   { id: "fromager", alt: "Un fromager", group: "lieux", words: ["fromager"], emoji: [],
     about: "a giant silk-cotton tree (a fromager, a ceiba): a very tall grey trunk with small cone-shaped thorns, flaring at the base into huge flat buttress roots like walls, and a wide flat umbrella-shaped crown of green leaves" },
-  { id: "fleur", alt: "Une fleur", group: "lieux", words: ["fleur"], english: ["flower"], emoji: ["🌸", "🌼", "🌷", "🌹", "🌺", "🌻"],
+  { id: "fleur", alt: "Une fleur", group: "lieux", words: ["fleur", "fleurs"], english: ["flower"], emoji: ["🌸", "🌼", "🌷", "🌹", "🌺", "🌻"],
     about: "a single flower with a long green stem and two green leaves: one big pink flower with round petals and a yellow center" },
-  { id: "feuille", alt: "Une feuille", group: "lieux", words: ["feuille"], english: ["leaf"], emoji: ["🍃", "🍂", "🍁"],
+  { id: "feuille", alt: "Une feuille", group: "lieux", words: ["feuille", "feuilles"], english: ["leaf"], emoji: ["🍃", "🍂", "🍁"],
     about: "a single green leaf with a central vein, side veins and a short stem, bright fresh green, tilted a little" },
 
   // Les solides
@@ -342,6 +361,160 @@ export const ITEM_IMAGES: readonly ItemImage[] = [
     about: "un cœur rose dessiné par scripts/build-item-images.mjs" },
   { id: "etoile", alt: "Une étoile", group: "formes", words: ["étoile"], english: ["star"], emoji: [], guardEmoji: ["⭐", "🌟"],
     about: "une étoile jaune dessinée par scripts/build-item-images.mjs" },
+
+  // LA VAGUE 2 (19 octobre 2026) : les choses que les paliers de CI nommaient encore sans
+  // image. Mêmes champs, mêmes règles. Les scènes (le ciel, la savane, la ferme, le jardin,
+  // le marché, la salle de classe, la montagne, le passage piéton, l'après-midi) remplissent
+  // tout le carré : elles sont listées dans `SCENES`, scripts/build-item-images.mjs.
+  // Les plantes et leurs parties (vague 2)
+  { id: "tige", alt: "Une tige", group: "plantes", words: ["tige"], emoji: [],
+    about: "a single upright green plant stem (stalk) with two small leaves, no flower, no roots" },
+  { id: "racine", alt: "Des racines", group: "plantes", words: ["racine", "racines"], emoji: [],
+    about: "the brown branching roots of a plant hanging down with a few crumbs of soil, the roots alone" },
+  { id: "graine", alt: "Des graines", group: "plantes", words: ["graine", "graines"], emoji: [],
+    about: "three large brown plant seeds lying together, plain oval seeds" },
+  { id: "fruit", alt: "Un fruit", group: "plantes", words: ["fruit"], emoji: [],
+    about: "a round orange-red fruit hanging from a short green twig with two green leaves" },
+  { id: "plante", alt: "Une plante", group: "plantes", words: ["plante"], emoji: ["🪴"],
+    about: "a small green potted plant with several leaves in a terracotta pot" },
+  { id: "arachidier", alt: "Un arachidier", group: "plantes", words: ["arachidier"], emoji: [],
+    about: "a small green peanut plant with oval leaves, showing a few peanut pods hanging from its roots in brown soil" },
+  { id: "fruit-du-baobab", alt: "Un fruit du baobab", group: "plantes", words: ["fruit du baobab", "fruits du baobab"], emoji: [],
+    about: "a baobab fruit: one big oval velvety light-brown pod with a short stem, plain" },
+  { id: "fruit-du-fromager", alt: "Un fruit du fromager", group: "plantes", words: ["fruit du fromager", "fruits du fromager"], emoji: [],
+    about: "a kapok (fromager) tree fruit: a long green-brown pod split open showing white fluffy cotton" },
+  { id: "grains-de-mil", alt: "Des grains de mil", group: "plantes", words: ["grains de mil", "grain de mil"], emoji: [],
+    about: "a small heap of tiny round golden millet grains" },
+  // Les aliments, les plats et les boissons (vague 2)
+  { id: "yassa", alt: "Du yassa", group: "aliments", words: ["yassa", "poulet yassa"], emoji: [],
+    about: "a plate of white rice topped with pieces of grilled chicken and lots of caramelised golden onions in sauce, with a slice of lemon" },
+  { id: "mafe", alt: "Du mafé", group: "aliments", words: ["mafé", "mafe"], emoji: [],
+    about: "a plate of white rice with a thick brown peanut sauce, chunks of meat, a piece of potato and a piece of carrot" },
+  { id: "thieboudienne", alt: "Du thiéboudienne", group: "aliments", words: ["thiéboudienne", "thieb"], emoji: [],
+    about: "a big plate of orange-red rice with a whole fish, carrot pieces, cabbage wedges and cassava pieces on top" },
+  { id: "fonio", alt: "Du fonio", group: "aliments", words: ["fonio"], emoji: [],
+    about: "a small white bowl of cooked fonio, pale yellow fluffy tiny grains, with a wooden spoon" },
+  { id: "pizza", alt: "Une pizza", group: "aliments", words: ["pizza"], emoji: ["🍕"],
+    about: "a round pizza with one slice pulled away, tomato sauce, melted cheese and a few green olives" },
+  { id: "cafe", alt: "Un café", group: "aliments", words: ["café", "cafe"], emoji: ["☕"],
+    about: "a white cup of hot coffee on a saucer with a little steam" },
+  { id: "bonbon", alt: "Un bonbon", group: "aliments", words: ["bonbon"], emoji: ["🍬"],
+    about: "a wrapped candy with twisted ends, red and white wrapper" },
+  { id: "chocolat", alt: "Du chocolat", group: "aliments", words: ["chocolat"], emoji: ["🍫"],
+    about: "a bar of dark brown chocolate partly unwrapped, square pieces visible, no writing on the wrapper" },
+  { id: "olive", alt: "Une olive", group: "aliments", words: ["olive"], emoji: ["🫒"],
+    about: "two green olives on a short twig with one leaf" },
+  { id: "sel", alt: "Du sel", group: "aliments", words: ["sel"], emoji: ["🧂"],
+    about: "a small glass salt shaker with a silver cap, full of white salt" },
+  { id: "viande", alt: "De la viande", group: "aliments", words: ["viande"], emoji: ["🥩"],
+    about: "a piece of juicy grilled beef steak with dark grill marks" },
+  { id: "lait", alt: "Du lait", group: "aliments", words: ["lait"], emoji: ["🥛"],
+    about: "a tall glass full of white milk" },
+  { id: "goyave", alt: "Une goyave", group: "aliments", words: ["goyave"], english: ["guava"], emoji: [],
+    about: "a round yellow-green guava fruit with one green leaf" },
+  { id: "ngalakh", alt: "Du ngalakh", group: "aliments", words: ["ngalakh"], emoji: [],
+    about: "a bowl of ngalakh, a thick light-brown sweet millet pudding topped with crushed peanuts" },
+  // Les animaux (vague 2)
+  { id: "rat", alt: "Un rat", group: "animaux", words: ["rat"], emoji: ["🐀"],
+    about: "a grey-brown rat sitting, seen from the side, pointed snout, small round ears, long thin bare tail, bigger than a mouse" },
+  { id: "chevreau", alt: "Un chevreau", group: "animaux", words: ["chevreau"], emoji: [],
+    about: "a baby goat (kid) standing, small, white, tiny horn buds, big ears, friendly" },
+  { id: "lionceau", alt: "Un lionceau", group: "animaux", words: ["lionceau"], emoji: [],
+    about: "a lion cub sitting, fluffy golden fur, round face, small round ears, no mane, friendly" },
+  { id: "etoile-de-mer", alt: "Une étoile de mer", group: "animaux", words: ["étoile de mer"], emoji: [],
+    about: "an orange starfish with five arms and tiny bumps" },
+  // Le corps et les cinq sens (vague 2)
+  { id: "mains", alt: "Des mains", group: "corps", words: ["main", "mains"], emoji: [],
+    about: "two open hands side by side, palms facing the viewer, brown skin, friendly cartoon" },
+  { id: "bouche", alt: "Une bouche", group: "corps", words: ["bouche"], emoji: ["👄"],
+    about: "a smiling human mouth seen from the front, red lips and white teeth, cartoon, the mouth alone" },
+  { id: "dents", alt: "Des dents", group: "corps", words: ["dent", "dents"], emoji: ["🦷"],
+    about: "a smile showing two clean rows of white teeth and pink gums, cartoon, no lips" },
+  { id: "yeux", alt: "Des yeux", group: "corps", words: ["yeux", "oeil"], emoji: ["👀"],
+    about: "a pair of brown eyes with eyebrows seen from the front, cartoon, the eyes alone" },
+  { id: "ongles", alt: "Des ongles", group: "corps", words: ["ongle", "ongles"], emoji: [],
+    about: "a child's hand seen from the back with five short clean fingernails, brown skin" },
+  { id: "nez", alt: "Un nez", group: "corps", words: ["nez"], emoji: ["👃"],
+    about: "a human nose seen from the front with two nostrils, brown skin, cartoon, the nose alone" },
+  { id: "oreille", alt: "Une oreille", group: "corps", words: ["oreille", "oreilles"], emoji: ["👂"],
+    about: "one human ear seen from the side, brown skin, cartoon, the ear alone" },
+  { id: "langue", alt: "Une langue", group: "corps", words: ["langue"], emoji: ["👅"],
+    about: "a big pink tongue sticking out of a smiling mouth with red lips, cartoon" },
+  { id: "tete", alt: "Une tête", group: "corps", words: ["tête", "tete"], emoji: [],
+    about: "a smiling child's head and neck seen from the front, brown skin, short black hair, cartoon" },
+  { id: "cheveux", alt: "Des cheveux", group: "corps", words: ["cheveu", "cheveux"], emoji: [],
+    about: "a girl's head seen from behind with long black braided hair, cartoon" },
+  { id: "bras", alt: "Un bras", group: "corps", words: ["bras"], emoji: ["💪"],
+    about: "a child's brown arm bent at the elbow with the hand closed, seen from the side, the arm alone, cartoon" },
+  { id: "jambes", alt: "Des jambes", group: "corps", words: ["jambe", "jambes"], emoji: ["🦵"],
+    about: "two brown child legs wearing yellow shorts, standing, seen from the front, the legs and feet alone, cartoon" },
+  { id: "pieds", alt: "Des pieds", group: "corps", words: ["pied", "pieds"], emoji: ["🦶"],
+    about: "two bare brown feet side by side seen from the front and slightly above, cartoon" },
+  { id: "doigts", alt: "Un doigt", group: "corps", words: ["doigt", "doigts"], emoji: ["☝\uFE0F"],
+    about: "a single brown hand pointing up with the index finger, the other fingers folded, cartoon" },
+  // La route (vague 2)
+  { id: "feu-rouge", alt: "Le feu rouge", group: "signalisation", words: ["feu rouge"], emoji: [],
+    about: "a vertical traffic light, a black box with three round lights, the RED light on top lit bright, the yellow and green lights dark" },
+  { id: "feu-jaune", alt: "Le feu jaune", group: "signalisation", words: ["feu jaune", "feu orange"], emoji: [],
+    about: "a vertical traffic light, a black box with three round lights, the YELLOW light in the middle lit bright, the red and green lights dark" },
+  { id: "feu-vert", alt: "Le feu vert", group: "signalisation", words: ["feu vert"], emoji: [],
+    about: "a vertical traffic light, a black box with three round lights, the GREEN light at the bottom lit bright, the red and yellow lights dark" },
+  { id: "passage-pour-pietons", alt: "Un passage pour piétons", group: "signalisation", words: ["passage pour piétons", "passage piéton"], emoji: [],
+    about: "a zebra pedestrian crossing: wide white stripes on grey asphalt seen from slightly above, plain road, no people, no cars" },
+  // Les lieux et la nature (vague 2)
+  { id: "ciel", alt: "Le ciel", group: "lieux", words: ["ciel"], emoji: [],
+    about: "a bright blue sky with a few fluffy white clouds, nothing else" },
+  { id: "soleil", alt: "Le soleil", group: "lieux", words: ["soleil"], emoji: ["☀\uFE0F", "🌞"],
+    about: "a bright yellow sun with short rays all around, no face" },
+  { id: "savane", alt: "La savane", group: "lieux", words: ["savane"], emoji: [],
+    about: "an African savanna landscape: golden grass, one flat-topped acacia tree, distant hills, warm sky" },
+  { id: "montagne", alt: "Une montagne", group: "lieux", words: ["montagne"], emoji: ["⛰\uFE0F"],
+    about: "a big green mountain with a rocky peak under a blue sky" },
+  { id: "ferme", alt: "La ferme", group: "lieux", words: ["ferme"], emoji: [], ambiguousBare: true, bareInGroup: "lieux",
+    about: "a small farm: a red barn, a wooden fence, green grass and a couple of hens" },
+  { id: "jardin", alt: "Un jardin", group: "lieux", words: ["jardin"], emoji: [],
+    about: "a vegetable garden with neat rows of green plants and a watering can on brown soil" },
+  { id: "marche", alt: "Le marché", group: "lieux", words: ["marché"], emoji: [], ambiguousBare: true, bareInGroup: "lieux",
+    about: "a colourful African market stall with a striped canopy and baskets of fruits and vegetables" },
+  { id: "abri", alt: "Un abri", group: "lieux", words: ["abri"], emoji: [],
+    about: "a small simple wooden shed with a tin roof and an open door" },
+  { id: "tente", alt: "Une tente", group: "lieux", words: ["tente"], emoji: ["⛺"], ambiguousBare: true, bareInGroup: "lieux",
+    about: "a small orange camping tent with its door open" },
+  { id: "salle-de-classe", alt: "Une salle de classe", group: "lieux", words: ["salle de classe", "classe"], emoji: [],
+    about: "a classroom: a green blackboard with no writing, a wooden teacher's desk and two small student desks" },
+  // Les objets (vague 2)
+  { id: "fenetre", alt: "Une fenêtre", group: "objets", words: ["fenêtre", "fenetre"], emoji: [],
+    about: "a square window with a white wooden frame and four light-blue glass panes" },
+  { id: "toit", alt: "Un toit", group: "objets", words: ["toit", "toit de maison"], emoji: [],
+    about: "a red tiled triangular house roof seen from the front, the roof alone" },
+  { id: "armoire", alt: "Une armoire", group: "objets", words: ["armoire"], emoji: [],
+    about: "a tall brown wooden wardrobe with two doors and small round knobs" },
+  { id: "tiroir", alt: "Un tiroir", group: "objets", words: ["tiroir"], emoji: [],
+    about: "a small brown wooden chest of drawers with one drawer pulled open" },
+  { id: "drapeau", alt: "Un drapeau", group: "objets", words: ["drapeau", "drapeau du sénégal"], emoji: ["🇸🇳"],
+    about: "the flag of Senegal on a pole: three vertical stripes green, yellow, red, with a small green five-pointed star in the yellow stripe" },
+  { id: "radio", alt: "Une radio", group: "objets", words: ["radio"], emoji: ["📻"],
+    about: "an old-style radio with a round speaker grille, two knobs and a short antenna, light brown and cream" },
+  { id: "loupe", alt: "Une loupe", group: "objets", words: ["loupe"], emoji: ["🔍"],
+    about: "a magnifying glass with a wooden handle and a round glass" },
+  { id: "balle", alt: "Une balle", group: "objets", words: ["balle"], emoji: [],
+    about: "a small yellow-green tennis ball with a white curved line" },
+  { id: "boite-a-outils", alt: "Une boîte à outils", group: "objets", words: ["boîte à outils"], emoji: ["🧰"],
+    about: "a red metal toolbox with a carrying handle, closed" },
+  { id: "poussette", alt: "Une poussette", group: "objets", words: ["poussette"], emoji: [],
+    about: "a baby stroller with a hood and four small wheels, blue and grey, empty" },
+  { id: "cartable", alt: "Un cartable", group: "objets", words: ["cartable"], emoji: ["🎒"],
+    about: "a blue school backpack with a front pocket and two straps" },
+  // Les vêtements (vague 2)
+  { id: "pantalon", alt: "Un pantalon", group: "vetements", words: ["pantalon"], emoji: ["👖"],
+    about: "blue jeans trousers laid flat, plain, no logo" },
+  { id: "chaussette", alt: "Une chaussette", group: "vetements", words: ["chaussette"], emoji: ["🧦"],
+    about: "a single red and white striped sock laid flat" },
+  { id: "foulard", alt: "Un foulard", group: "vetements", words: ["foulard"], emoji: ["🧣"],
+    about: "a colourful red and yellow patterned scarf (foulard), loosely folded" },
+  // Les moments de la journée (vague 2)
+  { id: "apres-midi", alt: "L'après-midi", group: "moments", words: ["après-midi", "apres-midi"], emoji: [],
+    about: "a square scene: a warm golden sun halfway down a bright sky over green fields, a few small white clouds, a lone acacia tree" },
 ];
 
 /** Où les fichiers sont servis (dossier `public/objets/`). */

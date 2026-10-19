@@ -320,7 +320,7 @@ describe("le QCM au CI : la tuile qui nomme une chose montre son image", () => {
   });
 
   it("garde-fou d : le matin sans image au milieu du soir et de midi n'est plus la seule tuile nue", () => {
-    const { container } = renderCI(["l'après-midi", "Le soir", "Midi"], { prompt: "Quand dîne-t-on ?" });
+    const { container } = renderCI(["le crépuscule", "Le soir", "Midi"], { prompt: "Quand dîne-t-on ?" });
     expect(container.querySelector("img")).toBeNull();
     cleanup();
     const full = renderCI(["Le matin", "Le soir", "Midi"], { prompt: "Le soleil se lève. Quel moment est-ce ?" });

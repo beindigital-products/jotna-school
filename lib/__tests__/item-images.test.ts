@@ -36,9 +36,12 @@ const HYPHEN = String.fromCharCode(0x2010);
 const GROUPS: readonly ItemImageGroup[] = [
   "animaux",
   "aliments",
+  "plantes",
+  "corps",
   "objets",
   "vetements",
   "transports",
+  "signalisation",
   "lieux",
   "solides",
   "moments",
@@ -431,9 +434,10 @@ describe("catalogue des images de tuiles : les entrées", () => {
   it("garde l'ambiguïté de l'orange et de la pierre : le mot seul n'est pas donné", () => {
     expect(ITEM_IMAGES.find((image) => image.id === "orange")?.ambiguousBare).toBe(true);
     expect(ITEM_IMAGES.find((image) => image.id === "pierre")?.ambiguousBare).toBe(true);
-    // Un mot ambigu doit pouvoir s'écrire avec un article ou un émoji : il lui faut l'un des deux.
+    // Un mot ambigu doit pouvoir recevoir son image sans article : par l'émoji de la chose en
+    // tête de tuile, ou par son groupe (« ferme » parmi d'autres lieux). Il lui faut l'un des deux.
     for (const image of ITEM_IMAGES.filter((entry) => entry.ambiguousBare)) {
-      expect(image.emoji.length, `${image.id} : émoji`).toBeGreaterThan(0);
+      expect(image.emoji.length > 0 || image.bareInGroup !== undefined, `${image.id} : émoji ou groupe`).toBe(true);
     }
   });
 

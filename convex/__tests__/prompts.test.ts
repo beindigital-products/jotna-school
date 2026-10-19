@@ -6,7 +6,9 @@ import {
   buildPersonalizedSystemPrompt,
   buildVariationSystemPrompt,
   subjectRules,
+  tilePicturesRule,
 } from "../paliers/prompts";
+import { ITEM_IMAGES } from "../../lib/item-images";
 
 const base = {
   subject: "Histoire",
@@ -305,5 +307,47 @@ describe("les règles de qualité, doublées par le contrôleur structurel", () 
     expect(rules).not.toContain("Zone A");
     expect(rules).not.toContain('"accepted"');
     expect(rules).not.toContain('"blanks"');
+  });
+});
+
+describe("la règle des images sur les tuiles du CI est permanente", () => {
+  const ciBase = { ...base, subject: "Mathématiques", topic: "Trier et ranger", class: "CI" as const };
+
+  it("est dans la consigne système du CI, avec chaque mot du catalogue", () => {
+    const system = buildPalierBaseSystemPrompt(ciBase);
+    const rule = tilePicturesRule();
+    expect(rule).toContain("[Images sur les tuiles — CI, règle permanente]");
+    expect(system).toContain(rule);
+    for (const entry of ITEM_IMAGES) expect(rule, entry.id).toContain(entry.words[0]);
+  });
+
+  it("dit ce que le modèle doit faire : les mots du catalogue, au singulier, un seul oubli retire toutes les images", () => {
+    const rule = flat(tilePicturesRule());
+    expect(rule).toContain("NOMME une chose");
+    expect(rule).toContain("EXACTEMENT, au singulier");
+    expect(rule).toContain("ne la nomme pas dans une option ni une étiquette");
+    expect(rule).toContain("si une seule n'a pas d'image, l'application retire celles des autres");
+    expect(rule).toContain("🐈 cat");
+  });
+
+  it("est aussi dans la consigne des variations d'exercices ratés", () => {
+    const prompt = buildVariationSystemPrompt({ class: "CI", subject: "Mathématiques", topic: "Trier et ranger", failed: [] });
+    expect(prompt).toContain("[Images sur les tuiles — CI, règle permanente]");
+  });
+
+  it("ne parle ni au CP ni aux grandes classes", () => {
+    for (const cls of ["CP", "CE1", "CM2"] as const) {
+      expect(buildPalierBaseSystemPrompt({ ...ciBase, class: cls })).not.toContain("Images sur les tuiles");
+    }
+  });
+
+  it("suit le catalogue : une entrée ajoutée entre seule dans la liste, un groupe inconnu garde son nom", () => {
+    const rule = tilePicturesRule([
+      { id: "chat", alt: "Un chat", group: "animaux", words: ["chat"], emoji: [], about: "x" },
+      { id: "yo", alt: "Un yoyo", group: "jouets" as never, words: ["yoyo"], emoji: [], about: "x" },
+    ]);
+    expect(rule).toContain("- animaux : chat");
+    expect(rule).toContain("- jouets : yoyo");
+    expect(tilePicturesRule([])).toBe("");
   });
 });
