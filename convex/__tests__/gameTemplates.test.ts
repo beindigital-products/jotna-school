@@ -116,6 +116,18 @@ const TEMPLATES = [
   "grille-trou",
   "pion-deplacement",
   "grille-glisser",
+
+  // Le français du CI (`games/phrases.ts`, `games/politesse.ts`) : leur matière est « Français ».
+  "phrase-ordre",
+  "phrase-ecrite",
+  "phrase-mots-compter",
+  "phrase-mot-place",
+  "politesse-situation",
+  "politesse-besoin",
+  "politesse-relier",
+  "politesse-glisser",
+  "politesse-trou",
+  "politesse-rencontre",
 ] as const satisfies readonly GameKind[];
 
 /** Les gabarits de calcul : leur matière est « Mathématiques ». */
@@ -1066,10 +1078,12 @@ describe("les gabarits dans le programme du CI", () => {
     e.topic.games?.some((g) => (TEMPLATES as readonly string[]).includes(g.kind)),
   );
 
-  it("est branché sur vingt et une thématiques du CI", () => {
+  it("est branché sur vingt-trois thématiques du CI", () => {
     expect(entries.map((e) => e.topic.key).sort()).toEqual(
       [
         "fr-ci-alphabet",
+        "fr-ci-phrases",
+        "fr-ci-politesse",
         "fr-ci-sons-1",
         "fr-ci-sons-2",
         "fr-ci-sons-3",
@@ -1101,6 +1115,8 @@ describe("les gabarits dans le programme du CI", () => {
       "fr-ci-sons-3",
       "fr-ci-sons-4",
       "fr-ci-alphabet",
+      "fr-ci-phrases",
+      "fr-ci-politesse",
       "ma-ci-nombres-10",
       "ma-ci-calcul-10",
       "ma-ci-nombres-20",
@@ -1235,6 +1251,8 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     "fr-ci-sons-3",
     "fr-ci-sons-4",
     "fr-ci-alphabet",
+    "fr-ci-phrases",
+    "fr-ci-politesse",
     "ma-ci-nombres-10",
     "ma-ci-calcul-10",
     "ma-ci-nombres-20",
@@ -1285,7 +1303,7 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     for (const key of keys) expect(topicUsesModel(key), key).toBe(false);
     expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
     expect(topicUsesModel("fr-cp-lecture")).toBe(true);
-    expect(topicUsesModel("fr-ci-phrases")).toBe(true);
+    expect(topicUsesModel("an-ci-hello")).toBe(true);
     expect(topicUsesModel("hi-cm2-empires")).toBe(true);
     // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.
     expect(topicUsesModel(null)).toBe(true);

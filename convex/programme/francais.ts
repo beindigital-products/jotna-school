@@ -25,6 +25,14 @@ export const FRANCAIS: ProgrammeSubject = {
         name: "Bonjour, merci, s'il te plaît",
         description:
           "Communication orale, paliers 1 à 4 du CI : saluer et prendre congé (bonjour, au revoir), se présenter (je m'appelle…), demander une information (où est… ? combien… ?), dire un besoin ou un sentiment (j'ai soif, je suis content), demander la permission ou un service (est-ce que je peux… ? s'il te plaît, merci). Exercices : choisir la bonne phrase pour une situation de la vie de l'enfant (à l'école, au marché, à la maison), relier une situation et la formule qui convient. L'enfant ne lit pas encore : options très courtes, illustrées d'un émoji.",
+        games: [
+          { kind: "politesse-situation", count: 3 },
+          { kind: "politesse-besoin", count: 1 },
+          { kind: "politesse-relier", count: 2 },
+          { kind: "politesse-glisser", count: 2 },
+          { kind: "politesse-trou", count: 1 },
+          { kind: "politesse-rencontre", count: 1 },
+        ],
       },
       {
         key: "fr-ci-sons-1",
@@ -112,6 +120,13 @@ export const FRANCAIS: ProgrammeSubject = {
         name: "Mes premières phrases",
         description:
           "Production d'écrits du CI : énoncés d'une à deux phrases, étiquettes-mots, dictée à l'adulte. Remettre des étiquettes-mots dans l'ordre (« Lola a une moto. »), choisir le mot qui complète une phrase illustrée, la majuscule au début et le point à la fin. Phrases faites de mots déjà lus.",
+        games: [
+          { kind: "phrase-ordre", count: 3 },
+          { kind: "phrase-trou", count: 2, vocabulary: "mots-4" },
+          { kind: "phrase-ecrite", count: 3 },
+          { kind: "phrase-mots-compter", count: 1 },
+          { kind: "phrase-mot-place", count: 1 },
+        ],
       },
     ],
     CP: [
