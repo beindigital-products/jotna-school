@@ -1066,6 +1066,16 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `grille-trou` | phrase à trous | le quadrillage, « Complète la phrase. » : `En bas à droite, il y a ___.` : `🐄 la vache` |
 | `pion-deplacement` | QCM | « Le pion est sur la mangue. Il descend d'une case. Où arrive-t-il ? » : le pion ne sort jamais du quadrillage ; deux cases dès le dernier palier |
 | `grille-glisser` | glisser-déposer | « Glisse chaque dessin en haut ou en bas. » (ou à gauche ou à droite) : deux dessins dans chaque case |
+| `phrase-ordre` | ordre | « Remets les mots dans l'ordre pour faire une phrase. » : `Lola > a > une > robe.` (le mot à majuscule ouvre, le mot qui porte le point ferme, un seul ordre fait une phrase) |
+| `phrase-ecrite` | QCM | « Quelle phrase est bien écrite ? » : `Lola a une robe.` parmi `lola a une robe.` et `Lola a une robe` (au premier palier on ne regarde qu'une chose : « commence par une majuscule » ou « finit par un point ») |
+| `phrase-mots-compter` | QCM | « Combien de mots dans la phrase « Lola a une robe. » ? » : 4 |
+| `phrase-mot-place` | QCM | « Quel est le premier mot de la phrase « … » ? » ou « le dernier » : `Lola`, parmi trois mots de la phrase |
+| `politesse-situation` | QCM | « Tu arrives à l'école le matin. Que dis-tu ? » : `😊 Bonjour`, parmi trois formules |
+| `politesse-besoin` | QCM | « Il fait très chaud et tu veux boire. Que dis-tu ? » : `🥛 J'ai soif`, parmi trois sentiments |
+| `politesse-relier` | association | « Relie chaque formule à la situation qui lui va. » : `🙏 Merci ~ 🎁 On me donne un cadeau…` |
+| `politesse-glisser` | glisser-déposer | « Glisse chaque situation sous ce que l'on dit. » : une ou deux situations sous chaque formule |
+| `politesse-trou` | phrase à trous | « Complète la phrase. » : `On te donne un cadeau. Tu dis ___ !` : `🙏 Merci` |
+| `politesse-rencontre` | ordre | « Mets les paroles dans l'ordre de la rencontre. » : `😊 Bonjour`, `🙋 Je m'appelle Awa`, `👋 Au revoir` |
 | `intrus` | QCM | « Lequel n'est pas comme les autres ? » : trois fruits et un animal |
 | `appartient` | QCM | « Est-ce un fruit ? 🐔 » : Non |
 | `couleur-objet` | QCM | « Qu'est-ce qui est jaune ? » : `🍌 la banane`, parmi trois couleurs |
@@ -1208,6 +1218,26 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     aucun sélecteur de variation, un choix juste parmi des choix tous différents, aucun indice qui écrit la réponse,
     une image pour chaque tuile qui nomme une chose) et fabrique 40 paliers de chacune des huit thématiques.
     `templatesWithoutModel.test.ts` joue leur génération complète contre un faux modèle.
+- **Les premières phrases et la politesse** (`paliers/games/phrases.ts`, `paliers/games/politesse.ts`) : dix
+  gabarits pour le français du CI (`fr-ci-phrases`, `fr-ci-politesse`). Sur l'échantillon lu le 19 octobre 2026,
+  16 exercices sur 30 étaient faux en « Mes premières phrases » (onze quiz sur les aliments sans scène, des trous où
+  plusieurs mots vont, une case nommée comme la réponse, « Ousmane lis un livre »), et 7 sur 29 en politesse
+  (« s'il te plaît » écrit deux fois dans la même phrase à trous, « S'il te plaît » rangé dans « Remerciements »).
+  - **Les phrases** viennent d'une table fermée, relue à la main (`SHORT_SENTENCES`, `MEDIUM_SENTENCES`,
+    `LONG_SENTENCES`) : des mots du vocabulaire du CI (`LEXICON`) et quelques mots-outils, sans apostrophe, sans mot
+    répété, une seule majuscule. Surtout, UNE SEULE MANIÈRE de les ranger : le mot à majuscule ouvre, le mot qui porte
+    le point ferme, un déterminant précède son nom. Une phrase où l'on peut échanger deux noms de même genre (« Le
+    bébé dort dans un lit ») est interdite. Les phrases à trous de la thématique sont celles de `phrase-trou`
+    (`SENTENCES`, vocabulaire `mots-4`).
+  - **La politesse** repose sur une table fermée de situations, chacune avec LA formule qui lui va (bonjour, au revoir,
+    merci, s'il te plaît, pardon, est-ce que je peux ?) et, quand une deuxième irait aussi, dans `also` : « Tu veux de
+    l'eau » va à « s'il te plaît » et à « est-ce que je peux ? », qui ne sont jamais proposés ensemble. La situation ne dit
+    jamais la formule. Chaque formule, situation et sentiment a son propre émoji ancien : le modèle mettait 🙏 sur « Merci »
+    et sur « S'il te plaît ». Trois formules au premier palier, « s'il te plaît » au deuxième, les six ensuite.
+  - `convex/__tests__/frenchCiTemplates.test.ts` RECALCULE chaque réponse avec ses propres tables : une petite
+    grammaire (genres des noms, accord des déterminants) qui prouve qu'une phrase n'a qu'un seul ordre, la formule de
+    chaque situation, ce que dit un enfant qui a soif. Il vérifie aussi les règles communes et fabrique 40 paliers de
+    chacune des deux thématiques. `templatesWithoutModel.test.ts` joue leur génération contre un faux modèle.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
@@ -1223,8 +1253,8 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
   `ma-ci-nombres-20`, `ma-ci-trier`, `ma-ci-espace`, `ma-ci-formes`, `ma-ci-mesures` et
   `ma-ci-problemes`, puis `hi-ci-journee`, `hi-ci-ordre`, `hi-ci-hier-demain`, `hi-ci-semaine`, `ge-ci-position`,
-  `ge-ci-lateralite`, `ge-ci-reperes` et `ge-ci-quadrillage` (`convex/programme`), dix exercices par palier, voir plus
-  bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
+  `ge-ci-lateralite`, `ge-ci-reperes` et `ge-ci-quadrillage`, puis `fr-ci-phrases` et `fr-ci-politesse` (`convex/programme`), dix
+  exercices par palier, voir plus bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
   modèle, le seuil de validation exige tous les exercices écrits : le modèle en
   écrit deux de plus et on garde les premiers valides, `scoring.exercisesToRequest`.)
   Un palier déjà généré garde ses exercices : il faut l'invalider
@@ -1277,14 +1307,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces vingt et une thématiques contre un faux modèle qui lève une
+  chaque palier de ces vingt-trois thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
   Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
-  haut) : en CI, les premières phrases, les salutations, l'éveil, l'instruction civique,
-  l'anglais et l'éducation artistique ; toutes les autres classes. L'histoire et la géographie du CI n'appellent plus
-  le modèle.
+  haut) : en CI, l'éveil, l'instruction civique, l'anglais et l'éducation artistique ; toutes les autres classes. Le
+  français (phrases, politesse), l'histoire et la géographie du CI n'appellent plus le modèle.
   Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
   dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
   rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à
@@ -1294,6 +1323,6 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   dans une thématique tout en jeux que si l'un de ses gabarits fabrique ce type
   (l'histoire du CI montre sa phrase à trous dans « Les jours de la semaine », que `jour-manquant` fabrique, et la
   géographie son relier dans « Ma droite et ma gauche », que `doigt-relier` fabrique)
-  (le glisser-déposer du français du CI est rattaché à « Bonjour, merci, s'il te plaît », où le
-  modèle l'écrit ; celui des mathématiques à « Les formes et les solides », que `classer-formes`
+  (le glisser-déposer du français du CI est rattaché à « Bonjour, merci, s'il te plaît », que `politesse-glisser`
+  fabrique ; celui des mathématiques à « Les formes et les solides », que `classer-formes`
   fabrique).
