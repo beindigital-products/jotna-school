@@ -979,10 +979,13 @@ thématiques mêlent des jeux fabriqués par le code à leurs paliers : voir
 
 ## Réponse courte : types par classe et orthographe
 
-- **Des gabarits de réponse courte, dès le CP.** `mois-ecart` et `pas-difference` fabriquent une réponse courte : un nombre, jamais
-  un mot. Leur seule réponse admise tient en chiffres collés (le pavé numérique s'ouvre), la consigne finit par « Écris le nombre. »
-  et le contrôleur les juge comme celles du modèle. `short-answer` figure donc parmi les types de gabarits
-  (`GameExerciseType`, `TEMPLATE_TYPES`).
+- **Des gabarits de réponse courte, dès le CP.** `short-answer` figure parmi les types de gabarits (`GameExerciseType`,
+  `TEMPLATE_TYPES`), et le contrôleur les juge comme ceux du modèle. Deux sortes de réponse :
+  - **un nombre** (`mois-ecart`, `pas-difference`) : une seule réponse admise, en chiffres collés (le pavé numérique s'ouvre), et la
+    consigne finit par « Écris le nombre. » ;
+  - **un mot de la liste fermée du gabarit** (`nombre-ecrire`, `lire-assembler`) : une seule réponse admise, en lettres, donc le clavier
+    des lettres s'ouvre. Le mot n'est jamais écrit dans l'énoncé : `nombre-ecrire` donne le nombre en chiffres, `lire-assembler` donne
+    les syllabes mélangées et un dessin.
 - **CI : aucune réponse tapée.** `short-answer` sort des types autorisés et du
   format JSON demandé au modèle (`prompts.typesFor`), en maths comme ailleurs :
   un calcul à trou se pose en QCM. `short_answer_in_ci` est `blocking` : le
@@ -1163,6 +1166,58 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `quartier-glisser` | glisser-déposer | « …Glisse chaque lieu avant ou après la boutique. » |
 | `quartier-trou` | phrase à trous | « Dans la rue, il y a le marché, puis le puits, puis le dispensaire. » puis `Le puits est entre le marché et le ___.` : `dispensaire` |
 | `lieu-fonction` | association | « Relie chaque lieu à ce qu'on y fait. » : `école~apprendre ; marché~acheter…` |
+| `famille-mot` | QCM | « Quel mot va avec ce dessin ? » puis 👦 : `brother`, parmi trois mots de la liste |
+| `famille-lien` | QCM | « Quel mot anglais dit « la maman de ta maman » ? » : `grandmother` |
+| `famille-relier` | association | « Relie chaque dessin à son mot. » : `👩~mother ; 👶~baby…` |
+| `famille-glisser` | glisser-déposer | « Glisse chaque mot dans la bonne case. » : `mother` dans Femme ou fille, `father` dans Homme ou garçon (le bébé et l'ami n'y sont pas) |
+| `famille-trou` | phrase à trous | `👴 This is my ___.` : `grandfather` |
+| `famille-phrase` | ordre | « Remets les mots dans l'ordre pour écrire une phrase. » : `This > is > my > mother.` |
+| `corps-mot` | QCM | « Quel mot va avec ce dessin ? » puis 🦶 : `foot` (sept dessins sûrs) |
+| `corps-consigne` | QCM | « Comment dit-on « touche ton nez » en anglais ? » : `Touch your nose.` parmi trois phrases du même verbe |
+| `corps-relier` | association | un dessin et son mot au premier palier, ensuite un mot français et son mot anglais (`oreille~ear`) |
+| `corps-glisser` | glisser-déposer | `eye` dans Visage, `arm` dans Bras et jambes |
+| `corps-trou` | phrase à trous | « Complète la phrase pour toucher ton bras. » puis `Touch your ___.` : `arm` |
+| `corps-phrase` | ordre | `Touch > your > ear.` |
+| `classe-mot` | QCM | « Quel mot va avec ce dessin ? » puis 📖 : `book` (quatre dessins sûrs : livre, cartable, règle, porte) |
+| `classe-francais` | QCM | « Comment dit-on « la chaise » en anglais ? » : `chair` |
+| `classe-relier` | association | un dessin et son mot, ou un mot français et son mot anglais (`livre~book`) |
+| `classe-glisser` | glisser-déposer | `pen` dans Petit objet, `desk` dans Grand objet (le cartable n'y est pas) |
+| `classe-trou` | phrase à trous | `🎒 It is a ___.` : `bag` (tous les choix commencent par une consonne, donc « a ») |
+| `classe-question` | phrase à trous | `What is it? 🚪 It is a ___.` : `door` |
+| `classe-phrase` | ordre | `It > is > a > book.` |
+| `nombre-mot` | QCM | « Comment écrit-on le nombre 14 en anglais ? » : `fourteen` |
+| `nombre-chiffre` | phrase à trous | `sixteen = ___` : `16` parmi trois nombres en chiffres |
+| `nombre-relier` | association | « Relie chaque nombre à son mot anglais. » : `14~fourteen…` |
+| `nombre-ordre` | ordre | « Remets ces nombres dans l'ordre, du plus petit au plus grand. » : `thirteen > fifteen > nineteen` |
+| `nombre-suivant` | QCM | « Quel est le mot anglais du nombre qui vient juste après 18 ? » : `nineteen` |
+| `nombre-age` | phrase à trous | « Tu as 7 ans. Complète la réponse. » puis `How old are you? I am ___.` : `seven` |
+| `nombre-ecrire` | réponse courte | « Écris en lettres, en anglais, le nombre 16. » : `sixteen` |
+| `nombre-glisser` | glisser-déposer | cases « Moins de 14 » et « Plus de 14 » : `twelve` à gauche, `sixteen` à droite (le repère n'est jamais une étiquette) |
+| `nombre-compter` | QCM | deux rangées de dessins, dix puis cinq : `fifteen` |
+| `aliment-mot` | QCM | « Quel mot va avec ce dessin ? » puis 🥛 : `milk` (huit dessins sûrs) |
+| `aliment-francais` | QCM | « Comment dit-on « le poulet » en anglais ? » : `chicken` |
+| `aliment-relier` | association | un dessin et son mot, ou un mot français et son mot anglais (`riz~rice`) |
+| `aliment-glisser` | glisser-déposer | `bread` dans Je mange, `tea` dans Je bois |
+| `aliment-trou` | phrase à trous | `🍚 I like ___.` : `rice` (jamais `egg` : « I like egg. » est faux) |
+| `aliment-trou-francais` | phrase à trous | « Complète la phrase pour dire que tu aimes le jus. » puis `I like ___.` : `juice` |
+| `aliment-phrase` | ordre | `I > like > rice.` |
+| `lire-dessin` | QCM | « Quel mot va avec ce dessin ? » puis 🐇 : `lapin`, parmi trois mots à lire (aux paliers suivants, trois mots qui commencent pareil) |
+| `lire-relier` | association | « Relie chaque mot à son dessin. » : `tomate~🍅 ; banane~🍌…` |
+| `lire-syllabes` | ordre | « Remets les syllabes dans l'ordre pour écrire le mot de ce dessin. » puis 🍅 : `to > ma > te` (trois syllabes au moins) |
+| `lire-assembler` | réponse courte | « Assemble les syllabes to - te - ma pour écrire le mot de ce dessin. » puis 🍅 : `tomate` |
+| `lire-son` | QCM | « Quel mot a le son ou ? » : `mouton`, parmi un mot qui a le son u et un mot qui n'a aucun des deux |
+| `lire-son-glisser` | glisser-déposer | cases « Le son ou » et « Le son u », ou « Le son on » et « Le son o », ou « Le son é » et « Le son è » |
+| `lire-lettre` | QCM | « Quel mot commence par la lettre b ? » : `ballon`, parmi un mot en d et un mot en p |
+| `lire-trou` | phrase à trous | `🍬 Voici un ___.` : `bonbon` (les trois choix ont le même genre) |
+| `lire-phrase` | QCM | « Awa mange une mangue. Modou boit du lait. » puis « Qui boit du lait ? » : `Modou` (ou « Que fait Awa ? ») |
+| `ecrire-ordre` | ordre | `Awa > lit > un > livre.` ou `Le > chat > dort.` : un seul rangement est une phrase |
+| `ecrire-bien-ecrite` | QCM | « Quelle phrase est bien écrite ? » : `Awa lit un livre.`, contre la même phrase sans majuscule et sans point |
+| `ecrire-un-des` | phrase à trous | `Cheikh a ___ chat.` : `un` ; `Voici ___ vaches.` : `les` |
+| `ecrire-groupe` | phrase à trous | trois pommes dessinées, `Il y a ___ pommes.` : `des` (un seul dessin : `une`) |
+| `ecrire-pluriel` | association | « Relie chaque nom au singulier à son pluriel. » : `pomme~pommes…` |
+| `ecrire-nombre` | glisser-déposer | cases Singulier et Pluriel : `chat` et `chats` |
+| `ecrire-texte` | ordre | `Fatou va au marché. > Elle achète du riz. > Elle rentre à la maison.` |
+| `ecrire-mot` | phrase à trous | `On mange une ___.` : `mangue`, parmi deux mots du même genre qui ne se mangent pas |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -1319,6 +1374,58 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   - `convex/__tests__/cpHistoryGeographyTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé, avec ses propres tables (les
     mois, les durées, les fréquences de la fiche, les cours, les lieux, les dessins), et fabrique 40 paliers de chacune des huit
     thématiques, au CP, contre le contrôleur.
+- **L'anglais du CP** (`paliers/games/anglais.ts`) : trente-cinq gabarits pour `an-cp-family`, `an-cp-body`, `an-cp-classroom`,
+  `an-cp-numbers-20` et `an-cp-food`. Sur l'échantillon de CP lu le 19 octobre 2026, le modèle écrivait « Which part is used to walk? »
+  avec le pied pour réponse mais « arm » et « hand » parmi les choix, des cases vides en « Fruits, Viandes, Boissons », des consignes
+  en anglais qu'un enfant de six ans ne lit pas. Ici le vocabulaire est la liste fermée de chaque fiche.
+  - **Un mot, son sens, éventuellement son dessin.** Chaque mot a son sens en français et, quand un émoji sûr le montre, son dessin.
+    Les mots sans dessin sûr (l'œil, le crayon, le stylo, le doigt, la chaise, la fenêtre, le jus) passent par leur sens en français :
+    un émoji dont l'écriture demande U+FE0F, ou né après Unicode 11, se montre en case vide sur un téléphone ancien.
+  - **La consigne est en français.** L'anglais n'est que dans les choix, les cases, les tuiles, la phrase à trous et la phrase à
+    remettre dans l'ordre. Le test relit chaque consigne pour y chercher un mot anglais. Aucune écoute : l'application ne lit pas l'anglais.
+  - **La phrase de la fiche, et pas une de plus.** « This is my mother. », « Touch your nose. », « It is a book. », « I like rice. »,
+    « How old are you? I am seven. » Pas de forme négative, pas de question à construire, pas de pluriel. « I like egg. » est exclu
+    parce que « egg » se compte ; « Point to your head. » n'est pas un ordre à remettre en place, parce que l'indice « finit par un point »
+    écrirait un mot de la réponse (il reste en QCM et en phrase à trous).
+  - **Une phrase à remettre dans l'ordre n'a qu'un rangement**, parce que le premier mot a sa majuscule et le dernier son point.
+  - **Les nombres de 11 à 20** restent sur 11 à 15, puis 11 à 18, puis 11 à 20 ; au dernier palier, un nombre de 1 à 10 est revu dans
+    les ordres, les paires et les mauvais choix. Les mauvais choix sont des nombres voisins. Les dessins à compter se rangent sur deux
+    rangées de dix au plus.
+  - **Une étiquette est un mot seul, sans article** (`nez`, `chaise`). Les tests jouent aussi ces gabarits au CI.
+- **La lecture du CP** (`paliers/games/lecture.ts`) : neuf gabarits pour `fr-cp-lecture`. Sur l'échantillon de CP, le modèle écrivait
+  « Quel mot a le son 'ou' ? » avec « bateau » pour réponse, « Écris le mot 'mouton' » (le mot est dans l'énoncé), « Associe chaque
+  aliment à sa couleur » avec deux fois « rouge ». Ici chaque mot vient d'un tableau fermé (le mot, ses syllabes, son dessin).
+  - **Les mots** sont les mots du quotidien de la fiche (mouton, bateau, tomate, savon, poulet, marmite, malade) et d'autres mots de
+    deux ou trois syllabes. « poule » et « poulet » ne sont jamais ensemble : leurs dessins se ressemblent.
+  - **Les syllabes** : « Remets les syllabes dans l'ordre » demande trois syllabes au moins (avec deux tuiles, l'enfant a une chance
+    sur deux, et le contrôleur le signale) ; « Assemble les syllabes » fait écrire le mot avec les syllabes mélangées dans la phrase.
+    Un mot dont une syllabe se répète (bonbon, bébé) n'entre dans aucun des deux.
+  - **Les sons proches** (ou et u, on et o, é et è) se jugent sur l'orthographe : `sounds.ts` pour é, è, ou et u, deux fonctions du
+    gabarit pour on et o. Un mot que l'oreille entend sans que l'orthographe l'écrive n'est jamais offert : « poulet » et « pain » se
+    terminent par le son è sans l'écrire, « bateau » fait entendre le son o sans la lettre o.
+  - **Les lettres qu'on confond** (b, d, p) : le bon mot commence par la lettre, un mauvais choix par chacune des deux autres.
+  - **Lire deux phrases** : chaque action n'est faite que par une personne du texte, donc « Qui boit du lait ? » et « Que fait Awa ? »
+    n'ont qu'une réponse.
+- **L'écriture du CP** (`paliers/games/ecriture.ts`) : huit gabarits pour `fr-cp-ecrire`. Sur l'échantillon de CP, le modèle écrivait
+  « Associe les mots à leur catégorie » avec « Kaolack » parmi des fruits, « Écris une phrase avec Mariama et le lait caillé »
+  (plusieurs phrases justes, une seule acceptée), des phrases à remettre dans l'ordre sans rien qui dise laquelle vient d'abord.
+  - **La phrase simple** (un sujet, un verbe, un article, un nom) vient d'un tableau : chaque verbe n'accepte que ses objets
+    (on mange une mangue, on porte une robe), et l'article suit le genre de `genders.ts`. Le test cherche tous les rangements des
+    tuiles et exige qu'un seul soit une phrase.
+  - **Un, une, des, le, la, les** : l'article se déduit du genre et du nombre du nom. Les articles définis ne se posent jamais devant
+    un nom qui commence par une voyelle (« l'orange » ne se complète pas). Les noms de la liste font tous leur pluriel avec un « s ».
+  - **Le pluriel avec le dessin** : `ecrire-groupe` montre un à cinq dessins, et le nom de la phrase suit ce nombre.
+  - **Une petite histoire en trois phrases** (`ecrire-texte`) : on arrive, on fait ce qu'on est venu faire, on rentre. La phrase qui
+    commence par « Il » ou « Elle » reprend un prénom déjà dit ; elle ne peut pas ouvrir l'histoire. Deux phrases seulement donneraient
+    une chance sur deux, et le contrôleur le signale.
+  - **Le bon mot dans une phrase** (`ecrire-mot`) : quatre cadres (on mange, on met, un animal crie, on s'assoit). Un seul des trois mots
+    va avec la phrase, et les trois ont le même genre : l'article ne donne pas la réponse.
+  - **Les tuiles ne sont jamais « article + un nom »** : au CI, elles demanderaient une image que le catalogue n'a pas, surtout au
+    pluriel. Les trous (`fill-blank`) n'ont pas cette règle, les QCM, les ordres, les paires et les glissés l'ont.
+  - `convex/__tests__/cpEnglishReadingWritingTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les
+    mots de la fiche et leur dessin, les syllabes, les sons que chaque mot fait entendre, le genre de chaque nom), abîme volontairement
+    la bonne réponse de chaque gabarit pour vérifier que le test le voit, et fabrique 40 paliers de chacune des sept thématiques contre
+    le contrôleur.
 - **Les premières phrases et la politesse** (`paliers/games/phrases.ts`, `paliers/games/politesse.ts`) : dix
   gabarits pour le français du CI (`fr-ci-phrases`, `fr-ci-politesse`). Sur l'échantillon lu le 19 octobre 2026,
   16 exercices sur 30 étaient faux en « Mes premières phrases » (onze quiz sur les aliments sans scène, des trous où

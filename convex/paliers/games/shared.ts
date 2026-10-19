@@ -26,7 +26,7 @@ export type GameExerciseType =
   | "match"
   | "drag-drop"
   | "fill-blank"
-  // Une réponse à écrire : un NOMBRE, jamais un mot (l'orthographe tolérante est l'affaire du modèle). Dès le CP.
+  // Une réponse à écrire, dès le CP : un nombre en chiffres, ou un mot de la liste fermée du gabarit (une seule réponse admise).
   | "short-answer";
 
 /** Un exercice fabriqué, prêt à rejoindre les exercices du palier. */

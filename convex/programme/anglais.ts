@@ -85,6 +85,14 @@ export const ANGLAIS: ProgrammeSubject = {
         palierCount: 2,
         description:
           "Anglais, niveau pré-A1 : la famille. Vocabulaire fermé : mother, father, brother, sister, grandmother, grandfather, baby, friend. Structure : « This is my mother. ». L'enfant associe le mot au personnage (👩 mother, 👨 father, 👦 brother, 👧 sister, 👵 grandmother, 👴 grandfather, 👶 baby) et complète « This is my ___. » ; pas de « have got », pas de pluriel.",
+        games: [
+          { kind: "famille-mot", count: 2 },
+          { kind: "famille-lien", count: 2 },
+          { kind: "famille-relier", count: 1 },
+          { kind: "famille-glisser", count: 1 },
+          { kind: "famille-trou", count: 2 },
+          { kind: "famille-phrase", count: 2 },
+        ],
       },
       {
         key: "an-cp-body",
@@ -92,6 +100,14 @@ export const ANGLAIS: ProgrammeSubject = {
         palierCount: 2,
         description:
           "Anglais, niveau pré-A1 : le corps. Vocabulaire fermé : head, hair, eye, ear, nose, mouth, hand, finger, arm, leg, foot. L'enfant associe le mot à la partie du corps (👁️ eye, 👂 ear, 👃 nose, 👄 mouth, ✋ hand) et comprend « Touch your nose. », « Point to your head. » ; au singulier seulement (pas de feet, eyes, hands).",
+        games: [
+          { kind: "corps-mot", count: 2 },
+          { kind: "corps-consigne", count: 2 },
+          { kind: "corps-relier", count: 1 },
+          { kind: "corps-glisser", count: 1 },
+          { kind: "corps-trou", count: 2 },
+          { kind: "corps-phrase", count: 2 },
+        ],
       },
       {
         key: "an-cp-classroom",
@@ -99,12 +115,32 @@ export const ANGLAIS: ProgrammeSubject = {
         palierCount: 2,
         description:
           "Anglais, niveau pré-A1 : les objets de la classe. Vocabulaire fermé : book, pen, pencil, bag, ruler, desk, chair, board, door, window. Structures : « It is a book. », « What is it? ». L'enfant associe le mot à l'objet (📖 book, ✏️ pencil, 🎒 bag, 🪑 chair, 🚪 door) et complète « It is a ___. » ; tous ces mots commencent par une consonne, donc « a » seulement.",
+        games: [
+          { kind: "classe-mot", count: 1 },
+          { kind: "classe-francais", count: 2 },
+          { kind: "classe-relier", count: 1 },
+          { kind: "classe-glisser", count: 1 },
+          { kind: "classe-trou", count: 1 },
+          { kind: "classe-question", count: 2 },
+          { kind: "classe-phrase", count: 2 },
+        ],
       },
       {
         key: "an-cp-numbers-20",
         name: "Les nombres de 11 à 20 en anglais",
         description:
           "Anglais, niveau pré-A1 : les nombres de 0 à 20. Vocabulaire fermé : zero à ten (revus), puis eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen, eighteen, nineteen, twenty. Structures : « How old are you? », « I am seven. ». L'enfant associe le mot au chiffre, compte des objets, remet des nombres dans l'ordre ; jamais de nombre au-delà de 20.",
+        games: [
+          { kind: "nombre-mot", count: 1 },
+          { kind: "nombre-chiffre", count: 1 },
+          { kind: "nombre-relier", count: 1 },
+          { kind: "nombre-ordre", count: 2 },
+          { kind: "nombre-suivant", count: 1 },
+          { kind: "nombre-age", count: 1 },
+          { kind: "nombre-ecrire", count: 1 },
+          { kind: "nombre-glisser", count: 1 },
+          { kind: "nombre-compter", count: 1 },
+        ],
       },
       {
         key: "an-cp-food",
@@ -112,6 +148,15 @@ export const ANGLAIS: ProgrammeSubject = {
         palierCount: 2,
         description:
           "Anglais, niveau pré-A1 : les aliments. Vocabulaire fermé : rice, fish, bread, milk, water, egg, chicken, tea, juice. Structure : « I like rice. » (phrase positive seulement). L'enfant associe le mot à l'émoji (🍚 rice, 🐟 fish, 🍞 bread, 🥛 milk, 💧 water, 🥚 egg, 🍗 chicken) et complète « I like ___. » ; pas de forme négative, pas de question.",
+        games: [
+          { kind: "aliment-mot", count: 2 },
+          { kind: "aliment-francais", count: 1 },
+          { kind: "aliment-relier", count: 1 },
+          { kind: "aliment-glisser", count: 1 },
+          { kind: "aliment-trou", count: 1 },
+          { kind: "aliment-trou-francais", count: 2 },
+          { kind: "aliment-phrase", count: 2 },
+        ],
       },
     ],
     CE1: [

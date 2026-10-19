@@ -50,6 +50,14 @@ const WITHOUT_MODEL = [
   "ge-cp-distances",
   "ge-cp-plan",
   "ge-cp-quartier",
+  // L'anglais du CP (la famille, le corps, la classe, les nombres de 11 à 20, les aliments), la lecture et l'écriture.
+  "an-cp-family",
+  "an-cp-body",
+  "an-cp-classroom",
+  "an-cp-numbers-20",
+  "an-cp-food",
+  "fr-cp-lecture",
+  "fr-cp-ecrire",
 ] as const;
 const MODEL_CALLED = "LE MODÈLE A ÉTÉ APPELÉ";
 
