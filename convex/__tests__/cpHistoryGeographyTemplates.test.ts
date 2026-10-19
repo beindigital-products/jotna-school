@@ -1358,11 +1358,11 @@ describe("les huit thématiques d'histoire et de géographie du CP", () => {
     }
   });
 
-  it("sont les seules thématiques du CP entièrement faites par le code (les autres gardent des exercices du modèle)", () => {
+  it("sont entièrement faites par le code (l'ensemble des thématiques du CP faites par le code est vérifié dans cpEnglishReadingWritingTemplates.test.ts)", () => {
     const allCode = allProgrammeEntries()
       .filter((e) => e.klass === "CP" && (e.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0) >= PALIER_SIZE)
       .map((e) => e.topic.key);
-    expect(allCode.sort()).toEqual([...KEYS].sort());
+    for (const key of KEYS) expect(allCode, key).toContain(key);
   });
 
   it("sont celles du CP, et n'ont changé aucune clé de programme", () => {

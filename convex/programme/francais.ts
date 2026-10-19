@@ -120,6 +120,17 @@ export const FRANCAIS: ProgrammeSubject = {
         name: "Je lis des syllabes et des mots",
         description:
           "Lecture du CP : révision des sons étudiés au CI (a, i, o, l, t, n, e, p, d, m, b, f, u, ou, é, è, s, r, au, eau, on, om) ; lire des syllabes et des mots de deux ou trois syllabes ; distinguer des sons proches (é/è, ou/u, on/o, b/d, p/b) ; gagner en fluidité. Mots du quotidien : mouton, bateau, tomate, savon, poulet, marmite, malade.",
+        games: [
+          { kind: "lire-dessin", count: 1 },
+          { kind: "lire-relier", count: 1 },
+          { kind: "lire-syllabes", count: 1 },
+          { kind: "lire-assembler", count: 1 },
+          { kind: "lire-son", count: 2 },
+          { kind: "lire-lettre", count: 1 },
+          { kind: "lire-son-glisser", count: 1 },
+          { kind: "lire-trou", count: 1 },
+          { kind: "lire-phrase", count: 1 },
+        ],
       },
       {
         key: "fr-cp-inviter",
@@ -150,6 +161,16 @@ export const FRANCAIS: ProgrammeSubject = {
         name: "J'écris des phrases",
         description:
           "Production d'écrits du CP : énoncés d'au moins deux phrases (raconter, décrire, donner une consigne). Remettre des mots dans l'ordre pour faire une phrase, majuscule et point, compléter une phrase avec le bon mot, singulier et pluriel du nom (un/des, le/les) vus dans les phrases. Grammaire, vocabulaire et orthographe restent intégrés à l'écrit : pas de leçon de règle.",
+        games: [
+          { kind: "ecrire-ordre", count: 2 },
+          { kind: "ecrire-bien-ecrite", count: 1 },
+          { kind: "ecrire-un-des", count: 1 },
+          { kind: "ecrire-groupe", count: 2 },
+          { kind: "ecrire-pluriel", count: 1 },
+          { kind: "ecrire-nombre", count: 1 },
+          { kind: "ecrire-texte", count: 1 },
+          { kind: "ecrire-mot", count: 1 },
+        ],
       },
     ],
     CE1: [

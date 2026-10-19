@@ -121,9 +121,13 @@ describe("l'anglais, hors du guide officiel", () => {
     }
   });
 
-  it("n'attend ni jeu ni oral : l'application ne lit pas l'anglais", () => {
-    for (const { topic } of topics()) {
-      expect(topic.games, topic.key).toBeUndefined();
+  it("n'attend ni écoute ni oral : l'application ne lit pas l'anglais", () => {
+    for (const { klass, topic } of topics()) {
+      // Seules les cinq thématiques du CP ont des gabarits (`paliers/games/anglais.ts`) : jamais un jeu d'écoute.
+      if (klass !== "CP") expect(topic.games, topic.key).toBeUndefined();
+      for (const spec of topic.games ?? []) {
+        expect(GAME_KINDS[spec.kind].type, `${topic.key} : ${spec.kind}`).not.toBe("listen");
+      }
       expect(topic.description, topic.key).not.toMatch(/écout|prononc|phonétique|rime/i);
     }
   });

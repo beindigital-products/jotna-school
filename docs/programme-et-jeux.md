@@ -70,7 +70,10 @@ Ce qui manque :
   d'écoute ni de prononciation. C'est le principal manque d'un cours de
   langue. Il se comblera avec des clips audio, comme pour l'arabe.
 - **Les jeux.** Leurs consignes et leurs étiquettes sont en français
-  (`paliers/games`) ; aucune thématique d'anglais n'en mêle.
+  (`paliers/games`). Aucune thématique d'anglais ne mêle de jeu d'écoute. Les
+  cinq thématiques du CP sont fabriquées tout entières par le code
+  (`paliers/games/anglais.ts`) : mots de la fiche, dessins, phrases à
+  remettre dans l'ordre, nombres de 11 à 20.
 - **Un essai sur le vrai modèle.** Les exercices d'anglais n'ont pas encore
   été générés : relire un échantillon dans l'administration après la
   première pré-génération, avant d'ouvrir la matière.
@@ -310,7 +313,7 @@ arrivent plus tard.
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
 🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
-`docs/paliers-et-exercices.md`). Au CP, l'histoire et la géographie le sont ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture et l'écriture le sont ; la liste de celles du CI est dans
 `docs/paliers-et-exercices.md`.
 
 ### Français
@@ -320,7 +323,7 @@ arrivent plus tard.
 | Classe | Thématiques |
 | --- | --- |
 | CI | Bonjour, merci, s'il te plaît · Les sons a, i, o, l, t · Les sons n, e, p, d, m, b · Les sons f, u, ou, é, è · Les sons s, r, au, eau, on, om · Les lettres et les mots · Mes premières phrases |
-| CP | Je lis des syllabes et des mots · Inviter et conseiller · Raconter une histoire · Décrire et comparer · Les consignes · J'écris des phrases |
+| CP | Je lis des syllabes et des mots 🧩 · Inviter et conseiller · Raconter une histoire · Décrire et comparer · Les consignes · J'écris des phrases 🧩 |
 | CE1 | La phrase, le verbe et le sujet · Le nom, l'article et l'adjectif · Le présent et le passé composé · L'impératif et le futur · a/à, et/est, on/ont · Le dictionnaire et les mots de liaison · Lire et comprendre |
 | CE2 | COD, COI et pronoms · Les compléments circonstanciels · Possessifs et démonstratifs · L'imparfait et le passé composé · L'impératif et le futur simple · Féminin, pluriel, ou/où, son/sont · Synonymes, familles, homonymes · Lire une lettre, une affiche, un poème |
 | CM1 | Comprendre un récit et une description · Les textes qui expliquent et qui informent · Nature et fonction des mots · Les temps de l'indicatif · Les accords · Préfixes, suffixes et sens des mots · Les homophones grammaticaux |
@@ -411,7 +414,7 @@ arrivent plus tard.
 | Classe | Thématiques |
 | --- | --- |
 | CI | Hello! Goodbye! · Les couleurs en anglais · Compter jusqu'à 10 en anglais · Les animaux en anglais · Les fruits en anglais |
-| CP | Ma famille en anglais · Mon corps en anglais · Dans ma classe en anglais · Les nombres de 11 à 20 en anglais · Manger et boire en anglais |
+| CP | Ma famille en anglais 🧩 · Mon corps en anglais 🧩 · Dans ma classe en anglais 🧩 · Les nombres de 11 à 20 en anglais 🧩 · Manger et boire en anglais 🧩 |
 | CE1 | Se présenter en anglais · Les jours de la semaine · A ou an ? · Les vêtements en anglais · J'aime, je n'aime pas · Les ordres de la classe |
 | CE2 | Être en anglais : am, is, are · J'ai : have got, has got · Je peux, je sais : can · La maison et où c'est · Les mois de l'année · Le temps qu'il fait · L'heure en anglais |
 | CM1 | Ce que je fais : le présent · He, she, it : le s du verbe · Ma journée en anglais · En ce moment : le -ing · Les métiers en anglais · Au marché en anglais · Décrire une personne ou un objet |
