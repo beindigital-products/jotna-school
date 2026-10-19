@@ -13,6 +13,7 @@ import {
   StageBackdrop,
   useMotionWillChange,
 } from "@/components/student/game-kit";
+import { preloadCoffre } from "@/components/student/game-kit/coffre";
 import { SpeechBubble } from "@/components/student/game/speech-bubble";
 import { Pio, preloadPioPosters, type PioState } from "@/components/student/pio";
 import {
@@ -200,6 +201,12 @@ export function SessionStage({
   useEffect(() => {
     if (sound?.enabled) void preloadAll();
   }, [sound?.enabled]);
+
+  // Le coffre de la fin de palier : ses images et son clip se chargent pendant
+  // les deux dernières questions, pour que l'écran de fin ne les attende pas.
+  useEffect(() => {
+    if (total > 1 && questionIndex >= total - 2) preloadCoffre();
+  }, [questionIndex, total]);
 
   // Une nouvelle question remonte en haut de la page : l'enfant qui avait fait
   // défiler une longue association pour atteindre « Valider » retrouverait

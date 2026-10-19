@@ -573,7 +573,7 @@ Mesures par les écarts de `requestAnimationFrame` dans l'application
   alourdit chaque changement d'état de la tuile. La perspective d'une
   inclinaison se met dans le transform de l'objet lui-même
   (`perspective(700px) rotateX() rotateY()`), même rendu, sans contexte. Les
-  vrais espaces 3D (solides, coffre) restent sur des briques qui ne changent
+  vrais espaces 3D (les solides) restent sur des briques qui ne changent
   pas d'état à chaque toucher.
 - **Une opacité sur la racine** d'une brique qui contient une couche
   composée (l'ombre) oblige WebKit à recomposer toute la brique. Une tuile ou

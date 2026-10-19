@@ -283,3 +283,85 @@ Vérifié après la correction (films sur le simulateur iPhone 17, images
 extraites à 10 et 20 i/s) : fin de palier, « cheer » saute sans double ;
 verdict d'une bonne réponse avec la voix (`?voix=1`, Valider pendant que le
 clip « ask » joue), aucune image vide entre le clip et la scène de réponse.
+
+## Le coffre au trésor : la même méthode, pour un objet
+
+Le coffre de la fin de palier (`components/student/game-kit/coffre.tsx`) est le
+deuxième clip du jeu. Il avait d'abord été fait en faces de CSS 3D
+(`coque-coffre-3d.tsx`, supprimé) : du carton à côté du lionceau. Le
+propriétaire (19 octobre 2026) l'a voulu « vraiment réaliste », avec « une petite
+animation » : il est refait avec le studio, comme la pose `ask`.
+
+| Fichier | Ce que c'est |
+| --- | --- |
+| `public/videos/coffre/ouverture.webm` | VP9 + alpha, 608 × 592, 2,5 s, 235 Ko (Android, Chrome, Firefox) |
+| `public/videos/coffre/ouverture.mov` | HEVC + alpha, même clip, 261 Ko (iOS, Safari) |
+| `public/images/coffre/ferme.webp` | la première image du clip (32 Ko) : l'affiche, et le coffre du palier manqué |
+| `public/images/coffre/ouvert.webp` | la dernière image du clip (44 Ko) : l'état final |
+
+**Comment il a été fait (19 octobre 2026, 1,0 à 1,5 $ en tout).**
+
+1. **L'image fixe.** gpt-image-2 (le prix n'est pas publié, `size 1024x1024`), la
+   pose `cheer` de Pio donnée en image de référence pour le rendu (3D soignée,
+   couleurs saturées, lumière douce), sans lionceau dans la consigne : « A closed
+   wooden treasure chest, centered in the lower middle of a square frame with empty
+   space above it, three-quarter view seen slightly from above. Rendered as a
+   polished 3D game asset in the same soft glossy 3D cartoon style as the lion
+   mascot in the reference image […] Pure flat solid blue background (#0000FF) […]
+   No lion, no character, no coins, no text. » Une variante photoréaliste (« Photorealistic
+   3D render of a pirate treasure chest with physically based materials: thick aged
+   oak planks […] polished brass-gold bands ») a été faite aussi : bois sombre,
+   très belle, mais elle jurait avec le lionceau et les tuiles du jeu. Elle n'est pas
+   gardée ; si le propriétaire la préfère, il faut refaire le clip depuis elle.
+2. **La planche.** `node scripts/coffre-plate.mjs image.png planche.png` ramène
+   le coffre à 600 pixels de large dans un cadre carré de 1024, le bas de la caisse
+   à 905 pixels du haut : le haut reste libre pour le couvercle levé.
+3. **Le clip.** Kling v3.0 (`klingai/kling-v3.0-i2v`, 5 s, 0,84 $, la planche en
+   `referenceImage`, `generateAudio: false`) : « Fixed tripod shot, locked camera:
+   no zoom, no pan, no push-in […] the curved lid swings smoothly upward on its back
+   hinge and opens wide, then settles fully open leaning back, revealing a big heap
+   of shiny gold coins and a few colourful gems […] The chest body stays perfectly
+   still […] no light rays, no sparkles, no particles […] The background stays pure
+   flat blue (#0000FF) the whole time. » Réussi au premier essai. Mesuré image
+   par image (6 i/s, 30 images) : la caisse ne bouge pas (son bas reste à y = 847 sur
+   960, son bord gauche à 198-204), le bleu du fond reste à (5, ·, 251-254), le
+   couvercle part à 1,2 s, atteint le haut à 3,2 s, puis le clip est immobile. La
+   lumière et les étincelles sont volontairement absentes du clip : un halo
+   transparent se détoure mal sur du bleu, le CSS les peint.
+4. **Le détourage et l'encodage.** `scripts/coffre-encode.sh clip.mp4` coupe de
+   0,95 s à 3,85 s (un instant de coffre fermé, l'ouverture, un instant de repos),
+   accélère de 20 % (le couvercle monte en deux secondes), recadre sur le coffre
+   (760 × 740), détoure comme Pio (`colorkey` puis `despill`), ramène le cadre à
+   608 × 592 et écrit les deux vidéos et les deux images fixes. Les images fixes
+   sont les BORNES du clip, au pixel près : passer de l'une à l'autre ne se voit
+   pas. L'encodeur HEVC alpha est celui de VideoToolbox : le script tourne sur macOS.
+
+**Ce que fait `Coffre`.** Fermé (`open={false}`, le palier manqué) : l'image
+fermée, un petit tremblement de cadenas. Ouvert : le clip, une seule lecture, sans
+boucle, lancée après `startDelayMs` (le temps que le coffre entre) ; la lueur dorée
+monte à 0,45 s, l'éclat de `Reward` part à 1,1 s, des scintillements brillent sur
+l'or. À l'heure nominale de la fin du clip, la `<video>` est RETIRÉE et l'image
+« ouvert » reste seule, SANS attendre l'événement `ended` : sur iOS, un son qui part
+pendant un clip peut éteindre sa couche vidéo (la leçon de « ask », plus haut). Les
+filets : lecture refusée, première image absente après 1,5 s, source illisible,
+minuteur de sécurité : le coffre finit toujours ouvert. Sur un appareil « sobre »
+(`useGameFeel`), pas de vidéo : un fondu du fermé à l'ouvert ; sous
+`prefers-reduced-motion`, ouvert d'emblée, sans éclat. Pendant le clip, AUCUNE image
+fixe n'est peinte dessous (un coffre fermé dessous ferait un couvercle fantôme là où
+le couvercle vient de partir). La géométrie du cadre (`CADRE`, `coffreGeometry`) est
+fixée par `coffre-encode.sh` : la caisse y fait 450 pixels de large, son bas est à
+34 pixels du bas ; `size` est la largeur de la caisse, et une marge négative ramène
+son bas sur la ligne de pose de Pio.
+
+**Vérifié :** la séance factice (`/dev/seance/?scene=fin-validee` et `fin-manquee`)
+dans Chromium sans fenêtre, de 344 à 390 px de large : la phase du composant, la
+lecture du `.webm` (démarrage à 0,64 s, fin à 3,1 s), l'éclat, aucun débordement
+horizontal causé par le coffre, aucune erreur de console ; les deux vidéos portent
+bien leur canal alpha (`ffprobe`, `alpha_mode`, et `ContainsAlphaChannel` d'AVFoundation
+pour le `.mov`, comme les clips de Pio). **Pas encore vu sur un iPhone** (WKWebView :
+HEVC alpha, son qui part pendant le clip : `&son=1` de la séance factice).
+
+**Refaire le coffre** : générer l'image (étape 1), la planche (2), le clip (3),
+lancer `scripts/coffre-encode.sh <clip.mp4>` (4) ; si le cadre ou la coupe changent,
+mettre à jour `CADRE`, `OUVERTURE_MS`, `LUEUR_MS` et `ECLAT_MS` dans `coffre.tsx`
+(le test `components/student/game-kit/__tests__/coffre.test.tsx` les lit).
