@@ -24,7 +24,9 @@
  * demande au serveur quand il est joignable (`components/offline/clip-source.ts`),
  * qui ne reçoit qu'une référence et lit lui-même le texte dans l'exercice. La
  * lecture automatique marche dans l'application (la vue web de Capacitor joue
- * un son sans geste préalable, voir `components/arabic/coach.tsx`).
+ * un son sans geste préalable, voir `components/arabic/coach.tsx`). Sur le web
+ * d'un téléphone, Safari et Chrome l'exigent : `lib/voice-player.ts` débloque
+ * son élément audio au premier toucher de la page.
  *
  * IL IGNORE LE RÉGLAGE « SONS », comme `components/arabic/listen-button.tsx` :
  * ce réglage coupe les bruitages de récompense ; ici, la voix EST la
@@ -152,6 +154,9 @@ export function PromptReaderProvider({
 
   // Le silence demandé, lu par une lecture qui attendait son URL.
   const silencedRef = useRef(silenced);
+  // Vrai quand la lecture automatique n'a plus rien à faire : la consigne est
+  // partie, ou l'exercice s'affiche sous une fenêtre et se tait.
+  const autoDone = useRef(silenced);
 
   const read = useCallback(async () => {
     const token = ++tokenRef.current;
@@ -168,6 +173,8 @@ export function PromptReaderProvider({
       return;
     }
     setStatus("playing");
+    // La consigne est partie : la lecture automatique a fait son travail.
+    autoDone.current = true;
     // Rend la main quand le son finit OU qu'on le coupe (`stopPlaying`).
     await playUrl(url, owner, 1);
     if (tokenRef.current === token) setStatus("idle");
@@ -184,22 +191,37 @@ export function PromptReaderProvider({
   // UNE FOIS PAR EXERCICE : la carte de l'exercice porte sa clé, donc ce
   // lecteur naît avec lui et meurt avec lui. Un exercice qui s'affiche alors
   // que la séance se tait (une reprise sous une fenêtre) ne parle pas.
-  const autoRead = useRef(!silenced);
+  //
+  // `read` change quand la source des sons change (`useClipSource` dépend de
+  // `connected`, qui bascule dans l'application quand la connexion temps réel
+  // s'ouvre ou se rétablit). Deux cas :
+  //   - la consigne n'est pas encore partie (le son manquait, faute de
+  //     réseau) : on réessaie, c'est le but ;
+  //   - la consigne PARLE déjà : `autoDone` l'empêche de repartir. Sans lui,
+  //     chaque bascule coupait la voix en pleine phrase et la reprenait du début.
   useEffect(() => {
-    if (autoRead.current) void read();
+    if (!autoDone.current) void read();
+  }, [read]);
+
+  // En partant, le lecteur coupe SON son : seulement à la disparition de
+  // l'exercice, jamais à un changement de `read`.
+  useEffect(() => {
     const tokens = tokenRef;
     return () => {
       tokens.current++;
       stopPlaying(owner);
     };
-  }, [read, owner]);
+  }, [owner]);
 
   // SE TAIRE, C'EST COUPER LE SON — rien d'autre. La lecture en cours s'en
   // aperçoit (`playUrl` rend la main, ou `silencedRef` après le chargement)
   // et remet elle-même le bouton au repos.
   useEffect(() => {
     silencedRef.current = silenced;
-    if (silenced) stopPlaying(owner);
+    if (silenced) {
+      autoDone.current = true;
+      stopPlaying(owner);
+    }
   }, [silenced, owner]);
 
   const value = useMemo<PromptReader>(

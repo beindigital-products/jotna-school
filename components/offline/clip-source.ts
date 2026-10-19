@@ -24,7 +24,7 @@
 import { useCallback } from "react";
 import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { clipRequestKey, type ClipRequest } from "@/convex/offline/contract";
+import { clipRequestKey, type ClipRequest, type ClipResult } from "@/convex/offline/contract";
 import { useOffline } from "./context";
 
 /** Une adresse à jouer, `"not_configured"` sans voix branchée, `null` sinon. */
@@ -32,6 +32,38 @@ export type ClipLookup = string | "not_configured" | null;
 
 function loadClips() {
   return import("@/lib/offline/clips");
+}
+
+/**
+ * Les pauses avant de redemander un son que le serveur n'a pas pu rendre.
+ *
+ * DEUX ÉCHECS SONT PASSAGERS, et ne méritent pas de rendre l'enfant muet :
+ *   - `pending` : la synthèse du fournisseur a échoué (limite de requêtes
+ *     simultanées d'ElevenLabs, quand le téléchargement des consignes de la
+ *     classe tourne en même temps) ; le son est neuf, la deuxième demande
+ *     aboutit ;
+ *   - une exception : sur un téléphone, une action Convex en vol est perdue
+ *     quand la connexion temps réel se rétablit (« Connection lost while
+ *     action was in flight »). Les actions ne se rejouent pas d'elles-mêmes.
+ * Avant, le bouton passait en « muet » à la première panne et ne repartait
+ * qu'au toucher suivant : « ça marche une fois sur deux ». Un refus définitif
+ * (`unavailable`) ne se redemande pas.
+ */
+const RETRY_DELAYS_MS = [700, 1800];
+
+type PrepareClips = (args: { requests: ClipRequest[] }) => Promise<ClipResult[]>;
+
+async function prepareWithRetry(prepare: PrepareClips, request: ClipRequest) {
+  for (let attempt = 0; ; attempt++) {
+    const delay = RETRY_DELAYS_MS[attempt];
+    try {
+      const [result] = await prepare({ requests: [request] });
+      if (result?.status !== "pending" || delay === undefined) return result;
+    } catch (error) {
+      if (delay === undefined) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
 }
 
 export function useClipSource(): (request: ClipRequest) => Promise<ClipLookup> {
@@ -52,7 +84,7 @@ export function useClipSource(): (request: ClipRequest) => Promise<ClipLookup> {
       }
 
       try {
-        const [result] = await prepare({ requests: [request] });
+        const result = await prepareWithRetry(prepare, request);
         if (!result) return null;
         if (result.status === "ready") {
           // Rangé pour la prochaine fois, sans retarder la lecture.
