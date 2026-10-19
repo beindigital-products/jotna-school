@@ -5,11 +5,15 @@ const mocks = vi.hoisted(() => ({
   findClip: vi.fn(),
   playUrl: vi.fn(),
   stopPlaying: vi.fn(),
+  // Une autre source de sons à servir à la place de `findClip` (identité changée).
+  source: { fn: null as null | ((request: unknown) => Promise<unknown>) },
 }));
 
 // La source des sons : le sac du téléphone d'abord, le serveur ensuite
 // (`components/offline/clip-source.ts`). Ici, une seule fonction simulée.
-vi.mock("@/components/offline/clip-source", () => ({ useClipSource: () => mocks.findClip }));
+vi.mock("@/components/offline/clip-source", () => ({
+  useClipSource: () => mocks.source.fn ?? mocks.findClip,
+}));
 vi.mock("@/lib/voice-player", () => ({
   newVoiceOwner: () => 7,
   playUrl: mocks.playUrl,
@@ -36,6 +40,7 @@ function Session({ exerciseId, silenced = false }: { exerciseId: string; silence
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.source.fn = null;
   // Un son qui joue jusqu'à ce qu'on le coupe.
   mocks.playUrl.mockImplementation(() => new Promise<boolean>(() => {}));
 });
@@ -147,5 +152,33 @@ describe("le lecteur de consignes", () => {
     await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("/sounds/badge.mp3", 7, 1));
     expect(mocks.findClip).not.toHaveBeenCalled();
     expect(ecouter().getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("ne coupe pas la voix quand la source des sons change pendant qu'elle parle", async () => {
+    // Dans l'application, `connected` bascule à l'ouverture de la connexion
+    // temps réel : `useClipSource` rend alors une nouvelle fonction.
+    mocks.findClip.mockResolvedValue("https://clip/7.mp3");
+    const { rerender } = render(<Session exerciseId="exercise7" />);
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledTimes(1));
+
+    mocks.source.fn = vi.fn(() => Promise.resolve("https://clip/7bis.mp3"));
+    rerender(<Session exerciseId="exercise7" />);
+    await act(async () => {});
+
+    expect(mocks.playUrl).toHaveBeenCalledTimes(1);
+    expect(mocks.stopPlaying).not.toHaveBeenCalledWith(7);
+    expect(ecouter().getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("réessaie d'elle-même quand la source change et que la consigne n'était pas partie", async () => {
+    mocks.findClip.mockResolvedValue(null);
+    const { rerender } = render(<Session exerciseId="exercise8" />);
+    await waitFor(() => expect(ecouter().getAttribute("data-listen-status")).toBe("unavailable"));
+    expect(mocks.playUrl).not.toHaveBeenCalled();
+
+    // Le réseau revient : la source des sons change, la consigne se dit.
+    mocks.source.fn = vi.fn(() => Promise.resolve("https://clip/8.mp3"));
+    rerender(<Session exerciseId="exercise8" />);
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/8.mp3", 7, 1));
   });
 });
