@@ -8,6 +8,7 @@ import {
   graphemeCount,
   segmentPrompt,
 } from "@/components/student/game-kit/choix-texte";
+import { typeset } from "@/components/landing/typeset";
 import { ExerciseImage } from "./ExerciseImage";
 import { usePromptReader } from "./prompt-reader";
 
@@ -51,6 +52,12 @@ import { usePromptReader } from "./prompt-reader";
  * Le trait d'union-minus est une coupure permise par les navigateurs, et
  * aucune propriété CSS ne l'interdit seule ; un trait insécable changerait le
  * texte. Les mots sans trait restent des nœuds de texte nus.
+ *
+ * L'ESPACE AVANT LA PONCTUATION HAUTE EST INSÉCABLE. « ? », « ! », « : » et
+ * « ; » ne commencent jamais une ligne, les guillemets français tiennent à
+ * leur mot, les tranches d'un nombre et « nombre + unité » ne se séparent pas :
+ * c'est `typeset` (`components/landing/typeset.ts`), la règle de la vitrine,
+ * appliquée à l'affichage seulement (`Words`).
  *
  * Dans un `PromptReaderProvider` (CI, CP), Pio lit la consigne ; un halo ciel
  * s'allume derrière le texte pendant qu'il parle (une couche dont seule
@@ -206,8 +213,17 @@ function RichText({ text }: { text: string }) {
   return <>{out}</>;
 }
 
-/** Du texte nu, où seuls les mots à trait d'union sont tenus en `nowrap`. */
-function Words({ text }: { text: string }) {
+/**
+ * Du texte nu, où seuls les mots à trait d'union sont tenus en `nowrap`, et où
+ * les espaces de la typographie française sont INSÉCABLES (`typeset`, la règle
+ * de la vitrine) : « sera août ⏎ ? Écris » (WebKit, iPhone 17, 19 octobre 2026)
+ * ne peut plus arriver, ni devant « ! », « : » ou « ; ». C'est un REMPLACEMENT
+ * À L'AFFICHAGE : la consigne reçue, ce que lit la voix et ce que découpe
+ * `segmentPrompt` gardent leurs espaces ordinaires. L'insécable reste dans les
+ * nœuds de texte, que le normaliseur de `getByText` replie en espace.
+ */
+function Words({ text: raw }: { text: string }) {
+  const text = typeset(raw);
   const parts: ReactNode[] = [];
   let last = 0;
   for (const match of text.matchAll(HYPHENATED)) {
