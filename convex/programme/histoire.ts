@@ -85,24 +85,59 @@ export const HISTOIRE: ProgrammeSubject = {
         name: "C'est long, c'est court",
         description:
           "Histoire, étape 1 : comparer des durées (une récréation, une journée, une semaine, une année), plus long, plus court, en même temps.",
+        games: [
+          { kind: "duree-plus-long", count: 3 },
+          { kind: "duree-ordre", count: 2 },
+          { kind: "duree-relier", count: 1 },
+          { kind: "duree-glisser", count: 2 },
+          { kind: "duree-unites", count: 2 },
+        ],
       },
       {
         key: "hi-cp-frequences",
         name: "Souvent, parfois, jamais",
         description:
           "Histoire, étape 1 : les fréquences. Ce qui revient tous les jours (aller à l'école), chaque semaine (le jour de marché), chaque année (l'anniversaire, la Tabaski, la Korité, Noël, la fête de l'indépendance le 4 avril).",
+        games: [
+          { kind: "frequence-glisser", count: 2 },
+          { kind: "frequence-qcm", count: 3 },
+          { kind: "frequence-trou", count: 2 },
+          { kind: "frequence-relier", count: 1 },
+          { kind: "frequence-ordre", count: 2 },
+        ],
       },
       {
         key: "hi-cp-calendrier",
         name: "Le calendrier",
         description:
           "Histoire, étape 1 : les douze mois dans l'ordre, lire une date, se repérer dans un calendrier ; au Sénégal, la saison sèche et la saison des pluies (l'hivernage).",
+        // Les saisons restent hors des gabarits : la fiche ne dit pas quels mois en font partie.
+        games: [
+          { kind: "mois-ordre", count: 2 },
+          { kind: "mois-voisin", count: 1 },
+          { kind: "mois-avant-apres", count: 1 },
+          { kind: "mois-rang", count: 1 },
+          { kind: "mois-trou", count: 1 },
+          { kind: "mois-ecart", count: 1 },
+          { kind: "date-lire", count: 1 },
+          { kind: "calendrier-jour", count: 1 },
+          { kind: "mois-relier", count: 1 },
+        ],
       },
       {
         key: "hi-cp-emploi-du-temps",
         name: "L'emploi du temps",
         description:
           "Histoire, étape 1 : lire l'emploi du temps de la classe, ce qui vient avant ou après la récréation, les jours d'école de la semaine.",
+        games: [
+          { kind: "edt-apres", count: 2 },
+          { kind: "edt-quand", count: 1 },
+          { kind: "edt-ordre", count: 2 },
+          { kind: "edt-trou", count: 1 },
+          { kind: "edt-semaine", count: 2 },
+          { kind: "jour-ecole-repos", count: 1 },
+          { kind: "jours-ordre", count: 1 },
+        ],
       },
     ],
     CE1: [

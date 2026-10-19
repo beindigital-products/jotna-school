@@ -39,6 +39,15 @@ const WITHOUT_MODEL = [
   "ge-ci-lateralite",
   "ge-ci-reperes",
   "ge-ci-quadrillage",
+  // L'histoire et la géographie du CP : calendrier, durées, fréquences, emploi du temps ; itinéraire, distances, plan, quartier.
+  "hi-cp-calendrier",
+  "hi-cp-durees",
+  "hi-cp-frequences",
+  "hi-cp-emploi-du-temps",
+  "ge-cp-itineraire",
+  "ge-cp-distances",
+  "ge-cp-plan",
+  "ge-cp-quartier",
 ] as const;
 const MODEL_CALLED = "LE MODÈLE A ÉTÉ APPELÉ";
 
@@ -102,9 +111,9 @@ function fakeConvex(programmeKey: string) {
   return { ctx, upserts, written, modelCalls, entry };
 }
 
-const bucket = (palierIndex: number) => ({
+const bucket = (palierIndex: number, klass: "CI" | "CP" = "CI") => ({
   subjectId: "subject-1" as Id<"subjects">,
-  class: "CI" as const,
+  class: klass,
   topicId: "topic-1" as Id<"topics">,
   palierIndex,
 });
@@ -125,6 +134,8 @@ function rightAnswer(exo: Written): string {
       return JSON.stringify(p.target);
     case "drag-drop":
       return JSON.stringify(Object.fromEntries((p.items as { text: string; correctZone: string }[]).map((item) => [item.text, item.correctZone])));
+    case "short-answer":
+      return String((p.acceptedAnswers as string[])[0]);
     default:
       return JSON.stringify((p.blanks as { answer: string }[]).map((b) => b.answer));
   }
@@ -133,7 +144,7 @@ function rightAnswer(exo: Written): string {
 describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) => {
   it.each([1, 2, 3])("n'appelle jamais le modèle, garde ses dix exercices et se met en cache (palier %i)", async (palierIndex) => {
     const { ctx, upserts, written, modelCalls, entry } = fakeConvex(key);
-    const result = await generateBucketCore(ctx, bucket(palierIndex));
+    const result = await generateBucketCore(ctx, bucket(palierIndex, entry.klass as "CI" | "CP"));
 
     expect(modelCalls).toEqual([]);
     expect(result).toEqual({ palierId: "palier-1", cacheHit: false, qaStatus: "auto_ok" });
@@ -172,7 +183,7 @@ describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) =>
     // Aucun défaut, et la bonne réponse est juste, la fausse ne l'est pas.
     for (const exo of exercises) {
       expect(
-        auditExercise({ ...exo, class: "CI", subject: entry.subject.name }),
+        auditExercise({ ...exo, class: entry.klass, subject: entry.subject.name }),
         `${key} palier ${palierIndex} : ${exo.prompt}`,
       ).toEqual([]);
       expect(verifyAnswer(exo, rightAnswer(exo)), exo.prompt).toBe(true);
@@ -184,7 +195,7 @@ describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) =>
     for (const spec of entry.topic.games ?? []) {
       const kind = spec.kind as GameKind;
       const origin = { kind, level: 2, vocabulary: spec.vocabulary };
-      const again = regenerateGame(origin, "CI", `reprise:${key}:${kind}`);
+      const again = regenerateGame(origin, entry.klass, `reprise:${key}:${kind}`);
       expect(again, kind).not.toBeNull();
       expect(again!.type, kind).toBe(GAME_KINDS[kind].type);
       expect(gameOriginOf(again!.payload), kind).toEqual(origin);

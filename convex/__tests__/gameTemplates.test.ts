@@ -234,6 +234,8 @@ function rightAnswer(exo: { type: string; payload: Record<string, unknown> }): s
       return JSON.stringify((p.blanks as { answer: string }[]).map((b) => b.answer));
     case "drag-drop":
       return JSON.stringify(Object.fromEntries((p.items as { text: string; correctZone: string }[]).map((item) => [item.text, item.correctZone])));
+    case "short-answer":
+      return String((p.acceptedAnswers as string[])[0]);
     default:
       throw new Error(`type inattendu : ${exo.type}`);
   }
@@ -1062,8 +1064,10 @@ describe("les gabarits de dénombrement comptent juste", () => {
 });
 
 describe("les gabarits dans le programme du CI", () => {
-  const entries = allProgrammeEntries().filter((e) =>
-    e.topic.games?.some((g) => (TEMPLATES as readonly string[]).includes(g.kind)),
+  // Le CI seulement : les thématiques du CP qui empruntent un gabarit du CI sont jugées à leur classe
+  // (`cpHistoryGeographyTemplates.test.ts`), avec la consigne et le contrôleur du CP.
+  const entries = allProgrammeEntries().filter(
+    (e) => e.klass === "CI" && e.topic.games?.some((g) => (TEMPLATES as readonly string[]).includes(g.kind)),
   );
 
   it("est branché sur vingt et une thématiques du CI", () => {

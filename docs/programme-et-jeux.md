@@ -309,6 +309,10 @@ arrivent plus tard.
 
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
+🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
+`docs/paliers-et-exercices.md`). Au CP, l'histoire et la géographie le sont ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`.
+
 ### Français
 
 *Langue et communication*
@@ -355,7 +359,7 @@ arrivent plus tard.
 | Classe | Thématiques |
 | --- | --- |
 | CI | Le matin, le midi, le soir · Avant, pendant, après · Hier, aujourd'hui, demain · Les jours de la semaine |
-| CP | C'est long, c'est court · Souvent, parfois, jamais · Le calendrier · L'emploi du temps |
+| CP | C'est long, c'est court 🧩 · Souvent, parfois, jamais 🧩 · Le calendrier 🧩 · L'emploi du temps 🧩 |
 | CE1 | Le temps qui passe · L'histoire de ma famille · L'histoire de mon école · Mon quartier, mon village, ma commune |
 | CE2 | Hier et aujourd'hui : le progrès · Les royaumes du Sénégal (1) · Les royaumes du Sénégal (2) · Les rois et leurs titres |
 | CM1 | La préhistoire · Les royaumes avant les Européens · Les premiers contacts · Les résistants · Résister sans les armes |
@@ -368,7 +372,7 @@ arrivent plus tard.
 | Classe | Thématiques |
 | --- | --- |
 | CI | Devant, derrière, à côté · Ma droite et ma gauche · Les repères de mon école · Se repérer sur un quadrillage 🎮 (3 × reproduire un dessin) |
-| CP | Le chemin de l'école · Près ou loin ? · Vu de dessus · Se repérer dans le quartier |
+| CP | Le chemin de l'école 🧩 · Près ou loin ? 🧩 · Vu de dessus 🧩 · Se repérer dans le quartier 🧩 |
 | CE1 | Les points cardinaux · Le climat et les saisons · Le relief et les cours d'eau · Le plan de la classe et de l'école |
 | CE2 | Lire une carte · Ma région et les régions du Sénégal · Les activités des hommes · L'habitat et les déplacements |
 | CM1 | Le Sénégal en Afrique de l'Ouest · Climats et végétation · Le découpage administratif · Ressources et activités économiques · Les voies de communication |
