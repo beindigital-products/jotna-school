@@ -8,6 +8,7 @@ import {
   graphemeCount,
   segmentPrompt,
 } from "@/components/student/game-kit/choix-texte";
+import { typeset } from "@/components/landing/typeset";
 import { ExerciseImage } from "./ExerciseImage";
 import { usePromptReader } from "./prompt-reader";
 
@@ -51,6 +52,12 @@ import { usePromptReader } from "./prompt-reader";
  * Le trait d'union-minus est une coupure permise par les navigateurs, et
  * aucune propriété CSS ne l'interdit seule ; un trait insécable changerait le
  * texte. Les mots sans trait restent des nœuds de texte nus.
+ *
+ * L'ESPACE AVANT LA PONCTUATION HAUTE EST INSÉCABLE. « ? », « ! », « : » et
+ * « ; » ne commencent jamais une ligne, les guillemets français tiennent à
+ * leur mot, les tranches d'un nombre et « nombre + unité » ne se séparent pas :
+ * c'est `typeset` (`components/landing/typeset.ts`), la règle de la vitrine,
+ * appliquée à l'affichage seulement (`Words`).
  *
  * Dans un `PromptReaderProvider` (CI, CP), Pio lit la consigne ; un halo ciel
  * s'allume derrière le texte pendant qu'il parle (une couche dont seule
@@ -181,7 +188,7 @@ function RichText({ text }: { text: string }) {
           // rangées de 36 px poussaient les tuiles sous le dock. Sur un écran
           // court debout, un cran de moins ; sur tout écran court, la marge
           // verticale de moitié.
-          className={`gk-socle mx-0.5 my-1 inline-block max-w-full rounded-2xl border-2 border-white bg-[linear-gradient(180deg,#fff7e0_0%,#f6dfa4_100%)] px-3 pb-1.5 pt-2 align-middle leading-none tracking-[0.12em] shadow-[inset_0_2px_0_rgb(255_255_255_/_0.8),0_4px_0_#d6c39a,0_10px_14px_-10px_rgba(60,30,0,0.5)] [@media(max-height:480px)]:text-2xl [@media(max-height:667px)]:my-0.5 ${emojiRowSizeClass(segment.count, dense)} ${emojiRowSizeClass(segment.count, dense, true)}`}
+          className={`gk-socle mx-0.5 my-1 inline-block max-w-full rounded-2xl border-2 border-white bg-[linear-gradient(180deg,#fff7e0_0%,#f6dfa4_100%)] px-3 pb-1.5 pt-2 align-middle leading-none tracking-[0.12em] shadow-[inset_0_2px_0_rgb(255_255_255_/_0.8),0_4px_0_#d6c39a,0_10px_14px_-10px_rgba(60,30,0,0.5)] [@media(max-height:480px)]:text-2xl [@media(max-height:667px)]:my-0.5 ${emojiRowSizeClass(segment.count, dense)} ${emojiRowSizeClass(segment.count, dense, true)} ${segment.text.includes("\n") ? "whitespace-pre" : ""}`}
         >
           {segment.text}
         </span>
@@ -206,8 +213,17 @@ function RichText({ text }: { text: string }) {
   return <>{out}</>;
 }
 
-/** Du texte nu, où seuls les mots à trait d'union sont tenus en `nowrap`. */
-function Words({ text }: { text: string }) {
+/**
+ * Du texte nu, où seuls les mots à trait d'union sont tenus en `nowrap`, et où
+ * les espaces de la typographie française sont INSÉCABLES (`typeset`, la règle
+ * de la vitrine) : « sera août ⏎ ? Écris » (WebKit, iPhone 17, 19 octobre 2026)
+ * ne peut plus arriver, ni devant « ! », « : » ou « ; ». C'est un REMPLACEMENT
+ * À L'AFFICHAGE : la consigne reçue, ce que lit la voix et ce que découpe
+ * `segmentPrompt` gardent leurs espaces ordinaires. L'insécable reste dans les
+ * nœuds de texte, que le normaliseur de `getByText` replie en espace.
+ */
+function Words({ text: raw }: { text: string }) {
+  const text = typeset(raw);
   const parts: ReactNode[] = [];
   let last = 0;
   for (const match of text.matchAll(HYPHENATED)) {

@@ -174,6 +174,8 @@ import {
   makeTimeWords,
   makeWeekOrder,
 } from "./temps";
+import { makeSentenceOrder, makeWordCount, makeWordPlace, makeWrittenSentence } from "./phrases";
+import { makeFeelingChoice, makeFormulaGap, makeFormulaMatch, makeFormulaSort, makeMeeting, makeSituationChoice } from "./politesse";
 import {
   makeCalendarDay,
   makeDurationLinks,
@@ -473,6 +475,18 @@ export const GAME_KINDS = {
   "ecrire-nombre": { label: "Singulier ou pluriel", type: "drag-drop", make: makeWriteNumberSort },
   "ecrire-texte": { label: "Remettre les trois phrases d'une histoire dans l'ordre", type: "order", make: makeWriteText },
   "ecrire-mot": { label: "Le bon mot dans une phrase", type: "fill-blank", make: makeWriteWord },
+  // Les premières phrases (`phrases.ts`) : remettre des mots dans l'ordre, la majuscule et le point, compter les mots.
+  "phrase-ordre": { label: "Remettre les mots d'une phrase dans l'ordre", type: "order", make: makeSentenceOrder },
+  "phrase-ecrite": { label: "La phrase bien écrite : majuscule et point", type: "qcm", make: makeWrittenSentence },
+  "phrase-mots-compter": { label: "Compter les mots d'une phrase", type: "qcm", make: makeWordCount },
+  "phrase-mot-place": { label: "Le premier ou le dernier mot d'une phrase", type: "qcm", make: makeWordPlace },
+  // La politesse (`politesse.ts`) : bonjour, au revoir, merci, s'il te plaît, pardon, dire ce qu'on ressent.
+  "politesse-situation": { label: "Quelle formule pour cette situation", type: "qcm", make: makeSituationChoice },
+  "politesse-besoin": { label: "Dire un besoin ou un sentiment", type: "qcm", make: makeFeelingChoice },
+  "politesse-relier": { label: "Relier une formule et sa situation", type: "match", make: makeFormulaMatch },
+  "politesse-glisser": { label: "Glisser des situations sous la bonne formule", type: "drag-drop", make: makeFormulaSort },
+  "politesse-trou": { label: "La formule qui complète une situation", type: "fill-blank", make: makeFormulaGap },
+  "politesse-rencontre": { label: "Ranger les paroles d'une rencontre", type: "order", make: makeMeeting },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
