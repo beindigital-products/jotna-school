@@ -155,6 +155,28 @@ describe("verifyDragDrop — les deux formes de réponse", () => {
     expect(verifyDragDrop(answer, banane)).toBe(true);
   });
 
+  it("refuse l'objet qui place une étiquette que l'exercice ne propose pas", () => {
+    // Tout l'attendu est juste ; seul « z » est en trop. L'ancienne règle ne
+    // regardait que les étiquettes attendues et acceptait cette réponse.
+    const answer = JSON.stringify({
+      b: "Consonnes",
+      a: "Voyelles",
+      n: "Consonnes",
+      e: "Voyelles",
+      z: "Consonnes",
+    });
+    expect(verifyDragDrop(answer, banane)).toBe(false);
+  });
+
+  it("accepte encore les étiquettes répétées, fondues en une clé", () => {
+    // Six tuiles, quatre clés : « a » et « n » reviennent deux fois chacune.
+    // Un refus fondé sur le NOMBRE de clés casserait ce cas, qui est juste.
+    const answer = JSON.stringify({ b: "Consonnes", a: "Voyelles", n: "Consonnes", e: "Voyelles" });
+    expect(banane.items.length).toBe(6);
+    expect(Object.keys(JSON.parse(answer)).length).toBe(4);
+    expect(verifyDragDrop(answer, banane)).toBe(true);
+  });
+
   it("refuse l'objet quand une étiquette manque ou pointe ailleurs", () => {
     expect(
       verifyDragDrop(JSON.stringify({ b: "Consonnes", a: "Voyelles", n: "Consonnes" }), banane),
