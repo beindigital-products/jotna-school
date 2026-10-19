@@ -181,7 +181,7 @@ function RichText({ text }: { text: string }) {
           // rangées de 36 px poussaient les tuiles sous le dock. Sur un écran
           // court debout, un cran de moins ; sur tout écran court, la marge
           // verticale de moitié.
-          className={`gk-socle mx-0.5 my-1 inline-block max-w-full rounded-2xl border-2 border-white bg-[linear-gradient(180deg,#fff7e0_0%,#f6dfa4_100%)] px-3 pb-1.5 pt-2 align-middle leading-none tracking-[0.12em] shadow-[inset_0_2px_0_rgb(255_255_255_/_0.8),0_4px_0_#d6c39a,0_10px_14px_-10px_rgba(60,30,0,0.5)] [@media(max-height:480px)]:text-2xl [@media(max-height:667px)]:my-0.5 ${emojiRowSizeClass(segment.count, dense)} ${emojiRowSizeClass(segment.count, dense, true)}`}
+          className={`gk-socle mx-0.5 my-1 inline-block max-w-full rounded-2xl border-2 border-white bg-[linear-gradient(180deg,#fff7e0_0%,#f6dfa4_100%)] px-3 pb-1.5 pt-2 align-middle leading-none tracking-[0.12em] shadow-[inset_0_2px_0_rgb(255_255_255_/_0.8),0_4px_0_#d6c39a,0_10px_14px_-10px_rgba(60,30,0,0.5)] [@media(max-height:480px)]:text-2xl [@media(max-height:667px)]:my-0.5 ${emojiRowSizeClass(segment.count, dense)} ${emojiRowSizeClass(segment.count, dense, true)} ${segment.text.includes("\n") ? "whitespace-pre" : ""}`}
         >
           {segment.text}
         </span>
