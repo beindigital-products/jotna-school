@@ -213,7 +213,8 @@ export function PalierResultScreen({
         transition={{ delay: 0.55, duration: 0.4 }}
         className="rounded-3xl border-2 border-white bg-[#fff8e6] p-5 shadow-[0_6px_0_#d6c39a,0_18px_30px_-16px_rgba(60,30,0,0.5)]"
       >
-        <div className="flex items-end justify-between gap-3">
+        {/* Sur un écran étroit (344 px), le badge ne tient pas à côté du compte : il passe dessous au lieu de dépasser de la carte. */}
+        <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
           <div>
             <p className="font-display text-xs font-extrabold uppercase tracking-wider text-amber-900/60">
               Ta récolte d&apos;étoiles
@@ -221,7 +222,7 @@ export function PalierResultScreen({
             <p className="mt-1 flex items-center gap-1.5 font-display text-amber-950">
               <Star className="h-9 w-9 fill-amber-400 text-amber-500" aria-hidden />
               <CountUp value={starsTotal} className="text-5xl font-extrabold leading-none" />
-              <span className="self-end pb-0.5 text-2xl font-extrabold text-amber-900/50">/ {maxStars}</span>
+              <span className="self-end whitespace-nowrap pb-0.5 text-2xl font-extrabold text-amber-900/50">/ {maxStars}</span>
             </p>
             <span className="sr-only">{pioSays.starsWon(starsTotal)}</span>
           </div>
