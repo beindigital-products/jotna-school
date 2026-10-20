@@ -13,6 +13,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -29,6 +30,7 @@ import type { ItemImage } from "@/lib/item-images";
 import { splitTile } from "@/lib/item-pictures";
 import { cn } from "@/lib/utils";
 import { ItemPicture, useTilePictures, type ItemPictureSize } from "./item-pictures";
+import { useTileVoice } from "./prompt-reader";
 
 /**
  * LA MISE EN ORDRE EST UN ESCALIER DE MARCHES NUMÉROTÉES
@@ -90,9 +92,11 @@ interface OrderExerciseProps {
 /**
  * Une étiquette à ranger. `id` est sa POSITION d'origine, `text` ce qu'elle
  * affiche : deux lettres « a » dans « papa » sont deux étiquettes, et
- * dnd-kit exige un identifiant unique par élément déplaçable.
+ * dnd-kit exige un identifiant unique par élément déplaçable. `origin` est son
+ * rang dans l'énoncé, qui ne bouge pas quand l'enfant la range : c'est le rang
+ * que la voix des tuiles connaît (`useTileVoice`).
  */
-type OrderTile = { id: string; text: string };
+type OrderTile = { id: string; text: string; origin: number };
 
 /** La tuile saisie penche un peu, comme tenue par un coin. */
 const GRAB_TILT_DEG = -1.5;
@@ -112,6 +116,8 @@ function SortableItem({
   verdict,
   picture,
   sticker,
+  speaking,
+  onHear,
 }: {
   id: string;
   label: string;
@@ -122,6 +128,10 @@ function SortableItem({
   picture: ItemImage | null;
   /** La pastille de cette marche (`stickerFor`), pour les tuiles qui ont une image. */
   sticker: Sticker;
+  /** Pio dit cette tuile (voix des tuiles, CI) : un anneau l'entoure. */
+  speaking: boolean;
+  /** Toucher la tuile (hors poignée) la fait dire. */
+  onHear: () => void;
 }) {
   const {
     attributes,
@@ -152,7 +162,19 @@ function SortableItem({
         <StepSlot />
         {/* `z-10` : une tuile qui glisse vers la marche du dessous passe DEVANT le
             creux de cette marche, qui vient après elle dans le DOM. */}
-        <div ref={setNodeRef} style={style} className={`relative ${isDragging ? "z-20" : "z-10"}`}>
+        <div
+          ref={setNodeRef}
+          style={style}
+          className={`relative ${isDragging ? "z-20" : "z-10"}`}
+          // Toucher le mot, c'est l'entendre. La poignée, elle, saisit la tuile :
+          // `onDragStart` (plus bas) la dit à ce moment-là, un toucher sur la
+          // poignée ne la dirait pas deux fois.
+          onClick={(event) => {
+            if (disabled) return;
+            if ((event.target as HTMLElement).closest("[data-order-handle]")) return;
+            onHear();
+          }}
+        >
           {/* LA POIGNÉE SE GLISSE AU DOIGT : `touch-none` (touch-action: none) dit
               au navigateur de ne pas prendre ce geste pour un défilement. Sans lui,
               sur iPhone, iPad et Android, le doigt qui glisse fait défiler la page,
@@ -163,6 +185,7 @@ function SortableItem({
           <span
             {...attributes}
             {...listeners}
+            data-order-handle
             aria-label={`Déplacer « ${label} »`}
             className={`gk-spring absolute left-1.5 top-1/2 z-10 flex h-14 w-14 shrink-0 touch-none select-none items-center justify-center rounded-xl border-2 border-white/70 bg-[#fff1cc] text-amber-700 shadow-[inset_0_-2px_0_rgb(0_0_0_/_0.08),0_2px_0_#d6c39a] outline-none transition-transform duration-[220ms] gk-focus [-webkit-touch-callout:none] ${
               picture ? NARROW_HANDLE : ""
@@ -181,6 +204,7 @@ function SortableItem({
             state={state}
             elevation={isDragging ? "saisie" : undefined}
             disabled={disabled}
+            speaking={speaking}
             data-dragging={isDragging || undefined}
           >
             {picture ? (
@@ -212,7 +236,7 @@ export default function OrderExercise({
       : [];
 
   const [items, setItems] = useState<OrderTile[]>(() => {
-    const shuffled = source.map((text, index) => ({ id: `tuile-${index}`, text }));
+    const shuffled = source.map((text, index) => ({ id: `tuile-${index}`, text, origin: index }));
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -229,6 +253,10 @@ export default function OrderExercise({
     }),
   );
   const feel = useGameFeel();
+  // La voix des tuiles (CI) : toucher ou saisir une étiquette la dit, et l'anneau
+  // la suit où qu'elle aille. Les rangs sont ceux de l'énoncé (`origin`), pas ceux
+  // de l'escalier. Pas de file automatique (voir `useTileVoice`).
+  const tileVoice = useTileVoice(source, prompt);
   // Les images des étiquettes (CI), dans l'ordre où elles sont rangées : une
   // pastille suit son texte, où qu'il aille. Calculées avant le retour anticipé.
   const pictures = useTilePictures(
@@ -263,6 +291,12 @@ export default function OrderExercise({
     );
   }
 
+  // Saisir une étiquette, c'est l'entendre : l'enfant sait ce qu'il tient.
+  const handleDragStart = (event: DragStartEvent) => {
+    const tile = items.find((candidate) => candidate.id === event.active.id);
+    if (tile) tileVoice?.hear(tile.origin);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -289,6 +323,7 @@ export default function OrderExercise({
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
@@ -308,6 +343,8 @@ export default function OrderExercise({
                   verdict={isCorrect}
                   picture={pictures[index] ?? null}
                   sticker={sticker}
+                  speaking={tileVoice?.speaking === tile.origin}
+                  onHear={() => tileVoice?.hear(tile.origin)}
                 />
               ))}
             </ol>

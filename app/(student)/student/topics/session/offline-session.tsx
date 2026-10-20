@@ -80,6 +80,7 @@ import {
 import { ItemPicturesProvider } from "@/components/exercises/item-pictures";
 import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
 import { isReadingLearnerClass, type VisibleClassName } from "@/convex/curriculum";
+import { isEnglishTopic, isTileVoiceClass } from "@/convex/voice/tiles";
 import { isPictureTileClass } from "@/lib/item-pictures";
 import { AnimatePresence } from "framer-motion";
 import { refusalMessage } from "@/lib/refusalMessage";
@@ -617,6 +618,14 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   const learnerClass = model.profile.class ?? topic.class;
   const readsAloud = isReadingLearnerClass(learnerClass);
   const showsPictures = isPictureTileClass(learnerClass);
+  // LA VOIX DES TUILES (CI, hors anglais), comme la séance en ligne : les sons
+  // sont dans l'appareil (`lib/offline/sync.ts`, `neededTileClips`).
+  const speaksTiles =
+    isTileVoiceClass(learnerClass) &&
+    !isEnglishTopic({
+      programmeKey: topic.programmeKey,
+      subjectName: model.subjectsById.get(topic.subjectId as string)?.name,
+    });
   const exerciseRenderer = (
     <ExerciseRenderer
       exo={exo}
@@ -697,6 +706,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
             <PromptReaderProvider
               exerciseId={exo._id}
               silenced={feedback !== null || explainOpen || sceneAlert !== null}
+              tileVoice={speaksTiles}
             >
               {exerciseRenderer}
             </PromptReaderProvider>

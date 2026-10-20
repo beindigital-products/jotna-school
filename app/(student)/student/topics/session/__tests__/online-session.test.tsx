@@ -15,8 +15,12 @@ import { OnlineSession } from "../online-session";
 // Les entrées de la carte et de la bulle sont animées : dans un test, d'un coup.
 MotionGlobalConfig.skipAnimations = true;
 
-/** La classe de l'enfant et celle de la thématique, que chaque test choisit. */
-const classes = vi.hoisted(() => ({ profile: "CI" as string | undefined, topic: "CI" as string | undefined }));
+/** La classe de l'enfant, celle de la thématique et sa fiche du programme, que chaque test choisit. */
+const classes = vi.hoisted(() => ({
+  profile: "CI" as string | undefined,
+  topic: "CI" as string | undefined,
+  programmeKey: undefined as string | undefined,
+}));
 /** Le lecteur de consigne lit à l'arrivée de la carte (CI et CP) : il cherche son clip, et n'en trouve pas. */
 const noClip = vi.hoisted(() => async () => null);
 
@@ -27,7 +31,13 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("convex/react", async () => {
   const { getFunctionName } = await import("convex/server");
-  const topic = () => ({ _id: "topic-1", name: "Trier et ranger", subjectId: "subject-1", class: classes.topic });
+  const topic = () => ({
+    _id: "topic-1",
+    name: "Trier et ranger",
+    subjectId: "subject-1",
+    class: classes.topic,
+    programmeKey: classes.programmeKey,
+  });
   const exercise = {
     _id: "exo-1",
     type: "qcm",
@@ -81,12 +91,18 @@ vi.mock("@/lib/sounds", () => ({
   play: vi.fn(),
   playCorrect: vi.fn(),
 }));
-// L'écran de l'exercice : une sonde qui dit si la porte des images est ouverte.
+// L'écran de l'exercice : une sonde qui dit si la porte des images et celle de la voix des tuiles sont ouvertes.
 vi.mock("@/components/student/game/session-screens", async (importOriginal) => {
   const { useItemPicturesEnabled } = await import("@/components/exercises/item-pictures");
+  const { usePromptReader } = await import("@/components/exercises/prompt-reader");
   return {
     ...(await importOriginal<typeof import("@/components/student/game/session-screens")>()),
-    ExerciseRenderer: () => <p data-testid="porte">{useItemPicturesEnabled() ? "images" : "sans images"}</p>,
+    ExerciseRenderer: () => (
+      <>
+        <p data-testid="porte">{useItemPicturesEnabled() ? "images" : "sans images"}</p>
+        <p data-testid="voix">{usePromptReader()?.tileVoice ? "voix des tuiles" : "sans voix des tuiles"}</p>
+      </>
+    ),
   };
 });
 
@@ -97,6 +113,7 @@ afterEach(() => {
   cleanup();
   classes.profile = "CI";
   classes.topic = "CI";
+  classes.programmeKey = undefined;
 });
 
 /** Joue la séance d'un enfant de cette classe (et d'une thématique de cette classe) jusqu'au premier exercice. */
@@ -105,6 +122,15 @@ async function door(profile: string | undefined, topic: string | undefined = pro
   classes.topic = topic;
   render(<OnlineSession />);
   return (await screen.findByTestId("porte")).textContent;
+}
+
+/** La même séance, vue par la porte de la voix des tuiles (`isTileVoiceClass`, hors anglais). */
+async function voice(profile: string | undefined, topic: string | undefined = profile, programmeKey?: string) {
+  classes.profile = profile;
+  classes.topic = topic;
+  classes.programmeKey = programmeKey;
+  render(<OnlineSession />);
+  return (await screen.findByTestId("voix")).textContent;
 }
 
 describe("la séance en ligne et les images de tuile", () => {
@@ -133,5 +159,35 @@ describe("la séance en ligne et les images de tuile", () => {
     expect(await door(undefined, "CI")).toBe("images");
     cleanup();
     expect(await door(undefined, "CE1")).toBe("sans images");
+  });
+});
+
+describe("la séance en ligne et la voix des tuiles", () => {
+  it("l'allume pour un enfant de CI", async () => {
+    expect(await voice("CI")).toBe("voix des tuiles");
+  });
+
+  it("l'éteint pour un enfant de CP (qui a pourtant la voix des consignes) et pour les classes plus grandes", async () => {
+    expect(await voice("CP")).toBe("sans voix des tuiles");
+    for (const klass of ["CE1", "CE2", "CM2"]) {
+      cleanup();
+      expect(await voice(klass), klass).toBe("sans voix des tuiles");
+    }
+  });
+
+  it("lit la classe de l'enfant d'abord : un CP sur une thématique de CI ne l'entend pas", async () => {
+    expect(await voice("CP", "CI")).toBe("sans voix des tuiles");
+  });
+
+  it("à défaut de classe sur le profil, lit celle de la thématique", async () => {
+    expect(await voice(undefined, "CI")).toBe("voix des tuiles");
+    cleanup();
+    expect(await voice(undefined, "CE1")).toBe("sans voix des tuiles");
+  });
+
+  it("l'éteint en anglais : la fiche du programme (« an- ») le dit", async () => {
+    expect(await voice("CI", "CI", "an-ci-colours")).toBe("sans voix des tuiles");
+    cleanup();
+    expect(await voice("CI", "CI", "fr-ci-lettres")).toBe("voix des tuiles");
   });
 });

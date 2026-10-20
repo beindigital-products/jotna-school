@@ -20,6 +20,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { clipRequestKey, type ClipRequest, type ClipResult } from "@/convex/offline/contract";
 import { allSpeechRefs } from "@/convex/arabic/speechText";
+import { isTileVoiceClass, readableTextsOf, tileClipVerdict } from "@/convex/voice/tiles";
 import { knownClipKeys, linkClip, saveClip, storedClipIds } from "./clips";
 import type { OfflineEngine } from "./engine";
 import { exercisesKey } from "./model";
@@ -182,10 +183,50 @@ export class OfflineSync {
       for (const exercise of content.exercises) {
         requests.push({ kind: "prompt", exerciseId: exercise._id });
       }
+      requests.push(...this.neededTileClips());
     }
     const arabicOn = snapshot?.modules.some((m) => m.key === "arabe_coran" && m.enabled) ?? false;
     if (arabicOn) {
       for (const ref of allSpeechRefs()) requests.push({ kind: "arabic", ref });
+    }
+    return requests;
+  }
+
+  /**
+   * Les tuiles à dire aux enfants de CI (`convex/voice/tiles.ts`), UN SON PAR TEXTE :
+   * « le chat » n'est téléchargé qu'une fois, quel que soit le nombre d'exercices
+   * qui le proposent (la clé de l'appareil est le texte). C'est la décision du
+   * serveur qui tranche (`tileClipVerdict`) : classe, anglais, énoncé qui demande
+   * de lire ou de décoder, tuile sans rien à dire.
+   */
+  private neededTileClips(): ClipRequest[] {
+    const snapshot = this.engine.snapshot;
+    const content = this.engine.content;
+    if (!snapshot || !content) return [];
+    const learnerClass = snapshot.profile.class ?? content.class;
+    if (!isTileVoiceClass(learnerClass)) return [];
+
+    const subjectName = new Map(content.subjects.map((s) => [s._id as string, s.name] as const));
+    const topicOf = new Map(content.topics.map((t) => [t._id as string, t] as const));
+    const palierOf = new Map(content.paliers.map((p) => [p._id as string, p] as const));
+    const requests: ClipRequest[] = [];
+    const seen = new Set<string>();
+    for (const exercise of content.exercises) {
+      const palier = palierOf.get(exercise.palierId as string);
+      const topic = palier ? topicOf.get(palier.topicId as string) : undefined;
+      const info = {
+        programmeKey: topic?.programmeKey ?? null,
+        subjectName: topic ? (subjectName.get(topic.subjectId as string) ?? null) : null,
+      };
+      for (const text of readableTextsOf(exercise.type, exercise.payload)) {
+        const verdict = tileClipVerdict({ learnerClass, topic: info, exercise, text });
+        if (!verdict.ok) continue;
+        const request: ClipRequest = { kind: "tile", exerciseId: exercise._id, text };
+        const key = clipRequestKey(request);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        requests.push(request);
+      }
     }
     return requests;
   }

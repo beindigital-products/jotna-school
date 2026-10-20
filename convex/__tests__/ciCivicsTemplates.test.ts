@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { isSceneClipId } from "../../lib/scene-clips";
 import { auditExercise } from "../paliers/exerciseAudit";
+import { sanitizePayload } from "../paliers/exerciseRules";
 import { GAME_KINDS, gameOriginOf, generateGames, regenerateGame, type GameKind } from "../paliers/games";
 import { GAPS, SCENES, SEQUENCES, TOPICS } from "../paliers/games/civique";
 import { makeContext, type GameLevel } from "../paliers/games/shared";
@@ -785,6 +787,52 @@ describe("la bonne réponse ne se devine pas", () => {
   it("pose les deux sortes de questions de l'intrus", () => {
     const prompts = new Set(many.map((d) => make("civ-intrus", d).prompt));
     expect([...prompts].sort()).toEqual(["Quel geste est bien ?", "Quel geste n'est pas bien ?"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Le clip de la scène
+// ---------------------------------------------------------------------------
+
+describe("le clip de la scène", () => {
+  it("est celui de la scène que l'énoncé raconte, pour chacun des 240 tirages du QCM", () => {
+    for (const d of draws) {
+      const exo = make("civ-situation", d);
+      const scene = SCENES.find((candidate) => candidate.id === exo.payload.scene);
+      const where = `${d.topic} ${d.level} ${d.seed}`;
+      expect(scene, `${where} : une scène du module`).toBeDefined();
+      expect(isSceneClipId(exo.payload.scene), `${where} : un clip du catalogue`).toBe(true);
+      expect(exo.prompt, where).toBe(`${scene!.text} Que fais-tu ?`);
+      expect(scene!.topic, where).toBe(d.topic);
+    }
+  });
+
+  it("n'est porté que par le QCM de la situation : les autres gabarits n'ont pas de scène à montrer", () => {
+    for (const kind of KINDS.filter((candidate) => candidate !== "civ-situation")) {
+      for (const d of draws.slice(0, 40)) expect(make(kind, d).payload.scene, `${kind} ${d.seed}`).toBeUndefined();
+    }
+  });
+
+  it("part vers l'écran de l'enfant, sans la bonne réponse", () => {
+    for (const d of draws.slice(0, 40)) {
+      const exo = make("civ-situation", d);
+      const view = sanitizePayload("qcm", exo.payload, "exercice", "tentative") as Record<string, unknown>;
+      expect(view.scene, d.seed).toBe(exo.payload.scene);
+      expect(view, d.seed).not.toHaveProperty("correctIndex");
+    }
+  });
+
+  it("revient avec l'exercice que l'enfant refait : la scène change, le clip aussi", () => {
+    const seen = new Set<unknown>();
+    for (let n = 0; n < 12; n++) {
+      const redone = regenerateGame({ kind: "civ-situation", level: 2, vocabulary: "route" }, "CI", `refait:${n}`);
+      expect(redone, `refait ${n}`).not.toBeNull();
+      const scene = SCENES.find((candidate) => candidate.id === redone!.payload.scene);
+      expect(scene?.topic, `refait ${n}`).toBe("route");
+      expect(redone!.prompt, `refait ${n}`).toBe(`${scene!.text} Que fais-tu ?`);
+      seen.add(redone!.payload.scene);
+    }
+    expect(seen.size, "plusieurs scènes de la route").toBeGreaterThan(2);
   });
 });
 

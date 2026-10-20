@@ -9,14 +9,16 @@ import {
   segmentPrompt,
 } from "@/components/student/game-kit/choix-texte";
 import { typeset } from "@/components/landing/typeset";
+import { isSceneClipId } from "@/lib/scene-clips";
 import { ExerciseImage } from "./ExerciseImage";
 import { usePromptReader } from "./prompt-reader";
+import { SceneClip } from "./SceneClip";
 
 /**
  * L'ÉNONCÉ D'UN EXERCICE, EN SCÈNE : la consigne dans la voix de Pio
  * (Fredoka extra-grasse, `amber-950`), sur TOUTE LA LARGEUR de la carte, la
  * rangée d'émojis posée sur un socle de sable, l'image d'énoncé sur son
- * présentoir.
+ * présentoir, et le clip d'une scène du CI (`SceneClip`) sur le même.
  *
  * LE HAUT-PARLEUR N'EST PLUS ICI. Le propriétaire l'a demandé : toute la
  * partie réservée à l'énoncé sert à l'énoncé, le bouton « Écouter » est posé
@@ -64,9 +66,23 @@ import { usePromptReader } from "./prompt-reader";
  * l'opacité change). Ailleurs (plus grands, aperçus des professeurs), la
  * consigne se rend telle quelle.
  */
-export default function ExercisePrompt({ prompt, image }: { prompt: string; image?: string }) {
+export default function ExercisePrompt({ prompt, image, scene }: { prompt: string; image?: string; scene?: string }) {
   const reader = usePromptReader();
   const text = <PromptText prompt={prompt} />;
+  // Le clip d'une scène du CI (`payload.scene`, `SceneClip`) passe AU-DESSUS de la
+  // consigne, sur le même présentoir que l'image d'énoncé. Un identifiant hors
+  // catalogue n'en montre aucun.
+  if (isSceneClipId(scene)) {
+    // Un téléphone couché (480 px de haut ou moins) pose le clip À CÔTÉ de l'énoncé.
+    return (
+      <div className="space-y-4 [@media(max-height:667px)_and_(min-height:481px)]:space-y-2 [@media(max-height:480px)]:flex [@media(max-height:480px)]:items-center [@media(max-height:480px)]:gap-4 [@media(max-height:480px)]:space-y-0">
+        <SceneClip key={scene} id={scene} />
+        <div className="min-w-0 flex-1">
+          <ExercisePrompt prompt={prompt} image={image} />
+        </div>
+      </div>
+    );
+  }
   // L'image d'énoncé (`payload.image`) passe AU-DESSUS de la consigne ; sans
   // image, rien ne change dans le DOM.
   if (image) {
@@ -79,7 +95,9 @@ export default function ExercisePrompt({ prompt, image }: { prompt: string; imag
   }
   if (!reader) return text;
 
-  const playing = reader.status === "playing";
+  // Le halo brille pour la CONSIGNE seule : quand Pio dit une proposition, c'est la
+  // tuile qui s'allume (`Tile3D`). Un lecteur sans ce champ (les anciens) suit le statut.
+  const playing = reader.promptPlaying ?? reader.status === "playing";
   return (
     <div className="relative" data-prompt-reading={playing ? "1" : "0"}>
       {/* Le halo de lecture : peint une fois, seule son opacité bouge. */}

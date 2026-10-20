@@ -59,6 +59,8 @@ export const KINDS = [
   "color-mix",
   "listen",
   "pixel-art",
+  // Une scène de l'instruction civique du CI : son clip passe au-dessus de l'énoncé (`SceneClip`).
+  "qcm-scene",
   // Les tuiles qui nomment une chose : au CI, elles montrent son image (voir plus haut).
   "order-animaux",
   "order-animaux-4",
@@ -91,6 +93,7 @@ export const KIND_LABELS: Record<Kind, string> = {
   "qcm-mots-seuls": "QCM, quatre noms sans émoji (CI)",
   "match-mots": "Association, noms sans émoji (animaux et cris, CI)",
   "drag-drop-savane": "Glisser-déposer, noms sans émoji (savane et ferme, CI)",
+  "qcm-scene": "QCM, une scène avec son clip (instruction civique, CI)",
 };
 
 export const STATES = ["repos", "choisie", "bonne", "mauvaise", "desactive"] as const;
@@ -220,7 +223,14 @@ const BARE_LABELS = dragDrop({
   hints: ["Dis le nom de chaque animal.", "Certains animaux vivent près des maisons, d'autres dans la nature.", "Le lion et la hyène vivent dans la savane."],
 });
 
-/** Les dix-huit spécimens. Calculés une fois par page : les graines sont fixes, le résultat aussi. */
+/**
+ * « Tu sors de classe. Ta maman est de l'autre côté de la route. Que fais-tu ? » (`ro8`) : la plus
+ * longue des 41 situations, un énoncé de trois ou quatre lignes sous le clip. C'est le pire cas du
+ * premier écran, celui que `scripts/shoot-exercises.mjs --seance-types qcm-scene` mesure.
+ */
+const SEED_SCENE_CLIP = "galerie-scene-9";
+
+/** Les dix-neuf spécimens. Calculés une fois par page : les graines sont fixes, le résultat aussi. */
 export function buildSpecimens(): Record<Kind, Specimen> {
   return {
     qcm3: specimen("qcm3", "CI", template("rangee-position", "CI", "galerie-rangee-3")),
@@ -241,6 +251,7 @@ export function buildSpecimens(): Record<Kind, Specimen> {
     "qcm-mots-seuls": specimen("qcm-mots-seuls", "CI", handmade("qcm-mots-seuls", BARE_NAMES)),
     "match-mots": specimen("match-mots", "CI", handmade("match-mots", BARE_PAIRS)),
     "drag-drop-savane": specimen("drag-drop-savane", "CI", handmade("drag-drop-savane", BARE_LABELS)),
+    "qcm-scene": specimen("qcm-scene", "CI", template("civ-situation", "CI", SEED_SCENE_CLIP)),
   };
 }
 
@@ -353,6 +364,7 @@ export async function armSpecimen(root: HTMLElement, specimen: Specimen, state: 
     case "qcm4":
     case "qcm-intrus":
     case "qcm-mots-seuls":
+    case "qcm-scene":
     case "listen": {
       const options = (full.options as string[]) ?? [];
       const correct = typeof full.correctIndex === "number" ? full.correctIndex : 0;

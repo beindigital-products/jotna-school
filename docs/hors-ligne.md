@@ -122,6 +122,8 @@ L'application télécharge les sons une fois, puis les joue depuis l'appareil
 
 - la consigne de chaque exercice de la classe, pour les enfants de CI et de
   CP (`readsAloud`) ;
+- les propositions des exercices du CI, un son par texte : « le chat » ne se
+  télécharge qu'une fois (`docs/voix-des-tuiles.md`) ;
 - toutes les voix du module d'arabe, quand l'école l'a allumé.
 
 `offline/voice:prepareClips` rend le son déjà prêt, ou le fait synthétiser

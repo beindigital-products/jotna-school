@@ -28,6 +28,7 @@ import {
   type Socket,
 } from "@/components/student/game-kit/gestes-cables";
 import { useTilePictures } from "./item-pictures";
+import { useTileVoice } from "./prompt-reader";
 import { glyphTilesOf, isDenseTileCount, TilePicture } from "./tile-picture";
 
 /**
@@ -177,6 +178,12 @@ export default function MatchExercise({
     left: useTilePictures(left, { prompt, glyphTiles: glyphTilesOf(right), counterpart: right, exerciseImage }),
     right: useTilePictures(right, { prompt, glyphTiles: glyphTilesOf(left), counterpart: left, exerciseImage }),
   };
+  // La voix des tuiles (CI) : toucher un mot le dit. Les deux colonnes se suivent
+  // (le rang d'une tuile de droite est celui de la gauche plus son indice). Pas de
+  // file automatique : six à dix mots à la suite, après le mode d'emploi, feraient
+  // attendre l'enfant ; il entend chaque mot en le touchant.
+  const tileVoice = useTileVoice([...left, ...right], prompt);
+  const voiceIndex = (side: Side, index: number) => (side === "left" ? index : left.length + index);
 
   // Des INDICES dans `left` et `right`, jamais des textes (voir l'en-tête).
   // La tuile choisie attend son partenaire dans l'autre colonne.
@@ -241,6 +248,8 @@ export default function MatchExercise({
 
   const handleClick = (side: Side, index: number) => {
     if (disabled) return;
+    // Toucher un mot, c'est l'entendre, qu'il se relie, se délie ou se choisisse.
+    tileVoice?.hear(voiceIndex(side, index));
     // Une tuile reliée : on défait son lien.
     if (links.some((link) => link[side] === index)) {
       setLinks(links.filter((link) => link[side] !== index));
@@ -361,6 +370,7 @@ export default function MatchExercise({
             elevation={linked ? "posee" : undefined}
             disabled={disabled}
             onPress={() => handleClick(side, index)}
+            speaking={tileVoice?.speaking === voiceIndex(side, index)}
             align="center"
             data-side={side}
             data-linked={linked ? "true" : "false"}

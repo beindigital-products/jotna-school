@@ -16,7 +16,8 @@
  *
  * LA MAISON DES GESTES. Une SCÈNE est une situation de la vie d'un enfant (« Ta grand-mère te parle. »), avec LE
  * geste qui convient (« J'écoute ma grand-mère ») et trois gestes qui ne conviennent pas. Tout vient de là :
- * - le QCM pose la scène et propose le bon geste parmi deux mauvais ;
+ * - le QCM pose la scène (son clip joue au-dessus de l'énoncé : `payload.scene`, `lib/scene-clips.ts`) et propose
+ *   le bon geste parmi deux mauvais ;
  * - la case « à faire » reçoit les bons gestes de plusieurs scènes, la case « à éviter » leurs mauvais gestes ;
  * - l'intrus en prend deux d'un côté et un de l'autre ;
  * - l'association relie l'étiquette de la scène à son bon geste.
@@ -35,6 +36,9 @@
  *   feu vert », « le passage piéton ». L'écran y met l'image du catalogue à la place de l'émoji.
  * - Un émoji ancien (Unicode 11 au plus), jamais suivi de U+FE0F : pas de 🖍 ✏ 🗑 ⚠ ❤ ni de pastille de couleur.
  * - L'énoncé n'a aucun « : », au plus une apostrophe droite, vingt mots au plus (la consigne du CI).
+ * - Une scène a son clip, de même identifiant (`lib/scene-clips.ts`, `public/videos/scenes/<id>.mp4`) : il montre la
+ *   situation et JAMAIS le bon geste, les bureaux des élèves face au tableau. Voir `docs/scenes-civiques-clips.md` ;
+ *   un test refuse une scène sans clip.
  *
  * LES ORDRES ne sont posés que sur des suites qui n'ont qu'un ordre : la traversée (s'arrêter, gauche, droite,
  * traverser), « le feu DEVIENT vert » (après le rouge, jamais avant), le matin, le repas, le prêt du ballon.
@@ -751,6 +755,8 @@ export function makeSceneChoice(ctx: GameContext): GeneratedGame {
       payload: {
         options,
         correctIndex: options.indexOf(actTile(scene.right)),
+        // Le clip de la scène (`lib/scene-clips.ts`) : la situation en images, jamais le bon geste.
+        scene: scene.id,
         game: originOf("civ-situation", ctx),
         concept: CONCEPT[topic],
       },

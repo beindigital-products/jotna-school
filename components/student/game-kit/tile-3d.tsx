@@ -4,6 +4,7 @@ import { Check, X } from "lucide-react";
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   type CSSProperties,
@@ -131,6 +132,13 @@ type Props = Omit<HTMLAttributes<HTMLElement>, "onClick" | "children" | "style">
   as?: "button" | "div";
   /** Force ou coupe l'inclinaison sous le doigt (sinon : le niveau décide). */
   tilt?: boolean;
+  /**
+   * Pio dit cette tuile à voix haute (`useTileVoice`, `prompt-reader.tsx`) : un
+   * anneau ciel l'entoure et respire. L'enfant qui ne lit pas relie ce qu'il
+   * entend à ce qu'il voit. Une couche peinte une fois, dont seule l'opacité
+   * bouge (et un souffle de `transform`) ; sans mouvement, l'anneau reste fixe.
+   */
+  speaking?: boolean;
   style?: CSSProperties;
 };
 
@@ -147,6 +155,7 @@ export const Tile3D = forwardRef<HTMLElement, Props>(function Tile3D(
     align = "left",
     as = "button",
     tilt,
+    speaking = false,
     className = "",
     style,
     ...rest
@@ -157,6 +166,18 @@ export const Tile3D = forwardRef<HTMLElement, Props>(function Tile3D(
   const objectRef = useRef<HTMLSpanElement>(null);
   const rootRef = useRef<HTMLElement>(null);
   useImperativeHandle(ref, () => rootRef.current as HTMLElement);
+
+  // LA TUILE QUE PIO DIT DOIT SE VOIR. Sur un téléphone, les dernières tuiles d'un
+  // QCM passent sous le dock (le clip d'une scène prend leur place, `SceneClip`) : la
+  // file de la voix (`prompt-reader.tsx`) allumerait une tuile que l'enfant ne voit
+  // pas. Elle vient donc dans l'écran, du minimum (`nearest` : rien ne bouge si elle y
+  // est déjà), entre l'en-tête collant et le dock (`scroll-margin` plus bas). Les
+  // tuiles-boutons seulement : celles de la file automatique ; une étiquette qu'on
+  // saisit (`as="div"`) ne doit pas faire défiler la page sous le doigt.
+  useEffect(() => {
+    if (!speaking || as !== "button") return;
+    rootRef.current?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [speaking, as]);
 
   const tiltAllowed = tilt ?? feel.budget.tilt;
   const tilting = tiltAllowed && !disabled;
@@ -230,12 +251,15 @@ export const Tile3D = forwardRef<HTMLElement, Props>(function Tile3D(
 
   const shared = {
     ref: rootRef as React.Ref<HTMLButtonElement & HTMLDivElement>,
-    className: `gk-tile gk-motion group relative flex w-full select-none flex-col rounded-2xl text-left font-display font-extrabold gk-focus ${
+    // `scroll-mt` : sous l'en-tête collant (86 px) ; `scroll-mb` : au-dessus du dock
+    // (`--dock-h`, posé par la coque de la séance) et un souffle.
+    className: `gk-tile gk-motion group relative flex w-full select-none flex-col rounded-2xl text-left font-display font-extrabold gk-focus scroll-mt-28 scroll-mb-[calc(var(--dock-h,0px)+1.25rem)] ${
       disabled ? "cursor-not-allowed" : as === "button" ? "cursor-pointer" : ""
     } ${className}`,
     style: rootVars,
     "data-state": state,
     "data-elevation": elevationFor(state, elevation),
+    "data-speaking": speaking || undefined,
     onPointerMove: tilting ? onPointerMove : undefined,
     onPointerLeave: tilting ? resetTilt : undefined,
     onPointerUp: tilting ? resetTilt : undefined,
@@ -263,6 +287,17 @@ export const Tile3D = forwardRef<HTMLElement, Props>(function Tile3D(
         }`}
         style={objectStyle}
       >
+        {/* L'anneau de la voix : Pio dit cette tuile. Posé derrière le flanc et
+            plus grand que lui, il déborde de 6 px tout autour (11 px en bas : le
+            flanc y ajoute ses 5 px) : un contour ciel qui respire (opacité et
+            échelle, rien d'autre). Absent du DOM sinon. */}
+        {speaking && (
+          <span
+            aria-hidden
+            data-tile-speaking
+            className="pointer-events-none absolute -left-1.5 -right-1.5 -top-1.5 -bottom-[11px] rounded-[1.375rem] border-4 border-sky-500 bg-sky-200/50 animate-[gk-speak_1.1s_ease-in-out_infinite]"
+          />
+        )}
         {/* Le flanc : l'épaisseur, décalée vers le bas. */}
         <span
           aria-hidden

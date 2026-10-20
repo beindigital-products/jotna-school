@@ -18,6 +18,7 @@
  *   --base <url>         le serveur (défaut http://localhost:3000)
  *   --types a,b          qcm3,qcm4,match,order,drag-drop,fill-blank,short-answer,
  *                        short-answer-texte,pattern,color-mix,listen,pixel-art,
+ *                        qcm-scene (le clip d'une scène de l'instruction civique),
  *                        puis les six types de TUILES QUI NOMMENT UNE CHOSE, dont
  *                        un enfant de CI voit l'image : order-animaux,
  *                        order-animaux-4, qcm-intrus, qcm-mots-seuls, match-mots,
@@ -126,6 +127,8 @@ const KINDS = [
   "color-mix",
   "listen",
   "pixel-art",
+  // Une scène de l'instruction civique du CI, avec son clip au-dessus de l'énoncé.
+  "qcm-scene",
   // Les tuiles qui nomment une chose (au CI, chacune montre son image) : la suite de `KINDS`
   // dans `app/dev/exercices/specimens.ts`, qu'un test compare à cette liste.
   "order-animaux",

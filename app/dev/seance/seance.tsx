@@ -18,6 +18,7 @@ import { AnswerFeedback } from "@/components/student/game/answer-feedback";
 import { PalierResultScreen } from "@/components/student/game/palier-result";
 import { SessionStage } from "@/components/student/game/session-stage";
 import { verifyAnswer } from "@/convex/paliers/exerciseRules";
+import { isTileVoiceClass } from "@/convex/voice/tiles";
 import { playCorrect } from "@/lib/sounds";
 import { picturesEnabled, readImagesFlag } from "../images";
 import { DevBar, DevButton, DevSelect, DevToggle, SessionShell } from "../session-shell";
@@ -53,7 +54,10 @@ import { buildSpecimens, isKind, KIND_LABELS, KINDS, type Kind, type Specimen } 
  *                lecteur est muet (`silenced`) : les spécimens n'ont pas
  *                d'identifiant Convex. C'est ainsi qu'on vérifie, dans le
  *                webview iOS, que Pio montre son affiche pendant la voix et
- *                reprend son clip après (`session-stage.tsx`).
+ *                reprend son clip après (`session-stage.tsx`). Pour un exercice de
+ *                CI, la voix des tuiles est allumée aussi (`isTileVoiceClass`) : le
+ *                même son joue pour chaque proposition, de quoi voir la file, l'anneau
+ *                qui passe de tuile en tuile et le toucher qui redit (`prompt-reader.tsx`).
  *   &son=1       sur un écran de fin, un son part 2,5 s après l'arrivée, sous le
  *                clip « cheer » de Pio : la sonde (`&sonde=1`) dit si la vidéo
  *                le remarque, le film si sa couche s'éteint.
@@ -333,6 +337,7 @@ function FakeSessionInner() {
             exerciseId={exo.exercise.id}
             silenced={voice ? feedback !== null : true}
             clipUrl={voice ? "/sounds/badge.mp3" : undefined}
+            tileVoice={voice && isTileVoiceClass(exo.klass)}
           >
             <Screen specimen={exo} disabled={disabled} isCorrect={feedback?.correct ?? null} onSubmit={submit} />
           </PromptReaderProvider>

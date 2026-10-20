@@ -22,6 +22,7 @@ import { graphemeCount } from "@/components/student/game-kit/choix-texte";
 import { DropBox } from "@/components/student/game-kit/gestes-cases";
 import type { ItemImage } from "@/lib/item-images";
 import { useTilePictures } from "./item-pictures";
+import { useTileVoice } from "./prompt-reader";
 import { glyphTilesOf, isDenseTileCount, TilePicture, TileSticker, tileName } from "./tile-picture";
 
 /**
@@ -153,6 +154,8 @@ function DroppableZone({
   armed,
   verdict,
   onChoose,
+  speaking,
+  onHear,
   children,
 }: {
   id: string;
@@ -166,6 +169,10 @@ function DroppableZone({
   armed: boolean;
   verdict: boolean | null;
   onChoose: () => void;
+  /** Pio dit le nom de cette case (voix des tuiles, CI) : sa plaque s'entoure. */
+  speaking: boolean;
+  /** Sans étiquette choisie, toucher la case dit son nom ; `undefined` hors CI. */
+  onHear?: () => void;
   children: React.ReactNode;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id });
@@ -178,8 +185,9 @@ function DroppableZone({
       picture={image ? <TileSticker image={image} text={label} dense={dense} /> : undefined}
       armed={armed}
       over={isOver}
+      speaking={speaking}
       state={verdict === true ? "juste" : verdict === false ? "fausse" : "repos"}
-      onClick={armed ? onChoose : undefined}
+      onClick={armed ? onChoose : onHear}
     >
       {children}
     </DropBox>
@@ -196,6 +204,7 @@ function DraggableItem({
   selected,
   verdict,
   onChoose,
+  speaking,
 }: {
   id: string;
   label: string;
@@ -209,6 +218,8 @@ function DraggableItem({
   selected: boolean;
   verdict: boolean | null;
   onChoose: () => void;
+  /** Pio dit cette étiquette (voix des tuiles, CI) : un anneau l'entoure. */
+  speaking: boolean;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
@@ -238,6 +249,7 @@ function DraggableItem({
         // En l'air, c'est l'`DragOverlay` qui la montre : ici reste son creux.
         elevation={isDragging ? "plat" : undefined}
         disabled={disabled}
+        speaking={speaking}
         align="center"
         onKeyDown={(event) => {
           if (disabled || (event.key !== "Enter" && event.key !== " ")) return;
@@ -307,6 +319,11 @@ export default function DragDropExercise({
   const exerciseImage = payloadImage(payload);
   const itemPictures = useTilePictures(itemTexts, { prompt, glyphTiles: glyphTilesOf(zones), counterpart: zones, exerciseImage });
   const zonePictures = useTilePictures(zones, { prompt, glyphTiles: glyphTilesOf(itemTexts), counterpart: itemTexts, exerciseImage });
+  // La voix des tuiles (CI) : toucher ou saisir une étiquette la dit, toucher une case
+  // (sans étiquette en main) dit son nom. Les rangs : les étiquettes d'abord, puis les
+  // cases (`tileTextsOf`). Pas de file automatique (voir `useTileVoice`).
+  const tileVoice = useTileVoice([...itemTexts, ...zones], prompt);
+  const zoneVoice = (zone: number) => items.length + zone;
 
   if (zones.length < 2 || items.length < 2) {
     return (
@@ -325,6 +342,9 @@ export default function DragDropExercise({
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
     feel.vibrate("tap");
+    // Saisir une étiquette, c'est l'entendre : l'enfant sait ce qu'il tient.
+    const grabbed = items.findIndex((_, index) => itemId(index) === String(event.active.id));
+    if (grabbed >= 0) tileVoice?.hear(grabbed);
   };
 
   const zoneIds = zones.map((_, index) => zoneId(index));
@@ -354,9 +374,13 @@ export default function DragDropExercise({
   //    c'est toucher cette case (le centre d'une case pleine tombe sur une
   //    étiquette, pas sur le fond) ; la choisie y est posée ;
   //  - sinon : c'est la nouvelle étiquette choisie.
+  //
+  // Toucher une étiquette pour la choisir ou la relâcher la DIT. Poser la choisie
+  // dans la case d'une autre ne la dit pas : l'enfant visait la case.
   const choose = (item: number) => {
     if (disabled) return;
     if (chosen === item) {
+      tileVoice?.hear(item);
       setChosen(null);
       return;
     }
@@ -366,6 +390,7 @@ export default function DragDropExercise({
       setChosen(null);
       return;
     }
+    tileVoice?.hear(item);
     setChosen(item);
     feel.vibrate("tap");
   };
@@ -443,6 +468,7 @@ export default function DragDropExercise({
                 selected={chosen === index}
                 verdict={isCorrect}
                 onChoose={() => choose(index)}
+                speaking={tileVoice?.speaking === index && activeId === null}
               />
             ))}
           </div>
@@ -462,6 +488,8 @@ export default function DragDropExercise({
                 armed={chosen !== null && zoneOfItem[chosen] !== zoneIndex}
                 verdict={isCorrect}
                 onChoose={() => putChosenIn(zoneIndex)}
+                speaking={tileVoice?.speaking === zoneVoice(zoneIndex)}
+                onHear={tileVoice && !disabled ? () => tileVoice.hear(zoneVoice(zoneIndex)) : undefined}
               >
                 {items.map((item, index) =>
                   zoneOfItem[index] === zoneIndex ? (
@@ -476,6 +504,7 @@ export default function DragDropExercise({
                       selected={chosen === index}
                       verdict={isCorrect}
                       onChoose={() => choose(index)}
+                      speaking={tileVoice?.speaking === index && activeId === null}
                     />
                   ) : null,
                 )}
@@ -488,7 +517,15 @@ export default function DragDropExercise({
         {/* L'étiquette en l'air : soulevée, un peu penchée, elle se pose avec un ressort. */}
         <DragOverlay dropAnimation={feel.reducedMotion ? null : DROP_SPRING}>
           {activeLabel !== undefined ? (
-            <Tile3D as="div" tone={GRAB_TONE} state="choisie" elevation="saisie" align="center" className="rotate-[-2deg] cursor-grabbing">
+            <Tile3D
+              as="div"
+              tone={GRAB_TONE}
+              state="choisie"
+              elevation="saisie"
+              align="center"
+              speaking={tileVoice?.speaking === activeIndex}
+              className="rotate-[-2deg] cursor-grabbing"
+            >
               <TilePicture text={activeLabel} image={itemPictures[activeIndex]} dense={dense} />
             </Tile3D>
           ) : null}
