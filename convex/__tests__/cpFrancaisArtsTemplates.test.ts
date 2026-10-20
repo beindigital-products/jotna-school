@@ -766,11 +766,13 @@ describe("les huit thématiques de français et d'arts du CP", () => {
     }
   });
 
-  it("sont, avec les quinze des deux premiers lots, les seules thématiques du CP entièrement faites par le code", () => {
-    const allCode = allProgrammeEntries()
-      .filter((e) => e.klass === "CP" && (e.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0) >= PALIER_SIZE)
-      .map((e) => e.topic.key);
-    expect(allCode.sort()).toEqual([...LOT1_KEYS, ...LOT2_KEYS, ...KEYS].sort());
+  it("sont toutes entièrement faites par le code, avec celles des lots précédents (la liste exacte est dans cpCiviqueTemplates.test.ts)", () => {
+    const allCode = new Set(
+      allProgrammeEntries()
+        .filter((e) => e.klass === "CP" && (e.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0) >= PALIER_SIZE)
+        .map((e) => e.topic.key),
+    );
+    for (const key of [...LOT1_KEYS, ...LOT2_KEYS, ...KEYS]) expect(allCode.has(key), key).toBe(true);
   });
 
   it("sont celles du CP, et n'ont changé ni leur clé ni leur nombre de paliers", () => {
@@ -812,6 +814,22 @@ describe("les huit thématiques de français et d'arts du CP", () => {
       for (const palierIndex of [1, 2, 3]) {
         const games = generateGames(topicOf(key).games ?? [], { klass: "CP", palierIndex, palierCount: 3, seed: key });
         expect(new Set(games.map((game) => game.type)).size, `${key} palier ${palierIndex}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
+  it("racontent des histoires différentes dans un même palier : trois ordres de phrases, trois histoires, et deux trous, deux histoires", () => {
+    const storyOf = (text: string) => STORY.findIndex((story) => text.includes(story.go) || text.includes(story.end));
+    for (let n = 0; n < 60; n++) {
+      for (const palierIndex of [1, 2, 3]) {
+        const games = generateGames(topicOf("fr-cp-raconter").games ?? [], { klass: "CP", palierIndex, palierCount: 3, seed: `histoires:${n}:${palierIndex}` });
+        const orders = games.filter((game) => game.payload.game.kind === "recit-ordre").map((game) => storyOf(sequenceOf(game as unknown as Exo).join(" ")));
+        const gaps = games.filter((game) => game.payload.game.kind === "recit-trou").map((game) => storyOf(textOf(game as unknown as Exo)));
+        expect(orders, `palier ${palierIndex} #${n}`).toHaveLength(3);
+        expect(new Set(orders).size, `ordres du palier ${palierIndex} #${n} : ${orders.join(",")}`).toBe(3);
+        expect(gaps, `palier ${palierIndex} #${n}`).toHaveLength(2);
+        expect(new Set(gaps).size, `trous du palier ${palierIndex} #${n} : ${gaps.join(",")}`).toBe(2);
+        expect([...orders, ...gaps].every((index) => index >= 0)).toBe(true);
       }
     }
   });

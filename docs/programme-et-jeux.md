@@ -315,7 +315,7 @@ arrivent plus tard.
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
 🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
-`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter et les arts le sont ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts et l'instruction civique le sont ; la liste de celles du CI est dans
 `docs/paliers-et-exercices.md`.
 
 ### Français
@@ -390,7 +390,7 @@ arrivent plus tard.
 | Classe | Thématiques |
 | --- | --- |
 | CI | Bonjour, merci, pardon · À l'école chaque jour · On s'entraide · Traverser la rue |
-| CP | Le règlement de la classe · Mes responsabilités en classe · Filles et garçons, tous égaux · La sécurité sur la route · Régler un conflit sans se battre |
+| CP | Le règlement de la classe 🧩 · Mes responsabilités en classe 🧩 · Filles et garçons, tous égaux 🧩 · La sécurité sur la route 🧩 · Régler un conflit sans se battre 🧩 |
 | CE1 | Les symboles de la Nation · Le civisme · Respecter les autorités · Nos différences, notre richesse |
 | CE2 | Mes droits et mes devoirs · Vivre en paix · Les bonnes valeurs · La vie en communauté |
 | CM1 | Prévenir les conflits par le dialogue · La coopérative et le gouvernement scolaire · La commune et l'État · Les organisations de mon quartier |

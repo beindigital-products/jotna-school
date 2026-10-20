@@ -22,7 +22,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { pick, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { pick, pickFresh, shuffle, type GameContext, type GeneratedGame } from "./shared";
 import { choiceGame, firstLetter, gapGame, linkGame, sequenceGame } from "./tableaux";
 
 type Person = { name: string; pronoun: "Il" | "Elle" };
@@ -91,7 +91,8 @@ const people = (ctx: GameContext, n: number) => shuffle(ctx.rng, PEOPLE).slice(0
 /** « D'abord, Awa va au marché. » « Ensuite, elle achète des mangues. » « Enfin, elle rentre à la maison. » remises dans l'ordre. */
 export function makeStoryOrder(ctx: GameContext): GeneratedGame {
   return sequenceGame(ctx, "recit-ordre", "remettre les étapes d'une histoire dans l'ordre", () => {
-    const story = pick(ctx.rng, STORIES);
+    // Trois exercices par palier : trois histoires différentes, pas la même avec un autre prénom.
+    const story = pickFresh(ctx, STORIES, (candidate) => `recit-ordre:histoire:${candidate.go}`);
     const [person] = people(ctx, 1);
     return {
       prompt: "Remets les phrases dans le bon ordre.",
@@ -174,7 +175,7 @@ export function makeStoryWhen(ctx: GameContext): GeneratedGame {
 /** « D'abord, Awa va au marché. ___, elle achète des mangues. Enfin, elle rentre à la maison. » : le mot d'ordre qui manque. */
 export function makeStoryGap(ctx: GameContext): GeneratedGame {
   return gapGame(ctx, "recit-trou", "les mots d'ordre d'une histoire", () => {
-    const story = pick(ctx.rng, STORIES);
+    const story = pickFresh(ctx, STORIES, (candidate) => `recit-trou:histoire:${candidate.go}`);
     const [person] = people(ctx, 1);
     const words = ["D'abord", "Ensuite", "Enfin"] as const;
     const missing = pick(ctx.rng, words);
