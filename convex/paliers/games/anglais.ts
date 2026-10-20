@@ -32,13 +32,13 @@
  */
 import { fresh, originOf, pick, pickFresh, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
 
-const range = (n: number) => Array.from({ length: n }, (_, i) => i);
+export const range = (n: number) => Array.from({ length: n }, (_, i) => i);
 
 // ===========================================================================
 // LES MOTS ET LEURS OUTILS
 // ===========================================================================
 
-type Word = {
+export type Word = {
   en: string;
   /** Le mot français seul, sans article : l'étiquette d'une tuile. */
   fr: string;
@@ -48,22 +48,22 @@ type Word = {
   emoji?: string;
 };
 
-const tileOf = (word: Word) => (word.emoji ? `${word.emoji} ${word.en}` : word.en);
-const withPicture = (words: readonly Word[]) => words.filter((word) => word.emoji);
-const firstLetterHint = (word: Word) => `Le mot commence par la lettre ${word.en[0]}.`;
-const pairsCount = (level: number, available: number) => Math.min(available, level === 1 ? 3 : level === 2 ? 4 : 5);
+export const tileOf = (word: Word) => (word.emoji ? `${word.emoji} ${word.en}` : word.en);
+export const withPicture = (words: readonly Word[]) => words.filter((word) => word.emoji);
+export const firstLetterHint = (word: Word) => `Le mot commence par la lettre ${word.en[0]}.`;
+export const pairsCount = (level: number, available: number) => Math.min(available, level === 1 ? 3 : level === 2 ? 4 : 5);
 
-const linkKey = (game: GeneratedGame) =>
+export const linkKey = (game: GeneratedGame) =>
   (game.payload.pairs as { left: string; right: string }[])
     .map((pair) => `${pair.left}${pair.right}`)
     .sort()
     .join(",");
 
 /** Un mot qui n'a pas encore servi dans ce palier, quel que soit le jeu : les mêmes mots ne reviennent pas d'un exercice à l'autre. */
-const freshWord = <T extends Word>(ctx: GameContext, words: readonly T[]): T => pickFresh(ctx, words, (word) => `en:${word.en}`);
+export const freshWord = <T extends Word>(ctx: GameContext, words: readonly T[]): T => pickFresh(ctx, words, (word) => `en:${word.en}`);
 
 /** La bonne réponse d'un mot et deux autres mots de la liste, mélangés : les trois choix d'un QCM ou d'un trou. */
-function threeWords(ctx: GameContext, answer: Word, words: readonly Word[]): string[] {
+export function threeWords(ctx: GameContext, answer: Word, words: readonly Word[]): string[] {
   const wrong = shuffle(
     ctx.rng,
     words.filter((word) => word.en !== answer.en),
@@ -75,7 +75,7 @@ function threeWords(ctx: GameContext, answer: Word, words: readonly Word[]): str
 }
 
 /** « Quel mot va avec ce dessin ? » : le dessin sur sa propre ligne, le mot parmi trois mots. */
-function drawingToWord(kind: string, ctx: GameContext, words: readonly Word[], concept: string): GeneratedGame {
+export function drawingToWord(kind: string, ctx: GameContext, words: readonly Word[], concept: string): GeneratedGame {
   const drawn = withPicture(words);
   return fresh(ctx, kind, () => {
     const answer = freshWord(ctx, drawn);
@@ -95,7 +95,7 @@ function drawingToWord(kind: string, ctx: GameContext, words: readonly Word[], c
 }
 
 /** « Comment dit-on « la chaise » en anglais ? » : le mot français donne le sens, le mot anglais est le choix. */
-function frenchToWord(kind: string, ctx: GameContext, words: readonly Word[], concept: string): GeneratedGame {
+export function frenchToWord(kind: string, ctx: GameContext, words: readonly Word[], concept: string): GeneratedGame {
   return fresh(ctx, kind, () => {
     const answer = freshWord(ctx, words);
     const options = threeWords(ctx, answer, words);
@@ -114,7 +114,7 @@ function frenchToWord(kind: string, ctx: GameContext, words: readonly Word[], co
 }
 
 /** « Relie chaque dessin à son mot. » : trois à cinq paires. */
-function pictureLinks(kind: string, ctx: GameContext, words: readonly Word[], concept: string): GeneratedGame {
+export function pictureLinks(kind: string, ctx: GameContext, words: readonly Word[], concept: string): GeneratedGame {
   const drawn = withPicture(words);
   return fresh(
     ctx,
@@ -139,7 +139,7 @@ function pictureLinks(kind: string, ctx: GameContext, words: readonly Word[], co
 }
 
 /** « Relie chaque mot français à son mot anglais. » : pour les mots qu'aucun dessin sûr ne montre. */
-function frenchLinks(kind: string, ctx: GameContext, words: readonly Word[], concept: string): GeneratedGame {
+export function frenchLinks(kind: string, ctx: GameContext, words: readonly Word[], concept: string): GeneratedGame {
   return fresh(
     ctx,
     kind,
@@ -166,7 +166,7 @@ function frenchLinks(kind: string, ctx: GameContext, words: readonly Word[], con
  * « Glisse chaque mot dans la bonne case. » : quatre à six mots, les deux cases toujours servies. Aux deux
  * premiers niveaux le dessin accompagne le mot ; ensuite le mot est seul.
  */
-function sortWords(
+export function sortWords(
   kind: string,
   ctx: GameContext,
   zones: readonly [string, string],
@@ -202,7 +202,7 @@ function sortWords(
 }
 
 /** « Regarde le dessin et complète la phrase. » : le dessin en tête de la phrase, trois mots en choix. */
-function gapFromDrawing(
+export function gapFromDrawing(
   kind: string,
   ctx: GameContext,
   words: readonly Word[],
@@ -233,7 +233,7 @@ function gapFromDrawing(
 }
 
 /** « Complète la phrase pour dire « la chaise ». » : le sens vient du mot français de la consigne. */
-function gapFromFrench<T extends Word>(
+export function gapFromFrench<T extends Word>(
   kind: string,
   ctx: GameContext,
   words: readonly T[],
@@ -259,7 +259,7 @@ function gapFromFrench<T extends Word>(
 }
 
 /** « Remets les mots dans l'ordre pour écrire une phrase. » : majuscule au premier mot, point au dernier. */
-function sentenceOrder(kind: string, ctx: GameContext, build: () => readonly string[], concept: string): GeneratedGame {
+export function sentenceOrder(kind: string, ctx: GameContext, build: () => readonly string[], concept: string): GeneratedGame {
   return fresh(
     ctx,
     kind,

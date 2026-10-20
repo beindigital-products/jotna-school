@@ -1201,6 +1201,40 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `aliment-trou` | phrase à trous | `🍚 I like ___.` : `rice` (jamais `egg` : « I like egg. » est faux) |
 | `aliment-trou-francais` | phrase à trous | « Complète la phrase pour dire que tu aimes le jus. » puis `I like ___.` : `juice` |
 | `aliment-phrase` | ordre | `I > like > rice.` |
+| `animal-mot` | QCM | « Quel mot va avec ce dessin ? » puis 🐘 : `elephant`, parmi trois animaux |
+| `animal-francais` | QCM | « Comment dit-on « la vache » en anglais ? » : `cow` |
+| `animal-relier` | association | un dessin et son mot (`🐶~dog`), ou, aux deux derniers niveaux et une fois sur deux, un mot français et son mot anglais (`chèvre~goat`) |
+| `animal-glisser` | glisser-déposer | `🐄 cow` dans Animaux de la ferme, `🐘 elephant` dans Animaux sauvages (le chien, le chat, l'oiseau et le poisson ne sont jamais rangés) |
+| `animal-intrus` | QCM | « Lequel ne vit pas à la ferme ? » : `🦁 lion`, parmi `🐄 cow` et `🐐 goat` |
+| `fruit-mot` | QCM | « Quel mot va avec ce dessin ? » puis 🍍 : `pineapple` |
+| `fruit-francais` | QCM | « Comment dit-on « la mangue » en anglais ? » : `mango` |
+| `fruit-relier` | association | un dessin et son mot (`🍋~lemon`), ou un mot français et son mot anglais (`pomme~apple`) |
+| `fruit-glisser` | glisser-déposer | `🥭 mango` dans Fruits, `🐒 monkey` dans Animaux |
+| `fruit-intrus` | QCM | « Lequel n'est pas un fruit ? » : `🐘 elephant`, parmi `🍌 banana` et `🍎 apple` |
+| `couleur-mot` | QCM | « De quelle couleur est ce dessin ? » puis 💛 : `yellow` (jamais une couleur voisine en mauvais choix) |
+| `couleur-chose` | QCM | « De quelle couleur est la banane ? » puis 🍌 : `yellow` |
+| `couleur-francais` | QCM | « Comment dit-on « la couleur verte » en anglais ? » : `green` |
+| `couleur-relier` | association | `💚~green ; 🔴~red ; 🔵~blue` |
+| `couleur-glisser` | glisser-déposer | `🍅` et `🍓` sous `red`, `🍌` et `🍋` sous `yellow` |
+| `couleur-phrase` | phrase à trous | `🧡 It is ___.` : `orange` |
+| `compte-mot` | QCM | « Quel mot va avec le chiffre 7 ? » : `seven` |
+| `compte-chiffre` | phrase à trous | « Complète avec le bon chiffre. » puis `three = ___` : `3` |
+| `compte-dessins` | QCM | « Combien vois-tu de dessins ? Choisis le mot anglais. » puis deux rangées de cinq et de deux 🍎 : `seven` |
+| `compte-relier` | association | `4~four ; 9~nine ; 0~zero` |
+| `compte-relier-dessins` | association | `⭐⭐⭐~three ; 🍎🍎~two` (un dessin différent par groupe, des nombres différents) |
+| `compte-ordre` | ordre | `two > five > eight > ten` |
+| `compte-suivant` | QCM | « Quel est le mot anglais du nombre qui vient juste après 4 ? » : `five` |
+| `compte-suite` | phrase à trous | « Complète la suite des nombres. » puis `one, two, ___` : `three` (trois nombres montrés dès le deuxième palier, une suite qui descend dès le troisième niveau) |
+| `compte-glisser` | glisser-déposer | `two` dans Moins de 5, `nine` dans Plus de 5 (jamais le repère) |
+| `salut-francais` | QCM | « Comment dit-on « merci » en anglais ? » : `thank you` |
+| `salut-dessin` | QCM | « Quel mot va avec ce dessin ? » puis 🌙 : `good night` (le lever du soleil, la lune, un pouce levé, un pouce baissé, un visage triste) |
+| `salut-situation` | QCM | « Tu arrives à l'école. Que dis-tu en anglais ? » : `hello` |
+| `salut-relier` | association | un dessin et son mot (`🌅~good morning`), ou un mot français et son mot anglais (`oui~yes`) |
+| `salut-glisser` | glisser-déposer | `hello`, `hi`, `good morning` dans Pour dire bonjour ; `goodbye`, `bye` dans Pour dire au revoir |
+| `salut-prenom` | ordre | `I > am > Awa.` ou `My > name > is > Modou.` |
+| `salut-trou` | phrase à trous | `My ___ is Awa.` : `name` |
+| `salut-trou-dessin` | phrase à trous | `🌙 Good ___!` : `night` |
+| `salut-rencontre` | ordre | `Hello! > I am Awa. > Goodbye!` |
 | `lire-dessin` | QCM | « Quel mot va avec ce dessin ? » puis 🐇 : `lapin`, parmi trois mots à lire (aux paliers suivants, trois mots qui commencent pareil) |
 | `lire-relier` | association | « Relie chaque mot à son dessin. » : `tomate~🍅 ; banane~🍌…` |
 | `lire-syllabes` | ordre | « Remets les syllabes dans l'ordre pour écrire le mot de ce dessin. » puis 🍅 : `to > ma > te` (trois syllabes au moins) |
@@ -1446,6 +1480,31 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     grammaire (genres des noms, accord des déterminants) qui prouve qu'une phrase n'a qu'un seul ordre, la formule de
     chaque situation, ce que dit un enfant qui a soif. Il vérifie aussi les règles communes et fabrique 40 paliers de
     chacune des deux thématiques. `templatesWithoutModel.test.ts` joue leur génération contre un faux modèle.
+- **L'anglais du CI** (`paliers/games/anglaisCi.ts`) : trente-quatre gabarits pour `an-ci-hello`, `an-ci-colours`, `an-ci-numbers`,
+  `an-ci-animals` et `an-ci-fruits`, qui empruntent leurs outils à `anglais.ts` (l'anglais du CP). Sur les cent dix-huit exercices que le
+  modèle avait écrits pour ces cinq thématiques, relus en prod le 20 octobre 2026, un sur trois était faux, ambigu ou hors niveau : six
+  étoiles pour « seven », un cheval rangé dans « Autres animaux », « hello » et « hi » tous deux justes dans un même choix, des
+  consignes en anglais qu'un enfant de six ans ne lit pas, « I see a ___ (lion, cow, monkey) » où les trois mots vont, un rose écrit avec
+  un émoji d'Unicode 15. Ici chaque réponse se lit dans un tableau (un mot, son dessin, son sens en français).
+  - **La consigne est en français, sans mot anglais**, comme au CP. L'anglais n'est que dans les choix, les cases, les tuiles, les phrases
+    à trous et les phrases à remettre dans l'ordre. Une étiquette est un mot seul avec son dessin devant (`🐶 dog`), sans article.
+  - **Les animaux et les fruits sont des mots isolés**, comme le dit leur fiche : aucun trou, aucun ordre. Les animaux se rangent en
+    « de la ferme » (vache, chèvre, mouton, cheval, poule) et « sauvages » (singe, lion, éléphant) ; le chien, le chat, l'oiseau et le
+    poisson n'entrent dans aucune case. Les fruits se rangent avec les animaux déjà vus.
+  - **Les couleurs** passent par les ronds 🔴 🔵 ⚪, les cœurs 💛 💚 🧡 💜 🖤 💗 et le chocolat 🍫 : les pastilles 🟠 🟡 🟢 🟣 🟤 et les
+    cœurs blanc et marron sont d'Unicode 12, un téléphone ancien les montre en case vide. Une couleur n'est jamais proposée à côté d'une
+    couleur voisine (orange et rouge, rose et violet) : une banane peut être brune, une tomate verte. Le premier palier n'a que six
+    couleurs (red, blue, yellow, green, black, white), le dernier les dix de la fiche.
+  - **Les nombres de 0 à 10** restent de 1 à 5 au premier niveau, de 0 à 8 au deuxième, de 0 à 10 ensuite ; jamais au-delà de dix. Les
+    dessins à compter se rangent sur deux rangées de cinq au plus. La suite à compléter montre deux nombres au premier niveau (avec
+    trois, il ne resterait qu'un mauvais choix parmi cinq nombres), trois ensuite, et descend à partir du troisième niveau.
+  - **Les jumeaux** : « hello » et « hi » disent la même chose, « goodbye » et « bye » aussi. Jamais l'un en bonne réponse et l'autre en
+    mauvais choix ; « hi » et « bye » ne servent que rangés (« pour dire bonjour », « pour dire au revoir »), où ils ont une seule bonne
+    case. « yes » et « no » ne sont jamais proposés avec « please » ou « thank you », qui sont polis (« no, thank you »).
+  - **`convex/__tests__/ciEnglishTemplates.test.ts`** a un VÉRIFICATEUR par gabarit, écrit avec ses propres tables (un mot, son dessin, son
+    sens en français, les couleurs qu'on confond, ce qu'on dit dans chaque situation). Il abîme ensuite chaque gabarit (la bonne réponse
+    déplacée, une paire croisée, une case changée, un jumeau ou une couleur voisine parmi les choix) et exige que son vérificateur le
+    voie. Il a trouvé un défaut : au premier niveau, « one, two, three, ___ » n'avait que deux choix.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
@@ -1461,9 +1520,10 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
   `ma-ci-nombres-20`, `ma-ci-trier`, `ma-ci-espace`, `ma-ci-formes`, `ma-ci-mesures` et
   `ma-ci-problemes`, puis `hi-ci-journee`, `hi-ci-ordre`, `hi-ci-hier-demain`, `hi-ci-semaine`, `ge-ci-position`,
-  `ge-ci-lateralite`, `ge-ci-reperes`, `ge-ci-quadrillage`, `fr-ci-phrases` et `fr-ci-politesse` au CI, puis `hi-cp-calendrier`, `hi-cp-durees`,
-  `hi-cp-frequences`, `hi-cp-emploi-du-temps`, `ge-cp-itineraire`, `ge-cp-distances`, `ge-cp-plan` et `ge-cp-quartier` au CP
-  (`convex/programme`), dix exercices par palier, voir plus bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
+  `ge-ci-lateralite`, `ge-ci-reperes`, `ge-ci-quadrillage`, `fr-ci-phrases`, `fr-ci-politesse`, `an-ci-hello`, `an-ci-colours`, `an-ci-numbers`, `an-ci-animals` et
+  `an-ci-fruits` au CI, puis `hi-cp-calendrier`, `hi-cp-durees`,
+  `hi-cp-frequences`, `hi-cp-emploi-du-temps`, `ge-cp-itineraire`, `ge-cp-distances`, `ge-cp-plan`, `ge-cp-quartier`, `an-cp-family`, `an-cp-body`, `an-cp-classroom`, `an-cp-numbers-20`, `an-cp-food`, `fr-cp-lecture` et
+  `fr-cp-ecrire` au CP (`convex/programme`), dix exercices par palier, voir plus bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
   modèle, le seuil de validation exige tous les exercices écrits : le modèle en
   écrit deux de plus et on garde les premiers valides, `scoring.exercisesToRequest`.)
   Un palier déjà généré garde ses exercices : il faut l'invalider
@@ -1516,14 +1576,14 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces trente et une thématiques contre un faux modèle qui lève une
+  chaque palier de ces quarante-trois thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
   Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
-  haut) : en CI, l'éveil, l'instruction civique, l'anglais et l'éducation artistique ; toutes les autres classes, sauf l'histoire et la
-  géographie du CP. Le français (phrases, politesse), l'histoire et la géographie du CI, puis l'histoire et la géographie du CP,
-  n'appellent plus le modèle.
+  haut) : en CI, l'éveil, l'instruction civique et l'éducation artistique ; toutes les autres classes, sauf l'histoire, la géographie,
+  l'anglais, la lecture et l'écriture du CP. Le français (phrases, politesse), l'histoire, la géographie et l'anglais du CI, puis
+  l'histoire, la géographie, l'anglais, la lecture et l'écriture du CP, n'appellent plus le modèle.
   Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
   dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
   rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à
@@ -1536,4 +1596,6 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   (le glisser-déposer du français du CI est rattaché à « Bonjour, merci, s'il te plaît », que `politesse-glisser`
   fabrique ; celui des mathématiques à « Les formes et les solides », que `classer-formes`
   fabrique). Au CP, l'histoire et la géographie sont tout en gabarits : la réponse courte de la vitrine est rattachée à « Le
-  calendrier » (`mois-ecart`) et à « Près ou loin ? » (`pas-difference`), les deux gabarits qui demandent un nombre à écrire.
+  calendrier » (`mois-ecart`) et à « Près ou loin ? » (`pas-difference`), les deux gabarits qui demandent un nombre à écrire. L'anglais du CI est tout en gabarits : ses cinq types de la vitrine sont ceux d'un
+  gabarit de leur thématique (le QCM des couleurs, le glisser-déposer des fruits, le relier des animaux, l'ordre des nombres, la phrase à
+  trous des salutations).

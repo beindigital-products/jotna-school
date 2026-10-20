@@ -58,6 +58,12 @@ const WITHOUT_MODEL = [
   "an-cp-food",
   "fr-cp-lecture",
   "fr-cp-ecrire",
+  // L'anglais du CI : les salutations, les couleurs, les nombres de 0 à 10, les animaux, les fruits.
+  "an-ci-hello",
+  "an-ci-colours",
+  "an-ci-numbers",
+  "an-ci-animals",
+  "an-ci-fruits",
 ] as const;
 const MODEL_CALLED = "LE MODÈLE A ÉTÉ APPELÉ";
 
@@ -214,8 +220,8 @@ describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) =>
 });
 
 describe("le faux modèle ne laisse rien passer", () => {
-  it("fait échouer un palier qui a besoin du modèle (an-ci-hello : dix exercices à écrire)", async () => {
-    const { ctx, modelCalls, upserts } = fakeConvex("an-ci-hello");
+  it("fait échouer un palier qui a besoin du modèle (sc-ci-milieu : dix exercices à écrire)", async () => {
+    const { ctx, modelCalls, upserts } = fakeConvex("sc-ci-milieu");
     await expect(generateBucketCore(ctx, bucket(1))).rejects.toThrow(MODEL_CALLED);
     expect(modelCalls).toEqual(["aiGateway/index:generate"]);
     // Rien n'est écrit : le palier reste « generating », sans exercice.
