@@ -1,10 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { auditExercise } from "../paliers/exerciseAudit";
 import { GAME_KINDS, generateGames, regenerateGame, type GameKind } from "../paliers/games";
 import { makeContext, type GameLevel } from "../paliers/games/shared";
 import { topicUsesModel } from "../paliers/pregen";
 import { allProgrammeEntries } from "../programme";
 import { PALIER_SIZE } from "../paliers/scoring";
+
+// Ces tests jouent des milliers de tirages : sur le serveur de CI, chargé, l'un d'eux dépasse les 5 secondes par défaut.
+vi.setConfig({ testTimeout: 30_000 });
 
 /**
  * L'INSTRUCTION CIVIQUE DU CP : la route, le règlement de la classe, les responsabilités, filles et garçons, la paix.
