@@ -99,8 +99,8 @@ const FRISE_PROMPTS: Record<FriseTheme, { one: string[]; many: string[] }> = {
     many: ["Complète la frise.", "Quelles images manquent dans la guirlande ?"],
   },
   rythme: {
-    one: ["Complète le rythme. Tam-tam, frappé ou silence ?", "Le rythme se répète. Qu'est-ce qui manque ?"],
-    many: ["Complète le rythme. Tam-tam, frappé ou silence ?", "Le rythme se répète. Qu'est-ce qui manque ?"],
+    one: ["Complète la suite du rythme. Tam-tam, frappé ou silence ?", "Le rythme se répète. Qu'est-ce qui manque ?"],
+    many: ["Complète la suite du rythme. Tam-tam, frappé ou silence ?", "Le rythme se répète. Qu'est-ce qui manque ?"],
   },
 };
 

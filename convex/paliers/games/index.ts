@@ -106,6 +106,45 @@ import {
   makeReadSoundSort,
   makeReadSyllables,
 } from "./lecture";
+import {
+  makeInstructionGap,
+  makeInstructionLinks,
+  makeInstructionMeaning,
+  makeInstructionOdd,
+  makeInstructionSteps,
+  makeInstructionVerb,
+} from "./consignes";
+import { makeAdjectiveOrder, makeCompareGap, makeContraryChoice, makeContraryGap, makeContraryLinks } from "./decrire";
+import {
+  makeStoryGap,
+  makeStoryLinks,
+  makeStoryOrder,
+  makeStoryWhat,
+  makeStoryWhen,
+  makeStoryWhere,
+  makeStoryWho,
+} from "./recit";
+import {
+  makeInvitationChoice,
+  makeInvitationGap,
+  makeInvitationOrder,
+  makeInvitationReply,
+  makeInvitationSort,
+  makeInvitationWho,
+} from "./invitation";
+import {
+  makeLineChoice,
+  makeLineLinks,
+  makeLineSort,
+  makePaintLinks,
+  makePaintTool,
+  makeStrokeChoice,
+  makeTechniqueChoice,
+  makeTechniqueLinks,
+  makeVoiceChoice,
+  makeVoiceGap,
+  makeVoiceOrder,
+} from "./arts";
 import { makeColorPair, makeColorPick, makeColorResult, makeWarmCold } from "./colors";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
 import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
@@ -523,6 +562,46 @@ export const GAME_KINDS = {
   "politesse-glisser": { label: "Glisser des situations sous la bonne formule", type: "drag-drop", make: makeFormulaSort },
   "politesse-trou": { label: "La formule qui complète une situation", type: "fill-blank", make: makeFormulaGap },
   "politesse-rencontre": { label: "Ranger les paroles d'une rencontre", type: "order", make: makeMeeting },
+  // Les consignes du CP (`consignes.ts`) : le sens des six verbes de la fiche, les étapes d'un geste.
+  "consigne-sens": { label: "Ce que fait la consigne", type: "qcm", make: makeInstructionMeaning },
+  "consigne-verbe": { label: "Le verbe qui dit l'action", type: "qcm", make: makeInstructionVerb },
+  "consigne-relier": { label: "Relier une consigne et son sens", type: "match", make: makeInstructionLinks },
+  "consigne-trou": { label: "Le verbe qui complète une consigne", type: "fill-blank", make: makeInstructionGap },
+  "consigne-intrus": { label: "Le mot qui n'est pas une consigne", type: "qcm", make: makeInstructionOdd },
+  "consigne-etapes": { label: "Remettre les étapes d'un geste dans l'ordre", type: "order", make: makeInstructionSteps },
+  // Décrire et comparer au CP (`decrire.ts`) : les contraires, plus grand que, l'adjectif et son nom.
+  "contraire-qcm": { label: "Le contraire d'un mot", type: "qcm", make: makeContraryChoice },
+  "contraire-relier": { label: "Relier un mot et son contraire", type: "match", make: makeContraryLinks },
+  "contraire-trou": { label: "Le mot contraire dans une phrase", type: "fill-blank", make: makeContraryGap },
+  "comparer-trou": { label: "Plus grand que, plus lourd que", type: "fill-blank", make: makeCompareGap },
+  "adjectif-ordre": { label: "L'adjectif et son nom dans l'ordre", type: "order", make: makeAdjectiveOrder },
+  // Raconter au CP (`recit.ts`) : d'abord, ensuite, enfin, qui, où, quand.
+  "recit-ordre": { label: "Remettre une histoire dans l'ordre", type: "order", make: makeStoryOrder },
+  "recit-qui": { label: "Qui fait quoi dans un petit texte", type: "qcm", make: makeStoryWho },
+  "recit-ou": { label: "Où se passe l'histoire", type: "qcm", make: makeStoryWhere },
+  "recit-quoi": { label: "Ce que fait la personne de l'histoire", type: "qcm", make: makeStoryWhat },
+  "recit-quand": { label: "Quand se passe l'histoire", type: "qcm", make: makeStoryWhen },
+  "recit-trou": { label: "Le mot d'ordre qui manque", type: "fill-blank", make: makeStoryGap },
+  "recit-relier": { label: "Relier un enfant et ce qu'il fait", type: "match", make: makeStoryLinks },
+  // Inviter et conseiller au CP (`invitation.ts`).
+  "invitation-glisser": { label: "Invitation ou conseil", type: "drag-drop", make: makeInvitationSort },
+  "invitation-choisir": { label: "La phrase qui invite ou qui conseille", type: "qcm", make: makeInvitationChoice },
+  "invitation-reponse": { label: "Répondre poliment à une invitation", type: "qcm", make: makeInvitationReply },
+  "invitation-qui": { label: "Qui invite, qui est invité, quel jour", type: "qcm", make: makeInvitationWho },
+  "invitation-trou": { label: "Le mot qui complète une invitation", type: "fill-blank", make: makeInvitationGap },
+  "invitation-ordre": { label: "Remettre une invitation dans l'ordre", type: "order", make: makeInvitationOrder },
+  // Les arts du CP (`arts.ts`) : le matériel du peintre, les lignes, les traits, modeler, les voix.
+  "peinture-outil": { label: "Le matériel du peintre", type: "qcm", make: makePaintTool },
+  "peinture-relier": { label: "Relier un outil du peintre à son travail", type: "match", make: makePaintLinks },
+  "ligne-qcm": { label: "Reconnaître une ligne", type: "qcm", make: makeLineChoice },
+  "ligne-relier": { label: "Relier une ligne et ce qu'on voit", type: "match", make: makeLineLinks },
+  "ligne-glisser": { label: "Ligne droite ou ligne courbe", type: "drag-drop", make: makeLineSort },
+  "trait-qcm": { label: "Reconnaître un trait", type: "qcm", make: makeStrokeChoice },
+  "technique-qcm": { label: "Ce qu'on prend pour modeler, peindre, dessiner", type: "qcm", make: makeTechniqueChoice },
+  "technique-relier": { label: "Relier un geste et ce qu'on prend", type: "match", make: makeTechniqueLinks },
+  "voix-ordre": { label: "Ranger les voix du plus doux au plus fort", type: "order", make: makeVoiceOrder },
+  "voix-qcm": { label: "La voix la plus douce ou la plus forte", type: "qcm", make: makeVoiceChoice },
+  "voix-trou": { label: "Parler ou chanter doucement ou fort", type: "fill-blank", make: makeVoiceGap },
   // Les animaux du CI en anglais (`anglaisCi.ts`) : un dessin et son mot, la ferme ou la nature.
   "animal-mot": { label: "Le mot anglais d'un animal dessiné", type: "qcm", make: makeAnimalWord },
   "animal-francais": { label: "Le mot anglais d'un animal nommé en français", type: "qcm", make: makeAnimalFrench },
