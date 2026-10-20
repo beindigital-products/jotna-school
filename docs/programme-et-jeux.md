@@ -73,7 +73,9 @@ Ce qui manque :
   (`paliers/games`). Aucune thématique d'anglais ne mêle de jeu d'écoute. Les
   cinq thématiques du CP sont fabriquées tout entières par le code
   (`paliers/games/anglais.ts`) : mots de la fiche, dessins, phrases à
-  remettre dans l'ordre, nombres de 11 à 20.
+  remettre dans l'ordre, nombres de 11 à 20. Il en va de même des cinq
+  thématiques du CI (`paliers/games/anglaisCi.ts`) : les salutations, les
+  couleurs, les nombres de 0 à 10, les animaux et les fruits.
 - **Un essai sur le vrai modèle.** Les exercices d'anglais n'ont pas encore
   été générés : relire un échantillon dans l'administration après la
   première pré-génération, avant d'ouvrir la matière.
