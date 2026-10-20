@@ -1135,11 +1135,12 @@ describe("les sept thématiques d'anglais, de lecture et d'écriture du CP", () 
     }
   });
 
-  it("sont, avec les huit du premier lot, les seules thématiques du CP entièrement faites par le code", () => {
+  it("sont entièrement faites par le code (l'ensemble des thématiques du CP faites par le code est vérifié dans cpFrancaisArtsTemplates.test.ts)", () => {
     const allCode = allProgrammeEntries()
       .filter((e) => e.klass === "CP" && (e.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0) >= PALIER_SIZE)
       .map((e) => e.topic.key);
-    expect(allCode.sort()).toEqual([...LOT1_KEYS, ...KEYS].sort());
+    for (const key of KEYS) expect(allCode, key).toContain(key);
+    for (const key of LOT1_KEYS) expect(allCode, key).toContain(key);
   });
 
   it("sont celles du CP, et n'ont changé ni leur clé ni leur nombre de paliers", () => {
