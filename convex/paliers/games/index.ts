@@ -85,6 +85,7 @@ import {
   makeSayingSituation,
   makeSayingSort,
 } from "./anglaisCi";
+import { makeActOdd, makeActSort, makeRuleGap, makeSceneChoice, makeSceneLinks, makeSequence } from "./civique";
 import {
   makeWriteArticle,
   makeWriteCount,
@@ -562,6 +563,13 @@ export const GAME_KINDS = {
   "salut-trou": { label: "My name is, une phrase à trou", type: "fill-blank", make: makeIntroduceGap },
   "salut-trou-dessin": { label: "Good morning ou good night, une phrase à trou avec un dessin", type: "fill-blank", make: makeGoodGap },
   "salut-rencontre": { label: "Ranger les paroles d'une rencontre en anglais", type: "order", make: makeMeetingOrder },
+  // L'instruction civique du CI (`civique.ts`) : une situation, un bon geste et des gestes à éviter ; la route, l'école, l'entraide, le respect.
+  "civ-situation": { label: "Que fais-tu dans cette situation", type: "qcm", make: makeSceneChoice },
+  "civ-glisser": { label: "Glisser des gestes sous « à faire » ou « à éviter »", type: "drag-drop", make: makeActSort },
+  "civ-intrus": { label: "Quel geste est bien, ou n'est pas bien, parmi trois", type: "qcm", make: makeActOdd },
+  "civ-relier": { label: "Relier une situation et le bon geste", type: "match", make: makeSceneLinks },
+  "civ-ordre": { label: "Remettre des gestes dans l'ordre", type: "order", make: makeSequence },
+  "civ-trou": { label: "Compléter une règle de vie", type: "fill-blank", make: makeRuleGap },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
