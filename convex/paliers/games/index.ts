@@ -146,6 +146,20 @@ import {
   makeVoiceGap,
   makeVoiceOrder,
 } from "./arts";
+// Les gabarits du civique du CP (`gestes.ts`) portent des noms que le civique du CI (`civique.ts`) prend aussi : les alias les séparent.
+import {
+  makeActOdd as makeGestureOdd,
+  makeActSort as makeGestureSort,
+  makePanelChoice,
+  makeRightsSort,
+  makeRoleChoice,
+  makeRoadWrite,
+  makeRoleLinks,
+  makeRuleGap as makeGestureGap,
+  makeSceneChoice as makeGestureScene,
+  makeSceneLinks as makeGestureLinks,
+  makeSequence as makeGestureSequence,
+} from "./gestes";
 import { makeColorPair, makeColorPick, makeColorResult, makeWarmCold } from "./colors";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
 import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
@@ -603,6 +617,18 @@ export const GAME_KINDS = {
   "voix-ordre": { label: "Ranger les voix du plus doux au plus fort", type: "order", make: makeVoiceOrder },
   "voix-qcm": { label: "La voix la plus douce ou la plus forte", type: "qcm", make: makeVoiceChoice },
   "voix-trou": { label: "Parler ou chanter doucement ou fort", type: "fill-blank", make: makeVoiceGap },
+  // L'instruction civique du CP (`gestes.ts`) : la route, le règlement, les responsabilités, filles et garçons, la paix.
+  "geste-situation": { label: "Le bon geste dans une situation", type: "qcm", make: makeGestureScene },
+  "geste-glisser": { label: "Glisser des gestes sous « À faire » ou « À éviter »", type: "drag-drop", make: makeGestureSort },
+  "geste-intrus": { label: "Quel geste est bien, ou n'est pas bien, parmi trois", type: "qcm", make: makeGestureOdd },
+  "geste-relier": { label: "Relier une situation et le bon geste", type: "match", make: makeGestureLinks },
+  "geste-ordre": { label: "Remettre des gestes dans l'ordre", type: "order", make: makeGestureSequence },
+  "geste-trou": { label: "Compléter une règle de vie", type: "fill-blank", make: makeGestureGap },
+  "droit-devoir": { label: "Glisser des phrases sous « Droits » ou « Devoirs »", type: "drag-drop", make: makeRightsSort },
+  "role-qui": { label: "Qui fait quoi dans la classe", type: "qcm", make: makeRoleChoice },
+  "role-relier": { label: "Relier un responsable et sa tâche", type: "match", make: makeRoleLinks },
+  "panneau-qcm": { label: "Ce que dit un panneau", type: "qcm", make: makePanelChoice },
+  "route-ecrire": { label: "Écrire le mot de la sécurité routière", type: "short-answer", make: makeRoadWrite },
   // Les animaux du CI en anglais (`anglaisCi.ts`) : un dessin et son mot, la ferme ou la nature.
   "animal-mot": { label: "Le mot anglais d'un animal dessiné", type: "qcm", make: makeAnimalWord },
   "animal-francais": { label: "Le mot anglais d'un animal nommé en français", type: "qcm", make: makeAnimalFrench },

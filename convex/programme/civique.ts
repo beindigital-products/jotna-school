@@ -91,30 +91,74 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
         name: "Le règlement de la classe",
         description:
           "Vivre ensemble, étape 1 (consolidation) : les règles de vie de la classe, les droits et les devoirs de l'élève, réparer une faute.",
+        games: [
+          { kind: "geste-situation", count: 2, vocabulary: "reglement" },
+          { kind: "droit-devoir", count: 1, vocabulary: "reglement" },
+          { kind: "geste-glisser", count: 1, vocabulary: "reglement" },
+          { kind: "geste-intrus", count: 1, vocabulary: "reglement" },
+          { kind: "geste-relier", count: 1, vocabulary: "reglement" },
+          { kind: "geste-ordre", count: 2, vocabulary: "reglement" },
+          { kind: "geste-trou", count: 2, vocabulary: "reglement" },
+        ],
       },
       {
         key: "ci-cp-responsabilites",
         name: "Mes responsabilités en classe",
         description:
           "Vivre ensemble, étape 1 : participer aux responsabilités de la classe et de l'école : chef de classe, responsable de la propreté, du matériel, du lever des couleurs.",
+        games: [
+          { kind: "geste-situation", count: 2, vocabulary: "responsabilites" },
+          { kind: "role-qui", count: 2, vocabulary: "responsabilites" },
+          { kind: "role-relier", count: 1, vocabulary: "responsabilites" },
+          { kind: "geste-glisser", count: 1, vocabulary: "responsabilites" },
+          { kind: "geste-intrus", count: 1, vocabulary: "responsabilites" },
+          { kind: "geste-ordre", count: 1, vocabulary: "responsabilites" },
+          { kind: "geste-trou", count: 2, vocabulary: "responsabilites" },
+        ],
       },
       {
         key: "ci-cp-genre",
         name: "Filles et garçons, tous égaux",
         description:
           "Vivre ensemble, étape 1, rubrique Genre : filles et garçons ont les mêmes droits à l'école, au jeu et à la maison ; partager les tâches.",
+        games: [
+          { kind: "geste-situation", count: 3, vocabulary: "genre" },
+          { kind: "geste-glisser", count: 1, vocabulary: "genre" },
+          { kind: "geste-intrus", count: 1, vocabulary: "genre" },
+          { kind: "geste-relier", count: 1, vocabulary: "genre" },
+          { kind: "geste-ordre", count: 2, vocabulary: "genre" },
+          { kind: "geste-trou", count: 2, vocabulary: "genre" },
+        ],
       },
       {
         key: "ci-cp-route",
         name: "La sécurité sur la route",
         description:
           "Vivre ensemble, étape 1 : le code de la route en consolidation. Les panneaux simples (stop, passage pour piétons, sens interdit), la ceinture de sécurité, le casque à moto, monter et descendre d'un car sans danger.",
+        games: [
+          { kind: "geste-situation", count: 2, vocabulary: "route" },
+          { kind: "geste-glisser", count: 1, vocabulary: "route" },
+          { kind: "geste-intrus", count: 1, vocabulary: "route" },
+          { kind: "geste-relier", count: 1, vocabulary: "route" },
+          { kind: "geste-ordre", count: 1, vocabulary: "route" },
+          { kind: "geste-trou", count: 2, vocabulary: "route" },
+          { kind: "panneau-qcm", count: 1, vocabulary: "route" },
+          { kind: "route-ecrire", count: 1, vocabulary: "route" },
+        ],
       },
       {
         key: "ci-cp-paix",
         name: "Régler un conflit sans se battre",
         description:
           "Vivre ensemble, étape 1, rubrique Paix : parler au lieu de frapper, demander l'aide d'un adulte, se réconcilier, ne pas se moquer.",
+        games: [
+          { kind: "geste-situation", count: 3, vocabulary: "paix" },
+          { kind: "geste-glisser", count: 1, vocabulary: "paix" },
+          { kind: "geste-intrus", count: 1, vocabulary: "paix" },
+          { kind: "geste-relier", count: 1, vocabulary: "paix" },
+          { kind: "geste-ordre", count: 2, vocabulary: "paix" },
+          { kind: "geste-trou", count: 2, vocabulary: "paix" },
+        ],
       },
     ],
     CE1: [

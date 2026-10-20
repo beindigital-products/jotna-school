@@ -1297,6 +1297,17 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `voix-ordre` | ordre | `chuchoter > parler doucement > parler fort > crier` (trois voix au premier palier) |
 | `voix-qcm` | QCM | « Quelle façon de parler est la plus forte ? » : `crier`, parmi trois des quatre voix |
 | `voix-trou` | phrase à trous | `Pour dire un secret à l'oreille, on parle ___.` : `doucement` (les mauvais choix sont tous des voix fortes) |
+| `geste-situation` | QCM | « Tu veux traverser la route. Que faut-il faire ? » : `Je regarde à gauche et à droite avant de traverser.`, contre deux mauvais gestes de la même scène |
+| `geste-glisser` | glisser-déposer | cases À faire et À éviter : `Je mets un casque sur ma tête.` et `Je monte sans casque.` |
+| `geste-intrus` | QCM | « Quel geste est bien ? » ou « Quel geste n'est pas bien ? » : un geste d'un côté, deux de l'autre, de trois scènes différentes |
+| `geste-relier` | association | « Relie chaque situation au bon geste. » : `Tu descends du car~Je descends doucement et je regarde la route.` |
+| `geste-ordre` | ordre | `Je m'arrête au bord de la route. > Je regarde à gauche et à droite. > Je traverse quand la route est libre.` |
+| `geste-trou` | phrase à trous | `Au panneau STOP, la voiture ___.` : `s'arrête` |
+| `droit-devoir` | glisser-déposer | cases Droits et Devoirs : `Je peux jouer à la récréation.` et `Je dois ranger mes affaires.` |
+| `role-qui` | QCM | « Qui balaie la classe ? » : `le responsable de la propreté` |
+| `role-relier` | association | `chef de classe~garde le calme ; propreté~balaie la classe…` (étiquettes courtes : l'écran coupe les longues en syllabes) |
+| `panneau-qcm` | QCM | « Que veut dire le panneau STOP ? » : `Il faut s'arrêter.` |
+| `route-ecrire` | réponse courte | « À moto, que dois-tu mettre sur la tête pour te protéger ? Écris le mot. » : `casque` |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -1523,7 +1534,8 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   « Qui va au marché ? » sans aucune histoire à l'écran, « Associe les personnages à leurs actions » (des paires arbitraires). Ici le TEXTE est
   dans l'énoncé : la réponse s'y lit. Trois histoires de la vie de l'enfant (le marché, la récréation, la pêche avec le grand-père) ont
   chacune trois étapes : on part, on fait, on rentre. « D'abord », « Ensuite » et « Enfin » sont écrits dans les phrases à remettre dans
-  l'ordre, donc l'enfant lit la clé. Pour « Où ? », l'endroit est écrit dans le texte (sinon l'enfant devinerait). « Il » et « Elle » suivent le prénom.
+  l'ordre, donc l'enfant lit la clé. Pour « Où ? », l'endroit est écrit dans le texte (sinon l'enfant devinerait). « Il » et « Elle » suivent le prénom. Dans un palier, les trois ordres de phrases racontent trois histoires différentes
+  et les deux trous deux histoires différentes : le même texte avec un autre prénom ne revient pas.
 - **Inviter et conseiller au CP** (`paliers/games/invitation.ts`) : six gabarits pour `fr-cp-inviter`. Le modèle acceptait « Viens » ET « Venez »
   pour inviter un seul ami, et écrivait des associations où rien ne disait qui invite qui. Les invitations (six) et les conseils (six) viennent
   d'un tableau fermé : aucune phrase n'est les deux. Une réponse polie remercie, une réponse impolie commande, se moque ou refuse sèchement ;
@@ -1540,6 +1552,26 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     verbe de consigne, les contraires, l'ordre des bêtes de la fourmi à l'éléphant, les histoires, les invitations et les conseils, les lignes,
     les traits, les voix), abîme volontairement la bonne réponse de chaque gabarit pour vérifier que le test le voit, et fabrique 40 paliers de
     chacune des huit thématiques contre le contrôleur.
+- **L'instruction civique du CP** (`paliers/games/gestes.ts`) : onze gabarits pour `ci-cp-route`, `ci-cp-reglement`, `ci-cp-responsabilites`,
+  `ci-cp-genre` et `ci-cp-paix`. Sur l'échantillon de CP, le modèle écrivait 8 exercices faux sur 27 : « Les garçons jouent et les filles
+  aident » donné pour bonne réponse, « Faire la vaisselle » rangé chez les filles, des paires que rien ne relie (« droit d'aller à l'école » et
+  « droit de jouer »), « Mets dans l'ordre : 1. Regarde. 2. Traverse. 3. Attends. » avec des numéros qui contredisent l'ordre, un feu rouge pour
+  dire le passage piéton. Ici tout vient d'une SCÈNE : une situation de la vie d'un enfant, UN geste qui convient et trois gestes qui ne
+  conviennent pas. Le QCM, la case « À faire » et « À éviter », l'intrus et l'association la lisent chacun à sa manière.
+  - **Un geste se comprend seul.** Il est bon ou mauvais hors de sa scène : « Je m'arrête au panneau STOP » est bon partout, « Seules les filles
+    balaient la cour » est mauvais partout. Pas de « Je la mets à la poubelle » sans dire quoi, pas de « Je m'enfuis » (qui peut être juste).
+    Tous les gestes de la table sont différents, et deux scènes qui se ressemblent ont le même `group` : jamais reliées ensemble.
+  - **Le genre.** Aucun geste n'est rangé « chez les filles » ou « chez les garçons », et aucun bon geste ne contient « seul » ou « seules ».
+    Les scènes montrent qu'une fille joue au foot, qu'un garçon saute à la corde ou pleure, que le frère et la sœur balaient et mettent la table.
+  - **Les droits et les devoirs** se disent avec « je peux » et « je dois » : « Apprendre » est à la fois un droit et un devoir, donc il n'y est pas.
+  - **Les responsables** (chef de classe, propreté, matériel, lever des couleurs) ont chacun une seule tâche, la plus simple : la fiche ne dit pas
+    ce qu'ils font, ce fichier ne leur en invente pas d'autre.
+  - **La route** pose trois panneaux (STOP, sens interdit, passage pour piétons), la ceinture, le casque à moto, monter et descendre du car, et un
+    mot à écrire (casque, ceinture, stop) dont la bonne réponse n'est jamais dans l'énoncé.
+  - **Un bon geste ne se devine pas à sa longueur** : les mauvais choix d'un QCM sont ceux dont la longueur est la plus proche du bon geste.
+  - `convex/__tests__/cpCiviqueTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (chaque scène, ses gestes, les
+    suites, les trous, les droits et les devoirs, les responsables, les panneaux), abîme volontairement la bonne réponse de chaque gabarit pour
+    vérifier que le test le voit, et fabrique 40 paliers de chacune des cinq thématiques contre le contrôleur.
 - **Les premières phrases et la politesse** (`paliers/games/phrases.ts`, `paliers/games/politesse.ts`) : dix
   gabarits pour le français du CI (`fr-ci-phrases`, `fr-ci-politesse`). Sur l'échantillon lu le 19 octobre 2026,
   16 exercices sur 30 étaient faux en « Mes premières phrases » (onze quiz sur les aliments sans scène, des trous où

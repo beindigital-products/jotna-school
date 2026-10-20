@@ -874,10 +874,12 @@ describe("les quatre thématiques de l'instruction civique du CI", () => {
     for (const key of KEYS) expect(typesOf(key).has("short-answer"), key).toBe(false);
   });
 
-  it("laisse les cinq thématiques de l'instruction civique du CP au modèle", () => {
+  it("laisse les cinq thématiques de l'instruction civique du CP à leurs propres gabarits (gestes.ts), jamais à ceux du CI (civ-*)", () => {
+    // Elles restaient au modèle tant que le CP n'avait pas ses gabarits ; elles ont maintenant les leurs (`cpCiviqueTemplates.test.ts`).
     for (const key of ["ci-cp-reglement", "ci-cp-responsabilites", "ci-cp-genre", "ci-cp-route", "ci-cp-paix"]) {
-      expect(entryOf(key).topic.games, key).toBeUndefined();
-      expect(topicUsesModel(key), key).toBe(true);
+      const kinds = (entryOf(key).topic.games ?? []).map((spec) => spec.kind as string);
+      expect(kinds.length, key).toBeGreaterThan(0);
+      for (const kind of kinds) expect(kind.startsWith("civ-"), `${key} : ${kind}`).toBe(false);
     }
   });
 

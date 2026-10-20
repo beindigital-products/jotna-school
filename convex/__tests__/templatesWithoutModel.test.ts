@@ -67,6 +67,12 @@ const WITHOUT_MODEL = [
   "ar-cp-traits",
   "ar-cp-decorer",
   "ar-cp-rythmes",
+  // L'instruction civique du CP (la route, le règlement, les responsabilités, filles et garçons, la paix).
+  "ci-cp-route",
+  "ci-cp-reglement",
+  "ci-cp-responsabilites",
+  "ci-cp-genre",
+  "ci-cp-paix",
   // L'anglais du CI : les salutations, les couleurs, les nombres de 0 à 10, les animaux, les fruits.
   "an-ci-hello",
   "an-ci-colours",
