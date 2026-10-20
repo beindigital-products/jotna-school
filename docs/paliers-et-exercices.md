@@ -100,6 +100,10 @@ Sans `ELEVENLABS_API_KEY`, ou sans réseau pour une consigne jamais
 téléchargée, le bouton devient gris et l'exercice se joue sans le son. Le lecteur ignore le réglage « sons » de l'élève : ce réglage coupe
 les bruitages de récompense, alors que la voix est la consigne elle-même.
 
+Au CI, Pio dit aussi les propositions (les tuiles) après la consigne, et les
+redit quand l'enfant en touche une. Il ne les dit ni quand l'énoncé demande de
+lire ou de décoder, ni en anglais : voir `docs/voix-des-tuiles.md`.
+
 ## Changer le nombre de paliers d'une thématique
 
 Dans l'administration, sur la matière puis la thématique : le champ
@@ -1235,7 +1239,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `salut-trou` | phrase à trous | `My ___ is Awa.` : `name` |
 | `salut-trou-dessin` | phrase à trous | `🌙 Good ___!` : `night` |
 | `salut-rencontre` | ordre | `Hello! > I am Awa. > Goodbye!` |
-| `civ-situation` | QCM | « Ta grand-mère te parle. Que fais-tu ? » : `👂 J'écoute ma grand-mère calmement`, parmi deux gestes à éviter de la même scène |
+| `civ-situation` | QCM | « Ta grand-mère te parle. Que fais-tu ? » : `👂 J'écoute ma grand-mère calmement`, parmi deux gestes à éviter de la même scène, sous le clip de la scène (`payload.scene`) |
 | `civ-glisser` | glisser-déposer | cases `✅ À faire` et `❌ À éviter` : `🧼 Je me lave les mains avec du savon` à gauche, `🚯 Je jette le papier par terre` à droite (quatre ou cinq gestes de scènes différentes) |
 | `civ-intrus` | QCM | « Quel geste n'est pas bien ? » : `🚯 Je jette le papier par terre`, parmi deux bons gestes ; ou « Quel geste est bien ? » avec un seul bon geste parmi deux gestes à éviter |
 | `civ-relier` | association | `🔴 le feu rouge~🛑 Je m'arrête et j'attends au feu rouge ; 🚸 le passage piéton~🦓 Je traverse sur les bandes blanches` (jamais deux scènes d'un même groupe) |
@@ -1638,6 +1642,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     trous ne proposent que des mots qui ne vont pas dans la phrase : jamais « puis à gauche », que certains programmes enseignent.
   - **Saluer, remercier, s'excuser** ne sont pas refaits : `ci-ci-politesse` emprunte `politesse-situation`, `politesse-relier` et
     `politesse-trou` au français du CI, que le test juge ici avec la matière « Instruction civique ».
+  - **Chaque scène a son clip** (`public/videos/scenes/<id>.mp4`, `lib/scene-clips.ts`) : cinq secondes qui montrent la situation et jamais le bon geste, jouées au-dessus de l'énoncé du QCM `civ-situation` (`payload.scene`), muettes, une seule fois, une fois la voix de Pio finie. `docs/scenes-civiques-clips.md` dit comment ils ont été faits, ce qui tient sur le premier écran d'un téléphone et comment en refaire un.
   - **`convex/__tests__/ciCivicsTemplates.test.ts`** a un VÉRIFICATEUR par gabarit, écrit avec une copie figée des tables (scènes, suites,
     phrases à trou) qu'un test compare au module : changer une scène oblige à relire le test. Il abîme ensuite chaque gabarit (le bon
     choix déplacé, un geste dans la mauvaise case, deux paires croisées, deux pas échangés, un mot faux dans le trou) et exige que son

@@ -187,14 +187,23 @@ export type ArabicSpeechRef = Infer<typeof arabicSpeechRefValidator>;
 export const clipRequestValidator = v.union(
   // La consigne d'un exercice, pour les classes qui apprennent à lire.
   v.object({ kind: v.literal("prompt"), exerciseId: v.id("exercises") }),
+  // Une tuile de réponse d'un exercice du CI (ou la phrase à trous). L'exercice
+  // est la référence ; `text` est la tuile telle que l'écran l'affiche, et le
+  // serveur ne la dit que si l'exercice la contient (`voice/tiles.ts`).
+  v.object({ kind: v.literal("tile"), exerciseId: v.id("exercises"), text: v.string() }),
   v.object({ kind: v.literal("arabic"), ref: arabicSpeechRefValidator }),
 );
 
 export type ClipRequest = Infer<typeof clipRequestValidator>;
 
-/** La clé d'un son sur l'appareil : stable, lisible, la même des deux côtés. */
+/**
+ * La clé d'un son sur l'appareil : stable, lisible, la même des deux côtés.
+ * UNE TUILE SE CLASSE PAR SON TEXTE, pas par son exercice : « le chat » est le
+ * même son dans vingt exercices, et le sac de l'appareil n'en garde qu'un.
+ */
 export function clipRequestKey(request: ClipRequest): string {
   if (request.kind === "prompt") return `prompt:${request.exerciseId}`;
+  if (request.kind === "tile") return `tile:${request.text}`;
   return `arabic:${arabicRefKey(request.ref)}`;
 }
 

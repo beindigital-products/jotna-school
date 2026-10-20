@@ -12,6 +12,7 @@
  * Ni base, ni `ctx`, ni import de Convex : le paquet de l'écran l'embarque.
  */
 import { exerciseImageIdOf } from "../../lib/exercise-images";
+import { sceneClipIdOf } from "../../lib/scene-clips";
 import { numericallyEqual } from "./mathRepair";
 import { verifyDragDrop, verifyMatch } from "./answerCheck";
 import type { ExerciseType } from "../exerciseTypes";
@@ -376,9 +377,13 @@ export function sanitizePayload(
 ): unknown {
   const safe = sanitizePayloadByType(type, payload, exerciseId, seedPrefix);
   // L'image d'énoncé n'est pas un secret : l'écran l'affiche. Seul un
-  // identifiant du catalogue passe (`lib/exercise-images.ts`).
+  // identifiant du catalogue passe (`lib/exercise-images.ts`). Le clip d'une
+  // scène du CI (`payload.scene`, `lib/scene-clips.ts`) de même : il montre la
+  // situation, pas la réponse.
   const image = exerciseImageIdOf(payload);
-  return image && safe && typeof safe === "object" ? { ...(safe as Record<string, unknown>), image } : safe;
+  const scene = sceneClipIdOf(payload);
+  if (!safe || typeof safe !== "object" || (!image && !scene)) return safe;
+  return { ...(safe as Record<string, unknown>), ...(image ? { image } : {}), ...(scene ? { scene } : {}) };
 }
 
 function sanitizePayloadByType(

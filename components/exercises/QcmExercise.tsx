@@ -8,12 +8,16 @@ import type { ItemImage } from "@/lib/item-images";
 import { splitTile } from "@/lib/item-pictures";
 import ExercisePrompt from "./ExercisePrompt";
 import { payloadImage } from "./ExerciseImage";
+import { payloadScene } from "./SceneClip";
 import { ExerciseActions } from "./game-parts";
 import { ItemPicture, useTilePictures } from "./item-pictures";
+import { useTileVoice } from "./prompt-reader";
 
 interface QcmPayload {
   /** Identifiant d'une image d'énoncé du catalogue (`lib/exercise-images.ts`). */
   image?: string;
+  /** Identifiant du clip d'une scène du CI, au catalogue (`lib/scene-clips.ts`) : il passe au-dessus de l'énoncé. */
+  scene?: string;
   options?: string[];
   correctIndex?: number;
   explanation?: string;
@@ -98,11 +102,15 @@ export default function QcmExercise({
   // retour anticipé pour que l'ordre des hooks ne dépende pas du contenu. `choice` :
   // un QCM n'a qu'une bonne tuile, ses images sont toutes ou aucune.
   const pictures = useTilePictures(options, { prompt, choice: true, exerciseImage: payloadImage(payload) });
+  // La voix des tuiles (CI) : Pio dit les propositions après la consigne, la tuile
+  // qui parle s'allume, et un toucher la redit. `null` hors CI, en anglais, ou quand
+  // l'énoncé demande de lire (`prompt-reader.tsx`) : rien ne change alors.
+  const tileVoice = useTileVoice(options, prompt, { autoRead: true });
 
   if (options.length < 2) {
     return (
       <div className="space-y-4">
-        <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
+        <ExercisePrompt prompt={prompt} image={payloadImage(payload)} scene={payloadScene(payload)} />
         <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-amber-600" aria-hidden />
           <p className="font-display font-extrabold text-amber-900">Cet exercice est cassé, on te le saute.</p>
@@ -132,7 +140,7 @@ export default function QcmExercise({
     // (`session-stage.tsx`, le budget de `--stage-pio`). Des paliers qui
     // s'excluent : Tailwind ne garantit pas l'ordre de deux requêtes média.
     <div className="space-y-6 [@media(max-height:960px)_and_(min-height:668px)]:space-y-4 [@media(max-height:667px)]:space-y-3">
-      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
+      <ExercisePrompt prompt={prompt} image={payloadImage(payload)} scene={payloadScene(payload)} />
 
       {/* Les tuiles, et la récompense qui jaillit de leur milieu. */}
       <div className={`relative ${twoColumns ? "grid grid-cols-2 gap-3 sm:gap-4" : "space-y-3"}`} data-layout={twoColumns ? "deux-colonnes" : "une-colonne"}>
@@ -150,7 +158,12 @@ export default function QcmExercise({
               size={layout.size}
               align={twoColumns ? "center" : "left"}
               disabled={disabled}
-              onPress={() => setSelectedIndex(index)}
+              // Choisir, c'est aussi ENTENDRE ce qu'on a choisi : un second toucher le redit.
+              onPress={() => {
+                setSelectedIndex(index);
+                tileVoice?.hear(index);
+              }}
+              speaking={tileVoice?.speaking === index}
               data-option={index}
             >
               <span className="sr-only">{letter}</span>

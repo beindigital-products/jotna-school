@@ -514,6 +514,9 @@ export const content = query({
         order: t.order,
         class: t.class ?? null,
         palierCount: t.palierCount ?? null,
+        // La fiche du programme (« an-ci-colours ») : l'appareil y reconnaît une
+        // thématique d'anglais, dont les tuiles ne se disent pas (`voice/tiles.ts`).
+        programmeKey: t.programmeKey ?? null,
       })),
       paliers: palierRows,
       exercises,

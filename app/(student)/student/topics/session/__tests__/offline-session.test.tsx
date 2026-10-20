@@ -56,12 +56,18 @@ vi.mock("@/lib/sounds", () => ({
   play: vi.fn(),
   playCorrect: vi.fn(),
 }));
-// L'écran de l'exercice : une sonde qui dit si la porte des images est ouverte.
+// L'écran de l'exercice : une sonde qui dit si la porte des images et celle de la voix des tuiles sont ouvertes.
 vi.mock("@/components/student/game/session-screens", async (importOriginal) => {
   const { useItemPicturesEnabled } = await import("@/components/exercises/item-pictures");
+  const { usePromptReader } = await import("@/components/exercises/prompt-reader");
   return {
     ...(await importOriginal<typeof import("@/components/student/game/session-screens")>()),
-    ExerciseRenderer: () => <p data-testid="porte">{useItemPicturesEnabled() ? "images" : "sans images"}</p>,
+    ExerciseRenderer: () => (
+      <>
+        <p data-testid="porte">{useItemPicturesEnabled() ? "images" : "sans images"}</p>
+        <p data-testid="voix">{usePromptReader()?.tileVoice ? "voix des tuiles" : "sans voix des tuiles"}</p>
+      </>
+    ),
   };
 });
 
@@ -73,12 +79,22 @@ afterEach(() => {
   device.model = null;
 });
 
-/** Le paquet d'un palier d'un exercice, pour un enfant de `profile` sur une thématique de `topic`. */
-function modelFor(profile: string | undefined, topic: string | undefined) {
+/**
+ * Le paquet d'un palier d'un exercice, pour un enfant de `profile` sur une thématique de `topic`.
+ * `programmeKey` et `subject` disent de quelle matière est la thématique (l'anglais n'a pas de voix des tuiles).
+ */
+function modelFor(
+  profile: string | undefined,
+  topic: string | undefined,
+  { programmeKey = null, subject = "Français" }: { programmeKey?: string | null; subject?: string } = {},
+) {
   return {
     profile: { class: profile },
     hasContent: true,
-    topicsById: new Map([["topic-1", { _id: "topic-1", name: "Trier et ranger", subjectId: "subject-1", class: topic }]]),
+    subjectsById: new Map([["subject-1", { _id: "subject-1", name: subject }]]),
+    topicsById: new Map([
+      ["topic-1", { _id: "topic-1", name: "Trier et ranger", subjectId: "subject-1", class: topic, programmeKey }],
+    ]),
     palierById: new Map([["palier-1", { _id: "palier-1", topicId: "topic-1", palierIndex: 1, exerciseIds: ["exo-1"] }]]),
     exerciseById: new Map([
       [
@@ -107,6 +123,17 @@ function door(profile: string | undefined, topic: string | undefined = profile) 
   return screen.getByTestId("porte").textContent;
 }
 
+/** La même séance, vue par la porte de la voix des tuiles (`isTileVoiceClass`, hors anglais). */
+function voice(
+  profile: string | undefined,
+  topic: string | undefined = profile,
+  subject?: { programmeKey?: string | null; subject?: string },
+) {
+  device.model = modelFor(profile, topic, subject);
+  render(<OfflineSession />);
+  return screen.getByTestId("voix").textContent;
+}
+
 describe("la séance sur l'appareil et les images de tuile", () => {
   it("ouvre la porte pour un enfant de CI", () => {
     expect(door("CI")).toBe("images");
@@ -133,5 +160,38 @@ describe("la séance sur l'appareil et les images de tuile", () => {
     expect(door(undefined, "CI")).toBe("images");
     cleanup();
     expect(door(undefined, "CE1")).toBe("sans images");
+  });
+});
+
+describe("la séance sur l'appareil et la voix des tuiles", () => {
+  it("l'allume pour un enfant de CI", () => {
+    expect(voice("CI")).toBe("voix des tuiles");
+  });
+
+  it("l'éteint pour un enfant de CP (qui a pourtant la voix des consignes) et pour les classes plus grandes", () => {
+    expect(voice("CP")).toBe("sans voix des tuiles");
+    for (const klass of ["CE1", "CE2", "CM2"]) {
+      cleanup();
+      expect(voice(klass), klass).toBe("sans voix des tuiles");
+    }
+  });
+
+  it("lit la classe de l'enfant d'abord : un CP sur une thématique de CI ne l'entend pas", () => {
+    expect(voice("CP", "CI")).toBe("sans voix des tuiles");
+  });
+
+  it("à défaut de classe sur le profil, lit celle de la thématique", () => {
+    expect(voice(undefined, "CI")).toBe("voix des tuiles");
+    cleanup();
+    expect(voice(undefined, "CE1")).toBe("sans voix des tuiles");
+  });
+
+  it("l'éteint en anglais : la fiche du programme (« an- ») ou la matière le disent", () => {
+    expect(voice("CI", "CI", { programmeKey: "an-ci-colours" })).toBe("sans voix des tuiles");
+    cleanup();
+    expect(voice("CI", "CI", { subject: "Anglais" })).toBe("sans voix des tuiles");
+    cleanup();
+    // Une autre fiche, une autre matière : elle reste allumée.
+    expect(voice("CI", "CI", { programmeKey: "fr-ci-lettres", subject: "Français" })).toBe("voix des tuiles");
   });
 });

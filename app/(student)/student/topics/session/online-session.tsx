@@ -45,6 +45,7 @@ import {
 import { ItemPicturesProvider } from "@/components/exercises/item-pictures";
 import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
 import { isReadingLearnerClass } from "@/convex/curriculum";
+import { isEnglishTopic, isTileVoiceClass } from "@/convex/voice/tiles";
 import { isPictureTileClass } from "@/lib/item-pictures";
 import { AnimatePresence } from "framer-motion";
 import { refusalMessage } from "@/lib/refusalMessage";
@@ -573,6 +574,10 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   const learnerClass = profile?.class ?? topic.class;
   const readsAloud = isReadingLearnerClass(learnerClass);
   const showsPictures = isPictureTileClass(learnerClass);
+  // LA VOIX DES TUILES : un enfant de CI entend aussi les propositions, et la
+  // proposition qu'il touche (`convex/voice/tiles.ts`). Pas en anglais : un mot
+  // anglais lu par la voix française serait faux. Le serveur refuse de toute façon.
+  const speaksTiles = isTileVoiceClass(learnerClass) && !isEnglishTopic({ programmeKey: topic.programmeKey });
   const exerciseRenderer = (
     <ExerciseRenderer
       exo={exo}
@@ -653,6 +658,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
             <PromptReaderProvider
               exerciseId={exo._id}
               silenced={feedback !== null || explainOpen || sceneAlert !== null}
+              tileVoice={speaksTiles}
             >
               {exerciseRenderer}
             </PromptReaderProvider>

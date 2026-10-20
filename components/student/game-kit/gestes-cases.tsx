@@ -98,12 +98,14 @@ export const DropBox = forwardRef<
     armed: boolean;
     /** Une étiquette glissée passe au-dessus : la boîte s'enfonce et s'allume. */
     over: boolean;
+    /** Pio dit le nom de la boîte (voix des tuiles, CI) : sa plaque s'entoure d'un contour ciel. */
+    speaking?: boolean;
     state?: CaseState;
     onClick?: () => void;
     children: ReactNode;
     className?: string;
   }
->(function DropBox({ tone, label, picture, armed, over, state = "repos", onClick, children, className = "" }, ref) {
+>(function DropBox({ tone, label, picture, armed, over, speaking = false, state = "repos", onClick, children, className = "" }, ref) {
   const colors = caseTone(tone, state);
   const lit = armed || over;
   // Après le verdict, l'intérieur pâlit : les étiquettes vertes ou ambre
@@ -115,6 +117,7 @@ export const DropBox = forwardRef<
       onClick={onClick}
       data-armed={armed || undefined}
       data-over={over || undefined}
+      data-speaking={speaking || undefined}
       data-state={state}
       className={`gk-box gk-motion relative rounded-3xl transition-transform duration-150 ease-out ${
         over ? "translate-y-[3px] scale-[0.99]" : ""
@@ -163,7 +166,7 @@ export const DropBox = forwardRef<
       <h4
         className={`relative mx-auto mt-1.5 w-fit max-w-[calc(100%-1.5rem)] rounded-xl border-2 border-white/80 bg-[#fff8e6] px-4 py-1.5 text-center font-display text-lg font-extrabold leading-tight shadow-[0_3px_0_#d6c39a] [overflow-wrap:anywhere]${
           picture ? " flex flex-wrap items-center justify-center gap-x-2 gap-y-1" : ""
-        }`}
+        }${speaking ? " outline outline-4 outline-offset-2 outline-sky-500" : ""}`}
         style={{ color: colors.text }}
       >
         {picture}
