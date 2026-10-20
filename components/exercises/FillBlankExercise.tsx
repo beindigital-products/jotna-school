@@ -14,6 +14,7 @@ import { FlyingToken, useTokenFlight } from "@/components/student/game-kit/choix
 import ExercisePrompt from "./ExercisePrompt";
 import { payloadImage } from "./ExerciseImage";
 import { BrokenExercise, ExerciseActions, type ExerciseScreenProps } from "./game-parts";
+import { SENTENCE_INDEX, useTileVoice } from "./prompt-reader";
 import { splitBlanks, type FillBlankView } from "@/convex/paliers/games/types";
 
 /**
@@ -65,6 +66,11 @@ export default function FillBlankExercise({
 
   const onLand = useCallback(() => setLanding(null), []);
   const { flight, fly, land } = useTokenFlight(rootRef, onLand);
+  // La voix des tuiles (CI) : Pio dit la phrase (le trou est une pause), puis les mots
+  // du trou actif, la tuile qui parle s'allume ; toucher un mot le dit, toucher la
+  // phrase la redit. Avant le retour anticipé : l'ordre des hooks.
+  const wordsToHear = blanks[active]?.options ?? [];
+  const tileVoice = useTileVoice(wordsToHear, prompt, { sentence: text || null, autoRead: true });
 
   if (!text || blanks.length === 0 || parts.length !== blanks.length + 1) {
     return <BrokenExercise prompt={prompt} onSkip={onSkip} disabled={disabled} />;
@@ -72,6 +78,8 @@ export default function FillBlankExercise({
 
   const choose = (word: string) => {
     if (disabled) return;
+    // Choisir un mot, c'est l'entendre.
+    tileVoice?.hear(wordsToHear.indexOf(word));
     const next = [...chosen];
     next[active] = word;
     setChosen(next);
@@ -97,9 +105,17 @@ export default function FillBlankExercise({
     <div ref={rootRef} className="relative space-y-6 [@media(max-height:667px)]:space-y-4">
       <ExercisePrompt prompt={prompt} image={payloadImage(payload)} />
 
-      {/* La phrase, posée sur sa carte. */}
+      {/* La phrase, posée sur sa carte. Un toucher sur la carte (hors des trous, qui ont
+          leur geste) la redit à voix haute ; un contour ciel l'entoure pendant qu'elle parle. */}
       <div
-        className={`gk-motion relative rounded-2xl border-2 px-4 py-3 font-display text-xl font-bold leading-[4.25rem] text-amber-950 ${frame}`}
+        className={`gk-motion relative rounded-2xl border-2 px-4 py-3 font-display text-xl font-bold leading-[4.25rem] text-amber-950 ${frame} ${
+          tileVoice?.speaking === SENTENCE_INDEX ? "outline outline-4 outline-offset-2 outline-sky-500" : ""
+        }`}
+        data-sentence-speaking={tileVoice?.speaking === SENTENCE_INDEX || undefined}
+        onClick={(event) => {
+          if (disabled || (event.target as HTMLElement).closest("button")) return;
+          tileVoice?.hear(SENTENCE_INDEX);
+        }}
       >
         {parts.map((part, i) => (
           <span key={i}>
@@ -129,7 +145,7 @@ export default function FillBlankExercise({
           {blanks.length > 1 ? `Trou ${active + 1} : choisis le bon mot` : "Choisis le bon mot"}
         </p>
         <div className={`grid grid-cols-2 gap-3 ${options.length > 4 ? "sm:grid-cols-3" : ""}`}>
-          {options.map((word) => {
+          {options.map((word, wordIndex) => {
             const picked = chosen[active] === word;
             const state: TileState =
               picked && isCorrect !== null ? (isCorrect ? "juste" : "fausse") : picked ? "choisie" : "repos";
@@ -145,6 +161,7 @@ export default function FillBlankExercise({
                 size="lg"
                 disabled={disabled}
                 onPress={() => choose(word)}
+                speaking={tileVoice?.speaking === wordIndex}
               >
                 {word}
               </Tile3D>

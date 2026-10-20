@@ -48,7 +48,7 @@ Tout se pilote par l'URL :
 
 | Paramètre | Valeurs | Effet |
 | --- | --- | --- |
-| `type` | `qcm3`, `qcm4`, `match`, `order`, `drag-drop`, `fill-blank`, `short-answer`, `short-answer-texte`, `pattern`, `color-mix`, `listen`, `pixel-art`, `order-animaux`, `order-animaux-4`, `qcm-intrus`, `qcm-mots-seuls`, `match-mots`, `drag-drop-savane`, `tous` | l'écran (défaut `qcm4`) ; les six derniers sont les tuiles qui nomment une chose (voir plus bas) |
+| `type` | `qcm3`, `qcm4`, `match`, `order`, `drag-drop`, `fill-blank`, `short-answer`, `short-answer-texte`, `pattern`, `color-mix`, `listen`, `pixel-art`, `qcm-scene`, `order-animaux`, `order-animaux-4`, `qcm-intrus`, `qcm-mots-seuls`, `match-mots`, `drag-drop-savane`, `tous` | l'écran (défaut `qcm4`) ; les six derniers sont les tuiles qui nomment une chose (voir plus bas) |
 | `etat` | `repos`, `choisie`, `bonne`, `mauvaise`, `desactive`, `tous` | l'état (défaut `repos`) |
 | `tout=1` | | la grille de tous les états (et de tous les types avec `type=tous`) |
 | `rm=1` | | mouvement réduit simulé depuis la page |
@@ -97,7 +97,9 @@ plus haut). `?voix=1` donne au lecteur de consignes un son local
 la vraie séance (lecture automatique à l'arrivée de la carte, silence dès la
 réponse) : les spécimens n'ont pas d'identifiant Convex, sans lui le lecteur
 est muet. C'est ainsi qu'on vérifie dans le webview iOS que Pio montre son
-affiche pendant la voix et reprend son clip après (§ 6). `?son=1`, sur un
+affiche pendant la voix et reprend son clip après (§ 6). Pour un exercice de CI,
+la voix des tuiles se joue aussi : le même son pour chaque proposition, de quoi
+voir la file et l'anneau (`docs/voix-des-tuiles.md`). `?son=1`, sur un
 écran de fin (`scene=fin-validee`), fait partir un son 2,5 s après l'arrivée,
 PENDANT que le clip « cheer » de Pio joue (`[son] joue` dans la console) : la
 seule page où un son part sous un clip monté, pour voir ce que la vidéo en

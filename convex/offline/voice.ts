@@ -21,6 +21,10 @@
  *   - la consigne d'un exercice : un élève dont l'accès est ouvert, d'une
  *     classe qui apprend à lire, sur un exercice d'un palier de SA classe —
  *     ou d'une variation de SA tentative ;
+ *   - une tuile d'un exercice (ou sa phrase à trous) : le même élève, en CI
+ *     seulement, hors anglais, hors énoncé qui demande de lire ou de décoder,
+ *     et seulement un texte que l'exercice contient (`voice/tiles.ts`). La clé
+ *     de l'appareil est le texte, pas l'exercice : un mot est un son pour tous ;
  *   - un son d'arabe : un élève dont l'école a allumé le module.
  *
  * RUNTIME PAR DÉFAUT, sans `"use node"` : `fetch`, le stockage et la
@@ -38,6 +42,7 @@ import { isReadingLearnerClass } from "../curriculum";
 import { moduleAccessForProfile } from "../modules";
 import { resolveSpeech } from "../arabic/speechText";
 import { speakableExercise } from "../voice/speakable";
+import { tileClipVerdict } from "../voice/tiles";
 import { clipCacheKey, synthesize, voiceConfig, voiceFor } from "../voice/elevenlabs";
 import { clipRequestKey, clipRequestValidator, type ClipResult } from "./contract";
 
@@ -79,6 +84,44 @@ export const plan = internalQuery({
       if (!palierCache.has(id)) palierCache.set(id, await ctx.db.get(id));
       return palierCache.get(id) ?? null;
     };
+    const exerciseCache = new Map<string, Doc<"exercises"> | null>();
+    const exerciseOf = async (id: Id<"exercises">) => {
+      if (!exerciseCache.has(id)) exerciseCache.set(id, await ctx.db.get(id));
+      return exerciseCache.get(id) ?? null;
+    };
+    // La fiche du programme et la matière d'un palier : de quoi reconnaître l'anglais.
+    const topicCache = new Map<string, { programmeKey: string | null; subjectName: string | null }>();
+    const topicOf = async (palier: Doc<"paliers">) => {
+      const cached = topicCache.get(palier._id);
+      if (cached) return cached;
+      const [topic, subject] = await Promise.all([ctx.db.get(palier.topicId), ctx.db.get(palier.subjectId)]);
+      const info = { programmeKey: topic?.programmeKey ?? null, subjectName: subject?.name ?? null };
+      topicCache.set(palier._id, info);
+      return info;
+    };
+
+    /**
+     * L'exercice et son palier, si l'élève y a droit : un palier de SA classe,
+     * ou une variation de SA tentative. La garde de la consigne et celle des
+     * tuiles sont la même.
+     */
+    const reach = async (
+      id: Id<"exercises">,
+    ): Promise<
+      | { ok: true; exercise: Doc<"exercises">; palier: Doc<"paliers"> }
+      | { ok: false; reason: "not_allowed" | "unknown_text" }
+    > => {
+      const exercise = await exerciseOf(id);
+      if (!exercise || !exercise.palierId) return { ok: false, reason: "unknown_text" };
+      const palier = await palierOf(exercise.palierId);
+      let allowed = palier !== null && topicOpenTo(caller, palier.class);
+      if (allowed && exercise.palierAttemptId) {
+        const attempt = await ctx.db.get(exercise.palierAttemptId);
+        allowed = attempt?.userId === profile._id;
+      }
+      if (!palier || !allowed) return { ok: false, reason: "not_allowed" };
+      return { ok: true, exercise, palier };
+    };
 
     const clips: PlannedClip[] = [];
     for (const request of args.requests) {
@@ -97,26 +140,36 @@ export const plan = internalQuery({
         continue;
       }
 
+      if (request.kind === "tile") {
+        // La classe de l'enfant ; à défaut, celle du palier (comme l'écran :
+        // `learnerClass = profile.class ?? topic.class`). La décision est pure
+        // (`voice/tiles.ts`) : classe, anglais, énoncé qui interdit, tuile de
+        // CET exercice.
+        const reached = await reach(request.exerciseId);
+        if (!reached.ok) {
+          clips.push({ key, ok: false, reason: reached.reason });
+          continue;
+        }
+        const verdict = tileClipVerdict({
+          learnerClass: profile.class ?? reached.palier.class,
+          topic: await topicOf(reached.palier),
+          exercise: reached.exercise,
+          text: request.text,
+        });
+        clips.push(verdict.ok ? { key, ok: true, text: verdict.text, lang: "fr" } : { key, ok: false, reason: verdict.reason });
+        continue;
+      }
+
       if (!readsAloud) {
         clips.push({ key, ok: false, reason: "not_allowed" });
         continue;
       }
-      const exercise = await ctx.db.get(request.exerciseId);
-      if (!exercise || !exercise.palierId) {
-        clips.push({ key, ok: false, reason: "unknown_text" });
+      const reached = await reach(request.exerciseId);
+      if (!reached.ok) {
+        clips.push({ key, ok: false, reason: reached.reason });
         continue;
       }
-      const palier = await palierOf(exercise.palierId);
-      let allowed = palier !== null && topicOpenTo(caller, palier.class);
-      if (allowed && exercise.palierAttemptId) {
-        const attempt = await ctx.db.get(exercise.palierAttemptId);
-        allowed = attempt?.userId === profile._id;
-      }
-      if (!allowed) {
-        clips.push({ key, ok: false, reason: "not_allowed" });
-        continue;
-      }
-      const text = speakableExercise(exercise.type, exercise.prompt);
+      const text = speakableExercise(reached.exercise.type, reached.exercise.prompt);
       clips.push(text ? { key, ok: true, text, lang: "fr" } : { key, ok: false, reason: "unknown_text" });
     }
     return { studentId: profile._id, clips };

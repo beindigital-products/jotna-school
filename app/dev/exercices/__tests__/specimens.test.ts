@@ -2,9 +2,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PlayableExercise } from "@/components/landing/demo/demo-types";
+import { SCENES } from "@/convex/paliers/games/civique";
 import { categoryOf } from "@/convex/paliers/games/things";
 import { verifyAnswer } from "@/convex/paliers/exerciseRules";
 import { READING_PROMPT, resolveTilePictures, splitTile } from "@/lib/item-pictures";
+import { isSceneClipId } from "@/lib/scene-clips";
 import { KINDS, KIND_LABELS, buildSpecimens, isKind, type Kind, type Specimen } from "../specimens";
 
 /** Les six types de tuiles qui nomment une chose : au CI, chacune montre son image. */
@@ -85,7 +87,7 @@ function wrongAnswer(exercise: PlayableExercise): string {
 }
 
 describe("les spécimens de tuiles qui nomment une chose", () => {
-  it("sont dans KINDS, après les douze d'avant, avec un nom et un spécimen de CI", () => {
+  it("sont dans KINDS, en dernier, avec un nom et un spécimen de CI", () => {
     expect(KINDS.slice(-NAMED_TILES.length)).toEqual([...NAMED_TILES]);
     for (const kind of NAMED_TILES) {
       expect(isKind(kind), kind).toBe(true);
@@ -189,6 +191,35 @@ describe("les spécimens de tuiles qui nomment une chose", () => {
     });
   });
 
+});
+
+describe("qcm-scene : le clip d'une scène de l'instruction civique", () => {
+  const { exercise, klass, view, kind } = specimens["qcm-scene"];
+  const scene = SCENES.find((candidate) => candidate.id === (exercise.payload as { scene?: string }).scene);
+
+  it("est un QCM de CI, avec un nom, dont le payload porte une scène du catalogue", () => {
+    expect(kind).toBe("qcm-scene");
+    expect(klass).toBe("CI");
+    expect(exercise.type).toBe("qcm");
+    expect(KIND_LABELS["qcm-scene"].length).toBeGreaterThan(8);
+    expect(isSceneClipId((exercise.payload as { scene?: string }).scene)).toBe(true);
+    expect(scene).toBeDefined();
+  });
+
+  it("pose l'énoncé de CETTE scène : le clip et la phrase racontent la même situation", () => {
+    expect(exercise.prompt).toBe(`${scene!.text} Que fais-tu ?`);
+  });
+
+  it("est la plus longue des 41 situations : c'est le pire cas du premier écran, celui que la séance mesure", () => {
+    expect(scene!.text.length).toBe(Math.max(...SCENES.map((candidate) => candidate.text.length)));
+  });
+
+  it("envoie à l'écran la scène, sans la réponse", () => {
+    expect((view as { scene?: string }).scene).toBe(scene!.id);
+    expect(JSON.stringify(view)).not.toContain("correctIndex");
+    expect(verifyAnswer(exercise, rightAnswer(exercise))).toBe(true);
+    expect(verifyAnswer(exercise, wrongAnswer(exercise))).toBe(false);
+  });
 });
 
 describe("les listes de types écrites ailleurs que dans specimens.ts", () => {

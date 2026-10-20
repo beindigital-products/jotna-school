@@ -215,6 +215,7 @@ export function buildModel(data: OfflineData, now: number) {
   const topics: PackTopic[] = content?.topics ?? [];
   const topicsById = new Map(topics.map((t) => [t._id as string, t] as const));
   const subjects = content?.subjects ?? [];
+  const subjectsById = new Map(subjects.map((s) => [s._id as string, s] as const));
   const palierById = new Map<string, PackPalier>((content?.paliers ?? []).map((p) => [p._id as string, p]));
   const exerciseById = new Map<string, PackExercise>();
   for (const ex of content?.exercises ?? []) exerciseById.set(ex._id as string, ex as PackExercise);
@@ -570,6 +571,7 @@ export function buildModel(data: OfflineData, now: number) {
     /** Les séances de palier gardées sur l'appareil (en cours, ou finies pas encore reflétées). */
     sessions: data.sessions,
     topicsById,
+    subjectsById,
     palierById,
     exerciseById,
     badgeCatalog,
