@@ -315,7 +315,7 @@ arrivent plus tard.
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
 🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
-`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts et l'instruction civique le sont ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique et les sciences le sont ; la liste de celles du CI est dans
 `docs/paliers-et-exercices.md`.
 
 ### Français
@@ -351,7 +351,7 @@ arrivent plus tard.
 | Classe | Thématiques |
 | --- | --- |
 | CI | Naturel ou fabriqué ? · Les animaux autour de moi · Les plantes autour de moi · Mon corps et la propreté · Les outils de la maison et de l'école |
-| CP | Solide, liquide ou gaz ? · Les êtres vivants grandissent · Bien manger · Les maladies du milieu · Protéger la nature |
+| CP | Solide, liquide ou gaz ? 🧩 · Les êtres vivants grandissent 🧩 · Bien manger 🧩 · Les maladies du milieu 🧩 · Protéger la nature 🧩 |
 | CE1 | Comment se nourrissent les êtres vivants · La respiration · Les substances autour de nous · L'eau potable · Les parasites et le paludisme · Les objets techniques simples |
 | CE2 | Le corps humain · La vie des plantes · La vie des animaux · Le circuit électrique · Se protéger des maladies · L'environnement et la population |
 | CM1 | La digestion · La respiration et ses maladies · Le cœur et le sang · Phénomènes physiques et chimiques · Démonter et assembler un objet · L'hygiène du milieu |
@@ -403,7 +403,7 @@ arrivent plus tard.
 | Classe | Thématiques |
 | --- | --- |
 | CI | Les couleurs 🎮 (4 × reconnaître une couleur, 2 × frise de couleurs) · Les formes 🎮 (3 × frise de formes, 3 × reproduire un dessin) · Frises et guirlandes 🎮 (3 × frise de couleurs, 3 × frise d'images, 2 × reproduire un dessin) · Grave ou aigu ? 🎮 (7 × grave ou aigu, 3 × la mélodie monte ou descend) · Long ou court, fort ou doux 🎮 (5 × long ou court, 5 × fort ou doux) · Mimes et émotions |
-| CP | Mélanger les couleurs 🎮 🧩 (3 × mélanger deux couleurs, 3 × retrouver un mélange, 1 × reconnaître une couleur, 2 × le matériel du peintre, 1 × relier un outil à son travail) · Les traits et les lignes 🎮 🧩 (4 × reproduire un dessin, 2 × frise de formes, 4 × lignes et traits) · Décorer avec des motifs 🎮 🧩 (2 × frise d'images, 2 × frise de formes, 2 × dessin de mémoire, 1 × reproduire un dessin, 3 × modeler, peindre, dessiner) · Comptines et rythmes 🎮 🧩 (1 × compter les coups, 3 × rythme écrit à compléter, 1 × grave ou aigu, 5 × la voix) · Jouer un rôle |
+| CP | Mélanger les couleurs 🎮 🧩 (3 × mélanger deux couleurs, 3 × retrouver un mélange, 1 × reconnaître une couleur, 2 × le matériel du peintre, 1 × relier un outil à son travail) · Les traits et les lignes 🎮 🧩 (4 × reproduire un dessin, 2 × frise de formes, 4 × lignes et traits) · Décorer avec des motifs 🎮 🧩 (2 × frise d'images, 2 × frise de formes, 2 × dessin de mémoire, 1 × reproduire un dessin, 3 × modeler, peindre, dessiner) · Comptines et rythmes 🎮 🧩 (1 × compter les coups, 3 × rythme écrit à compléter, 1 × grave ou aigu, 5 × la voix) · Jouer un rôle 🧩 |
 | CE1 | Dessiner et reproduire 🎮 (4 × reproduire un dessin, 2 × dessin de mémoire) · Plier, découper, coller 🎮 (4 × symétrie) · Les instruments du Sénégal · Écouter et comparer les sons 🎮 (3 × grave ou aigu, 3 × long ou court, 2 × fort ou doux) · Mimer les sentiments |
 | CE2 | Le coloriage magique 🎮 (5 × coloriage magique, 3 × couleurs chaudes et froides) · Reproduire un modèle 🎮 (3 × reproduire un dessin, 2 × dessin de mémoire, 2 × symétrie) · Les mélodies 🎮 (4 × la mélodie monte ou descend, 4 × pareil ou différent) · L'hymne national et les chants 🎮 (2 × reconnaître un rythme) · Jouer une scène |
 | CM1 | Le dessin de mémoire 🎮 (6 × dessin de mémoire, 1 × reproduire un dessin) · Frises et motifs 🎮 (2 × frise de formes, 2 × frise de couleurs, 1 × frise d'images, 2 × reproduire un dessin) · Percussions et cordes 🎮 (2 × compter les coups, 2 × reconnaître un rythme) · Les rythmes 🎮 (4 × reconnaître un rythme, 3 × rythme écrit à compléter, 1 × compter les coups) · Jouer la joie et la tristesse |

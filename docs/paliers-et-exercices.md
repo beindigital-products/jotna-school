@@ -1304,6 +1304,40 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `role-relier` | association | `chef de classe~garde le calme ; propreté~balaie la classe…` (étiquettes courtes : l'écran coupe les longues en syllabes) |
 | `panneau-qcm` | QCM | « Que veut dire le panneau STOP ? » : `Il faut s'arrêter.` |
 | `route-ecrire` | réponse courte | « À moto, que dois-tu mettre sur la tête pour te protéger ? Écris le mot. » : `casque` |
+| `etat-qcm` | QCM | « Dans quel état est la pierre ? » : `solide`, parmi les trois états |
+| `etat-glisser` | glisser-déposer | deux états sur trois en cases : `Pierre` et `Bois` sous Solide, `Eau` et `Lait` sous Liquide |
+| `etat-relier` | association | `Solide~Bois ; Liquide~Lait ; Gaz~Air` |
+| `etat-change` | QCM | « Que devient un glaçon posé au soleil ? » : `Eau`, contre `Pierre` et `Bois` |
+| `etat-ordre` | ordre | `Glace > Eau > Vapeur` (un glaçon qu'on chauffe) ou `Vapeur > Eau > Glace` (la vapeur qu'on refroidit) |
+| `etat-trou` | phrase à trous | `Un ___ garde sa forme.` : `solide` |
+| `etat-ecrire` | réponse courte | « Une pierre garde sa forme. Écris le mot qui dit son état. » : `solide` (ou `un solide`) |
+| `vie-ordre` | ordre | `Œuf > Poussin > Poule` ; la plante, la personne (quatre étapes), la grenouille |
+| `vie-suite` | QCM | « Dans la vie de la poule, quelle étape vient juste après l'œuf ? » : `Poussin`, contre deux étapes d'une autre vie |
+| `vie-petit` | QCM | « Comment s'appelle le petit du mouton ? » : `Agneau` (ou « Le chiot est le petit de quel animal ? » : `Chien`) |
+| `vie-relier` | association | `Vache~Veau ; Chat~Chaton ; Poule~Poussin` |
+| `vie-glisser` | glisser-déposer | cases Ça grandit et Ça ne grandit pas : `Poussin` et `Pierre` |
+| `vie-trou` | phrase à trous | `Le têtard devient une ___.` : `grenouille` |
+| `habitude-situation` | QCM | « Tu as très soif. Que faut-il faire ? » : `Je bois de l'eau propre.`, contre deux mauvais gestes de la même scène |
+| `habitude-glisser` | glisser-déposer | cases À faire et À éviter : `Je vide l'eau des vieux seaux.` et `Je jette le sachet vide par terre.` |
+| `habitude-intrus` | QCM | « Quel geste est bien ? » ou « Quel geste n'est pas bien ? » : un geste d'un côté, deux de l'autre, de trois scènes différentes |
+| `habitude-relier` | association | « Relie chaque situation au bon geste. » : `Tu sors des toilettes~Je me lave les mains avec du savon après les toilettes.` |
+| `habitude-ordre` | ordre | `Je fais un trou dans la terre. > Je plante le petit arbre. > J'arrose le petit arbre.` |
+| `habitude-trou` | phrase à trous | `Le paludisme se prend par la piqûre d'un ___.` : `moustique` |
+| `repas-qcm` | QCM | « Quel aliment faut-il éviter ? » : `Pain moisi`, contre deux aliments utiles (ou « Quel aliment fait du bien au corps ? ») |
+| `repas-glisser` | glisser-déposer | cases Bon pour le corps et À éviter : `Mangue` et `Trop de bonbons` |
+| `repas-fruit-legume` | glisser-déposer | cases Fruits et Légumes : `Papaye` et `Carotte` |
+| `maladie-glisser` | glisser-déposer | cases Contre le paludisme et Contre la diarrhée : `Dormir sous une moustiquaire` et `Boire de l'eau propre` |
+| `maladie-cause` | QCM | « Qu'est-ce qui peut donner la diarrhée ? » : `Boire de l'eau sale`, contre deux gestes qui ne la donnent pas |
+| `nature-reparer` | association | `Une cour sale~La balayer ; Un arbre coupé~Planter un arbre ; Un sachet par terre~À la poubelle` |
+| `metier-qui` | QCM | « Qui soigne les malades ? » : `Infirmière`, parmi trois métiers |
+| `metier-outil` | QCM | « Quel objet sert au pêcheur ? » : `Filet`, parmi les objets de trois métiers |
+| `metier-relier` | association | « Relie chaque métier à son travail. » (`pêcheur~attrape des poissons`) ou « …à son objet. » (`boulanger~Four`) |
+| `metier-glisser` | glisser-déposer | un métier par case, ses deux gestes : `Attrape des poissons` et `Répare ses filets` sous Pêcheur |
+| `metier-trou` | phrase à trous | `Le chauffeur conduit le ___.` : `car` |
+| `metier-ordre` | ordre | `Il lance son filet. > Il tire son filet. > Il apporte les poissons au marché.` |
+| `metier-ecrire` | réponse courte | « Dans un jeu de rôles, tu lances un filet à la mer pour attraper des poissons. Quel métier joues-tu ? Écris le mot. » : `pêcheur` |
+| `imiter-qcm` | QCM | « Quel animal fait « miaou » ? » : `Chat` (ou « Que dit le chat ? » : `miaou`) |
+| `imiter-relier` | association | `Chat~miaou ; Vache~meuh ; Coq~cocorico` |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -1568,6 +1602,29 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   - `convex/__tests__/cpCiviqueTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (chaque scène, ses gestes, les
     suites, les trous, les droits et les devoirs, les responsables, les panneaux), abîme volontairement la bonne réponse de chaque gabarit pour
     vérifier que le test le voit, et fabrique 40 paliers de chacune des cinq thématiques contre le contrôleur.
+- **Les sciences du CP** (`paliers/games/sciences.ts`) : vingt-cinq gabarits pour `sc-cp-matiere`, `sc-cp-grandir`, `sc-cp-manger`,
+  `sc-cp-maladies` et `sc-cp-nature`. Sur l'échantillon de CP, le modèle écrivait 3 exercices faux sur 25 : « Mafé » rangé dans « Liquide », des
+  paires qui se suivent (Bébé~Enfant, Enfant~Adulte), « Plat » relié deux fois, un ordre « faire du yassa » sous une thématique sur les états de
+  la matière. Ici tout vient de tableaux fermés, écrits à la main, que le test recalcule à part.
+  - **La matière** (sept gabarits) : quinze choses dont l'état ne se discute pas (le bois, la pierre, la glace, l'eau, le lait, l'air, la vapeur d'eau),
+    ce que le chaud et le froid font à l'eau, un mot à écrire. Ni fumée, ni nuage, ni pâte, ni miel : leur état se discute.
+  - **Grandir** (six gabarits) : l'œuf, le poussin, la poule ; la graine, la jeune plante, la plante ; le bébé, l'enfant, l'adulte, le vieillard ;
+    la grenouille ; le petit de sept animaux de la ferme. Les mauvais choix de « juste avant » et « juste après » viennent toujours d'une autre vie.
+  - **Les habitudes** (six gabarits communs à `sc-cp-manger`, `sc-cp-maladies` et `sc-cp-nature`) lisent des scènes, comme le civique du CP : une
+    situation, UN geste qui convient, trois gestes qui ne conviennent pas, tous compris hors de leur scène. La clé `vocabulary` du jeu (`manger`,
+    `maladies`, `nature`) choisit les scènes. Six autres gabarits portent ce que chaque thématique a de propre : les aliments utiles et nuisibles,
+    fruit ou légume, se protéger du paludisme ou de la diarrhée, les causes et les protections, ce qui répare un problème de la nature.
+  - **Les tuiles sont des noms sans article** (« Pierre », « Poussin », « Vendeur »). `templatePictures.test.ts` applique la règle des images du CI à
+    tous les gabarits enregistrés : une tuile « article + nom » absente du catalogue y serait signalée. L'énoncé, lui, garde ses articles.
+  - **La démo du site** attend une réponse courte sur « Solide, liquide ou gaz ? » et sur « Jouer un rôle » : `etat-ecrire` et `metier-ecrire`.
+  - `convex/__tests__/cpSciencesRolesTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (l'état de chaque chose, les
+    étapes de chaque vie, chaque scène et ses gestes, les aliments, les métiers avec leurs gestes et leur objet, les cris), abîme volontairement la
+    bonne réponse de chaque gabarit pour vérifier que le test le voit, et fabrique 40 paliers de chacune des six thématiques contre le contrôleur.
+- **Jouer un rôle au CP** (`paliers/games/metiers.ts`) : neuf gabarits pour `ar-cp-roles`. Le modèle écrivait « Le pêcheur a besoin d'un chapeau »,
+  « Qui est le vendeur au marché ? » avec « le marchand » pour bonne réponse, un ordre « Choisir un costume, Imiter le rôle, Jouer avec des amis »
+  sans rien de vrai ni de faux. Ici huit métiers ont chacun UN objet et DEUX gestes qui ne sont à aucun autre métier de la table, et huit animaux
+  ont leur cri. Le métier à écrire est désigné par ses gestes, jamais nommé ; les réponses admises sont les noms du même métier (marchand,
+  couturier, conducteur, paysan, instituteur).
 - **Les premières phrases et la politesse** (`paliers/games/phrases.ts`, `paliers/games/politesse.ts`) : dix
   gabarits pour le français du CI (`fr-ci-phrases`, `fr-ci-politesse`). Sur l'échantillon lu le 19 octobre 2026,
   16 exercices sur 30 étaient faux en « Mes premières phrases » (onze quiz sur les aliments sans scène, des trous où
@@ -1716,14 +1773,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces cinquante-cinq thématiques contre un faux modèle qui lève une
+  chaque palier de ces soixante-six thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
   Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
-  haut) : en CI, l'éveil et l'éducation artistique ; toutes les autres classes, sauf l'histoire, la géographie,
-  l'anglais, la lecture et l'écriture du CP. Le français (phrases, politesse), l'histoire, la géographie, l'anglais et l'instruction civique du CI, puis
-  l'histoire, la géographie, l'anglais, la lecture et l'écriture du CP, n'appellent plus le modèle.
+  haut) : en CI, l'éveil et l'éducation artistique ; toutes les autres classes, sauf le CP, où seules les mathématiques gardent le modèle. Le français (phrases, politesse), l'histoire, la géographie, l'anglais et l'instruction civique du CI, puis
+  tout le CP sauf les mathématiques (l'histoire, la géographie, l'anglais, le français, les arts, l'instruction civique, les sciences), n'appellent plus le modèle.
   Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
   dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
   rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à

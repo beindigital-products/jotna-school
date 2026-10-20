@@ -73,6 +73,13 @@ const WITHOUT_MODEL = [
   "ci-cp-responsabilites",
   "ci-cp-genre",
   "ci-cp-paix",
+  // Les sciences du CP (solide, liquide ou gaz ; grandir ; bien manger ; les maladies ; la nature) et « Jouer un rôle ».
+  "sc-cp-matiere",
+  "sc-cp-grandir",
+  "sc-cp-manger",
+  "sc-cp-maladies",
+  "sc-cp-nature",
+  "ar-cp-roles",
   // L'anglais du CI : les salutations, les couleurs, les nombres de 0 à 10, les animaux, les fruits.
   "an-ci-hello",
   "an-ci-colours",
