@@ -28,8 +28,9 @@
  * - Pas d'oral. L'application n'a pas de voix anglaise : aucun exercice
  *   d'écoute ni de prononciation. C'est le gros manque d'un cours de langue ;
  *   il se comblera avec des clips audio, comme pour l'arabe.
- * - Pas de jeux fabriqués par le code : leurs consignes et leurs étiquettes
- *   sont en français (`paliers/games`).
+ * - Les jeux fabriqués par le code (`paliers/games/anglaisCi.ts` au CI,
+ *   `paliers/games/anglais.ts` au CP) ont leurs consignes en français : seuls
+ *   les mots que l'enfant apprend sont en anglais. Aucun n'est un jeu d'écoute.
  * - L'anglais est écrit à la britannique (colour, grey, trousers, have got).
  */
 import type { ProgrammeSubject } from "./types";
@@ -50,6 +51,17 @@ export const ANGLAIS: ProgrammeSubject = {
         palierCount: 2,
         description:
           "Anglais, niveau pré-A1 : saluer et se présenter. Vocabulaire fermé : hello, hi, goodbye, bye, good morning, good night, yes, no, please, thank you, sorry. Dire son prénom : « I am Awa. », « My name is Modou. ». L'enfant associe une salutation à une image (🌅 le matin, 🌙 le soir, 👋 un salut) ; pas d'autres mots.",
+        games: [
+          { kind: "salut-francais", count: 2 },
+          { kind: "salut-dessin", count: 1 },
+          { kind: "salut-situation", count: 1 },
+          { kind: "salut-relier", count: 1 },
+          { kind: "salut-glisser", count: 1 },
+          { kind: "salut-prenom", count: 1 },
+          { kind: "salut-rencontre", count: 1 },
+          { kind: "salut-trou", count: 1 },
+          { kind: "salut-trou-dessin", count: 1 },
+        ],
       },
       {
         key: "an-ci-colours",
@@ -57,18 +69,44 @@ export const ANGLAIS: ProgrammeSubject = {
         palierCount: 2,
         description:
           "Anglais, niveau pré-A1 : les couleurs. Vocabulaire fermé : red, blue, yellow, green, orange, black, white, pink, brown, purple. L'enfant associe le mot à la couleur (🔴 🔵 🟡 🟢 🟠 ⚫ ⚪ 🟣 🟤) ou à un objet de cette couleur (🍎 red, 🍌 yellow), et reconnaît « It is red. » ; pas de phrase plus longue.",
+        games: [
+          { kind: "couleur-mot", count: 3 },
+          { kind: "couleur-chose", count: 2 },
+          { kind: "couleur-francais", count: 1 },
+          { kind: "couleur-relier", count: 1 },
+          { kind: "couleur-glisser", count: 1 },
+          { kind: "couleur-phrase", count: 2 },
+        ],
       },
       {
         key: "an-ci-numbers",
         name: "Compter jusqu'à 10 en anglais",
         description:
           "Anglais, niveau pré-A1 : les nombres de 0 à 10. Vocabulaire fermé : zero, one, two, three, four, five, six, seven, eight, nine, ten. L'enfant associe le mot au chiffre (3 = three) et à une quantité d'émojis (🍎🍎🍎 = three), continue une suite (one, two, three, ?). Jamais de nombre au-delà de 10.",
+        games: [
+          { kind: "compte-mot", count: 1 },
+          { kind: "compte-chiffre", count: 1 },
+          { kind: "compte-dessins", count: 2 },
+          { kind: "compte-relier", count: 1 },
+          { kind: "compte-relier-dessins", count: 1 },
+          { kind: "compte-ordre", count: 1 },
+          { kind: "compte-suivant", count: 1 },
+          { kind: "compte-suite", count: 1 },
+          { kind: "compte-glisser", count: 1 },
+        ],
       },
       {
         key: "an-ci-animals",
         name: "Les animaux en anglais",
         description:
           "Anglais, niveau pré-A1 : les animaux. Vocabulaire fermé : dog, cat, bird, fish, cow, goat, sheep, horse, chicken, monkey, lion, elephant. L'enfant associe l'émoji de l'animal au mot (🐶 dog, 🐱 cat, 🐦 bird, 🐟 fish, 🐄 cow, 🐐 goat, 🐑 sheep, 🐴 horse, 🐔 chicken, 🐒 monkey, 🦁 lion, 🐘 elephant) ; mots isolés, au singulier, sans phrase.",
+        games: [
+          { kind: "animal-mot", count: 3 },
+          { kind: "animal-francais", count: 2 },
+          { kind: "animal-relier", count: 2 },
+          { kind: "animal-glisser", count: 1 },
+          { kind: "animal-intrus", count: 2 },
+        ],
       },
       {
         key: "an-ci-fruits",
@@ -76,6 +114,13 @@ export const ANGLAIS: ProgrammeSubject = {
         palierCount: 2,
         description:
           "Anglais, niveau pré-A1 : les fruits. Vocabulaire fermé : mango, banana, orange, apple, lemon, watermelon, pineapple. L'enfant associe l'émoji du fruit au mot (🥭 mango, 🍌 banana, 🍊 orange, 🍎 apple, 🍋 lemon, 🍉 watermelon, 🍍 pineapple) et trouve l'intrus parmi des fruits et des animaux déjà vus ; mots isolés, au singulier.",
+        games: [
+          { kind: "fruit-mot", count: 3 },
+          { kind: "fruit-francais", count: 2 },
+          { kind: "fruit-relier", count: 2 },
+          { kind: "fruit-glisser", count: 1 },
+          { kind: "fruit-intrus", count: 2 },
+        ],
       },
     ],
     CP: [

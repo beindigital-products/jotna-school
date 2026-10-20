@@ -128,6 +128,42 @@ const TEMPLATES = [
   "politesse-glisser",
   "politesse-trou",
   "politesse-rencontre",
+
+  // L'anglais du CI (`games/anglaisCi.ts`) : leur matière est « Anglais ».
+  "animal-mot",
+  "animal-francais",
+  "animal-relier",
+  "animal-glisser",
+  "animal-intrus",
+  "fruit-mot",
+  "fruit-francais",
+  "fruit-relier",
+  "fruit-glisser",
+  "fruit-intrus",
+  "couleur-mot",
+  "couleur-chose",
+  "couleur-francais",
+  "couleur-relier",
+  "couleur-glisser",
+  "couleur-phrase",
+  "compte-mot",
+  "compte-chiffre",
+  "compte-dessins",
+  "compte-relier",
+  "compte-relier-dessins",
+  "compte-ordre",
+  "compte-suivant",
+  "compte-suite",
+  "compte-glisser",
+  "salut-francais",
+  "salut-dessin",
+  "salut-situation",
+  "salut-relier",
+  "salut-glisser",
+  "salut-prenom",
+  "salut-trou",
+  "salut-trou-dessin",
+  "salut-rencontre",
 ] as const satisfies readonly GameKind[];
 
 /** Les gabarits de calcul : leur matière est « Mathématiques ». */
@@ -217,13 +253,67 @@ const GEOGRAPHY_KINDS = new Set<string>([
   "grille-glisser",
 ]);
 
+/** Les gabarits de l'anglais du CI (`games/anglaisCi.ts`) : leur matière est « Anglais ». */
+const ENGLISH_KINDS = new Set<string>([
+  "animal-mot",
+  "animal-francais",
+  "animal-relier",
+  "animal-glisser",
+  "animal-intrus",
+  "fruit-mot",
+  "fruit-francais",
+  "fruit-relier",
+  "fruit-glisser",
+  "fruit-intrus",
+  "couleur-mot",
+  "couleur-chose",
+  "couleur-francais",
+  "couleur-relier",
+  "couleur-glisser",
+  "couleur-phrase",
+  "compte-mot",
+  "compte-chiffre",
+  "compte-dessins",
+  "compte-relier",
+  "compte-relier-dessins",
+  "compte-ordre",
+  "compte-suivant",
+  "compte-suite",
+  "compte-glisser",
+  "salut-francais",
+  "salut-dessin",
+  "salut-situation",
+  "salut-relier",
+  "salut-glisser",
+  "salut-prenom",
+  "salut-trou",
+  "salut-trou-dessin",
+  "salut-rencontre",
+]);
+
 /** La matière que le contrôleur reçoit pour un gabarit : celle de la thématique qui le demande. */
 const subjectOfKind = (kind: string) =>
-  MATH_KINDS.has(kind) ? "Mathématiques" : HISTORY_KINDS.has(kind) ? "Histoire" : GEOGRAPHY_KINDS.has(kind) ? "Géographie" : "Français";
+  MATH_KINDS.has(kind)
+    ? "Mathématiques"
+    : HISTORY_KINDS.has(kind)
+      ? "Histoire"
+      : GEOGRAPHY_KINDS.has(kind)
+        ? "Géographie"
+        : ENGLISH_KINDS.has(kind)
+          ? "Anglais"
+          : "Français";
 
 /** La matière d'une thématique du programme, lue sur le préfixe de sa clé. */
 const subjectOfTopic = (key: string) =>
-  key.startsWith("ma-") ? "Mathématiques" : key.startsWith("hi-") ? "Histoire" : key.startsWith("ge-") ? "Géographie" : "Français";
+  key.startsWith("ma-")
+    ? "Mathématiques"
+    : key.startsWith("hi-")
+      ? "Histoire"
+      : key.startsWith("ge-")
+        ? "Géographie"
+        : key.startsWith("an-")
+          ? "Anglais"
+          : "Français";
 
 const CLASSIC_TYPES = new Set<string>(["qcm", "order", "match", "drag-drop", "fill-blank"]);
 
@@ -1082,7 +1172,7 @@ describe("les gabarits dans le programme du CI", () => {
     (e) => e.klass === "CI" && e.topic.games?.some((g) => (TEMPLATES as readonly string[]).includes(g.kind)),
   );
 
-  it("est branché sur vingt-trois thématiques du CI", () => {
+  it("est branché sur vingt-huit thématiques du CI", () => {
     expect(entries.map((e) => e.topic.key).sort()).toEqual(
       [
         "fr-ci-alphabet",
@@ -1108,6 +1198,11 @@ describe("les gabarits dans le programme du CI", () => {
         "ge-ci-lateralite",
         "ge-ci-reperes",
         "ge-ci-quadrillage",
+        "an-ci-hello",
+        "an-ci-colours",
+        "an-ci-numbers",
+        "an-ci-animals",
+        "an-ci-fruits",
       ].sort(),
     );
   });
@@ -1137,6 +1232,11 @@ describe("les gabarits dans le programme du CI", () => {
       "ge-ci-lateralite",
       "ge-ci-reperes",
       "ge-ci-quadrillage",
+      "an-ci-hello",
+      "an-ci-colours",
+      "an-ci-numbers",
+      "an-ci-animals",
+      "an-ci-fruits",
     ];
     for (const entry of entries) {
       for (const spec of entry.topic.games ?? []) {
@@ -1273,6 +1373,11 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     "ge-ci-lateralite",
     "ge-ci-reperes",
     "ge-ci-quadrillage",
+    "an-ci-hello",
+    "an-ci-colours",
+    "an-ci-numbers",
+    "an-ci-animals",
+    "an-ci-fruits",
   ];
   const topicOf = (key: string) => allProgrammeEntries().find((e) => e.topic.key === key)!.topic;
 
@@ -1307,7 +1412,7 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     for (const key of keys) expect(topicUsesModel(key), key).toBe(false);
     expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
     expect(topicUsesModel("ci-cp-genre")).toBe(true);
-    expect(topicUsesModel("an-ci-hello")).toBe(true);
+    expect(topicUsesModel("sc-ci-milieu")).toBe(true);
     expect(topicUsesModel("hi-cm2-empires")).toBe(true);
     // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.
     expect(topicUsesModel(null)).toBe(true);
