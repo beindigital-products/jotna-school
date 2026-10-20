@@ -58,6 +58,15 @@ const WITHOUT_MODEL = [
   "an-cp-food",
   "fr-cp-lecture",
   "fr-cp-ecrire",
+  // Le français du CP (consignes, décrire, raconter, inviter) et les arts du CP (mélanger, traits, décorer, rythmes).
+  "fr-cp-consignes",
+  "fr-cp-decrire",
+  "fr-cp-raconter",
+  "fr-cp-inviter",
+  "ar-cp-melanges",
+  "ar-cp-traits",
+  "ar-cp-decorer",
+  "ar-cp-rythmes",
 ] as const;
 const MODEL_CALLED = "LE MODÈLE A ÉTÉ APPELÉ";
 
@@ -146,6 +155,11 @@ function rightAnswer(exo: Written): string {
       return JSON.stringify(Object.fromEntries((p.items as { text: string; correctZone: string }[]).map((item) => [item.text, item.correctZone])));
     case "short-answer":
       return String((p.acceptedAnswers as string[])[0]);
+    // Les arts du CP mêlent des jeux d'écoute et de couleurs aux gabarits : leur réponse est celle de `games.test.ts`.
+    case "listen":
+      return String(p.correctIndex);
+    case "color-mix":
+      return JSON.stringify(p.answer);
     default:
       return JSON.stringify((p.blanks as { answer: string }[]).map((b) => b.answer));
   }

@@ -94,6 +94,8 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "couleurs-melange", count: 3 },
           { kind: "couleurs-melange-inverse", count: 3 },
           { kind: "couleurs-reconnaitre", count: 1 },
+          { kind: "peinture-outil", count: 2 },
+          { kind: "peinture-relier", count: 1 },
         ],
       },
       {
@@ -104,6 +106,10 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "pixel-copie", count: 4 },
           { kind: "frise-formes", count: 2 },
+          { kind: "ligne-qcm", count: 1 },
+          { kind: "ligne-glisser", count: 1 },
+          { kind: "ligne-relier", count: 1 },
+          { kind: "trait-qcm", count: 1 },
         ],
       },
       {
@@ -116,6 +122,8 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "frise-formes", count: 2 },
           { kind: "pixel-memoire", count: 2 },
           { kind: "pixel-copie", count: 1 },
+          { kind: "technique-qcm", count: 2 },
+          { kind: "technique-relier", count: 1 },
         ],
       },
       {
@@ -124,9 +132,12 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         description:
           "Éducation musicale, étape 1 : comptines, rondes et berceuses ; frapper un rythme, compter les coups, exploration vocale (chanter fort, doucement, aigu, grave).",
         games: [
-          { kind: "ecoute-rythme", count: 4 },
+          { kind: "ecoute-rythme", count: 1 },
           { kind: "frise-rythme", count: 3 },
           { kind: "ecoute-hauteur", count: 1 },
+          { kind: "voix-ordre", count: 1 },
+          { kind: "voix-trou", count: 2 },
+          { kind: "voix-qcm", count: 2 },
         ],
       },
       {

@@ -1218,6 +1218,41 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `ecrire-nombre` | glisser-déposer | cases Singulier et Pluriel : `chat` et `chats` |
 | `ecrire-texte` | ordre | `Fatou va au marché. > Elle achète du riz. > Elle rentre à la maison.` |
 | `ecrire-mot` | phrase à trous | `On mange une ___.` : `mangue`, parmi deux mots du même genre qui ne se mangent pas |
+| `consigne-sens` | QCM | « La consigne dit « Découpe ». Que fais-tu ? » : `Je coupe avec des ciseaux.` |
+| `consigne-verbe` | QCM | « Quel mot de consigne veut dire « écrire une deuxième fois » ? » : `Recopie` |
+| `consigne-relier` | association | « Relie chaque consigne à ce qu'elle veut dire. » : `Souligne~tracer un trait sous le mot…` |
+| `consigne-trou` | phrase à trous | `___ la phrase en l'écrivant une deuxième fois.` : `Recopie` |
+| `consigne-intrus` | QCM | « Quel mot n'est pas une consigne de classe ? » : `Mange`, parmi `Relie` et `Entoure` |
+| `consigne-etapes` | ordre | « Mets ces étapes dans le bon ordre pour planter une graine. » : `Fais un trou… > Mets la graine… > Recouvre… > Arrose…` |
+| `contraire-qcm` | QCM | « Quel mot est le contraire de « petit » ? » : `grand` (jamais deux mots de taille parmi les choix) |
+| `contraire-relier` | association | `léger~lourd ; chaud~froid ; plein~vide ; court~long` |
+| `contraire-trou` | phrase à trous | `Le verre n'est pas plein, il est ___.` : `vide` |
+| `comparer-trou` | phrase à trous | deux bêtes dessinées, `Le chien est plus ___ que la girafe.` : `petit` (jamais un deuxième mot vrai parmi les choix) |
+| `adjectif-ordre` | ordre | `Moussa > voit > une > jolie > vache.` (un seul rangement est une phrase) |
+| `recit-ordre` | ordre | `D'abord, Cheikh sort de la classe. > Ensuite, il joue au ballon dans la cour. > Enfin, il retourne en classe.` |
+| `recit-qui` | QCM | deux phrases dans l'énoncé, puis « Qui joue au ballon dans la cour ? » : `Awa` |
+| `recit-ou` | QCM | « Moussa sort de la classe. Il joue au ballon dans la cour. » puis « Où joue Moussa ? » : `dans la cour` (l'endroit est écrit dans le texte) |
+| `recit-quoi` | QCM | « Cheikh achète des mangues au marché. » puis « Que fait Cheikh ? » : `Il achète des mangues.` |
+| `recit-quand` | QCM | « Le soir, Fatou va au marché… » puis « Quel moment de la journée est écrit dans l'histoire ? » : `le soir` |
+| `recit-trou` | phrase à trous | `D'abord, … ___, elle attrape un poisson… Enfin, …` : `Ensuite` |
+| `recit-relier` | association | trois phrases dans l'énoncé, puis `Moussa~achète des mangues…` |
+| `invitation-glisser` | glisser-déposer | cases Invitation et Conseil : `Viens à mon baptême samedi !` et `Lave-toi les mains avant de manger.` |
+| `invitation-choisir` | QCM | « Quelle phrase est un conseil ? » : `Regarde des deux côtés avant de traverser.` |
+| `invitation-reponse` | QCM | « Modou t'invite à chanter. Tu veux venir. Que réponds-tu poliment ? » : `Oui, merci beaucoup !` (un palier accepte une fois et refuse une fois) |
+| `invitation-qui` | QCM | « Awa invite Aminata à son baptême samedi. » puis « Quel jour a lieu l'invitation ? » : `samedi` (ou qui invite, qui est invité) |
+| `invitation-trou` | phrase à trous | `Awa invite Modou. Elle lui dit « ___ jouer au ballon avec moi ! »` : `Viens` (jamais `Venez`) |
+| `invitation-ordre` | ordre | `Salut Cheikh ! > Je t'invite à mon anniversaire. > À dimanche !` |
+| `peinture-outil` | QCM | « À quoi sert la palette ? » : `mélanger les couleurs` (ou « Quel outil sert à laver le pinceau ? ») |
+| `peinture-relier` | association | `palette~mélanger les couleurs ; pinceau~étaler la peinture ; gobelet d'eau~laver le pinceau` |
+| `ligne-qcm` | QCM | « Quelle ligne est arrondie, comme un arc-en-ciel ? » : `courbe` (la ligne est décrite par ce qu'on voit, jamais dessinée avec des signes) |
+| `ligne-relier` | association | `droite~ne tourne jamais ; spirale~tourne en s'enroulant sur elle-même, comme un escargot…` |
+| `ligne-glisser` | glisser-déposer | cases Ligne droite et Ligne courbe : `le bord d'une règle` et `le bord d'une roue` |
+| `trait-qcm` | QCM | « Quel trait est très fin ? » : `délié` |
+| `technique-qcm` | QCM | « Que prends-tu pour dessiner une maison ? » : `crayon` |
+| `technique-relier` | association | `peindre~pinceau ; dessiner~crayon ; modeler~argile` |
+| `voix-ordre` | ordre | `chuchoter > parler doucement > parler fort > crier` (trois voix au premier palier) |
+| `voix-qcm` | QCM | « Quelle façon de parler est la plus forte ? » : `crier`, parmi trois des quatre voix |
+| `voix-trou` | phrase à trous | `Pour dire un secret à l'oreille, on parle ___.` : `doucement` (les mauvais choix sont tous des voix fortes) |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -1426,6 +1461,41 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     mots de la fiche et leur dessin, les syllabes, les sons que chaque mot fait entendre, le genre de chaque nom), abîme volontairement
     la bonne réponse de chaque gabarit pour vérifier que le test le voit, et fabrique 40 paliers de chacune des sept thématiques contre
     le contrôleur.
+- **Les consignes du CP** (`paliers/games/consignes.ts`) : six gabarits pour `fr-cp-consignes`. Sur l'échantillon de CP, le modèle écrivait
+  « Entoure le dessin qui... » sans rien à entourer, des trous où deux verbes de consigne allaient, des étapes à ranger sans qu'aucune ne
+  vienne avant l'autre. Ici six verbes de consigne (Entoure, Colorie, Découpe, Relie, Souligne, Recopie) ont chacun un sens écrit en
+  une expression, une phrase à la première personne et un cadre de phrase où ce verbe seul va. Aucun sens ne ressemble à un autre : le test
+  vérifie que les six sens sont distincts. Les étapes à ranger viennent de quatre petites routines (se laver les mains, planter une
+  graine, faire un dessin, boire un verre d'eau) dont chaque étape vient avant la suivante : trois étapes au premier palier, quatre ensuite.
+  « Mange » et « Dors » sont les intrus : ils ne sont jamais une consigne de classe.
+- **Décrire et comparer au CP** (`paliers/games/decrire.ts`) : cinq gabarits pour `fr-cp-decrire`, qui complètent `couleur-objet`,
+  `comparer-mesure` et `forme-nom`. Les contraires viennent d'un tableau de cinq paires (grand et petit, chaud et froid, lourd et léger,
+  plein et vide, long et court). Les mots de taille (grand, petit, long, court) ne sont jamais deux dans les choix d'une même question :
+  « long » et « court » diraient tous les deux « pas grand ». Pour comparer deux bêtes, une seule échelle (de la fourmi à l'éléphant) juge à la
+  fois « plus grand » et « plus lourd », les deux bêtes sont toujours éloignées d'au moins deux rangs, l'adjectif s'accorde avec la première
+  bête, et le troisième choix est choisi pour que UNE SEULE option soit vraie. Les phrases de `adjectif-ordre` n'ont qu'un rangement :
+  « grand », « petit », « joli » et « gros » se placent avant le nom, les couleurs après.
+- **Raconter au CP** (`paliers/games/recit.ts`) : sept gabarits pour `fr-cp-raconter`. Sur l'échantillon de CP, le modèle écrivait
+  « Qui va au marché ? » sans aucune histoire à l'écran, « Associe les personnages à leurs actions » (des paires arbitraires). Ici le TEXTE est
+  dans l'énoncé : la réponse s'y lit. Trois histoires de la vie de l'enfant (le marché, la récréation, la pêche avec le grand-père) ont
+  chacune trois étapes : on part, on fait, on rentre. « D'abord », « Ensuite » et « Enfin » sont écrits dans les phrases à remettre dans
+  l'ordre, donc l'enfant lit la clé. Pour « Où ? », l'endroit est écrit dans le texte (sinon l'enfant devinerait). « Il » et « Elle » suivent le prénom.
+- **Inviter et conseiller au CP** (`paliers/games/invitation.ts`) : six gabarits pour `fr-cp-inviter`. Le modèle acceptait « Viens » ET « Venez »
+  pour inviter un seul ami, et écrivait des associations où rien ne disait qui invite qui. Les invitations (six) et les conseils (six) viennent
+  d'un tableau fermé : aucune phrase n'est les deux. Une réponse polie remercie, une réponse impolie commande, se moque ou refuse sèchement ;
+  les mauvaises réponses sont aussi longues que la bonne (une réponse qui se devine à sa longueur n'apprend rien). Un palier répond
+  une fois « oui » et une fois « non », pas deux fois la même.
+- **Les arts du CP** (`paliers/games/arts.ts`) : onze gabarits pour `ar-cp-melanges`, `ar-cp-traits`, `ar-cp-decorer` et `ar-cp-rythmes`, qui
+  mêlent ces gabarits aux jeux de couleurs, de dessin, de frises et d'écoute déjà existants. Sur l'échantillon de CP, le modèle écrivait des
+  lignes dessinées avec des signes (« ~~~ » pour un zigzag), « Trait délié ~~~~ » (un trait délié est un trait fin, pas une vague) et des
+  motifs attachés à un objet sans que la fiche le dise. Ici on ne dessine jamais une ligne : on la DÉCRIT par ce qu'on voit, ou on la reconnaît
+  dans une chose de tous les jours. Les « lignes brisées » de la fiche ne sont pas posées : un zigzag en est déjà une. Les voix vont de la plus
+  douce à la plus forte (chuchoter, parler doucement, parler fort, crier). Les jeux d'écoute (`listen.ts`) ne refont pas un tirage déjà servi dans le
+  palier : une thématique faite tout entière par le code les sert une fois chacun, sinon deux exercices identiques pourraient se suivre.
+  - `convex/__tests__/cpFrancaisArtsTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (le sens de chaque
+    verbe de consigne, les contraires, l'ordre des bêtes de la fourmi à l'éléphant, les histoires, les invitations et les conseils, les lignes,
+    les traits, les voix), abîme volontairement la bonne réponse de chaque gabarit pour vérifier que le test le voit, et fabrique 40 paliers de
+    chacune des huit thématiques contre le contrôleur.
 - **Les premières phrases et la politesse** (`paliers/games/phrases.ts`, `paliers/games/politesse.ts`) : dix
   gabarits pour le français du CI (`fr-ci-phrases`, `fr-ci-politesse`). Sur l'échantillon lu le 19 octobre 2026,
   16 exercices sur 30 étaient faux en « Mes premières phrases » (onze quiz sur les aliments sans scène, des trous où

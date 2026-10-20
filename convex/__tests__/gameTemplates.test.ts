@@ -1306,7 +1306,7 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
   it("annonce ces paliers comme gratuits à la pré-génération, et les autres comme payants", () => {
     for (const key of keys) expect(topicUsesModel(key), key).toBe(false);
     expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
-    expect(topicUsesModel("fr-cp-raconter")).toBe(true);
+    expect(topicUsesModel("ci-cp-genre")).toBe(true);
     expect(topicUsesModel("an-ci-hello")).toBe(true);
     expect(topicUsesModel("hi-cm2-empires")).toBe(true);
     // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.

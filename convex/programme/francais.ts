@@ -152,24 +152,59 @@ export const FRANCAIS: ProgrammeSubject = {
         name: "Inviter et conseiller",
         description:
           "Communication orale, palier 5 du CP : invitation et recommandation. Choisir la bonne formule pour inviter (« Viens à mon baptême samedi », « Je t'invite à jouer au ballon ») et pour recommander (« Fais attention en traversant », « Lave-toi les mains avant de manger ») ; retrouver qui invite, qui, où, quand ; répondre poliment à une invitation.",
+        games: [
+          { kind: "invitation-glisser", count: 2 },
+          { kind: "invitation-choisir", count: 2 },
+          { kind: "invitation-reponse", count: 2 },
+          { kind: "invitation-qui", count: 2 },
+          { kind: "invitation-trou", count: 1 },
+          { kind: "invitation-ordre", count: 1 },
+        ],
       },
       {
         key: "fr-cp-raconter",
         name: "Raconter une histoire",
         description:
           "Palier 6 du CP : la narration. Remettre dans l'ordre les étapes d'une petite histoire (d'abord, ensuite, enfin), retrouver qui fait quoi dans un petit texte narratif de 2 à 4 phrases, répondre aux questions qui ? où ? quand ?. Histoires de la vie de l'enfant : le marché, la récréation, la pêche avec le grand-père.",
+        games: [
+          { kind: "recit-ordre", count: 3 },
+          { kind: "recit-qui", count: 1 },
+          { kind: "recit-ou", count: 1 },
+          { kind: "recit-quoi", count: 1 },
+          { kind: "recit-quand", count: 1 },
+          { kind: "recit-trou", count: 2 },
+          { kind: "recit-relier", count: 1 },
+        ],
       },
       {
         key: "fr-cp-decrire",
         name: "Décrire et comparer",
         description:
           "Palier 7 du CP : description et comparaison. Décrire un objet, un animal ou une personne (couleur, taille, forme), comparer (plus grand que, plus petit que, aussi… que), les mots contraires (grand/petit, chaud/froid, lourd/léger), les adjectifs simples placés avec leur nom.",
+        games: [
+          { kind: "contraire-qcm", count: 2 },
+          { kind: "contraire-relier", count: 1 },
+          { kind: "contraire-trou", count: 1 },
+          { kind: "comparer-trou", count: 2 },
+          { kind: "adjectif-ordre", count: 1 },
+          { kind: "couleur-objet", count: 1 },
+          { kind: "comparer-mesure", count: 1 },
+          { kind: "forme-nom", count: 1 },
+        ],
       },
       {
         key: "fr-cp-consignes",
         name: "Les consignes",
         description:
           "Palier 8 du CP : les énoncés injonctifs. Comprendre une consigne (entoure, colorie, découpe, relie, souligne, recopie), remettre dans l'ordre les étapes d'une recette simple (le jus de bissap, le jus de bouye) ou d'un bricolage, les verbes d'action à l'impératif.",
+        games: [
+          { kind: "consigne-sens", count: 2 },
+          { kind: "consigne-verbe", count: 2 },
+          { kind: "consigne-relier", count: 1 },
+          { kind: "consigne-trou", count: 2 },
+          { kind: "consigne-etapes", count: 2 },
+          { kind: "consigne-intrus", count: 1 },
+        ],
       },
       {
         key: "fr-cp-ecrire",
