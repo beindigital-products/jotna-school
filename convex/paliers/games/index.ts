@@ -146,17 +146,18 @@ import {
   makeVoiceGap,
   makeVoiceOrder,
 } from "./arts";
+// Les gabarits du civique du CP (`gestes.ts`) portent des noms que le civique du CI (`civique.ts`) prend aussi : les alias les séparent.
 import {
-  makeActOdd,
-  makeActSort,
+  makeActOdd as makeGestureOdd,
+  makeActSort as makeGestureSort,
   makePanelChoice,
   makeRightsSort,
   makeRoleChoice,
   makeRoadWrite,
   makeRoleLinks,
-  makeRuleGap,
-  makeSceneChoice,
-  makeSceneLinks,
+  makeRuleGap as makeGestureGap,
+  makeSceneChoice as makeGestureScene,
+  makeSceneLinks as makeGestureLinks,
   makeSequence as makeGestureSequence,
 } from "./gestes";
 import { makeColorPair, makeColorPick, makeColorResult, makeWarmCold } from "./colors";
@@ -617,12 +618,12 @@ export const GAME_KINDS = {
   "voix-qcm": { label: "La voix la plus douce ou la plus forte", type: "qcm", make: makeVoiceChoice },
   "voix-trou": { label: "Parler ou chanter doucement ou fort", type: "fill-blank", make: makeVoiceGap },
   // L'instruction civique du CP (`gestes.ts`) : la route, le règlement, les responsabilités, filles et garçons, la paix.
-  "geste-situation": { label: "Le bon geste dans une situation", type: "qcm", make: makeSceneChoice },
-  "geste-glisser": { label: "Glisser des gestes sous « À faire » ou « À éviter »", type: "drag-drop", make: makeActSort },
-  "geste-intrus": { label: "Quel geste est bien, ou n'est pas bien, parmi trois", type: "qcm", make: makeActOdd },
-  "geste-relier": { label: "Relier une situation et le bon geste", type: "match", make: makeSceneLinks },
+  "geste-situation": { label: "Le bon geste dans une situation", type: "qcm", make: makeGestureScene },
+  "geste-glisser": { label: "Glisser des gestes sous « À faire » ou « À éviter »", type: "drag-drop", make: makeGestureSort },
+  "geste-intrus": { label: "Quel geste est bien, ou n'est pas bien, parmi trois", type: "qcm", make: makeGestureOdd },
+  "geste-relier": { label: "Relier une situation et le bon geste", type: "match", make: makeGestureLinks },
   "geste-ordre": { label: "Remettre des gestes dans l'ordre", type: "order", make: makeGestureSequence },
-  "geste-trou": { label: "Compléter une règle de vie", type: "fill-blank", make: makeRuleGap },
+  "geste-trou": { label: "Compléter une règle de vie", type: "fill-blank", make: makeGestureGap },
   "droit-devoir": { label: "Glisser des phrases sous « Droits » ou « Devoirs »", type: "drag-drop", make: makeRightsSort },
   "role-qui": { label: "Qui fait quoi dans la classe", type: "qcm", make: makeRoleChoice },
   "role-relier": { label: "Relier un responsable et sa tâche", type: "match", make: makeRoleLinks },
