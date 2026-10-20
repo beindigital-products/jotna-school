@@ -1235,6 +1235,12 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `salut-trou` | phrase à trous | `My ___ is Awa.` : `name` |
 | `salut-trou-dessin` | phrase à trous | `🌙 Good ___!` : `night` |
 | `salut-rencontre` | ordre | `Hello! > I am Awa. > Goodbye!` |
+| `civ-situation` | QCM | « Ta grand-mère te parle. Que fais-tu ? » : `👂 J'écoute ma grand-mère calmement`, parmi deux gestes à éviter de la même scène |
+| `civ-glisser` | glisser-déposer | cases `✅ À faire` et `❌ À éviter` : `🧼 Je me lave les mains avec du savon` à gauche, `🚯 Je jette le papier par terre` à droite (quatre ou cinq gestes de scènes différentes) |
+| `civ-intrus` | QCM | « Quel geste n'est pas bien ? » : `🚯 Je jette le papier par terre`, parmi deux bons gestes ; ou « Quel geste est bien ? » avec un seul bon geste parmi deux gestes à éviter |
+| `civ-relier` | association | `🔴 le feu rouge~🛑 Je m'arrête et j'attends au feu rouge ; 🚸 le passage piéton~🦓 Je traverse sur les bandes blanches` (jamais deux scènes d'un même groupe) |
+| `civ-ordre` | ordre | « Mets ces gestes dans l'ordre de la traversée. » : `Je m'arrête au bord du trottoir > Je regarde à gauche > Je regarde à droite > Je traverse sur le passage piéton` |
+| `civ-trou` | phrase à trous | `Au feu ___, je m'arrête.` : `rouge`, parmi `vert` et `bleu` |
 | `lire-dessin` | QCM | « Quel mot va avec ce dessin ? » puis 🐇 : `lapin`, parmi trois mots à lire (aux paliers suivants, trois mots qui commencent pareil) |
 | `lire-relier` | association | « Relie chaque mot à son dessin. » : `tomate~🍅 ; banane~🍌…` |
 | `lire-syllabes` | ordre | « Remets les syllabes dans l'ordre pour écrire le mot de ce dessin. » puis 🍅 : `to > ma > te` (trois syllabes au moins) |
@@ -1607,6 +1613,38 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     sens en français, les couleurs qu'on confond, ce qu'on dit dans chaque situation). Il abîme ensuite chaque gabarit (la bonne réponse
     déplacée, une paire croisée, une case changée, un jumeau ou une couleur voisine parmi les choix) et exige que son vérificateur le
     voie. Il a trouvé un défaut : au premier niveau, « one, two, three, ___ » n'avait que deux choix.
+- **L'instruction civique du CI** (`paliers/games/civique.ts`) : six gabarits pour `ci-ci-politesse`, `ci-ci-ecole`, `ci-ci-entraide` et
+  `ci-ci-route`. Le modèle avait écrit cent cinq exercices pour ces quatre thématiques (relus en prod le 20 octobre 2026) et près de
+  quarante étaient à refaire : des ordres sans ordre (« Bonjour, Merci, Pardon »), une traversée qui regarde le feu après la route, le
+  même exercice rangé dans deux ordres contraires d'un palier à l'autre (« Se réveiller, S'habiller, Petit déjeuner » puis « Se
+  réveiller, Petit déjeuner, S'habiller »), « Marcher vite » sous « Quand je traverse », « Sur la route, je ___ » avec « marche » pour
+  réponse, des cases abstraites (« Assiduité », « Non aide »), un QCM de deux options, une phrase à deux trous.
+  - **Tout part de la scène.** Une scène est une situation de la vie d'un enfant (« Ta grand-mère te parle. »), son seul bon geste
+    (« J'écoute ma grand-mère calmement ») et trois gestes à éviter. Le QCM pose la scène. Les cases « À faire » et « À éviter » reçoivent
+    les bons gestes et les mauvais gestes de plusieurs scènes. L'intrus en prend deux d'un côté et un de l'autre. L'association relie
+    l'étiquette de la scène à son bon geste. Un geste se comprend donc hors de sa scène : « Je m'arrête et j'attends au feu rouge » est bon
+    partout, « Je traverse quand le feu est rouge » est mauvais partout. Quarante et une scènes en tout : onze pour le respect, la propreté et les
+    affaires (`ci-ci-politesse`), dix pour l'école, dix pour l'entraide, dix pour la route.
+  - **Des groupes pour lever l'ambiguïté.** Deux scènes dont les bons gestes se ressemblent (le feu vert, le passage piéton et le bord du
+    trottoir mènent tous à « traverser ») ne sont jamais reliées dans le même exercice. Chaque thématique a au moins quatre groupes, pour
+    les quatre paires du dernier niveau. Les phrases entières font des tuiles hautes : cinq gestes à ranger et quatre paires au plus, sans quoi
+    l'écran d'un téléphone devient trop long.
+  - **La bonne réponse ne se devine pas à sa longueur.** Le bon geste est plus court que les mauvais, qui portent leur contexte. Le QCM
+    choisit donc les deux mauvais gestes les plus proches du bon par la longueur : sur 2 560 tirages, le bon geste est la plus courte des
+    trois options une fois sur cinq, la plus longue une fois sur cinq. L'intrus écarte les trios dont le plus long fait presque le double
+    du plus court.
+  - **Les ordres n'ont qu'un ordre.** La traversée suit la fiche : s'arrêter au bord du trottoir, regarder à gauche, regarder à droite,
+    traverser. « Le feu devient vert » vient après « Le feu est rouge » (avec « est » seul, les deux ordres seraient possibles). Les
+    trous ne proposent que des mots qui ne vont pas dans la phrase : jamais « puis à gauche », que certains programmes enseignent.
+  - **Saluer, remercier, s'excuser** ne sont pas refaits : `ci-ci-politesse` emprunte `politesse-situation`, `politesse-relier` et
+    `politesse-trou` au français du CI, que le test juge ici avec la matière « Instruction civique ».
+  - **`convex/__tests__/ciCivicsTemplates.test.ts`** a un VÉRIFICATEUR par gabarit, écrit avec une copie figée des tables (scènes, suites,
+    phrases à trou) qu'un test compare au module : changer une scène oblige à relire le test. Il abîme ensuite chaque gabarit (le bon
+    choix déplacé, un geste dans la mauvaise case, deux paires croisées, deux pas échangés, un mot faux dans le trou) et exige que son
+    vérificateur le voie 240 fois sur 240. Il essaie aussi les ambiguïtés ciblées (le feu vert relié au passage piéton, l'ordre que le
+    modèle avait écrit pour la traversée, « gauche » pour « puis à ___ »), vérifie les 127 émojis un à un contre une liste d'Unicode 11
+    au plus, et fabrique 40 paliers de chacune des quatre thématiques pour trois paliers, jugés par le contrôleur avec la matière
+    « Instruction civique ».
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
@@ -1622,8 +1660,8 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
   `ma-ci-nombres-20`, `ma-ci-trier`, `ma-ci-espace`, `ma-ci-formes`, `ma-ci-mesures` et
   `ma-ci-problemes`, puis `hi-ci-journee`, `hi-ci-ordre`, `hi-ci-hier-demain`, `hi-ci-semaine`, `ge-ci-position`,
-  `ge-ci-lateralite`, `ge-ci-reperes`, `ge-ci-quadrillage`, `fr-ci-phrases`, `fr-ci-politesse`, `an-ci-hello`, `an-ci-colours`, `an-ci-numbers`, `an-ci-animals` et
-  `an-ci-fruits` au CI, puis `hi-cp-calendrier`, `hi-cp-durees`,
+  `ge-ci-lateralite`, `ge-ci-reperes`, `ge-ci-quadrillage`, `fr-ci-phrases`, `fr-ci-politesse`, `an-ci-hello`, `an-ci-colours`, `an-ci-numbers`, `an-ci-animals`, `an-ci-fruits`, `ci-ci-politesse`, `ci-ci-ecole`, `ci-ci-entraide` et
+  `ci-ci-route` au CI, puis `hi-cp-calendrier`, `hi-cp-durees`,
   `hi-cp-frequences`, `hi-cp-emploi-du-temps`, `ge-cp-itineraire`, `ge-cp-distances`, `ge-cp-plan`, `ge-cp-quartier`, `an-cp-family`, `an-cp-body`, `an-cp-classroom`, `an-cp-numbers-20`, `an-cp-food`, `fr-cp-lecture` et
   `fr-cp-ecrire` au CP (`convex/programme`), dix exercices par palier, voir plus bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
   modèle, le seuil de validation exige tous les exercices écrits : le modèle en
@@ -1678,13 +1716,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces quarante-trois thématiques contre un faux modèle qui lève une
+  chaque palier de ces cinquante-cinq thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
   Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
-  haut) : en CI, l'éveil, l'instruction civique et l'éducation artistique ; toutes les autres classes, sauf l'histoire, la géographie,
-  l'anglais, la lecture et l'écriture du CP. Le français (phrases, politesse), l'histoire, la géographie et l'anglais du CI, puis
+  haut) : en CI, l'éveil et l'éducation artistique ; toutes les autres classes, sauf l'histoire, la géographie,
+  l'anglais, la lecture et l'écriture du CP. Le français (phrases, politesse), l'histoire, la géographie, l'anglais et l'instruction civique du CI, puis
   l'histoire, la géographie, l'anglais, la lecture et l'écriture du CP, n'appellent plus le modèle.
   Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
   dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
@@ -1700,4 +1738,5 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   fabrique). Au CP, l'histoire et la géographie sont tout en gabarits : la réponse courte de la vitrine est rattachée à « Le
   calendrier » (`mois-ecart`) et à « Près ou loin ? » (`pas-difference`), les deux gabarits qui demandent un nombre à écrire. L'anglais du CI est tout en gabarits : ses cinq types de la vitrine sont ceux d'un
   gabarit de leur thématique (le QCM des couleurs, le glisser-déposer des fruits, le relier des animaux, l'ordre des nombres, la phrase à
-  trous des salutations).
+  trous des salutations). L'instruction civique du CI l'est aussi : le QCM de « Traverser la rue » est un `civ-situation`, le glisser-déposer de « À l'école chaque jour » un `civ-glisser`,
+  l'association et la phrase à trous de « Bonjour, merci, pardon » un `civ-relier` ou un `politesse-relier` et un `politesse-trou`, l'ordre de « On s'entraide » un `civ-ordre`.

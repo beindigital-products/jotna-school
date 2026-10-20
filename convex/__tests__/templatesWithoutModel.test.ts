@@ -79,6 +79,11 @@ const WITHOUT_MODEL = [
   "an-ci-numbers",
   "an-ci-animals",
   "an-ci-fruits",
+  // L'instruction civique du CI : le respect des autres, l'école, l'entraide, la route.
+  "ci-ci-politesse",
+  "ci-ci-ecole",
+  "ci-ci-entraide",
+  "ci-ci-route",
 ] as const;
 const MODEL_CALLED = "LE MODÈLE A ÉTÉ APPELÉ";
 

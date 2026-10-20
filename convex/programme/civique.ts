@@ -7,6 +7,11 @@
  * objectifs et les mêmes contenus » : le CP les reprend en consolidation.
  * La rubrique Éducation religieuse du même schéma n'est pas traitée : elle
  * relève de chaque famille et de chaque école.
+ *
+ * Au CI, les quatre thématiques sont fabriquées par le code, sans le modèle : `paliers/games/civique.ts` (une
+ * situation, le bon geste et les gestes à éviter) et, pour saluer, remercier et s'excuser, les gabarits de la
+ * politesse de `paliers/games/politesse.ts`. Le modèle écrivait des ordres sans ordre, des cases abstraites
+ * (« Assiduité », « Non aide ») et un ordre de traversée qui regardait le feu après avoir regardé la route.
  */
 import type { ProgrammeSubject } from "./types";
 
@@ -25,24 +30,59 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
         name: "Bonjour, merci, pardon",
         description:
           "Vivre ensemble, étape 1 : le respect de soi et des autres. Saluer, remercier, s'excuser, respecter les grandes personnes, se tenir propre, prendre soin de ses affaires.",
+        games: [
+          // Saluer, remercier, s'excuser : les gabarits de la politesse du français, déjà vérifiés pour le CI.
+          { kind: "politesse-situation", count: 1 },
+          { kind: "politesse-relier", count: 1 },
+          { kind: "politesse-trou", count: 1 },
+          { kind: "civ-situation", count: 2, vocabulary: "politesse" },
+          { kind: "civ-glisser", count: 2, vocabulary: "politesse" },
+          { kind: "civ-intrus", count: 1, vocabulary: "politesse" },
+          { kind: "civ-relier", count: 1, vocabulary: "politesse" },
+          { kind: "civ-ordre", count: 1, vocabulary: "politesse" },
+        ],
       },
       {
         key: "ci-ci-ecole",
         name: "À l'école chaque jour",
         description:
           "Vivre ensemble, étape 1 : l'assiduité et la ponctualité, le règlement de l'école, prendre soin du matériel commun.",
+        games: [
+          { kind: "civ-situation", count: 2, vocabulary: "ecole" },
+          { kind: "civ-glisser", count: 3, vocabulary: "ecole" },
+          { kind: "civ-intrus", count: 1, vocabulary: "ecole" },
+          { kind: "civ-relier", count: 1, vocabulary: "ecole" },
+          { kind: "civ-ordre", count: 1, vocabulary: "ecole" },
+          { kind: "civ-trou", count: 2, vocabulary: "ecole" },
+        ],
       },
       {
         key: "ci-ci-entraide",
         name: "On s'entraide",
         description:
           "Vivre ensemble, étape 1 : l'entraide et le partage, aider un camarade, filles et garçons qui jouent et travaillent ensemble.",
+        games: [
+          { kind: "civ-situation", count: 3, vocabulary: "entraide" },
+          { kind: "civ-glisser", count: 2, vocabulary: "entraide" },
+          { kind: "civ-intrus", count: 1, vocabulary: "entraide" },
+          { kind: "civ-relier", count: 1, vocabulary: "entraide" },
+          { kind: "civ-ordre", count: 2, vocabulary: "entraide" },
+          { kind: "civ-trou", count: 1, vocabulary: "entraide" },
+        ],
       },
       {
         key: "ci-ci-route",
         name: "Traverser la rue",
         description:
           "Vivre ensemble, étape 1 : le code de la route. Le feu rouge et le feu vert, le passage pour piétons, regarder à gauche puis à droite, marcher sur le trottoir ou le bord de la route, ne pas jouer sur la route.",
+        games: [
+          { kind: "civ-situation", count: 3, vocabulary: "route" },
+          { kind: "civ-glisser", count: 2, vocabulary: "route" },
+          { kind: "civ-intrus", count: 1, vocabulary: "route" },
+          { kind: "civ-relier", count: 2, vocabulary: "route" },
+          { kind: "civ-ordre", count: 1, vocabulary: "route" },
+          { kind: "civ-trou", count: 1, vocabulary: "route" },
+        ],
       },
     ],
     CP: [
