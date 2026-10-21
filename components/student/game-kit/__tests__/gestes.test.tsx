@@ -135,6 +135,18 @@ describe("isGlyphOnly et TileGlyphs — grand quand ça se lit par l'image", () 
     expect(isGlyphOnly("🥭".repeat(17))).toBe(false);
   });
 
+  it("un cadran d'horloge seul se dessine plus grand : ses aiguilles ne se lisent pas à 34 px", () => {
+    const clock = String.fromCodePoint(0x1f566);
+    const { container, rerender } = render(<TileGlyphs text={clock} />);
+    expect(container.innerHTML).toContain("text-[3rem]");
+    expect(container.innerHTML).not.toContain("text-[1.75rem]");
+    // Deux cadrans ou un autre émoji gardent la taille des glyphes.
+    rerender(<TileGlyphs text={`${clock}${clock}`} />);
+    expect(container.innerHTML).toContain("text-[1.75rem]");
+    rerender(<TileGlyphs text={String.fromCodePoint(0x1f414)} />);
+    expect(container.innerHTML).toContain("text-[1.75rem]");
+  });
+
   it("le contenu grand porte la taille, le mot garde la coupure douce", () => {
     const { container, rerender } = render(<TileGlyphs text="🐔🍌" />);
     expect(container.innerHTML).toContain("text-[1.75rem]");

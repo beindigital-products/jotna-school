@@ -1745,8 +1745,11 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   le code. La thématique de l'heure n'avait ni horloge ni pièces ; ses « Il y a ___ jours dans une semaine » renvoyaient à un calendrier que l'écran
   ne montrait pas. Ici la réponse est CALCULÉE et les mauvais choix sont des erreurs d'enfant.
   - **L'horloge est un émoji de Unicode** : une horloge pour chaque heure juste (🕐 à 🕛, U+1F550 à U+1F55B) et pour chaque demi-heure (🕜 à 🕧,
-    U+1F55C à U+1F567), toutes en affichage émoji par défaut. Aucun composant n'a été écrit : `ExercisePrompt` pose un émoji seul en grand sur son
-    socle, et la voix de Pio ne lit que l'énoncé, sans l'émoji. L'heure s'écrit « 3 heures » ou « 3 heures et demie », jamais « midi » ni « 15 h » :
+    U+1F55C à U+1F567), toutes en affichage émoji par défaut. Aucun composant d'horloge n'a été écrit, mais la TAILLE compte : relu sur l'iPhone 17 le
+    21 octobre 2026, un cadran de la taille d'un mot (36 px) n'a plus d'aiguilles lisibles. `segmentPrompt` (`choix-texte.ts`) donne donc un segment
+    « horloge » à un cadran seul, que `ExercisePrompt` pose en grand (80 px) sur son socle, centré sous la phrase ; une tuile qui ne porte qu'un cadran
+    (`TileGlyphs`) le dessine à 48 px au lieu de 28. Quatre tuiles de cette taille ne tiennent pas sur le premier écran d'un petit téléphone : on relie
+    trois horloges, jamais quatre. La voix de Pio ne lit que l'énoncé, sans l'émoji. L'heure s'écrit « 3 heures » ou « 3 heures et demie », jamais « midi » ni « 15 h » :
     une horloge de douze heures ne dit pas le matin ou le soir, donc un rangement d'horloges se fait sur les heures du MATIN et l'énoncé le dit.
     Pas de quart d'heure, pas de minute. Le test écrit les vingt-quatre horloges une à une et les compare à `clockOf`.
   - **Les mesures** : trois sortes de mesure, chacune avec UNE unité (le mètre, le litre, le kilogramme). Une chose se dit par ce qu'on veut en

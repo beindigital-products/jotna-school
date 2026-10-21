@@ -12,6 +12,8 @@
  * Pure fonction + un fragment : aucun hook, utilisable partout, testable.
  */
 
+import { isClockEmoji } from "./choix-texte";
+
 /** Longueur au-delà de laquelle une suite de glyphes redevient du texte courant. */
 const MAX_GLYPHS = 16;
 
@@ -28,6 +30,10 @@ export function isGlyphOnly(text: string): boolean {
 }
 
 export function TileGlyphs({ text }: { text: string }) {
+  // Un cadran d'horloge seul : ses aiguilles ne se lisent pas à 34 px, il fait 48 px (une tuile d'association de trois paires tient encore).
+  if (isClockEmoji(text.trim())) {
+    return <span className="inline-block text-[3rem] leading-none">{text}</span>;
+  }
   if (isGlyphOnly(text)) {
     return <span className="inline-block text-[1.75rem] leading-[1.15] tracking-wide">{text}</span>;
   }

@@ -346,7 +346,7 @@ const CHECKS: Record<string, Check> = {
       if (!time) return `horloge inconnue : ${pair.left}`;
       if (pair.right !== clockText(time)) return `${pair.left} : ${clockText(time)}, la paire dit ${pair.right}`;
     }
-    return ok(pairs.length >= 3 && allDifferent(pairs.map((pair) => pair.right)), "des heures qui se répètent");
+    return ok(pairs.length === 3 && allDifferent(pairs.map((pair) => pair.right)), "trois horloges, trois heures différentes");
   },
   "heure-ordre": (exo) => {
     const times = sequenceOf(exo).map(clockTime);

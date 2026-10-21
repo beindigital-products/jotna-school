@@ -4,8 +4,10 @@
  *
  * Sur l'échantillon de CP, la thématique n'avait ni horloge ni pièces : « Il y a ___ jours dans une semaine » renvoyait à un calendrier
  * que l'écran ne montrait pas. L'HORLOGE est ici un ÉMOJI : Unicode donne une horloge pour chaque heure juste (🕐 à 🕛, U+1F550 à
- * U+1F55B) et pour chaque demi-heure (🕜 à 🕧, U+1F55C à U+1F567). Aucun composant n'est nécessaire : `ExercisePrompt` pose un émoji seul
- * sur son socle, en grand, et la voix de Pio ne lit que l'énoncé, sans l'émoji.
+ * U+1F55B) et pour chaque demi-heure (🕜 à 🕧, U+1F55C à U+1F567). Aucun composant d'horloge n'est nécessaire, mais la TAILLE compte : à la
+ * taille d'un mot (36 px), les aiguilles ne se lisent pas (relu sur l'iPhone 17, le 21 octobre 2026). L'énoncé (`ExercisePrompt`, segment
+ * « horloge » de `choix-texte.ts`) pose donc un cadran seul en grand sur son socle, sous la phrase, et les tuiles (`TileGlyphs`) le dessinent à
+ * 48 px. La voix de Pio ne lit que l'énoncé, sans l'émoji.
  *
  * CE QUE CE FICHIER NE FAIT PAS SORTIR DE LA FICHE
  * - Des heures justes et des demi-heures, jamais un quart d'heure ni une minute. L'heure s'écrit « 3 heures » ou « 3 heures et demie »,
@@ -65,10 +67,10 @@ export function makeReadClock(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Relie chaque horloge à son heure. » : trois ou quatre horloges, chacune avec son heure en lettres. */
+/** « Relie chaque horloge à son heure. » : trois horloges (quatre tuiles de 48 px ne tiennent pas sur le premier écran d'un petit téléphone), chacune avec son heure en lettres. */
 export function makeClockLinks(ctx: GameContext): GeneratedGame {
   return linkGame(ctx, "heure-relier", "relier une horloge et son heure", () => {
-    const count = ctx.level === 1 ? 3 : 4;
+    const count = 3;
     const hours = shuffle(
       ctx.rng,
       Array.from({ length: 12 }, (_, i) => i + 1),

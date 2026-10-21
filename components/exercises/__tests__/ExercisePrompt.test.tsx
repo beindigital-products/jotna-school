@@ -98,6 +98,33 @@ describe("la consigne d'un exercice : on n'en perd jamais un mot", () => {
     expect(socle?.className).not.toContain("whitespace-pre");
   });
 
+  it("pose un cadran d'horloge seul en grand sur son socle, sous la phrase, sans toucher au texte", () => {
+    // À la taille d'un mot, un cadran n'a plus d'aiguilles lisibles (relu sur l'iPhone 17, 21 octobre 2026).
+    const clock = String.fromCodePoint(0x1f566);
+    const prompt = `Quelle heure est-il ? ${clock}`;
+    const { container } = render(<ExercisePrompt prompt={prompt} />);
+    const horloge = container.querySelector("[data-prompt-horloge]");
+    expect(horloge?.textContent).toBe(clock);
+    expect(horloge?.className).toContain("gk-socle");
+    expect(horloge?.className).toContain("text-[5rem]");
+    // Un bloc centré : il passe sous la phrase au lieu de rester au bout de la ligne.
+    expect(horloge?.className).toContain("block");
+    expect(horloge?.className).toContain("mx-auto");
+    expect(withoutNbsp(container.querySelector("p")?.textContent)).toBe(prompt);
+  });
+
+  it("garde un autre émoji seul en ligne, et deux cadrans sur le socle des rangées", () => {
+    const dress = String.fromCodePoint(0x1f457);
+    const { container } = render(<ExercisePrompt prompt={`Penda a une robe ${dress}.`} />);
+    expect(container.querySelector("[data-prompt-horloge]")).toBeNull();
+    expect(container.querySelector(".gk-socle")).toBeNull();
+    cleanup();
+    const pair = `${String.fromCodePoint(0x1f552)} ${String.fromCodePoint(0x1f566)}`;
+    const row = render(<ExercisePrompt prompt={`Regarde ${pair}.`} />).container;
+    expect(row.querySelector("[data-prompt-horloge]")).toBeNull();
+    expect(row.querySelector(".gk-socle")?.textContent).toBe(pair);
+  });
+
   it("pose un quadrillage sur UN socle qui garde ses lignes et ne se coupe pas", () => {
     // Trois rangées de trois dessins. Avec `pre-line`, Safari et le webview iOS mesuraient le socle
     // trop étroit d'un cheveu et coupaient chaque rangée en un dessin seul puis deux : la grille

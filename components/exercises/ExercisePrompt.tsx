@@ -177,8 +177,10 @@ const HYPHENATED = /[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)+/gu;
 /**
  * Le texte avec ses émojis mis en scène : une rangée d'au moins deux émojis
  * est posée sur un socle de sable (un `inline-block`, dans le fil de la
- * phrase), un émoji seul grandit un peu. Les segments mis bout à bout sont le
- * texte d'origine.
+ * phrase), un émoji seul grandit un peu. UN CADRAN D'HORLOGE seul est ce que
+ * l'enfant lit : il se pose, grand, sur son socle, centré sous la phrase (à 36 px
+ * ses aiguilles ne se distinguent pas, relu sur l'iPhone 17 le 21 octobre 2026).
+ * Les segments mis bout à bout sont le texte d'origine.
  *
  * LE TEXTE RESTE DES NŒUDS DE TEXTE DIRECTS du paragraphe : `getByText(consigne)`
  * (les tests de la vitrine, de la séance) ne lit que les nœuds de texte propres
@@ -200,6 +202,14 @@ function RichText({ text }: { text: string }) {
     const socle =
       segment.kind === "emoji" ? (
         <span className="inline-block align-[-0.12em] text-[1.4em] leading-none">{segment.text}</span>
+      ) : segment.kind === "horloge" ? (
+        <span
+          data-prompt-horloge=""
+          // 80 px, soit un cadran d'une centaine de pixels ; 64 px sur un écran court (667 px de haut ou moins), 48 px en paysage.
+          className="gk-socle mx-auto my-2 block w-fit rounded-3xl border-2 border-white bg-[linear-gradient(180deg,#fff7e0_0%,#f6dfa4_100%)] px-5 pb-2 pt-3 text-[5rem] leading-none shadow-[inset_0_2px_0_rgb(255_255_255_/_0.8),0_4px_0_#d6c39a,0_10px_14px_-10px_rgba(60,30,0,0.5)] [@media(max-height:480px)]:text-5xl [@media(max-height:667px)_and_(min-height:481px)]:text-[4rem]"
+        >
+          {segment.text}
+        </span>
       ) : (
         <span
           // En paysage (480 px de haut ou moins), un socle de 24 px : deux
