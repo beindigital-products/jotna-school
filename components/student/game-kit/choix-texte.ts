@@ -59,6 +59,16 @@ export function isEmojiGrapheme(grapheme: string): boolean {
 }
 
 /**
+ * Vrai pour un cadran d'horloge d'Unicode : une heure juste (U+1F550 à U+1F55B) ou une
+ * demi-heure (U+1F55C à U+1F567). Les aiguilles ne se lisent pas à la taille d'un mot :
+ * l'énoncé et les tuiles qui montrent UN cadran le dessinent en grand.
+ */
+export function isClockEmoji(grapheme: string): boolean {
+  const code = grapheme.codePointAt(0) ?? 0;
+  return code >= 0x1f550 && code <= 0x1f567 && Array.from(grapheme).length === 1;
+}
+
+/**
  * Sépare les émojis qui OUVRENT une option de son mot : « [poisson] le
  * poisson » donne `{ emoji: "[poisson]", rest: "le poisson" }`. L'espace entre les deux est
  * rendue au mot (`gap`), pas au texte : `emoji + rest` ne contient donc plus
@@ -94,6 +104,8 @@ export type PromptSegment =
   | { kind: "texte"; text: string }
   /** Un émoji seul dans la phrase (« une robe [robe] ») : un peu plus grand, en ligne. */
   | { kind: "emoji"; text: string }
+  /** Un cadran d'horloge seul (« Quelle heure est-il ? [horloge] ») : ce que l'enfant lit, en grand sur son socle, sous la phrase. */
+  | { kind: "horloge"; text: string }
   /** Une rangée d'au moins deux émojis (« [éléphant] [poisson] [banane] », « [mangue][mangue][mangue] ») : posée sur un socle. */
   | { kind: "rangee"; text: string; count: number };
 
@@ -136,7 +148,9 @@ export function segmentPrompt(text: string): PromptSegment[] {
     }
     const run = parts.slice(i, end + 1).join("");
     flush();
-    out.push(count >= 2 ? { kind: "rangee", text: run, count } : { kind: "emoji", text: run });
+    out.push(
+      count >= 2 ? { kind: "rangee", text: run, count } : isClockEmoji(run) ? { kind: "horloge", text: run } : { kind: "emoji", text: run },
+    );
     i = end + 1;
   }
   flush();
