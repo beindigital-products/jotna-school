@@ -62,30 +62,82 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
         name: "Solide, liquide ou gaz ?",
         description:
           "IST, étape 1 : les états de la matière. L'eau liquide, la glace solide, la vapeur ; le sable, la pierre, l'air ; ce qui coule et ce qui garde sa forme.",
+        // Dix gabarits (`sciences.ts`) : l'état d'une chose, ranger, relier, ce que le chaud fait à l'eau, glace, eau, vapeur, trous, mot à écrire.
+        games: [
+          { kind: "etat-qcm", count: 2 },
+          { kind: "etat-glisser", count: 1 },
+          { kind: "etat-relier", count: 1 },
+          { kind: "etat-change", count: 1 },
+          { kind: "etat-ordre", count: 1 },
+          { kind: "etat-trou", count: 2 },
+          { kind: "etat-ecrire", count: 2 },
+        ],
       },
       {
         key: "sc-cp-grandir",
         name: "Les êtres vivants grandissent",
         description:
           "IST, étape 1 : les étapes du développement. L'œuf, le poussin, la poule ; la graine, la jeune plante, la plante ; le bébé, l'enfant, l'adulte, le vieillard. Remettre les étapes dans l'ordre.",
+        // Dix gabarits (`sciences.ts`) : ordre des étapes, l'étape juste avant ou après, le petit d'un animal, relier, ce qui grandit, trous.
+        games: [
+          { kind: "vie-ordre", count: 2 },
+          { kind: "vie-suite", count: 2 },
+          { kind: "vie-petit", count: 1 },
+          { kind: "vie-relier", count: 1 },
+          { kind: "vie-glisser", count: 2 },
+          { kind: "vie-trou", count: 2 },
+        ],
       },
       {
         key: "sc-cp-manger",
         name: "Bien manger",
         description:
           "Vivre dans son milieu, étape 1 : les aliments utiles (fruits, légumes, poisson, mil, lait caillé, niébé) et les aliments nuisibles (trop de sucre, aliments avariés ou mal conservés) ; manger propre.",
+        // Dix gabarits (`sciences.ts`) : les scènes de la table « manger » (`vocabulary`), les aliments utiles ou nuisibles, fruit ou légume.
+        games: [
+          { kind: "habitude-situation", count: 2, vocabulary: "manger" },
+          { kind: "habitude-glisser", count: 1, vocabulary: "manger" },
+          { kind: "habitude-intrus", count: 1, vocabulary: "manger" },
+          { kind: "habitude-relier", count: 1, vocabulary: "manger" },
+          { kind: "habitude-ordre", count: 1, vocabulary: "manger" },
+          { kind: "habitude-trou", count: 1, vocabulary: "manger" },
+          { kind: "repas-qcm", count: 1 },
+          { kind: "repas-glisser", count: 1 },
+          { kind: "repas-fruit-legume", count: 1 },
+        ],
       },
       {
         key: "sc-cp-maladies",
         name: "Les maladies du milieu",
         description:
           "Vivre dans son milieu, étape 1 : le paludisme (transmis par le moustique, dormir sous une moustiquaire), la diarrhée (eau sale, mains sales), comment s'en protéger, aller au dispensaire.",
+        // Dix gabarits (`sciences.ts`) : les scènes de la table « maladies » (`vocabulary`), se protéger du paludisme et de la diarrhée.
+        games: [
+          { kind: "habitude-situation", count: 2, vocabulary: "maladies" },
+          { kind: "habitude-glisser", count: 1, vocabulary: "maladies" },
+          { kind: "habitude-intrus", count: 1, vocabulary: "maladies" },
+          { kind: "habitude-relier", count: 1, vocabulary: "maladies" },
+          { kind: "habitude-ordre", count: 1, vocabulary: "maladies" },
+          { kind: "habitude-trou", count: 1, vocabulary: "maladies" },
+          { kind: "maladie-glisser", count: 1 },
+          { kind: "maladie-cause", count: 2 },
+        ],
       },
       {
         key: "sc-cp-nature",
         name: "Protéger la nature",
         description:
           "Vivre dans son milieu, étape 1 : protéger les plantes et les animaux, ne pas jeter les sachets plastiques, garder la cour et le quartier propres, planter et arroser un arbre ; ce qui abîme l'environnement et comment le réparer.",
+        // Dix gabarits (`sciences.ts`) : les scènes de la table « nature » (`vocabulary`), ce qui abîme et ce qui le répare.
+        games: [
+          { kind: "habitude-situation", count: 3, vocabulary: "nature" },
+          { kind: "habitude-glisser", count: 1, vocabulary: "nature" },
+          { kind: "habitude-intrus", count: 1, vocabulary: "nature" },
+          { kind: "habitude-relier", count: 1, vocabulary: "nature" },
+          { kind: "habitude-ordre", count: 1, vocabulary: "nature" },
+          { kind: "habitude-trou", count: 1, vocabulary: "nature" },
+          { kind: "nature-reparer", count: 2 },
+        ],
       },
     ],
     CE1: [

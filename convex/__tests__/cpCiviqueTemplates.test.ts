@@ -540,11 +540,14 @@ describe("les cinq thématiques d'instruction civique du CP", () => {
     }
   });
 
-  it("sont, avec les vingt-trois des trois premiers lots, les seules thématiques du CP entièrement faites par le code", () => {
+  it("sont, avec les vingt-trois des trois premiers lots, parmi les thématiques du CP entièrement faites par le code", () => {
     const allCode = allProgrammeEntries()
       .filter((e) => e.klass === "CP" && (e.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0) >= PALIER_SIZE)
       .map((e) => e.topic.key);
-    expect(allCode.sort()).toEqual([...LOT1_KEYS, ...LOT2_KEYS, ...LOT3_KEYS, ...KEYS].sort());
+    // Les lots suivants en ajoutent d'autres : on vérifie que celles-ci y sont toujours, pas qu'elles sont seules.
+    const expected = [...LOT1_KEYS, ...LOT2_KEYS, ...LOT3_KEYS, ...KEYS];
+    for (const key of expected) expect(allCode, key).toContain(key);
+    expect(allCode.length).toBeGreaterThanOrEqual(expected.length);
   });
 
   it("sont celles du CP, et n'ont changé ni leur clé ni leur nombre de paliers", () => {

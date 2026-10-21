@@ -145,6 +145,18 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         name: "Jouer un rôle",
         description:
           "Arts scéniques, étape 1 : jeux de rôles et déguisements. Qui fait quoi (le vendeur au marché, le maître, l'infirmière, le pêcheur), quel costume ou quel objet pour quel rôle, imiter un animal.",
+        // Dix gabarits (`metiers.ts`) : qui fait quoi, quel objet, relier, glisser, trou, ordre, nom du métier à écrire, imiter un animal.
+        games: [
+          { kind: "metier-qui", count: 2 },
+          { kind: "metier-outil", count: 1 },
+          { kind: "metier-relier", count: 1 },
+          { kind: "metier-glisser", count: 1 },
+          { kind: "metier-trou", count: 1 },
+          { kind: "metier-ordre", count: 1 },
+          { kind: "metier-ecrire", count: 1 },
+          { kind: "imiter-qcm", count: 1 },
+          { kind: "imiter-relier", count: 1 },
+        ],
       },
     ],
     CE1: [
