@@ -112,6 +112,38 @@ de mp3. Les exercices écrits par le modèle en ajoutent.
 3. Rien à régénérer : la voix lit les paliers qui existent. Le premier son de
    chaque mot est synthétisé à la demande (une à deux secondes, douze au plus
    par appel de téléchargement) ; ensuite le cache le sert.
+4. Facultatif : préchauffer le cache, voir la section suivante.
+
+## Préchauffer le cache
+
+Le premier enfant qui rencontre un mot attend sa synthèse. L'action interne
+`voice/warm:warmTileVoice` (`convex/voice/warm.ts`) la fait d'avance. Elle
+parcourt les paliers prêts du CI, relève ce que la voix dirait pour chaque
+exercice publié, par la même décision que le serveur
+(`convex/voice/warmTexts.ts`), puis synthétise les sons que le cache n'a pas
+encore. Même voix, même modèle, même cache que la voix à la demande : un son
+préchauffé est servi tel quel.
+
+Elle se lance depuis un terminal, sur la production, comme `paliers/pregen` :
+
+```
+npx convex run --prod voice/warm:warmTileVoice '{"confirmDeployment":"<nom>","dryRun":true}'
+```
+
+Le premier appel, à blanc, compte les textes, ceux qui manquent au cache, leurs
+caractères et le coût estimé, sans rien synthétiser. `programmeKeys` borne aux
+thématiques d'un lot (`["sc-ci-milieu", "sc-ci-animaux"]`), `withPrompts` dit
+aussi les consignes. Sans `dryRun`, l'action synthétise soixante sons neufs au
+plus par exécution (`limit` règle ce nombre, quatre cents au plus) : essayer
+d'abord avec `"limit":10`, puis relancer jusqu'à `remaining: 0`. Un son qui
+échoue est listé dans `failed` et se refait au passage suivant.
+
+La dépense est réelle (ElevenLabs) et n'est imputée à aucun élève. L'estimation
+compte 0,30 $ pour mille caractères, arrondi au-dessus. D'après un tirage fait
+en local, les quinze paliers des sciences du CI font dire environ 180 textes de
+tuile (3 400 caractères, un dollar) et environ 230 avec les consignes. À
+relancer après chaque régénération de paliers du CI : de nouveaux exercices
+apportent de nouveaux mots.
 
 ## Vérifier
 
@@ -121,8 +153,9 @@ de mp3. Les exercices écrits par le modèle en ajoutent.
   l'anneau, le toucher, le silence), `TileVoiceScreens.test.tsx` (les quatre
   autres écrans, début de glissé compris), `TileVoiceScene.test.tsx` (le clip entre
   la consigne et les propositions), `lib/offline/__tests__/sync-clips.test.ts` (ce
-  que l'appareil télécharge) et les deux tests de séance (la porte : CI, CP,
-  anglais).
+  que l'appareil télécharge), les deux tests de séance (la porte : CI, CP,
+  anglais) et `convex/__tests__/warmTexts.test.ts` (les textes préchauffés sont
+  ceux que le serveur accepte de dire, pour les gabarits des sciences du CI).
 - Dans le navigateur : `/dev/seance/?exo=qcm-mots-seuls&voix=1`. Le même son
   joue pour chaque proposition, de quoi voir la file et l'anneau. Un volet de
   navigateur caché freine le rendu : ses captures retardent d'environ deux
@@ -136,8 +169,8 @@ de mp3. Les exercices écrits par le modèle en ajoutent.
   ra, ni) » n'a ni lettre ni syllabe dans ses mots, et son trou est entre deux
   espaces : ses tuiles se disent. Si cela donne trop d'aide, la règle des trous
   collés peut s'étendre aux tuiles de moins de trois lettres.
-- **Préchauffer le cache.** Synthétiser d'avance les 877 textes (environ 3 à 5
-  dollars) évite que le premier enfant attende une à deux secondes par mot
-  nouveau. Pas écrit : à faire si la première lecture se fait attendre.
+- **Quand préchauffer.** L'outil existe (section « Préchauffer le cache »).
+  Reste à choisir : après chaque régénération de paliers du CI, ou seulement
+  quand la première lecture se fait attendre.
 - **Une phrase à plusieurs trous** ne relit pas toute seule les mots du trou
   suivant, quand il s'ouvre.
