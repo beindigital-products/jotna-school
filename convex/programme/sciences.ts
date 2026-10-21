@@ -30,30 +30,74 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
         name: "Naturel ou fabriqué ?",
         description:
           "IST, étape 1 : les éléments naturels du milieu (arbre, eau, sable, pierre, animaux) et les éléments techniques fabriqués par l'homme (table, seau, vélo, pirogue) ; trier les uns et les autres.",
+        // Dix gabarits (`milieuCi.ts`) : la chose fabriquée ou naturelle parmi trois, ranger sous « naturel » et « fabriqué », une phrase à trou.
+        games: [
+          { kind: "milieu-intrus", count: 3 },
+          { kind: "milieu-glisser", count: 4 },
+          { kind: "milieu-trou", count: 3 },
+        ],
       },
       {
         key: "sc-ci-animaux",
         name: "Les animaux autour de moi",
         description:
           "IST, étape 1 : classer les animaux du Sénégal : domestiques (mouton, chèvre, poule, âne, chat) et sauvages (lion, singe, hyène, crocodile) ; à poils, à plumes, à écailles ; où ils vivent (dans l'eau, sur terre, dans les airs).",
+        // Dix gabarits (`milieuCi.ts`) : domestique ou sauvage (ranger, un parmi trois), poils, plumes ou écailles, l'eau, la terre ou les airs (ranger, un parmi trois, relier), une phrase à trou.
+        games: [
+          { kind: "faune-glisser", count: 2 },
+          { kind: "faune-habitat", count: 1 },
+          { kind: "faune-intrus", count: 2 },
+          { kind: "faune-couvre", count: 2 },
+          { kind: "faune-vit", count: 1 },
+          { kind: "faune-relier", count: 1 },
+          { kind: "faune-trou", count: 1 },
+        ],
       },
       {
         key: "sc-ci-plantes",
         name: "Les plantes autour de moi",
         description:
           "IST, étape 1 : reconnaître des plantes du milieu (baobab, manguier, fromager, mil, arachide), nommer les parties d'une plante (racine, tige, feuille, fleur, fruit).",
+        // Dix gabarits (`milieuCi.ts`) : la partie de la plante qui répond, la plante qui donne un fruit, relier une plante et ce qu'elle donne, arbre ou plante du champ, les parties dans l'ordre, une phrase à trou.
+        games: [
+          { kind: "plante-partie", count: 2 },
+          { kind: "plante-qui", count: 1 },
+          { kind: "plante-donne", count: 2 },
+          { kind: "plante-type", count: 2 },
+          { kind: "plante-ordre", count: 1 },
+          { kind: "plante-trou", count: 2 },
+        ],
       },
       {
         key: "sc-ci-hygiene",
         name: "Mon corps et la propreté",
         description:
           "Vivre dans son milieu, étape 1 : les parties du corps ; l'hygiène (se laver les mains avec du savon avant de manger et après les toilettes, se brosser les dents, se laver, couper ses ongles) ; les aliments qui rendent malade (fruits non lavés, nourriture laissée découverte).",
+        // Dix gabarits (`soinsCi.ts`) : que fais-tu dans une situation, à faire ou à éviter, un geste bon ou mauvais parmi trois, les gestes dans l'ordre, avec quoi je vois ou j'entends, relier une partie du corps et son soin, une phrase à trou.
+        games: [
+          { kind: "hygiene-situation", count: 2 },
+          { kind: "hygiene-glisser", count: 1 },
+          { kind: "hygiene-intrus", count: 1 },
+          { kind: "hygiene-soin", count: 1 },
+          { kind: "hygiene-ordre", count: 2 },
+          { kind: "hygiene-trou", count: 1 },
+          { kind: "hygiene-sens", count: 2 },
+        ],
       },
       {
         key: "sc-ci-outils",
         name: "Les outils de la maison et de l'école",
         description:
           "IST, étape 1 : outils et objets techniques (ciseaux, marteau, pilon et mortier, balai, seau, arrosoir) : à quoi ils servent, comment s'en servir sans se blesser, ranger et entretenir son matériel.",
+        // Dix gabarits (`soinsCi.ts`) : avec quel outil je fais cela, relier un outil et son usage, une phrase à trou, les gestes d'un outil dans l'ordre, que fais-tu avec l'outil, à faire ou à éviter.
+        games: [
+          { kind: "outil-qui", count: 2 },
+          { kind: "outil-relier", count: 2 },
+          { kind: "outil-trou", count: 2 },
+          { kind: "outil-ordre", count: 1 },
+          { kind: "outil-geste", count: 2 },
+          { kind: "outil-glisser", count: 1 },
+        ],
       },
     ],
     CP: [
