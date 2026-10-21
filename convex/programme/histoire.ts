@@ -146,24 +146,64 @@ export const HISTOIRE: ProgrammeSubject = {
         name: "Le temps qui passe",
         description:
           "Histoire, étape 2, paliers 1-2 : la notion de temps. La ligne du temps, les générations (grands-parents, parents, enfants), autrefois et aujourd'hui.",
+        games: [
+          { kind: "ce1-generation-ordre", count: 1 },
+          { kind: "ce1-naissance", count: 1 },
+          { kind: "ce1-ligne-ordre", count: 1 },
+          { kind: "ce1-ligne-ecart", count: 1 },
+          { kind: "ce1-mois-decalage", count: 1 },
+          { kind: "ce1-generation-trou", count: 1 },
+          { kind: "ce1-autrefois-qcm", count: 1 },
+          { kind: "ce1-autrefois-relier", count: 1 },
+          { kind: "ce1-autrefois-glisser", count: 1 },
+          { kind: "ce1-autrefois-trou", count: 1 },
+        ],
       },
       {
         key: "hi-ce1-famille",
         name: "L'histoire de ma famille",
         description:
           "Histoire, étape 2, paliers 1-2 : le passé de la famille. L'arbre généalogique (grand-père, grand-mère, oncle, tante, cousin), les objets et les souvenirs de famille.",
+        games: [
+          { kind: "ce1-lien-qcm", count: 2 },
+          { kind: "ce1-famille-ordre", count: 1 },
+          { kind: "ce1-lien-trou", count: 2 },
+          { kind: "ce1-lien-relier", count: 1 },
+          { kind: "ce1-famille-glisser", count: 1 },
+          { kind: "ce1-souvenir-qcm", count: 1 },
+          { kind: "ce1-souvenir-relier", count: 1 },
+          { kind: "ce1-famille-compte", count: 1 },
+        ],
       },
       {
         key: "hi-ce1-ecole",
         name: "L'histoire de mon école",
         description:
           "Histoire, étape 2, paliers 1-2 : le passé de l'école. Comment on retrouve l'histoire d'une école (les anciens élèves, les photos, les registres), ce qui a changé depuis sa construction.",
+        games: [
+          { kind: "ce1-source-qcm", count: 2 },
+          { kind: "ce1-source-relier", count: 1 },
+          { kind: "ce1-source-glisser", count: 1 },
+          { kind: "ce1-source-trou", count: 1 },
+          { kind: "ce1-ecole-ordre", count: 2 },
+          { kind: "ce1-ecole-recent", count: 2 },
+          { kind: "ce1-ecole-ecart", count: 1 },
+        ],
       },
       {
         key: "hi-ce1-quartier",
         name: "Mon quartier, mon village, ma commune",
         description:
           "Histoire, étape 2, paliers 1-2 : l'histoire du quartier ou du village (son fondateur, l'origine de son nom, ses monuments) et de la commune (le maire, la mairie).",
+        games: [
+          { kind: "ce1-mot-qcm", count: 2 },
+          { kind: "ce1-mot-relier", count: 1 },
+          { kind: "ce1-mot-glisser", count: 1 },
+          { kind: "ce1-mot-trou", count: 2 },
+          { kind: "ce1-village-ordre", count: 1 },
+          { kind: "ce1-village-recent", count: 2 },
+          { kind: "ce1-village-ecart", count: 1 },
+        ],
       },
     ],
     CE2: [

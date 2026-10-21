@@ -1981,6 +1981,52 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     ordre de couleurs (le feu s'énonce donc « Mets dans l'ordre les lumières du feu, de haut en bas »), une consigne avait deux apostrophes
     droites, entre lesquelles l'écran coupe, le verbe « souris » est aussi un mot du catalogue (la souris), les deux glisser-déposer de
     visages du premier palier se ressemblaient, et la même question de couleur revenait à deux paliers.
+- **L'histoire et la géographie du CE1** (`paliers/games/ce1Histoire.ts`, `ce1Geographie.ts`, leurs outils dans `ce1Outils.ts`) :
+  soixante-trois gabarits pour `hi-ce1-temps`, `hi-ce1-famille`, `hi-ce1-ecole`, `hi-ce1-quartier`, `ge-ce1-orientation`, `ge-ce1-saisons`,
+  `ge-ce1-eau-relief` et `ge-ce1-plan`, les huit premières thématiques du CE1 que le modèle n'écrit plus. Sur l'échantillon de CE1 lu le
+  21 octobre 2026, 18 exercices sur 48 étaient faux en histoire et en géographie : « Quel est le nom de ton quartier ? », un ordre
+  « d'importance », « Bakel - fleuve Gambie », « Dakar - fleuve Sénégal », « Quel fleuve se jette dans l'Atlantique ? » (le Sénégal, le Niger
+  et le Congo y arrivent), une clé « Est » pour un « centre » entre le nord et le sud. Ici la réponse se calcule ou se lit dans l'énoncé.
+  Les noms des gabarits commencent par `ce1-`, pour ne heurter aucun nom du CI ni du CP.
+  - **Le CE1 a quatre paliers, joués aux niveaux 1, 2, 3 et 4** (le CP en a trois, joués aux niveaux 1, 2 et 4) : `levelGroup` et
+    `variantsForLevel` donnent le même groupe aux niveaux 3 et 4. `ce1Outils.ts` ajoute `windowOf` et `windowFor` : chaque niveau reçoit sa
+    fenêtre de variantes, un quart de la liste quand elle est assez longue, et au moins le nombre de fois que le palier demande le gabarit.
+    Mesuré sur 200 graines par thématique, les questions revues dans un autre palier sont passées de 12,2 % à 0,2 %. Une liste de moins de
+    quatre fois ce nombre oblige deux paliers voisins à se partager des variantes : il faut l'allonger plutôt que d'accepter la répétition.
+  - **Le temps qui passe** : les dates des chronologies sont inventées par le gabarit et écrites dans l'énoncé (« Le marché ouvre en 1980,
+    la mairie est bâtie en 1950… Mets-les du plus ancien au plus récent »), jamais tirées de l'histoire d'un village. Elles se resserrent
+    aux paliers suivants : des siècles, des décennies, des demi-décennies, puis des années. Trois gabarits (`ce1-ligne-ecart`,
+    `ce1-ecole-ecart`, `ce1-village-ecart`) demandent le nombre d'années entre deux dates, à écrire. « Autrefois » ne range que des couples
+    d'un même besoin (la lampe à pétrole et la lampe électrique, la lettre et le téléphone portable, la charrette et la voiture, le feu de
+    bois et la cuisinière à gaz, le puits et le robinet) : la fiche n'en donne aucun, ce sont des exemples d'école, à faire relire.
+  - **La famille** : les liens ne se discutent pas (le frère de ma mère est mon oncle) et `ce1-lien-trou` accorde « mon » ou « ma » avec le
+    nom, en ne proposant que des noms du même genre. Les souvenirs (l'arbre généalogique, la photo, le récit d'un grand-parent, l'acte de
+    naissance, le livret de famille) sont des définitions, pas des faits propres à une famille.
+  - **L'école et le quartier** : les sources (l'ancien élève, l'ancien instituteur, la photo, le registre, le vieux cahier) et les mots
+    (maire, fondateur, mairie, monument, commune) sont définis comme la fiche les donne. Aucun gabarit ne parle de « l'origine du nom » d'un
+    village : c'est un fait propre à chaque village. Une question « Qui… ? » n'a jamais une autre personne parmi ses mauvais choix.
+  - **Les points cardinaux** se calculent : un quart de tour vers la droite fait passer le nord à l'est, le test le vérifie avec des
+    vecteurs. `ce1-face` et `ce1-tourne` font tourner l'enfant sur lui-même ; `ce1-lieux-direction` place un lieu au nord ou à l'est d'un
+    autre (deux lieux aux deux premiers paliers, trois lieux alignés du nord au sud ensuite).
+  - **Les saisons** s'en tiennent au milieu de chaque saison. La fiche dit « à peu près » de novembre à juin et de juillet à octobre : les
+    mois de bord (novembre, juin, juillet, octobre) ne sont jamais posés. Restent décembre à mai pour la saison sèche, août et septembre
+    pour l'hivernage. L'harmattan est un vent chaud et sec, et il pleut plus au sud qu'au nord.
+  - **L'eau et le relief** : les fleuves sont ceux de la fiche (Gambie, Casamance, Sénégal), les lacs aussi (Rose, de Guiers) ; le Saloum
+    n'est pas posé, la fiche ne dit pas s'il est un fleuve ou un bras de mer. HORS FICHE, À FAIRE RELIRE : les villes d'un fleuve (Saint-Louis,
+    Podor et Bakel sur le Sénégal ; Ziguinchor, Kolda et Sédhiou sur la Casamance), les définitions de la mare et du puits, et l'océan.
+  - **Le plan** est un quadrillage de carrés de couleur (rouge, bleu, vert, jaune, violet, orange) et de cases vides (⬜), avec sa légende
+    écrite dans l'énoncé (« le carré rouge est la porte »), pour la classe, l'école ou la maison. Deux lignes au premier palier, trois ensuite.
+    Les cases sont dites « en haut à gauche », « au centre », « en bas à droite ». Le seul émoji que ces gabarits écrivent est dans l'énoncé
+    d'un plan, jamais sur une tuile ni dans un indice. Une étiquette est un nom seul, sans article, et une case de glissé n'a pas d'article
+    non plus (« Personne », « Lieu », « Document ») : `templatePictures.test.ts` les joue au CI.
+  - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un ordre sur « L'histoire de ma
+    famille » (`ce1-famille-ordre`) et une réponse courte sur « Le plan de la classe et de l'école » (`ce1-plan-ecrire`).
+  - `convex/__tests__/ce1HistoryGeographyTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé, avec ses propres tables (des années lues
+    et rangées par le test, des quarts de tour calculés avec des vecteurs, les liens de famille, les mois de chaque saison, les carrés d'un plan
+    lus un à un), contre 4 niveaux et 60 graines de chacun des soixante-trois gabarits, puis fabrique 30 paliers de chaque thématique, aux
+    quatre paliers, contre le contrôleur. Vingt-six pannes provoquées dans le code (une somme au lieu d'une différence, un sens de tour inversé,
+    juillet posé en saison des pluies, gauche et droite échangées sur le plan…) sont toutes attrapées. Sur 8 000 paliers fabriqués, le
+    contrôleur ne signale aucun défaut.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

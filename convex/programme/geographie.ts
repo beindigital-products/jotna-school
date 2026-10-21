@@ -142,24 +142,63 @@ export const GEOGRAPHIE: ProgrammeSubject = {
         name: "Les points cardinaux",
         description:
           "Géographie, étape 2, paliers 1-2 : l'orientation. Le nord, le sud, l'est et l'ouest ; le soleil se lève à l'est et se couche à l'ouest ; la boussole ; l'orientation de la classe et de l'école.",
+        games: [
+          { kind: "ce1-oppose", count: 1 },
+          { kind: "ce1-soleil", count: 1 },
+          { kind: "ce1-face", count: 1 },
+          { kind: "ce1-tourne", count: 1 },
+          { kind: "ce1-boussole-ordre", count: 1 },
+          { kind: "ce1-point-trou", count: 1 },
+          { kind: "ce1-lieux-direction", count: 2 },
+          { kind: "ce1-point-relier", count: 1 },
+          { kind: "ce1-point-glisser", count: 1 },
+        ],
       },
       {
         key: "ge-ce1-saisons",
         name: "Le climat et les saisons",
         description:
           "Géographie, étape 2, paliers 1-2 : le climat et les saisons du Sénégal. La saison sèche (à peu près de novembre à juin) et la saison des pluies ou hivernage (à peu près de juillet à octobre) ; l'harmattan, vent chaud et sec ; il pleut plus au sud qu'au nord.",
+        games: [
+          { kind: "ce1-mois-saison", count: 3 },
+          { kind: "ce1-saison-glisser", count: 1 },
+          { kind: "ce1-saison-fait", count: 2 },
+          { kind: "ce1-saison-relier", count: 1 },
+          { kind: "ce1-saison-ordre", count: 1 },
+          { kind: "ce1-saison-trou", count: 2 },
+        ],
       },
       {
         key: "ge-ce1-eau-relief",
         name: "Le relief et les cours d'eau",
         description:
           "Géographie, étape 2, paliers 1-2 : un pays surtout plat, avec des collines au sud-est (région de Kédougou) ; les fleuves Sénégal, Gambie et Casamance, le Saloum ; les lacs (lac de Guiers, lac Rose), les mares, les puits et les points d'eau du milieu.",
+        games: [
+          { kind: "ce1-eau-type", count: 2 },
+          { kind: "ce1-eau-mot", count: 2 },
+          { kind: "ce1-eau-glisser", count: 1 },
+          { kind: "ce1-eau-relier", count: 1 },
+          { kind: "ce1-eau-ville", count: 1 },
+          { kind: "ce1-relief", count: 1 },
+          { kind: "ce1-eau-trou", count: 2 },
+        ],
       },
       {
         key: "ge-ce1-plan",
         name: "Le plan de la classe et de l'école",
         description:
           "Géographie, étape 2, paliers 1-2 : représenter la classe, l'école ou la maison sur un plan, avec une légende simple ; retrouver un lieu sur un plan.",
+        games: [
+          { kind: "ce1-plan-ou", count: 1 },
+          { kind: "ce1-plan-ecrire", count: 1 },
+          { kind: "ce1-plan-quoi", count: 1 },
+          { kind: "ce1-plan-compter", count: 1 },
+          { kind: "ce1-plan-relier", count: 1 },
+          { kind: "ce1-plan-ordre", count: 1 },
+          { kind: "ce1-plan-trou", count: 2 },
+          { kind: "ce1-plan-glisser", count: 1 },
+          { kind: "ce1-plan-legende", count: 1 },
+        ],
       },
     ],
     CE2: [
