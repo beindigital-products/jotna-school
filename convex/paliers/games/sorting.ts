@@ -23,6 +23,7 @@ import {
   optionOf,
   type Thing,
 } from "./things";
+import { pickForLevel } from "./tableaux";
 
 /** « Lequel n'est pas comme les autres ? » : trois choses d'une catégorie, une d'une autre. */
 export function makeOddOneOut(ctx: GameContext): GeneratedGame {
@@ -83,7 +84,16 @@ export function makeBelongs(ctx: GameContext): GeneratedGame {
 /** « Qu'est-ce qui est jaune ? » : trois choses de trois couleurs différentes. */
 export function makeColorOfThing(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "couleur-objet", () => {
-    const colors = shuffle(ctx.rng, Object.keys(COLORS)).slice(0, ctx.level >= 3 ? 4 : 3);
+    // La couleur demandée est celle du palier (le rouge, puis le jaune ou le vert, puis l'orange ou le violet) : sans cela, « Qu'est-ce qui est rouge ? »
+    // revenait aux paliers 1 et 3. Les deux ou trois autres couleurs se tirent parmi les autres.
+    const asked = pickForLevel(ctx, Object.keys(COLORS), (color) => `couleur-demandee:${color}`);
+    const colors = [
+      asked,
+      ...shuffle(
+        ctx.rng,
+        Object.keys(COLORS).filter((color) => color !== asked),
+      ).slice(0, ctx.level >= 3 ? 3 : 2),
+    ];
     const things: Thing[] = colors.map((color) => pick(ctx.rng, COLORS[color]));
     const target = things[0];
     const options = shuffle(ctx.rng, things).map(optionOf);
@@ -135,7 +145,9 @@ const DIMENSIONS = [
 /** « Quel animal est le plus lourd ? » : trois animaux dessinés, jamais deux voisins de l'échelle. */
 export function makeCompareAnimals(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "comparer-mesure", () => {
-    const dimension = pick(ctx.rng, DIMENSIONS);
+    // Le mot demandé est celui du palier (« lourd », puis « léger », puis « grand » ou « petit ») : sans cela, « Quel animal est le plus petit ? » revenait
+    // d'un palier à l'autre. Un palier qui pose plusieurs fois la question change de mot à chaque fois (quatre au CI).
+    const dimension = pickForLevel(ctx, DIMENSIONS, (candidate) => `dimension:${candidate.adjective}`);
     // Deux animaux très différents (trois crans d'écart) au premier palier, trois espacés de deux crans ensuite.
     const animals = ctx.level === 1 ? spacedFrom(ctx, dimension.scale, 2, 3) : spacedFrom(ctx, dimension.scale, 3, 2);
     // `spacedFrom` rend les animaux du plus léger au plus lourd (ou du plus petit au plus grand).

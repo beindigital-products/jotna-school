@@ -1821,6 +1821,17 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     le solide d'un objet dans `SOLIDS`. Mesuré sur 200 graines : `forme-nom` reprenait 205 questions et `solide-nom` 279 dans `ma-ci-formes`, `forme-nom` 52 dans
     `fr-cp-decrire` ; ils n'en reprennent plus aucune. `forme-coins` n'est pas concerné : quatre formes seulement pour six tirages, `ma-ci-formes` en reprend
     encore (358). La réponse peut se répéter d'un palier à l'autre (« le rond ») : c'est un autre dessin.
+  - **« Décrire et comparer » (`fr-cp-decrire`) et `monnaie-payer` répartis par palier**, relevés en lisant les 90 exercices régénérés après la PR #117 :
+    « Quel mot est le contraire de « lourd » ? » aux trois paliers, « Qu'est-ce qui est rouge ? » (la fraise) aux paliers 1 et 3, « doit payer 15 F » aux
+    paliers 1 et 2. Deux aides dans `tableaux.ts` : `pickPreferred` tire d'abord parmi les variantes que le palier préfère et qui n'ont pas servi dans ce
+    palier, puis parmi les autres, puis n'importe laquelle ; `pickForLevel` lui donne pour variantes préférées un tiers de la liste (`variantsForLevel`) ou une
+    place sur trois (`spreadForLevel`, pour les longues listes sans ordre). `contraire-qcm` : dix mots, le premier de chaque paire puis le second, trois ou
+    quatre par palier ; `contraire-trou` : une, deux puis deux phrases ; `couleur-objet` : la couleur demandée est le rouge, puis le jaune ou le vert, puis
+    l'orange ou le violet ; `comparer-trou` : les 50 comparaisons (une échelle, deux bêtes, l'ordre), une sur trois par palier ; `comparer-mesure` : le mot
+    « lourd », puis « léger », puis « grand » ou « petit » (au CI, qui en pose quatre par palier, les quatre mots changent à chaque fois) ; `monnaie-payer` :
+    des sommes jusqu'à 35 F, puis de 50 à 60 F, puis 75 F et plus. Mesuré sur 200 graines : `fr-cp-decrire` reprenait 204 questions de `contraire-qcm`, 102 de
+    `contraire-trou`, 77 de `couleur-objet`, 58 de `comparer-trou` et 57 de `comparer-mesure` ; plus aucune. `adjectif-ordre` (3 sur 200) et `contraire-relier`
+    (2) n'ont pas été touchés. `ma-cp-heure-monnaie` reprend encore `heure-lire` (30), `heure-trou` (28), `monnaie-pieces` (32) et `monnaie-relier` (11).
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les
