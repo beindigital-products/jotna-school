@@ -28,7 +28,9 @@
  * thématique) sa part : trois paliers ne répètent jamais la même question. Les associations vont plus loin : chaque
  * niveau a ses visages (`LINK_FACES`) et ses animaux (`CRY_WINDOWS`), donc deux paliers ne relient jamais plus d'une même
  * paire. Et dans un palier, les cinq exercices à une seule émotion (visage à trouver, émotion d'un visage, d'une
- * situation, geste, phrase à trou) prennent chacun l'une des émotions les moins prises : aucune n'y revient trois fois.
+ * situation, geste, phrase à trou) prennent chacun l'une des émotions les moins prises : aucune n'y revient trois fois. Les
+ * deux rangements de visages d'un palier n'ont que le moins de visages possible en commun : un seul aux deux premiers
+ * niveaux, aucun au dernier, où ils ont chacun leurs cases (`HARD_TRIPLES`) et se partagent les visages (`faceCounts`).
  *
  * RÈGLES POUR AJOUTER UNE ÉMOTION OU UN GESTE
  * - Une seule émotion, sans doute possible, pour un enfant de six ans. Le visage est un émoji d'Unicode 11 au plus.
@@ -134,11 +136,40 @@ const EASY_PAIRS: readonly (readonly Emotion[])[] = [
   ["joie", "colère"],
 ];
 
+/**
+ * Les trois cases de chaque rangement du dernier niveau. Un palier en fait deux et chacun a les siennes : la tristesse et la
+ * peur d'un côté, la colère et la surprise de l'autre, avec la joie, qui a trois visages, en commun. La peur et la surprise
+ * ne se côtoient jamais. Avec les mêmes trois émotions, les deux rangements montraient presque les mêmes visages : la
+ * tristesse, la colère, la peur et la surprise n'en ont que deux chacune.
+ */
+const HARD_TRIPLES: readonly (readonly Emotion[])[] = [
+  ["tristesse", "peur", "joie"],
+  ["colère", "surprise", "joie"],
+];
+
 /** Les émotions des cases de « Glisse chaque visage dans la bonne case. », par niveau. */
 function sortEmotions(ctx: GameContext): Emotion[] {
   if (ctx.level === 1) return [...pickFresh(ctx, EASY_PAIRS, (pair) => `visage-cases:${pair.join("+")}`)];
   if (ctx.level === 2) return ["joie", "tristesse", "colère"];
-  return ["tristesse", "colère", ctx.rng() < 0.5 ? "peur" : "surprise"];
+  return [...pickFresh(ctx, HARD_TRIPLES, (triple) => `visage-cases:${triple.join("+")}`)];
+}
+
+/**
+ * Combien de visages reçoit chaque case : un, puis les visages en plus vont aux cases qui ont encore le plus de visages
+ * que le palier n'a pas montrés (deux au plus par case). Le second rangement d'un palier reprend ainsi le moins possible
+ * les visages du premier : aucun au dernier niveau, un seul aux deux autres.
+ */
+function faceCounts(ctx: GameContext, zones: readonly Emotion[], total: number): Map<Emotion, number> {
+  const counts = new Map<Emotion, number>(zones.map((emotion): [Emotion, number] => [emotion, 1]));
+  const unseen = (emotion: Emotion) => facesOf(emotion).filter((face) => !ctx.used.has(visageKey(face))).length;
+  for (let placed = zones.length; placed < total; placed++) {
+    const open = zones.filter((emotion) => (counts.get(emotion) as number) < 2);
+    const spare = (emotion: Emotion) => unseen(emotion) - (counts.get(emotion) as number);
+    const most = Math.max(...open.map(spare));
+    const chosen = pick(ctx.rng, open.filter((emotion) => spare(emotion) === most));
+    counts.set(chosen, (counts.get(chosen) as number) + 1);
+  }
+  return counts;
 }
 
 /**
@@ -146,14 +177,14 @@ function sortEmotions(ctx: GameContext): Emotion[] {
  * émotions. Chaque case reçoit au moins un visage.
  */
 export function makeVisageSort(ctx: GameContext): GeneratedGame {
+  // Les cases se prennent une fois, avant `fresh` : un tirage refait ne prendrait pas la seconde paire de cases du palier.
+  const zones = sortEmotions(ctx);
   return fresh(
     ctx,
     "visage-glisser",
     () => {
-      const zones = sortEmotions(ctx);
       const total = ctx.level <= 2 ? 4 : 5;
-      const counts = new Map<Emotion, number>(zones.map((emotion): [Emotion, number] => [emotion, 1]));
-      for (const emotion of shuffle(ctx.rng, zones).slice(0, total - zones.length)) counts.set(emotion, 2);
+      const counts = faceCounts(ctx, zones, total);
       const items = shuffle(
         ctx.rng,
         zones.flatMap((emotion) =>
