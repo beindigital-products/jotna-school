@@ -14,7 +14,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { fresh, originOf, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { fresh, originOf, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 
 /** Les trois indices d'un exercice : le premier relit la consigne, le dernier mène le plus près de la réponse. */
 export type Hints = readonly [string, string, string];
@@ -143,6 +143,19 @@ export function sequenceGame(
     },
     (game) => String(game.answerKey),
   );
+}
+
+/**
+ * Les variantes d'un gabarit qui n'en a que quelques-unes, réparties par palier : le premier tiers au premier palier, le deuxième
+ * au deuxième, le dernier tiers ensuite. Deux paliers d'une même thématique ne tirent ainsi jamais la même variante (le CP a trois
+ * paliers, joués aux niveaux 1, 2 et 4) : sans cela, un enfant revoyait « Deux ___ font un kilogramme » aux trois paliers. Il faut
+ * au moins trois variantes ; en dessous, toutes restent permises.
+ */
+export function variantsForLevel<T>(items: readonly T[], level: GameLevel): T[] {
+  const group = level === 1 ? 0 : level === 2 ? 1 : 2;
+  const from = Math.floor((items.length * group) / 3);
+  const to = Math.floor((items.length * (group + 1)) / 3);
+  return to > from ? items.slice(from, to) : [...items];
 }
 
 /** Une majuscule à la première lettre. */

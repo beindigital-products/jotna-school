@@ -3,6 +3,7 @@ import { auditExercise } from "../paliers/exerciseAudit";
 import { GAME_KINDS, generateGames, regenerateGame, type GameKind } from "../paliers/games";
 import { clockOf, timeWords } from "../paliers/games/heureCp";
 import { makeContext, type GameLevel } from "../paliers/games/shared";
+import { variantsForLevel } from "../paliers/games/tableaux";
 import { topicUsesModel } from "../paliers/pregen";
 import { allProgrammeEntries } from "../programme";
 import { PALIER_SIZE } from "../paliers/scoring";
@@ -75,6 +76,7 @@ const KILO_GAPS: Record<string, string> = {
   "Un demi-kilogramme est ___ qu'un kilogramme.": "plus léger",
   "Un kilogramme est ___ qu'un demi-kilogramme.": "plus lourd",
   "Un quart de kilogramme est ___ qu'un demi-kilogramme.": "plus léger",
+  "Un kilogramme est ___ qu'un quart de kilogramme.": "plus lourd",
 };
 
 /** Les vingt-quatre horloges, écrites une à une : les heures justes de une à douze, puis les demi-heures. */
@@ -650,6 +652,46 @@ describe("les règles de la fiche tiennent partout", () => {
       for (const text of shownTexts(exo)) for (const m of text.matchAll(/(\d+) F/gu)) expect(Number(m[1]) % 5, `${kind} : ${text}`).toBe(0);
     }
   });
+});
+
+// ===========================================================================
+// DEUX PALIERS D'UNE MÊME THÉMATIQUE NE POSENT JAMAIS LA MÊME QUESTION
+// ===========================================================================
+
+/** Ce qui fait l'identité d'une question : l'énoncé et la bonne réponse, ou l'ensemble des paires, des tuiles ou des étapes. */
+function questionKey(exo: Exo): string {
+  if (exo.payload.options) return `${exo.prompt}|${rightOption(exo)}`;
+  if (exo.payload.blanks) return `${textOf(exo)}|${blankOf(exo).answer}`;
+  if (exo.payload.pairs) return pairsOf(exo).map((pair) => `${pair.left}~${pair.right}`).sort().join(";");
+  if (exo.payload.items) return itemsOf(exo).map((item) => `${item.text}>${item.correctZone}`).sort().join(";");
+  if (exo.payload.correctSequence) return sequenceOf(exo).join(">");
+  return `${exo.prompt}|${acceptedOf(exo).join("/")}`;
+}
+
+describe("les variantes d'un gabarit à peu de choix sont réparties par palier", () => {
+  it("`variantsForLevel` donne trois parts qui ne se recoupent pas, jamais vides, dès trois variantes", () => {
+    for (let n = 3; n <= 14; n++) {
+      const items = Array.from({ length: n }, (_, i) => i);
+      const groups = [1, 2, 4].map((level) => variantsForLevel(items, level as GameLevel));
+      for (const group of groups) expect(group.length, `n=${n}`).toBeGreaterThan(0);
+      expect(groups.flat().sort((a, b) => a - b), `n=${n}`).toEqual(items);
+      expect(variantsForLevel(items, 3), `n=${n}`).toEqual(variantsForLevel(items, 4));
+    }
+    // En dessous de trois variantes, toutes restent permises.
+    expect(variantsForLevel([1, 2], 1)).toEqual([1, 2]);
+  });
+
+  const FEW_VARIANTS = [
+    "mesure-corps", "mesure-kilo", "mesure-kilo-trou", "calendrier-combien", "outil-geometrie", "figure-etapes", "pb-etapes", "ligne-qcm", "ligne-relier",
+  ] as const satisfies readonly GameKind[];
+  for (const kind of FEW_VARIANTS) {
+    it(`${kind} : les trois paliers du CP ne posent jamais la même question`, () => {
+      for (let n = 0; n < 80; n++) {
+        const keys = [1, 2, 4].map((level) => questionKey(GAME_KINDS[kind].make(makeContext("CP", level as GameLevel, `variete:${kind}:${n}`)) as unknown as Exo));
+        expect(new Set(keys).size, `${kind} #${n} : ${keys.join(" | ")}`).toBe(keys.length);
+      }
+    });
+  }
 });
 
 // ===========================================================================

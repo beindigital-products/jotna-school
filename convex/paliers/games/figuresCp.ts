@@ -17,22 +17,26 @@
  * MODULE PUR (voir `types.ts`).
  */
 import { pick, type GameContext, type GeneratedGame } from "./shared";
-import { choiceGame, firstLetter, sequenceGame } from "./tableaux";
+import { choiceGame, firstLetter, sequenceGame, variantsForLevel } from "./tableaux";
 
 /** Chaque outil et ce qu'on en fait ; `never` : les deux autres outils qui ne peuvent PAS être la bonne réponse. */
 const TOOLS: readonly { ask: string; tool: string; never: readonly [string, string] }[] = [
+  // Premier palier : tracer et dessiner.
   { ask: "Avec quoi trace-t-on un trait bien droit ?", tool: "Règle", never: ["Gomme", "Ciseaux"] },
-  { ask: "Avec quoi mesure-t-on la longueur d'un trait ?", tool: "Double décimètre", never: ["Gomme", "Ciseaux"] },
-  { ask: "Avec quoi découpe-t-on une figure ?", tool: "Ciseaux", never: ["Gomme", "Règle"] },
-  { ask: "Avec quoi enlève-t-on un trait fait au crayon ?", tool: "Gomme", never: ["Ciseaux", "Règle"] },
   { ask: "Avec quoi dessine-t-on un trait sur la feuille ?", tool: "Crayon", never: ["Gomme", "Ciseaux"] },
+  // Deuxième palier : effacer et coller.
+  { ask: "Avec quoi enlève-t-on un trait fait au crayon ?", tool: "Gomme", never: ["Ciseaux", "Règle"] },
   { ask: "Avec quoi fixe-t-on une figure découpée sur le cahier ?", tool: "Colle", never: ["Règle", "Gomme"] },
+  // Dernier palier : découper et mesurer.
+  { ask: "Avec quoi découpe-t-on une figure ?", tool: "Ciseaux", never: ["Gomme", "Règle"] },
+  { ask: "Avec quoi mesure-t-on la longueur d'un trait ?", tool: "Double décimètre", never: ["Gomme", "Ciseaux"] },
 ];
 
 /** « Avec quoi trace-t-on un trait bien droit ? » : l'outil parmi trois. */
 export function makeGeometryTool(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "outil-geometrie", "choisir l'outil du géomètre", () => {
-    const entry = pick(ctx.rng, TOOLS);
+    // Deux questions par palier : un enfant ne revoit pas la même d'un palier à l'autre.
+    const entry = pick(ctx.rng, variantsForLevel(TOOLS, ctx.level));
     return {
       prompt: entry.ask,
       answer: entry.tool,
@@ -44,6 +48,11 @@ export function makeGeometryTool(ctx: GameContext): GeneratedGame {
 
 /** Les suites d'étapes de la fiche, chacune dans un seul ordre. */
 const PROCEDURES: readonly { prompt: string; steps: readonly string[] }[] = [
+  // Premier palier : tracer un trait. Deuxième : reproduire. Dernier : découper.
+  {
+    prompt: "Mets dans le bon ordre les étapes pour tracer un trait droit.",
+    steps: ["Je pose la règle sur la feuille.", "Je tiens bien la règle.", "Je trace le trait le long de la règle."],
+  },
   {
     prompt: "Mets dans le bon ordre les étapes pour reproduire une figure.",
     steps: ["Je regarde bien la figure.", "Je trace les traits avec la règle.", "Je compare avec la figure."],
@@ -52,16 +61,12 @@ const PROCEDURES: readonly { prompt: string; steps: readonly string[] }[] = [
     prompt: "Mets dans le bon ordre les étapes pour découper une figure.",
     steps: ["Je dessine la figure sur la feuille.", "Je découpe en suivant le trait.", "Je colle la figure sur le cahier."],
   },
-  {
-    prompt: "Mets dans le bon ordre les étapes pour tracer un trait droit.",
-    steps: ["Je pose la règle sur la feuille.", "Je tiens bien la règle.", "Je trace le trait le long de la règle."],
-  },
 ];
 
 /** « Mets dans le bon ordre les étapes pour découper une figure. » : trois étapes, une seule suite possible. */
 export function makeFigureSteps(ctx: GameContext): GeneratedGame {
   return sequenceGame(ctx, "figure-etapes", "les étapes pour reproduire, tracer ou découper une figure", () => {
-    const procedure = pick(ctx.rng, PROCEDURES);
+    const procedure = pick(ctx.rng, variantsForLevel(PROCEDURES, ctx.level));
     return {
       prompt: procedure.prompt,
       sequence: [...procedure.steps],
