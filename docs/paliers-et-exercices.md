@@ -1966,12 +1966,23 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     dessin de métier) et aucun mauvais choix qui puisse être bon : « pleurer de joie » existe, on ne le propose pas.
   - **Trois paliers, jamais la même question.** Un gabarit qui a peu de variantes donne à chaque niveau sa part (`variantsForLevel`) :
     rouge ou jaune au premier palier, vert ou bleu au deuxième, orange, violet ou blanc au troisième ; un tiers des objets, des visages,
-    des situations et des cris ; des émotions différentes à chaque palier pour les gestes et les visages à trouver. Les deux
-    glisser-déposer de visages d'un même palier ne reprennent pas les mêmes cases.
+    des situations et des cris. Les associations vont plus loin, car trois paires reconnues d'un palier à l'autre se remarquent : chaque
+    niveau a ses propres choses, objets, visages et animaux (`LINK_THINGS`, `LINK_OBJECTS`, `LINK_FACES`, `CRY_WINDOWS`). Deux paliers ne
+    relient jamais la même paire de couleurs ou de formes, jamais plus d'une paire de visages ou de cris, et aucune paire n'est aux trois
+    paliers. Mesuré sur 300 tirages, deux paliers partageaient avant presque toujours une paire, et deux paires ou plus dans plus d'un
+    tirage sur deux. Aux rangements de couleurs, deux paliers voisins ne partagent qu'une chose (`SORT_ZONES`) ; le catalogue n'a que deux
+    objets ronds et deux triangulaires, donc les rangements de formes en partagent deux.
+  - **Les émotions se répartissent dans un palier de mimes.** Cinq exercices ne disent qu'une émotion : le visage à trouver, l'émotion d'un
+    visage, celle d'une situation, le geste, la phrase à trous. Chacun prend l'une des émotions les moins prises dans le palier
+    (`lightestEmotion`) : aucune n'y revient plus de deux fois et au moins trois s'y montrent. Avant, le premier palier n'en montrait que
+    deux dans près de deux tirages sur trois, et une même émotion revenait quatre fois dans un tirage sur sept. La phrase à trous passe
+    pour cela avant les autres dans le programme, car au premier niveau elle n'a qu'une phrase (la tristesse) et les autres se répartissent
+    autour d'elle. Les deux glisser-déposer de visages du premier palier ont la joie en commun, qui a trois visages, et ne montrent donc
+    qu'un visage deux fois.
   - **Ce que l'écran montre.** Mesurés dans la séance de la galerie, sur un écran de 375 × 812 : un QCM, une association et un ordre
     tiennent au-dessus du dock, frises et gestes comprises. Un glisser-déposer laisse sa seconde case sous le dock tant que l'écran n'a
     pas défilé, comme ceux des sciences ; avec trois cases de visages, rangées sur deux colonnes, la troisième dépasse un peu.
-  - **`convex/__tests__/ciArtsTemplates.test.ts`** (174 tests) a un VÉRIFICATEUR par gabarit, écrit avec une copie figée des tableaux
+  - **`convex/__tests__/ciArtsTemplates.test.ts`** (177 tests) a un VÉRIFICATEUR par gabarit, écrit avec une copie figée des tableaux
     (choses et couleurs, objets et formes, visages, situations, gestes, cris, phrases à trous) qu'un test compare au module : changer une
     chose ou un visage oblige à relire le test. Il abîme ensuite chaque gabarit (le bon choix déplacé, une tuile dans la mauvaise case, deux
     paires croisées, deux pas échangés, un mot faux dans le trou) et exige que son vérificateur le voie 120 fois sur 120. Il vérifie les
@@ -1980,7 +1991,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     questions de chaque palier. Il a trouvé cinq défauts en route : le contrôleur ne reconnaît pas « de haut en bas » comme le critère d'un
     ordre de couleurs (le feu s'énonce donc « Mets dans l'ordre les lumières du feu, de haut en bas »), une consigne avait deux apostrophes
     droites, entre lesquelles l'écran coupe, le verbe « souris » est aussi un mot du catalogue (la souris), les deux glisser-déposer de
-    visages du premier palier se ressemblaient, et la même question de couleur revenait à deux paliers.
+    visages du premier palier se ressemblaient, et la même question de couleur revenait à deux paliers. Il garde aussi la variété, sur
+    40 tirages : aucune paire commune à deux paliers pour les couleurs et les formes, une au plus pour les cris et les visages, une chose
+    au plus au rangement des couleurs, trois émotions au moins et deux exercices au plus sur la même dans un palier de mimes. Onze
+    mutations de ces règles (une chose passée d'un niveau à l'autre, une fenêtre de cris décalée, l'émotion tirée au hasard, la phrase à
+    trous remise en dernier) sont toutes vues. Le correctif a trouvé un piège : `fresh` refait un tirage jusqu'à huit fois quand sa clé est
+    déjà prise, et pour la phrase à trous elle l'est toujours, car `pickFresh` la pose lui-même. Le choix de l'émotion, fait dans le tirage,
+    comptait donc neuf fois la tristesse. Il se fait avant `fresh`.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

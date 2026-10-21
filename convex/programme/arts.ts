@@ -96,8 +96,11 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         description:
           "Arts scéniques, étape 1 : imitation, mimes, jeux de rôles et déguisements. Reconnaître une émotion (joie, tristesse, colère, peur, surprise) sur un visage (émoji) ou dans une situation de la vie de l'enfant, choisir le geste ou le visage qui va avec, deviner l'animal ou le métier que l'on mime.",
         // Tout en jeux (`mimesCi.ts`) : le modèle n'est pas appelé. Pas de métier à deviner : le catalogue d'images n'en a pas.
+        // La phrase à trou vient avant les autres exercices à une seule émotion : au premier niveau elle n'a qu'une phrase (la
+        // tristesse), et les autres répartissent leurs émotions autour d'elle au lieu de s'entasser sur la même.
         games: [
           { kind: "visage-glisser", count: 2 },
+          { kind: "emotion-trou", count: 1 },
           { kind: "visage-quel", count: 1 },
           { kind: "visage-emotion", count: 1 },
           { kind: "visage-relier", count: 1 },
@@ -105,7 +108,6 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "emotion-geste", count: 1 },
           { kind: "cri-animal", count: 1 },
           { kind: "cri-relier", count: 1 },
-          { kind: "emotion-trou", count: 1 },
         ],
       },
     ],
