@@ -29,7 +29,7 @@
  * MODULE PUR (voir `types.ts`).
  */
 import { pick, shuffle, type GameContext, type GeneratedGame } from "./shared";
-import { choiceGame, firstLetter, gapGame, linkGame, sequenceGame, sortGame } from "./tableaux";
+import { choiceGame, firstLetter, gapGame, linkGame, sequenceGame, sortGame, variantsForLevel } from "./tableaux";
 
 // ===========================================================================
 // LE MATÉRIEL DU PEINTRE
@@ -88,7 +88,8 @@ export const LINES: readonly { name: string; desc: string }[] = [
 /** « Quelle ligne ne tourne jamais ? » : le nom parmi trois noms de lignes. */
 export function makeLineChoice(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "ligne-qcm", "reconnaître une ligne", () => {
-    const entry = pick(ctx.rng, LINES);
+    // La droite au premier palier, la courbe au deuxième, le zigzag ou la spirale ensuite : deux paliers ne posent jamais la même question.
+    const entry = pick(ctx.rng, variantsForLevel(LINES, ctx.level));
     return {
       prompt: `Quelle ligne ${entry.desc} ?`,
       answer: entry.name,
@@ -104,12 +105,11 @@ export function makeLineChoice(ctx: GameContext): GeneratedGame {
 /** « Relie chaque ligne à ce qu'on voit. » : trois ou quatre lignes et leur description. */
 export function makeLineLinks(ctx: GameContext): GeneratedGame {
   return linkGame(ctx, "ligne-relier", "reconnaître les lignes", () => {
-    const count = ctx.level === 1 ? 3 : 4;
+    // Trois lignes au premier palier (droite, courbe, zigzag), trois autres au deuxième, les quatre ensuite : deux paliers n'ont jamais les mêmes paires.
+    const lines = ctx.level === 1 ? LINES.slice(0, 3) : ctx.level === 2 ? LINES.slice(1) : LINES;
     return {
       prompt: "Relie chaque ligne à ce qu'on voit.",
-      pairs: shuffle(ctx.rng, LINES)
-        .slice(0, count)
-        .map((line) => ({ left: line.name, right: line.desc })),
+      pairs: shuffle(ctx.rng, lines).map((line) => ({ left: line.name, right: line.desc })),
       hints: ["Imagine chaque ligne sur ta feuille.", "Lis bien comment la ligne avance.", "Commence par la paire dont tu es le plus sûr."],
     };
   });

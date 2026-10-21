@@ -21,7 +21,7 @@
  */
 import { pick, pickFresh, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 import { CHILDREN, pronoun } from "./stories";
-import { choiceGame, gapGame, linkGame, sequenceGame, sortGame } from "./tableaux";
+import { choiceGame, gapGame, linkGame, sequenceGame, sortGame, variantsForLevel } from "./tableaux";
 import { wrongNumbers } from "./nombresCp";
 
 // ===========================================================================
@@ -131,33 +131,30 @@ export function makeLaterGap(ctx: GameContext): GeneratedGame {
 // LE CALENDRIER
 // ===========================================================================
 
-const FACTS: readonly { prompt: string; answer: number; wrong: readonly number[]; later: boolean; hints: readonly [string, string, string] }[] = [
+/** Les faits du calendrier, du plus simple au plus long : un par palier (la semaine, l'année, puis deux ou trois semaines). */
+const FACTS: readonly { prompt: string; answer: number; wrong: readonly number[]; hints: readonly [string, string, string] }[] = [
   {
     prompt: "Combien de jours y a-t-il dans une semaine ?",
     answer: 7,
     wrong: [5, 6, 8, 10],
-    later: false,
     hints: ["Pense au calendrier de la classe.", "Récite les jours dans ta tête, du lundi au dimanche.", "Compte-les un par un sur tes doigts."],
   },
   {
     prompt: "Combien de mois y a-t-il dans une année ?",
     answer: 12,
     wrong: [10, 11, 7, 6],
-    later: false,
     hints: ["Pense au calendrier de la classe.", "Récite les mois dans ta tête, de janvier à décembre.", "Compte-les un par un sur tes doigts."],
   },
   {
     prompt: "Combien de jours y a-t-il dans deux semaines ?",
     answer: 14,
     wrong: [7, 12, 10, 21],
-    later: true,
     hints: ["Une semaine a toujours le même nombre de jours.", "Pense à combien de semaines on compte.", "Additionne le même nombre de jours pour chaque semaine."],
   },
   {
     prompt: "Combien de jours y a-t-il dans trois semaines ?",
     answer: 21,
     wrong: [14, 7, 28, 30],
-    later: true,
     hints: ["Une semaine a toujours le même nombre de jours.", "Pense à combien de semaines on compte.", "Additionne le même nombre de jours pour chaque semaine."],
   },
 ];
@@ -165,7 +162,7 @@ const FACTS: readonly { prompt: string; answer: number; wrong: readonly number[]
 /** Le nombre de jours d'une semaine, de mois d'une année, de jours de deux ou trois semaines. */
 export function makeCalendarCount(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "calendrier-combien", "les jours, les semaines et les mois", () => {
-    const fact = pick(ctx.rng, ctx.level === 1 ? FACTS.filter((entry) => !entry.later) : FACTS);
+    const fact = pick(ctx.rng, variantsForLevel(FACTS, ctx.level));
     return {
       prompt: fact.prompt,
       answer: String(fact.answer),

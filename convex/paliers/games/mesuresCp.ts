@@ -23,7 +23,7 @@
  */
 import { fresh, originOf, pick, pickFresh, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 import { CHILDREN, pronoun } from "./stories";
-import { cap, choiceGame, firstLetter, gapGame, linkGame, sequenceGame, sortGame } from "./tableaux";
+import { cap, choiceGame, firstLetter, gapGame, linkGame, sequenceGame, sortGame, variantsForLevel } from "./tableaux";
 import { wrongNumbers } from "./nombresCp";
 
 // ===========================================================================
@@ -138,8 +138,10 @@ const BODY_MEASURES = ["Pas", "Pied", "Empan", "Coudée"] as const;
 /** « Avec quelle partie du corps mesure-t-on en empans ? » ou « Quelle mesure est la même pour tous les enfants ? ». */
 export function makeBodyMeasure(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "mesure-corps", "mesurer avec son corps, puis avec le mètre", () => {
-    if (ctx.rng() < 0.7) {
-      const entry = pick(ctx.rng, BODY);
+    // Une ou deux mesures par palier (empans, puis pieds et coudées, puis pas et mètre) : deux paliers ne posent jamais la même question.
+    const choice = pick(ctx.rng, variantsForLevel([...BODY.map((candidate) => candidate.measure), "mètre"], ctx.level));
+    const entry = BODY.find((candidate) => candidate.measure === choice);
+    if (entry) {
       return {
         prompt: `Avec quelle partie du corps mesure-t-on ${entry.measure} ?`,
         answer: entry.part,
@@ -324,13 +326,12 @@ const KILO_COUNTS: readonly { plural: string; count: number }[] = [
 ];
 
 /**
- * Les parts de kilogramme : combien d'un demi ou d'un quart font un kilogramme, ce que valent deux parts, ou le sucre acheté en sachets.
- * Trois sortes de question, chacune avec UNE bonne réponse.
+ * Les parts de kilogramme : le sucre acheté en sachets (premier palier), combien d'un demi ou d'un quart font un kilogramme (deuxième),
+ * ce que valent deux parts (dernier). Trois sortes de question, chacune avec UNE bonne réponse, une par palier.
  */
 export function makeKiloParts(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "mesure-kilo", "le demi-kilogramme et le quart de kilogramme", () => {
-    const roll = ctx.rng();
-    if (roll < 0.3) {
+    if (ctx.level === 2) {
       const entry = pick(ctx.rng, KILO_COUNTS);
       return {
         prompt: `Combien de ${entry.plural} faut-il pour faire un kilogramme ?`,
@@ -339,7 +340,7 @@ export function makeKiloParts(ctx: GameContext): GeneratedGame {
         hints: ["Un kilogramme se coupe en parts toutes pareilles.", "Plus la part est petite, plus il en faut.", "Imagine que tu remplis un sachet avec ces parts."],
       };
     }
-    if (roll < 0.6) {
+    if (ctx.level >= 3) {
       const entry = pick(ctx.rng, KILO_EQUALS);
       return {
         prompt: `${entry.count} ${entry.parts} pèsent autant que quoi ?`,
@@ -368,8 +369,10 @@ export function makeKiloGap(ctx: GameContext): GeneratedGame {
       { text: "Un demi-kilogramme est ___ qu'un kilogramme.", answer: "plus léger", wrong: ["plus lourd", "aussi lourd"] },
       { text: "Un kilogramme est ___ qu'un demi-kilogramme.", answer: "plus lourd", wrong: ["plus léger", "aussi lourd"] },
       { text: "Un quart de kilogramme est ___ qu'un demi-kilogramme.", answer: "plus léger", wrong: ["plus lourd", "aussi lourd"] },
+      { text: "Un kilogramme est ___ qu'un quart de kilogramme.", answer: "plus lourd", wrong: ["plus léger", "aussi lourd"] },
     ];
-    const row = pick(ctx.rng, rows);
+    // Deux phrases par palier (les parts, puis le demi, puis le quart) : un enfant ne revoit pas la même d'un palier à l'autre.
+    const row = pick(ctx.rng, variantsForLevel(rows, ctx.level));
     return {
       prompt: "Complète la phrase.",
       text: row.text,

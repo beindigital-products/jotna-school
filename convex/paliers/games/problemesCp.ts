@@ -324,10 +324,10 @@ export const PROBLEM_STEPS: readonly string[] = [
 /** « Mets dans le bon ordre les étapes pour résoudre un problème. » : quatre étapes qui se suivent, puis les cinq. */
 export function makeProblemSteps(ctx: GameContext): GeneratedGame {
   return sequenceGame(ctx, "pb-etapes", "les étapes pour résoudre un problème", () => {
-    const start = ctx.rng() < 0.5 ? 0 : 1;
+    // Les quatre premières étapes, puis les quatre dernières, puis les cinq : un enfant ne revoit pas la même suite d'un palier à l'autre.
     return {
       prompt: "Mets dans le bon ordre les étapes pour résoudre un problème.",
-      sequence: ctx.level <= 2 ? PROBLEM_STEPS.slice(start, start + 4) : [...PROBLEM_STEPS],
+      sequence: ctx.level === 1 ? PROBLEM_STEPS.slice(0, 4) : ctx.level === 2 ? PROBLEM_STEPS.slice(1) : [...PROBLEM_STEPS],
       hints: ["Pense à ce par quoi tu commences quand on te donne un énoncé.", "On ne peut pas calculer avant de savoir quoi calculer.", "Chaque étape prépare la suivante."],
     };
   });

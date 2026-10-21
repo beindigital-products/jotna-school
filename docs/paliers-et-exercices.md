@@ -1766,6 +1766,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     (`ligne-glisser`, `ligne-relier`, `ligne-qcm`), les coins d'une forme de la géométrie du CI (`forme-coins`). Les deux gabarits neufs sont le matériel
     du géomètre et les étapes pour reproduire, tracer ou découper une figure. La règle et le double décimètre ne se proposent jamais ensemble : le
     double décimètre EST une règle graduée.
+  - **Les gabarits à peu de variantes les répartissent par palier** (`variantsForLevel`, `paliers/games/tableaux.ts`) : le premier tiers de leurs variantes
+    au premier palier, le deuxième au deuxième, le dernier ensuite (le CP a trois paliers, joués aux niveaux 1, 2 et 4). Sans cela, un enfant revoyait
+    « Deux ___ font un kilogramme » aux trois paliers de la thématique, et la même question de ligne ou d'outil à deux paliers sur trois : en production,
+    6 questions sur 120 se répétaient. Cela vaut pour `mesure-corps`, `mesure-kilo` (une sorte de question par palier), `mesure-kilo-trou`,
+    `calendrier-combien`, `outil-geometrie`, `figure-etapes`, `pb-etapes` et, dans `arts.ts`, `ligne-qcm` et `ligne-relier`, que « Les traits et les lignes »
+    emploie aussi. Le test fabrique les trois paliers sur 80 graines et exige trois questions différentes. Les gabarits à tirage libre (nombres, prénoms,
+    sommes) ne sont pas concernés.
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les
