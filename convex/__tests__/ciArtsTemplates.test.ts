@@ -166,6 +166,8 @@ const FIRST_FACE = (emotion: EmotionName) => (FACE_ROWS.find(([, e]) => e === em
 const NEAR_FACES: Record<EmotionName, EmotionName[]> = { joie: [], tristesse: [], colère: [], peur: ["surprise"], surprise: ["peur"] };
 const NEAR_SITUATIONS: Record<EmotionName, EmotionName[]> = { joie: ["surprise"], tristesse: ["colère"], colère: ["tristesse"], peur: ["surprise"], surprise: ["peur", "joie"] };
 const ASKED: EmotionName[][] = [["joie", "tristesse"], ["colère", "peur"], ["surprise"]];
+/** Les trois cases des deux rangements de visages du dernier niveau : chacun les siennes, la joie en commun. */
+const HARD_TRIPLES: EmotionName[][] = [["tristesse", "peur", "joie"], ["colère", "surprise", "joie"]];
 const SITUATION_ROWS: [string, EmotionName][] = [
   ["Tu reçois un beau cadeau.", "joie"],
   ["Tu perds ton jouet préféré.", "tristesse"],
@@ -474,7 +476,7 @@ function checkFaceSort(exo: Exo): string[] {
     ...isTrue("la peur et la surprise ensemble", !(set.has("peur") && set.has("surprise"))),
     ...(level === 1 ? isTrue("les cases du premier niveau", emotions.length === 2 && emotions.every((emotion) => EASY_EMOTIONS.includes(emotion as EmotionName))) : []),
     ...(level === 2 ? eq("les cases du deuxième niveau", [...emotions].sort(), ["colère", "joie", "tristesse"]) : []),
-    ...(level >= 3 ? isTrue("les cases du dernier niveau", emotions.length === 3 && set.has("tristesse") && set.has("colère") && (set.has("peur") || set.has("surprise"))) : []),
+    ...(level >= 3 ? isTrue("les cases du dernier niveau", HARD_TRIPLES.some((triple) => [...triple].sort().join("+") === [...emotions].sort().join("+"))) : []),
     ...items.flatMap((item) => {
       const emotion = EMOTION_OF_FACE.get(item.text);
       return isTrue(`la case de « ${item.text} »`, emotion !== undefined && item.correctZone === EMOTION_LABEL[emotion]);
@@ -1094,12 +1096,13 @@ describe("les quatre thématiques des arts du CI", () => {
         const [a, b] = sorts.map((exo) => itemsOf(exo).map((item) => item.text).sort().join(""));
         expect(a, `palier ${palierIndex} graine ${n}`).not.toBe(b);
         const [za, zb] = sorts.map((exo) => [...zonesOf(exo)].sort().join("+"));
-        if (palierIndex === 1) {
-          expect(za, `palier 1 graine ${n}`).not.toBe(zb);
-          // Les deux paires de cases partagent la joie, qui a trois visages : un seul visage se voit deux fois.
-          const [fa, fb] = sorts.map((exo) => new Set(itemsOf(exo).map((item) => item.text)));
-          expect(common(fa, fb), `palier 1 graine ${n}`).toBe(1);
-        }
+        // Les deux rangements d'un palier ont le moins de visages possible en commun : un seul aux deux premiers niveaux (sept
+        // visages pour huit tuiles), aucun au dernier, où chacun a ses propres cases et se partage les visages de la joie.
+        const [fa, fb] = sorts.map((exo) => new Set(itemsOf(exo).map((item) => item.text)));
+        expect(common(fa, fb), `palier ${palierIndex} graine ${n}`).toBe(palierIndex === 3 ? 0 : 1);
+        // Au premier et au dernier niveau, les deux rangements n'ont pas les mêmes cases ; au deuxième, les trois émotions faciles.
+        if (palierIndex !== 2) expect(za, `palier ${palierIndex} graine ${n}`).not.toBe(zb);
+        if (palierIndex === 3) expect([za, zb].sort(), `palier 3 graine ${n}`).toEqual(HARD_TRIPLES.map((triple) => triple.map((emotion) => EMOTION_LABEL[emotion]).sort().join("+")).sort());
       }
     }
   });

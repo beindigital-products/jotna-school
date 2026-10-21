@@ -1284,7 +1284,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `contour-trou` | phrase à trous | `Le triangle a ___ coins.` : `trois`, parmi `quatre` et `cinq` ; `Le drapeau a la forme d'un ___.` : `rectangle`, parmi `triangle` et `rond` |
 | `guirlande-suite` | QCM | « Quel dessin continue la frise ? » puis `🥁 🐟 🥁 🐟 🥁 ❓` : `🐟`, parmi l'autre dessin de la frise et un dessin qui n'y est pas (le motif répété est `AB` au premier palier, `AAB` au deuxième, `ABC` au troisième) |
 | `guirlande-intrus` | QCM | « Quel dessin n'est pas à sa place dans la frise ? » puis `🏠 🍌 🏠 🍌 🏠 🍌 ⛵ 🍌` : `⛵`, parmi les deux dessins de la frise |
-| `visage-glisser` | glisser-déposer | cases `Joie` et `Tristesse` : `😀 😊` et `😢 😭` (trois cases aux paliers suivants, jamais la peur avec la surprise) |
+| `visage-glisser` | glisser-déposer | cases `Joie` et `Tristesse` : `😀 😊` et `😢 😭` (trois cases aux paliers suivants ; au dernier, `Tristesse`, `Peur` et `Joie` pour l'un des deux rangements du palier, `Colère`, `Surprise` et `Joie` pour l'autre, jamais la peur avec la surprise) |
 | `visage-quel` | QCM | « Quel visage montre la tristesse ? » : `😢`, parmi deux visages d'autres émotions |
 | `visage-emotion` | QCM | « Quelle émotion montre ce visage ? » puis 😀 : `Joie`, parmi `Colère` et `Tristesse` |
 | `visage-relier` | association | `😀~Joie ; 😡~Colère ; 😢~Tristesse` |
@@ -1987,8 +1987,15 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     (`lightestEmotion`) : aucune n'y revient plus de deux fois et au moins trois s'y montrent. Avant, le premier palier n'en montrait que
     deux dans près de deux tirages sur trois, et une même émotion revenait quatre fois dans un tirage sur sept. La phrase à trous passe
     pour cela avant les autres dans le programme, car au premier niveau elle n'a qu'une phrase (la tristesse) et les autres se répartissent
-    autour d'elle. Les deux glisser-déposer de visages du premier palier ont la joie en commun, qui a trois visages, et ne montrent donc
-    qu'un visage deux fois.
+    autour d'elle.
+  - **Les deux rangements de visages d'un palier se partagent les visages.** Il n'y a que onze visages : trois pour la joie, deux pour
+    chacune des quatre autres émotions. Les deux rangements ont le moins de visages possible en commun : un seul aux deux premiers
+    niveaux (sept visages pour huit tuiles), aucun au dernier. Au premier niveau, leurs deux paires de cases partagent la joie, qui a trois
+    visages. Au dernier, chacun a ses propres cases (`HARD_TRIPLES`) : la tristesse et la peur pour l'un, la colère et la surprise pour
+    l'autre, avec la joie pour les deux, jamais la peur avec la surprise. Les visages en plus vont aux cases qui ont encore le plus de
+    visages que le palier n'a pas montrés (`faceCounts`, deux au plus par case). Avant, les deux rangements du dernier niveau avaient les
+    mêmes cases, qui n'ont que deux visages : sur 300 tirages ils en partageaient quatre sur cinq dans 55 % des cas, deux au moins
+    toujours, et ceux du deuxième niveau un ou deux.
   - **Ce que l'écran montre.** Mesurés dans la séance de la galerie, sur un écran de 375 × 812 : un QCM, une association et un ordre
     tiennent au-dessus du dock, frises et gestes comprises. Un glisser-déposer laisse sa seconde case sous le dock tant que l'écran n'a
     pas défilé, comme ceux des sciences ; avec trois cases de visages, rangées sur deux colonnes, la troisième dépasse un peu.
@@ -2003,9 +2010,10 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     droites, entre lesquelles l'écran coupe, le verbe « souris » est aussi un mot du catalogue (la souris), les deux glisser-déposer de
     visages du premier palier se ressemblaient, et la même question de couleur revenait à deux paliers. Il garde aussi la variété, sur
     40 tirages : aucune paire commune à deux paliers pour les couleurs et les formes, une au plus pour les cris et les visages, une chose
-    au plus au rangement des couleurs, trois émotions au moins et deux exercices au plus sur la même dans un palier de mimes. Onze
-    mutations de ces règles (une chose passée d'un niveau à l'autre, une fenêtre de cris décalée, l'émotion tirée au hasard, la phrase à
-    trous remise en dernier) sont toutes vues. Le correctif a trouvé un piège : `fresh` refait un tirage jusqu'à huit fois quand sa clé est
+    au plus au rangement des couleurs, trois émotions au moins et deux exercices au plus sur la même dans un palier de mimes, un visage
+    commun aux deux rangements de visages aux deux premiers niveaux et aucun au dernier. Seize mutations de ces règles (une chose passée
+    d'un niveau à l'autre, une fenêtre de cris décalée, l'émotion tirée au hasard, la phrase à trous remise en dernier, les anciennes cases
+    du dernier niveau, des visages en plus répartis au hasard, la peur avec la surprise, trois visages dans une case) sont toutes vues. Le correctif a trouvé un piège : `fresh` refait un tirage jusqu'à huit fois quand sa clé est
     déjà prise, et pour la phrase à trous elle l'est toujours, car `pickFresh` la pose lui-même. Le choix de l'émotion, fait dans le tirage,
     comptait donc neuf fois la tristesse. Il se fait avant `fresh`.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
