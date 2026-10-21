@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_PALIERS_BY_CLASS } from "../palierRules";
 import { auditExercise } from "../paliers/exerciseAudit";
 import { GAME_KINDS, generateGames, regenerateGame, type GameKind } from "../paliers/games";
@@ -6,6 +6,9 @@ import { makeContext, type GameLevel } from "../paliers/games/shared";
 import { topicUsesModel } from "../paliers/pregen";
 import { allProgrammeEntries } from "../programme";
 import { PALIER_SIZE } from "../paliers/scoring";
+
+// Ces tests jouent des milliers de tirages : sur une machine chargée ou sur le serveur de CI, l'un d'eux dépasse les 5 secondes par défaut.
+vi.setConfig({ testTimeout: 30_000 });
 
 /**
  * LES GABARITS DU CP EN ANGLAIS, EN LECTURE ET EN ÉCRITURE : la famille, le corps, la classe, les nombres de

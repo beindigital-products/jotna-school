@@ -65,7 +65,7 @@ export const GAMES_BY_SUBJECT: Record<DemoSubject, Partial<Record<DemoClass, Gam
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Gauche, droite, dessus, dessous" }] },
     ],
     CP: [
-      { type: "pattern", options: [{ kind: "suite-nombres", topic: "Les nombres jusqu'à 50" }, { kind: "frise-formes", topic: "Lignes, frises et figures" }] },
+      { type: "pattern", options: [{ kind: "suite-nombres", topic: "Les nombres jusqu'à 50", vocabulary: "nombres-50" }, { kind: "frise-formes", topic: "Lignes, frises et figures" }] },
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Lignes, frises et figures" }] },
     ],
     CE1: [

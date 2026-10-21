@@ -188,9 +188,12 @@ export function formatNumber(n: number): string {
  * de 11 à 20 » de 10 à 20 : une suite y passe la dizaine. Le haut de la plage monte avec
  * le palier, mais une suite de six termes tient dans au moins sept nombres.
  */
-const CAPPED_RANGES: Record<10 | 20, { lo: number; hi: Record<GameLevel, number> }> = {
+const CAPPED_RANGES: Record<10 | 20 | 50 | 100, { lo: number; hi: Record<GameLevel, number> }> = {
   10: { lo: 0, hi: { 1: 7, 2: 9, 3: 10, 4: 10 } },
   20: { lo: 10, hi: { 1: 16, 2: 18, 3: 20, 4: 20 } },
+  // Le CP : « Les nombres jusqu'à 50 » ne passe jamais cinquante, « Les nombres jusqu'à 100 » compte de cinquante à cent.
+  50: { lo: 0, hi: { 1: 20, 2: 30, 3: 40, 4: 50 } },
+  100: { lo: 50, hi: { 1: 70, 2: 80, 3: 90, 4: 100 } },
 };
 
 /**
@@ -213,8 +216,8 @@ export function makeNumberSuite(ctx: GameContext): GeneratedGame {
 
 function drawNumberSuite(ctx: GameContext): GeneratedGame {
   const base = NUMBER_RANGES[ctx.klass] ?? NUMBER_RANGES.CP;
-  const capMatch = /^nombres-(10|20)$/.exec(ctx.vocabulary ?? "");
-  const cap = capMatch ? (Number(capMatch[1]) as 10 | 20) : null;
+  const capMatch = /^nombres-(10|20|50|100)$/.exec(ctx.vocabulary ?? "");
+  const cap = capMatch ? (Number(capMatch[1]) as 10 | 20 | 50 | 100) : null;
   const length = 6;
   const classSteps = base.steps.slice(0, Math.min(base.steps.length, ctx.level + 1));
 
