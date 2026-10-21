@@ -1788,10 +1788,10 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     « Instruction civique ».
 - **Les sciences du CI** (`paliers/games/milieuCi.ts` et `paliers/games/soinsCi.ts`) : vingt-neuf gabarits pour `sc-ci-milieu`,
   `sc-ci-animaux`, `sc-ci-plantes`, `sc-ci-hygiene` et `sc-ci-outils`. Sur les vingt-cinq exercices de sciences du CI relus le 19 octobre
-  2026, six étaient faux et vingt-deux douteux : un ordre « par habitat » sans critère (Lion, Crocodile, Poule), l'arachide rangée parmi
-  les céréales, le bissap « fabriqué » dans un exercice et « naturel » dans le suivant, « Naturel » écrit deux fois dans une association,
-  de longues descriptions en guise de tuiles, « Le baobab a des ___ très nutritifs » où les feuilles et les fruits vont, « Frapper
-  doucement » jugé faux alors qu'il va aussi.
+  2026, six étaient faux. Ceux que le modèle avait écrits montraient, entre autres : un ordre « par habitat » sans critère (Lion,
+  Crocodile, Poule), l'arachide rangée parmi les céréales, le bissap « fabriqué » dans un exercice et « naturel » dans le suivant,
+  « Naturel » écrit deux fois dans une association, de longues descriptions en guise de tuiles, « Le baobab a des ___ très nutritifs »
+  où les feuilles et les fruits vont, « Frapper doucement » jugé faux alors qu'il va aussi.
   - **Dix gabarits par palier, sans le modèle.** Le naturel ou fabriqué compte trois gabarits (un QCM, un glisser-déposer, une phrase à
     trous), les animaux sept, les plantes six, l'hygiène sept, les outils six. Chaque thématique a le type que la démonstration de la page
     d'accueil lui donne : un QCM pour « Naturel ou fabriqué ? », un glisser-déposer pour les animaux, une association pour les outils, un

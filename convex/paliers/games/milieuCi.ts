@@ -2,12 +2,12 @@
  * LES GABARITS DES SCIENCES DU CI, PREMIÈRE PARTIE : ce qui est naturel ou fabriqué, les animaux, les plantes
  * (`sc-ci-milieu`, `sc-ci-animaux`, `sc-ci-plantes`).
  *
- * Sur les vingt-cinq exercices de sciences du CI que le modèle avait écrits et que nous avons relus, six étaient faux
- * et vingt-deux douteux : un ordre « par habitat » (Lion, Crocodile, Poule) sans ordre ni critère, l'arachide rangée
- * parmi les céréales, le bissap « fabriqué » dans un exercice et « naturel » dans le suivant, « Naturel » écrit
- * deux fois dans une association, de longues descriptions en guise de tuiles, « Le baobab a des ___ très nutritifs »
- * où les feuilles et les fruits vont. Ici chaque réponse se lit dans un tableau : une chose, ce qu'on en sait avec
- * certitude, et rien d'autre.
+ * Sur les vingt-cinq exercices de sciences du CI que le modèle avait écrits et que nous avons relus, six étaient faux.
+ * Ceux du modèle montraient entre autres un ordre « par habitat » (Lion, Crocodile, Poule) sans ordre ni critère,
+ * l'arachide rangée parmi les céréales, le bissap « fabriqué » dans un exercice et « naturel » dans le suivant,
+ * « Naturel » écrit deux fois dans une association, de longues descriptions en guise de tuiles, « Le baobab a des ___
+ * très nutritifs » où les feuilles et les fruits vont. Ici chaque réponse se lit dans un tableau : une chose, ce qu'on
+ * en sait avec certitude, et rien d'autre.
  *
  * LES TUILES. Une tuile qui nomme une chose est « article + nom », un mot du catalogue des images
  * (`lib/item-images.ts`) : au CI l'écran y met le dessin et garde le nom écrit. Une tuile n'a donc pas d'émoji de

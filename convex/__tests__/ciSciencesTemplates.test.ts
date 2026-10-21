@@ -29,8 +29,9 @@ import { allProgrammeEntries } from "../programme";
  * deux paires échangées, deux pas échangés) et exige que son vérificateur le voie : un contrôle qui ne verrait rien ne
  * prouverait rien. Les tables ci-dessous sont une copie figée des modules `milieuCi.ts` et `soinsCi.ts`, relue à la main :
  * changer une chose ou une scène oblige à changer ce fichier, donc à la relire. Le modèle avait écrit vingt-cinq exercices
- * de sciences que nous avons lus : six faux, vingt-deux douteux (un ordre « par habitat » sans critère, l'arachide rangée
- * parmi les céréales, le bissap tantôt naturel et tantôt fabriqué, « Frapper doucement » juste et jugé faux).
+ * de sciences que nous avons lus : six faux. Les exercices écrits par le modèle montraient entre autres un ordre « par
+ * habitat » sans critère, l'arachide rangée parmi les céréales, le bissap tantôt naturel et tantôt fabriqué, « Frapper
+ * doucement » juste et jugé faux.
  */
 
 type Exo = { type: string; prompt: string; answerKey: string; hints: string[]; payload: Record<string, unknown> };
