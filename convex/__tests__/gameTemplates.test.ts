@@ -1405,6 +1405,11 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     "ci-ci-ecole",
     "ci-ci-entraide",
     "ci-ci-route",
+    "sc-ci-milieu",
+    "sc-ci-animaux",
+    "sc-ci-plantes",
+    "sc-ci-hygiene",
+    "sc-ci-outils",
   ];
   const topicOf = (key: string) => allProgrammeEntries().find((e) => e.topic.key === key)!.topic;
 
@@ -1440,7 +1445,7 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
     // Tout le CP est fait par le code : l'exemple d'une thématique écrite par le modèle vient du CE1.
     expect(topicUsesModel("ma-ce1-add-sous")).toBe(true);
-    expect(topicUsesModel("sc-ci-milieu")).toBe(true);
+    expect(topicUsesModel("ar-ci-mimes")).toBe(true);
     expect(topicUsesModel("hi-cm2-empires")).toBe(true);
     // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.
     expect(topicUsesModel(null)).toBe(true);

@@ -167,3 +167,17 @@ export function pickFresh<T>(
   ctx.used.add(keyOf(chosen));
   return chosen;
 }
+
+/**
+ * Tire `count` éléments, de préférence ceux qui n'ont pas encore servi dans ce palier, puis les autres : un exercice
+ * qui range cinq choses n'en reprend pas trois de celui d'avant tant qu'il en reste d'autres. La clé que `keyOf` donne
+ * est partagée par les gabarits d'une thématique, quel que soit le jeu : « l'assiette » ne revient pas dans quatre
+ * exercices du même palier.
+ */
+export function takeFresh<T>(ctx: GameContext, items: readonly T[], count: number, keyOf: (item: T) => string): T[] {
+  const fresh = shuffle(ctx.rng, items.filter((item) => !ctx.used.has(keyOf(item))));
+  const stale = shuffle(ctx.rng, items.filter((item) => ctx.used.has(keyOf(item))));
+  const chosen = [...fresh, ...stale].slice(0, count);
+  for (const item of chosen) ctx.used.add(keyOf(item));
+  return chosen;
+}

@@ -1245,6 +1245,35 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `civ-relier` | association | `🔴 le feu rouge~🛑 Je m'arrête et j'attends au feu rouge ; 🚸 le passage piéton~🦓 Je traverse sur les bandes blanches` (jamais deux scènes d'un même groupe) |
 | `civ-ordre` | ordre | « Mets ces gestes dans l'ordre de la traversée. » : `Je m'arrête au bord du trottoir > Je regarde à gauche > Je regarde à droite > Je traverse sur le passage piéton` |
 | `civ-trou` | phrase à trous | `Au feu ___, je m'arrête.` : `rouge`, parmi `vert` et `bleu` |
+| `milieu-intrus` | QCM | « Quelle chose est fabriquée par l'homme ? » : `la table`, parmi deux choses de la nature ; ou « Quelle chose existe dans la nature, sans l'homme ? » avec une seule chose de la nature parmi deux objets fabriqués |
+| `milieu-glisser` | glisser-déposer | cases `Naturel` et `Fabriqué` : `le soleil` et `l'eau` à gauche, `le vélo` et `le ballon` à droite (quatre choses, cinq aux deux derniers niveaux) |
+| `milieu-trou` | phrase à trous | `Le sable, la pierre et ___ sont dans la nature.` : `l'arbre`, parmi `la table` et `le seau` |
+| `faune-glisser` | glisser-déposer | cases `Domestiques` et `Sauvages` : `le mouton` et `le chat` à gauche, `le lion` et `le crocodile` à droite |
+| `faune-habitat` | glisser-déposer | cases `Dans l'eau`, `Sur la terre` et `Dans les airs` : `le poisson`, `l'âne`, `l'oiseau` (au moins un animal dans chaque case, jamais le crocodile) |
+| `faune-intrus` | QCM | « Quel animal est sauvage ? » : `le lion`, parmi deux animaux domestiques ; ou « Quel animal est domestique ? » avec un seul animal domestique parmi deux sauvages |
+| `faune-couvre` | QCM | « Quel animal a des plumes ? » : `la poule`, parmi deux animaux qui ont des poils ou des écailles (jamais le mouton, la chèvre ni l'éléphant) |
+| `faune-vit` | QCM | « Quel animal vit dans l'eau ? » : `le poisson`, parmi deux animaux qui marchent ; ou « Quel animal vole dans le ciel ? » : `l'oiseau` |
+| `faune-relier` | association | `le poisson~Dans l'eau ; l'oiseau~Dans les airs ; le mouton~Sur la terre` |
+| `faune-trou` | phrase à trous | `Le poisson a des ___.` : `écailles`, parmi `plumes` et `poils` ; `La vache donne ___.` : `du lait` |
+| `plante-partie` | QCM | « Quelle partie de la plante est sous la terre ? » : `la racine`, parmi deux autres parties |
+| `plante-qui` | QCM | « Quelle plante donne des mangues ? » puis 🥭 : `le manguier`, parmi deux autres plantes |
+| `plante-donne` | association | `le manguier~la mangue ; l'arachidier~l'arachide ; le mil~les grains de mil` (trois paires parmi cinq) |
+| `plante-type` | glisser-déposer | cases `Un arbre` et `Une plante du champ` : `le baobab` et `le manguier` à gauche, `le mil` et `l'arachidier` à droite |
+| `plante-ordre` | ordre | « Mets les parties de la plante dans l'ordre du bas vers le haut. » : `la racine > la tige > la feuille` |
+| `plante-trou` | phrase à trous | `La mangue est ___ du manguier.` : `le fruit`, parmi `la racine` et `la feuille` |
+| `hygiene-situation` | QCM | « Tu vas manger ton repas. Que fais-tu ? » : `🧼 Je me lave les mains avant de manger`, parmi deux gestes à éviter de la même scène |
+| `hygiene-glisser` | glisser-déposer | cases `✅ À faire` et `❌ À éviter` : `🦷 Je me brosse bien les dents` à gauche, `🤢 Je mange avec les mains sales` à droite |
+| `hygiene-intrus` | QCM | « Quel geste est mauvais pour la santé ? » : un geste à éviter parmi deux bons gestes ; ou « Quel geste est bon pour la santé ? » |
+| `hygiene-ordre` | ordre | « Mets les gestes dans l'ordre pour te laver les mains. » : `Je mouille mes mains > Je mets du savon > Je frotte mes mains > Je rince mes mains` |
+| `hygiene-sens` | QCM | « Avec quoi je vois ? » : `les yeux`, parmi deux autres parties du corps |
+| `hygiene-soin` | association | `les mains~Les laver avec du savon ; les dents~Les brosser ; les ongles~Les couper` |
+| `hygiene-trou` | phrase à trous | `Je me lave les mains avec du ___.` : `savon`, parmi `lait` et `riz` |
+| `outil-qui` | QCM | « Avec quoi je coupe le papier ? » : `les ciseaux`, parmi deux outils qui ne le font sûrement pas |
+| `outil-relier` | association | `les ciseaux~Couper du papier ; le balai~Balayer la cour ; l'arrosoir~Arroser les plantes` (jamais deux outils d'un même groupe : le seau et l'arrosoir, le marteau et le pilon) |
+| `outil-trou` | phrase à trous | `Je coupe le papier avec ___.` : `les ciseaux`, parmi `le marteau` et `le balai` |
+| `outil-ordre` | ordre | « Mets les gestes dans l'ordre pour utiliser le balai. » : `Je prends le balai > Je balaie la cour > Je range le balai` |
+| `outil-geste` | QCM | « Tu vas enfoncer un clou avec le marteau. Que fais-tu ? » : `👀 Je regarde bien le clou en frappant`, parmi deux gestes à éviter |
+| `outil-glisser` | glisser-déposer | cases `✅ À faire` et `❌ À éviter` : `🧺 Je range les ciseaux à leur place` à gauche, `🤾 Je lance le marteau à mon ami` à droite |
 | `lire-dessin` | QCM | « Quel mot va avec ce dessin ? » puis 🐇 : `lapin`, parmi trois mots à lire (aux paliers suivants, trois mots qui commencent pareil) |
 | `lire-relier` | association | « Relie chaque mot à son dessin. » : `tomate~🍅 ; banane~🍌…` |
 | `lire-syllabes` | ordre | « Remets les syllabes dans l'ordre pour écrire le mot de ce dessin. » puis 🍅 : `to > ma > te` (trois syllabes au moins) |
@@ -1822,6 +1851,46 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     modèle avait écrit pour la traversée, « gauche » pour « puis à ___ »), vérifie les 127 émojis un à un contre une liste d'Unicode 11
     au plus, et fabrique 40 paliers de chacune des quatre thématiques pour trois paliers, jugés par le contrôleur avec la matière
     « Instruction civique ».
+- **Les sciences du CI** (`paliers/games/milieuCi.ts` et `paliers/games/soinsCi.ts`) : vingt-neuf gabarits pour `sc-ci-milieu`,
+  `sc-ci-animaux`, `sc-ci-plantes`, `sc-ci-hygiene` et `sc-ci-outils`. Sur les vingt-cinq exercices de sciences du CI relus le 19 octobre
+  2026, six étaient faux. Ceux que le modèle avait écrits montraient, entre autres : un ordre « par habitat » sans critère (Lion,
+  Crocodile, Poule), l'arachide rangée parmi les céréales, le bissap « fabriqué » dans un exercice et « naturel » dans le suivant,
+  « Naturel » écrit deux fois dans une association, de longues descriptions en guise de tuiles, « Le baobab a des ___ très nutritifs »
+  où les feuilles et les fruits vont, « Frapper doucement » jugé faux alors qu'il va aussi.
+  - **Dix gabarits par palier, sans le modèle.** Le naturel ou fabriqué compte trois gabarits (un QCM, un glisser-déposer, une phrase à
+    trous), les animaux sept, les plantes six, l'hygiène sept, les outils six. Chaque thématique a le type que la démonstration de la page
+    d'accueil lui donne : un QCM pour « Naturel ou fabriqué ? », un glisser-déposer pour les animaux, une association pour les outils, un
+    ordre pour l'hygiène, une phrase à trous pour les plantes.
+  - **Les choses viennent du catalogue des images.** Une tuile qui nomme une chose s'écrit « article + nom », un mot de
+    `lib/item-images.ts` : au CI l'écran y met le dessin et garde le nom écrit. Ces tuiles n'ont donc pas d'émoji de tête, car plusieurs
+    émojis de la chose sont trop récents pour un appareil ancien. Dans un même exercice, toutes les tuiles sont des mots du catalogue, ou
+    aucune ne l'est : une seule tuile sans image désignerait la bonne réponse par élimination, et l'écran retirerait alors toutes les
+    images. Un test fait passer chaque tuile par `explainTilePictures`, la fonction de l'écran.
+  - **Ce que les tableaux ne disent pas, on ne le demande pas.** Le crocodile vit dans l'eau et sur la terre : il n'est jamais rangé selon
+    son habitat. La poule vole un peu : elle n'est jamais le mauvais choix de « Quel animal vole ? ». Le mouton a de la laine, la chèvre
+    des poils longs, l'éléphant une peau presque nue : aucune question sur ce qui couvre leur corps. Aucun aliment préparé n'entre dans
+    « naturel ou fabriqué ». La plante de l'arachide est « l'arachidier », son fruit « l'arachide ». Le seau et l'arrosoir portent de l'eau
+    tous les deux, le marteau et le pilon frappent tous les deux : jamais ensemble dans une association. Les soins laissent de côté les
+    cheveux et la brosse, car on brosse aussi les cheveux.
+  - **Les gestes se lisent comme ceux de l'instruction civique.** L'hygiène (huit scènes) et les outils (six) reprennent l'idée de
+    `civique.ts` : une situation, un bon geste, trois gestes à éviter, mauvais même hors de leur scène. Chaque geste a quatre mots au
+    moins après son émoji, sinon l'écran lui donnerait le dessin de l'émoji de tête quand c'est une chose du catalogue. Les ordres ne
+    portent que des suites qui n'ont qu'un ordre : on mouille avant de savonner, on prend avant de se servir, on range à la fin. Elles ont
+    trois ou quatre gestes, les associations trois paires et les gestes à ranger quatre tuiles : mesurés dans la séance de la galerie,
+    sur un écran de 375 × 812, cinq gestes à ranger font une page de 1 254 px (440 px de défilement), une quatrième paire fait passer une
+    tuile 60 px sous le dock et un cinquième geste à ordonner y laisse le dernier 90 px plus bas.
+  - **Jamais deux fois le même exercice dans un palier.** Les plantes ne sont que cinq : le glisser-déposer des plantes en montre
+    toujours quatre, sinon deux exercices du même palier seraient les mêmes. La phrase à trous du naturel ou fabriqué a pour identité la
+    phrase qu'on lit, pas la réponse. Les choses, les animaux, les scènes et les outils se répartissent sur le palier : un gabarit prend
+    d'abord ce que les autres n'ont pas encore montré (`takeFresh`, avec une clé partagée par toute la thématique), puis reprend.
+  - **`convex/__tests__/ciSciencesTemplates.test.ts`** (224 tests) a un VÉRIFICATEUR par gabarit, écrit avec une copie figée des tableaux
+    (choses, animaux, scènes, suites, phrases à trous) qu'un test compare au module : changer une chose ou une scène oblige à relire le
+    test. Il abîme ensuite chaque gabarit (le bon choix déplacé, une tuile dans la mauvaise case, deux paires croisées, deux pas échangés,
+    un mot faux dans le trou) et exige que son vérificateur le voie 120 fois sur 120. Il vérifie les émojis contre une liste d'Unicode 11
+    au plus, fait passer chaque tuile par la résolution des images du CI, et fabrique 40 paliers de chacune des cinq thématiques pour
+    trois paliers, jugés par le contrôleur avec la matière « Éveil scientifique ». Il a trouvé trois défauts en route : deux phrases à
+    trous identiques dans un même palier, et, parce qu'il n'y a que cinq plantes, deux associations et deux rangements de plantes qui
+    étaient les mêmes.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
@@ -1837,8 +1906,8 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `fr-ci-sons-4`, `fr-ci-alphabet`, `ma-ci-nombres-10`, `ma-ci-calcul-10` et
   `ma-ci-nombres-20`, `ma-ci-trier`, `ma-ci-espace`, `ma-ci-formes`, `ma-ci-mesures` et
   `ma-ci-problemes`, puis `hi-ci-journee`, `hi-ci-ordre`, `hi-ci-hier-demain`, `hi-ci-semaine`, `ge-ci-position`,
-  `ge-ci-lateralite`, `ge-ci-reperes`, `ge-ci-quadrillage`, `fr-ci-phrases`, `fr-ci-politesse`, `an-ci-hello`, `an-ci-colours`, `an-ci-numbers`, `an-ci-animals`, `an-ci-fruits`, `ci-ci-politesse`, `ci-ci-ecole`, `ci-ci-entraide` et
-  `ci-ci-route` au CI, puis `hi-cp-calendrier`, `hi-cp-durees`,
+  `ge-ci-lateralite`, `ge-ci-reperes`, `ge-ci-quadrillage`, `fr-ci-phrases`, `fr-ci-politesse`, `an-ci-hello`, `an-ci-colours`, `an-ci-numbers`, `an-ci-animals`, `an-ci-fruits`, `ci-ci-politesse`, `ci-ci-ecole`, `ci-ci-entraide`,
+  `ci-ci-route`, `sc-ci-milieu`, `sc-ci-animaux`, `sc-ci-plantes`, `sc-ci-hygiene` et `sc-ci-outils` au CI, puis `hi-cp-calendrier`, `hi-cp-durees`,
   `hi-cp-frequences`, `hi-cp-emploi-du-temps`, `ge-cp-itineraire`, `ge-cp-distances`, `ge-cp-plan`, `ge-cp-quartier`, `an-cp-family`, `an-cp-body`, `an-cp-classroom`, `an-cp-numbers-20`, `an-cp-food`, `fr-cp-lecture` et
   `fr-cp-ecrire` au CP (`convex/programme`), dix exercices par palier, voir plus bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
   modèle, le seuil de validation exige tous les exercices écrits : le modèle en
@@ -1893,12 +1962,12 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces soixante-quatorze thématiques contre un faux modèle qui lève une
+  chaque palier de ces soixante-dix-neuf thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
   Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
-  haut) : en CI, l'éveil et l'éducation artistique ; toutes les autres classes, sauf le CP, dont aucune des quarante-deux thématiques n'appelle plus le modèle. Le français (phrases, politesse), l'histoire, la géographie, l'anglais et l'instruction civique du CI, puis
+  haut) : en CI, l'éducation artistique (couleurs, formes, frises, mimes) ; toutes les autres classes, sauf le CP, dont aucune des quarante-deux thématiques n'appelle plus le modèle. Le français (phrases, politesse), l'histoire, la géographie, l'anglais, les sciences et l'instruction civique du CI, puis
   tout le CP (l'histoire, la géographie, l'anglais, le français, les arts, l'instruction civique, les sciences et toutes les mathématiques), n'appellent plus le modèle.
   Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
   dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
@@ -1915,4 +1984,4 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   calendrier » (`mois-ecart`) et à « Près ou loin ? » (`pas-difference`), les deux gabarits qui demandent un nombre à écrire. L'anglais du CI est tout en gabarits : ses cinq types de la vitrine sont ceux d'un
   gabarit de leur thématique (le QCM des couleurs, le glisser-déposer des fruits, le relier des animaux, l'ordre des nombres, la phrase à
   trous des salutations). L'instruction civique du CI l'est aussi : le QCM de « Traverser la rue » est un `civ-situation`, le glisser-déposer de « À l'école chaque jour » un `civ-glisser`,
-  l'association et la phrase à trous de « Bonjour, merci, pardon » un `civ-relier` ou un `politesse-relier` et un `politesse-trou`, l'ordre de « On s'entraide » un `civ-ordre`.
+  l'association et la phrase à trous de « Bonjour, merci, pardon » un `civ-relier` ou un `politesse-relier` et un `politesse-trou`, l'ordre de « On s'entraide » un `civ-ordre`. Les sciences du CI le sont aussi : le QCM de « Naturel ou fabriqué ? » est un `milieu-intrus`, le glisser-déposer de « Les animaux autour de moi » un `faune-glisser`, l'association de « Les outils de la maison et de l'école » un `outil-relier`, l'ordre de « Mon corps et la propreté » un `hygiene-ordre` (le lavage des mains) et la phrase à trous de « Les plantes autour de moi » un `plante-trou`.
