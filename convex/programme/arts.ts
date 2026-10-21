@@ -6,10 +6,10 @@
  * C'EST LA MATIÈRE DES JEUX (`paliers/games`). Peindre, écouter un son,
  * dessiner de mémoire ou compléter une symétrie ne se demandent pas au
  * modèle de langue : le code fabrique ces exercices, justes par construction.
- * Chaque thématique dit combien de jeux mettre dans un palier ; le modèle
- * complète avec des questions de connaissance (instruments, émotions,
- * étapes d'un pliage). « Grave ou aigu ? » est tout en jeux : le modèle
- * n'est pas appelé.
+ * Chaque thématique dit combien de jeux mettre dans un palier ; quand elle
+ * n'est pas tout en jeux, le modèle complète avec des questions de
+ * connaissance (instruments, émotions, étapes d'un pliage). Au CI, les six
+ * thématiques sont tout en jeux : le modèle n'y est pas appelé.
  *
  * Répartition des niveaux 1 et 2 entre les classes : comme pour l'ESVS
  * (voir `sciences.ts`).
@@ -34,6 +34,11 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "couleurs-reconnaitre", count: 4 },
           { kind: "frise-couleurs", count: 2 },
+          // Quatre gabarits du code (`plastiqueCi.ts`) : relier, ordonner, ranger, choisir. Le modèle n'est plus appelé.
+          { kind: "teinte-relier", count: 1 },
+          { kind: "teinte-ordre", count: 1 },
+          { kind: "teinte-glisser", count: 1 },
+          { kind: "teinte-chose", count: 1 },
         ],
       },
       {
@@ -44,6 +49,11 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "frise-formes", count: 3 },
           { kind: "pixel-copie", count: 3 },
+          // Quatre gabarits du code (`plastiqueCi.ts`) : compléter, choisir, relier, ranger. Le modèle n'est plus appelé.
+          { kind: "contour-trou", count: 1 },
+          { kind: "contour-chose", count: 1 },
+          { kind: "contour-relier", count: 1 },
+          { kind: "contour-glisser", count: 1 },
         ],
       },
       {
@@ -55,6 +65,9 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "frise-couleurs", count: 3 },
           { kind: "frise-objets", count: 3 },
           { kind: "pixel-copie", count: 2 },
+          // Deux gabarits du code (`plastiqueCi.ts`) : continuer la frise, trouver l'intrus. Le modèle n'est plus appelé.
+          { kind: "guirlande-suite", count: 1 },
+          { kind: "guirlande-intrus", count: 1 },
         ],
       },
       {
@@ -82,6 +95,18 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         name: "Mimes et émotions",
         description:
           "Arts scéniques, étape 1 : imitation, mimes, jeux de rôles et déguisements. Reconnaître une émotion (joie, tristesse, colère, peur, surprise) sur un visage (émoji) ou dans une situation de la vie de l'enfant, choisir le geste ou le visage qui va avec, deviner l'animal ou le métier que l'on mime.",
+        // Tout en jeux (`mimesCi.ts`) : le modèle n'est pas appelé. Pas de métier à deviner : le catalogue d'images n'en a pas.
+        games: [
+          { kind: "visage-glisser", count: 2 },
+          { kind: "visage-quel", count: 1 },
+          { kind: "visage-emotion", count: 1 },
+          { kind: "visage-relier", count: 1 },
+          { kind: "emotion-situation", count: 1 },
+          { kind: "emotion-geste", count: 1 },
+          { kind: "cri-animal", count: 1 },
+          { kind: "cri-relier", count: 1 },
+          { kind: "emotion-trou", count: 1 },
+        ],
       },
     ],
     CP: [
