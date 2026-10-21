@@ -23,7 +23,7 @@
  */
 import { pick, pickFresh, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 import { CHILDREN, pronoun } from "./stories";
-import { choiceGame, gapGame, linkGame, sequenceGame, sortGame, variantsForLevel } from "./tableaux";
+import { choiceGame, gapGame, levelGroup, linkGame, pickPreferred, sequenceGame, sortGame, variantsForLevel } from "./tableaux";
 import { wrongNumbers } from "./nombresCp";
 
 // ===========================================================================
@@ -204,6 +204,9 @@ export function makeDayOrMonth(ctx: GameContext): GeneratedGame {
 /** La plus grande somme servie, selon le palier. */
 const MONEY_TOP: Record<GameLevel, number> = { 1: 35, 2: 60, 3: 80, 4: 100 };
 
+/** La tranche d'une somme : jusqu'à 35 F, de 36 à 60 F, au-delà. Chaque palier préfère la sienne (`makePayCoins`). */
+const moneyBand = (sum: number): 0 | 1 | 2 => (sum <= 35 ? 0 : sum <= 60 ? 1 : 2);
+
 /** « 25 F + 10 F » : les pièces d'une somme, la plus grosse d'abord. */
 const coinsText = (coins: readonly number[]): string =>
   [...coins]
@@ -224,7 +227,9 @@ export function makePayCoins(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "monnaie-payer", "payer une somme avec des pièces", () => {
     const child = pickFresh(ctx, CHILDREN, (candidate) => `payer:${candidate.name}`);
     const pairs = coinPairs(MONEY_TOP[ctx.level]);
-    const [a, b] = pick(ctx.rng, pairs);
+    // Chaque palier a sa tranche de sommes (jusqu'à 35 F, puis de 50 à 60 F, puis 75 F et plus) : sans cela, « doit payer 15 F » revenait aux paliers 1 et 2.
+    const own = pairs.filter(([x, y]) => moneyBand(x + y) === levelGroup(ctx.level));
+    const [a, b] = pickPreferred(ctx, pairs, own, ([x, y]) => `payer-somme:${x + y}`);
     const price = a + b;
     // Des paires proches de la somme, jamais la même somme : une seule réponse juste.
     const others = shuffle(

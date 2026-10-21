@@ -28,8 +28,8 @@
  * MODULE PUR (voir `types.ts`).
  */
 import { genderOf } from "../genders";
-import { pick, pickFresh, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
-import { cap, choiceGame, firstLetter, gapGame, linkGame, sequenceGame } from "./tableaux";
+import { pick, pickFresh, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { cap, choiceGame, firstLetter, gapGame, linkGame, pickForLevel, sequenceGame } from "./tableaux";
 import { SIZE_SCALE, WEIGHT_SCALE, type Thing } from "./things";
 
 // ===========================================================================
@@ -61,10 +61,16 @@ function wrongContraries(ctx: GameContext, word: string): string[] {
   return shuffle(ctx.rng, safe).slice(0, 2);
 }
 
+/**
+ * Les dix mots, le premier de chaque paire d'abord, le second ensuite : chaque tiers de la liste mêle les paires, et un palier en prend un tiers
+ * (`pickForLevel`). Sans cela, « Quel mot est le contraire de « lourd » ? » revenait aux trois paliers de la thématique.
+ */
+const CONTRARY_WORDS: readonly string[] = [...CONTRARIES.map((pair) => pair[0]), ...CONTRARIES.map((pair) => pair[1])];
+
 /** « Quel mot est le contraire de « grand » ? » : le contraire parmi trois mots. */
 export function makeContraryChoice(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "contraire-qcm", "le contraire d'un mot", () => {
-    const word = pickFresh(ctx, CONTRARIES.flat(), (candidate) => `contraire:${candidate}`);
+    const word = pickForLevel(ctx, CONTRARY_WORDS, (candidate) => `contraire:${candidate}`);
     const answer = contraryOf(word) as string;
     return {
       prompt: `Quel mot est le contraire de « ${word} » ?`,
@@ -102,7 +108,7 @@ const CONTRARY_SENTENCES: readonly { text: string; answer: string }[] = [
 /** « Complète avec le mot contraire. » : « Le feu est chaud, la glace est ___. » */
 export function makeContraryGap(ctx: GameContext): GeneratedGame {
   return gapGame(ctx, "contraire-trou", "le contraire dans une phrase", () => {
-    const entry = pickFresh(ctx, CONTRARY_SENTENCES, (candidate) => `contraire-phrase:${candidate.answer}`);
+    const entry = pickForLevel(ctx, CONTRARY_SENTENCES, (candidate) => `contraire-phrase:${candidate.answer}`);
     // Le mot du début de la phrase est le contraire de la réponse : on ne l'offre jamais.
     const word = contraryOf(entry.answer) as string;
     const wrong = shuffle(
@@ -142,13 +148,30 @@ const FEMININE_FORM: Record<string, string> = { grand: "grande", petit: "petite"
 /** « La girafe » : le nom sans son article, pour lire son genre. */
 const nounOf = (thing: Thing) => thing.label.replace(/^(?:le|la|l')\s*/u, "");
 
-/** « La girafe est plus ___ que le chien. » : la taille ou le poids, avec les deux dessins sous les yeux. */
+/** Toutes les comparaisons : une échelle, deux bêtes éloignées d'au moins deux crans (`high` et `low`), et celle que la phrase nomme en premier. */
+type Comparison = { scale: Scale; high: number; low: number; bigFirst: boolean };
+const COMPARISONS: readonly Comparison[] = SCALES.flatMap((scale) => {
+  const all: Comparison[] = [];
+  for (let high = 2; high < scale.things.length; high++) {
+    for (let low = 0; low <= high - 2; low++) {
+      for (const bigFirst of [true, false]) all.push({ scale, high, low, bigFirst });
+    }
+  }
+  return all;
+});
+
+/**
+ * « La girafe est plus ___ que le chien. » : la taille ou le poids, avec les deux dessins sous les yeux. Un palier prend un tiers des comparaisons, une
+ * sur trois (`pickForLevel`) : sans cela, la même paire de bêtes revenait d'un palier à l'autre de la thématique.
+ */
 export function makeCompareGap(ctx: GameContext): GeneratedGame {
   return gapGame(ctx, "comparer-trou", "comparer deux bêtes", () => {
-    const scale = pick(ctx.rng, SCALES);
-    const high = randomInt(ctx.rng, 2, scale.things.length - 1);
-    const low = randomInt(ctx.rng, 0, high - 2);
-    const bigFirst = ctx.rng() < 0.5;
+    const { scale, high, low, bigFirst } = pickForLevel(
+      ctx,
+      COMPARISONS,
+      (comparison) => `comparer:${SCALES.indexOf(comparison.scale)}:${comparison.high}:${comparison.low}:${comparison.bigFirst}`,
+      "spread",
+    );
     const first = scale.things[bigFirst ? high : low];
     const second = scale.things[bigFirst ? low : high];
     const feminine = genderOf(nounOf(first)) === "f";
