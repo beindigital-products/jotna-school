@@ -1832,6 +1832,14 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     des sommes jusqu'à 35 F, puis de 50 à 60 F, puis 75 F et plus. Mesuré sur 200 graines : `fr-cp-decrire` reprenait 204 questions de `contraire-qcm`, 102 de
     `contraire-trou`, 77 de `couleur-objet`, 58 de `comparer-trou` et 57 de `comparer-mesure` ; plus aucune. `adjectif-ordre` (3 sur 200) et `contraire-relier`
     (2) n'ont pas été touchés. `ma-cp-heure-monnaie` reprend encore `heure-lire` (30), `heure-trou` (28), `monnaie-pieces` (32) et `monnaie-relier` (11).
+  - **`heure-lire`, `heure-trou`, `monnaie-pieces` et `monnaie-relier` répartis par palier** (`heureCp.ts`, avec `pickPreferred` de `tableaux.ts`), relevés dans la
+    thématique « L'heure, le calendrier, la monnaie » après la PR #119 : « 25 F pour payer 50 F » aux paliers 1 et 2, et la même heure ou le même départ d'un
+    palier à l'autre. Les heures se partagent en trois (la 1re, la 4e, la 7e et la 10e au premier palier ; la 2e, la 5e, la 8e et la 11e au deuxième ; la 3e, la 6e, la 9e
+    et la 12e au dernier : `ownHour`), si bien que deux paliers ne lisent ni ne complètent jamais la même heure ; le premier palier garde les heures justes.
+    Les sommes se rangent en trois tranches (`moneyBand` : jusqu'à 35 F, de 36 à 60 F, au-delà, la même que `monnaie-payer`). `monnaie-pieces` prend une somme de la
+    tranche du palier ; `monnaie-relier` prend trois groupes de sommes différentes, de préférence de la tranche (le premier palier n'a que de petites sommes, les suivants
+    en ont deux de la leur : deux paliers ne relient jamais les mêmes trois groupes). Mesuré sur 200 graines, en comparant la phrase des textes à trou : `heure-lire`
+    reprenait 30 questions, `monnaie-pieces` 32, `monnaie-relier` 11, `heure-trou` 15 ; plus aucune. `heure-ordre` (2), `heure-relier` (1) et `monnaie-rendre` (2) n'ont pas été touchés.
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les
