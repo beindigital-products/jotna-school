@@ -1811,6 +1811,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     les images ne sont pas la même question. Mesuré sur 200 graines, `ar-cp-decorer` et `ma-cp-figures` ne reprennent plus aucune question d'un palier à
     l'autre ; `ma-ci-formes`, qui pose six fois `forme-coins` pour quatre formes, en reprend encore (405 questions avant, 358 après). Prix de la règle : à
     chaque palier, le choix des formes est presque fixé (un seul rectangle au deuxième palier).
+  - **`forme-nom` et `solide-nom` répartis par palier** (`SHAPE_DRAWINGS` et `SOLID_OBJECTS`, `geometry.ts`, `variantsForLevel`), relevés en lisant les 30
+    exercices régénérés de « Les formes et les solides » (CI) : le même rond 🔵 au premier et au deuxième palier, la boule 🏀 aux paliers 2 et 3, le pavé
+    🧱 aux paliers 1 et 3. Les dix dessins de forme et les neuf objets de solide sont rangés pour que chaque tiers mêle les formes, et un palier en
+    prend un tiers (trois dessins aux niveaux 1 et 2, quatre au dernier ; trois objets par palier). La forme d'un dessin se lit toujours dans `SHAPES`,
+    le solide d'un objet dans `SOLIDS`. Mesuré sur 200 graines : `forme-nom` reprenait 205 questions et `solide-nom` 279 dans `ma-ci-formes`, `forme-nom` 52 dans
+    `fr-cp-decrire` ; ils n'en reprennent plus aucune. `forme-coins` n'est pas concerné : quatre formes seulement pour six tirages, `ma-ci-formes` en reprend
+    encore (358). La réponse peut se répéter d'un palier à l'autre (« le rond ») : c'est un autre dessin.
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les
