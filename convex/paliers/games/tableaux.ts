@@ -14,7 +14,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { fresh, originOf, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
+import { fresh, originOf, pick, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 
 /** Les trois indices d'un exercice : le premier relit la consigne, le dernier mène le plus près de la réponse. */
 export type Hints = readonly [string, string, string];
@@ -164,6 +164,37 @@ export function variantsForLevel<T>(items: readonly T[], level: GameLevel): T[] 
   const from = Math.floor((items.length * group) / 3);
   const to = Math.floor((items.length * (group + 1)) / 3);
   return to > from ? items.slice(from, to) : [...items];
+}
+
+/**
+ * Les variantes d'un palier quand la liste est longue et rangée sans ordre voulu : celles dont la place, dans la liste, tombe dans le groupe du
+ * palier (la 1re, la 4e, la 7e… au niveau 1 ; la 2e, la 5e… au niveau 2). Là où `variantsForLevel` donne un tiers d'un seul bloc, celle-ci
+ * mêle : un palier a un peu de tout.
+ */
+export function spreadForLevel<T>(items: readonly T[], level: GameLevel): T[] {
+  const mine = items.filter((_, index) => index % 3 === levelGroup(level));
+  return mine.length > 0 ? mine : [...items];
+}
+
+/**
+ * Une variante pour ce palier : d'abord une de celles que le palier préfère (`own`) et qui n'a pas encore servi dans ce palier, sinon une autre qui
+ * n'a pas servi, sinon n'importe laquelle. `keyOf` dit ce qui fait l'identité d'une variante ; elle est notée dans `ctx.used`. C'est ce qui permet à
+ * un gabarit qui pose plusieurs fois la même question dans un palier (« Quel animal est le plus… ? » quatre fois au CI) de ne pas se tenir à un seul
+ * groupe : le premier tirage prend le groupe du palier, les suivants prennent ce qui n'a pas servi.
+ */
+export function pickPreferred<T>(ctx: GameContext, items: readonly T[], own: readonly T[], keyOf: (item: T) => string): T {
+  const unused = (list: readonly T[]) => list.filter((item) => !ctx.used.has(keyOf(item)));
+  const ownUnused = unused(own);
+  const anyUnused = unused(items);
+  const chosen = pick(ctx.rng, ownUnused.length > 0 ? ownUnused : anyUnused.length > 0 ? anyUnused : items);
+  ctx.used.add(keyOf(chosen));
+  return chosen;
+}
+
+/** `pickPreferred` avec, pour variantes du palier, son tiers de la liste (`variantsForLevel`), ou ses places mêlées (`spreadForLevel`). */
+export function pickForLevel<T>(ctx: GameContext, items: readonly T[], keyOf: (item: T) => string, mode: "thirds" | "spread" = "thirds"): T {
+  const own = mode === "thirds" ? variantsForLevel(items, ctx.level) : spreadForLevel(items, ctx.level);
+  return pickPreferred(ctx, items, own, keyOf);
 }
 
 /** Une majuscule à la première lettre. */
