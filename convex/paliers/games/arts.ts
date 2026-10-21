@@ -29,7 +29,7 @@
  * MODULE PUR (voir `types.ts`).
  */
 import { pick, shuffle, type GameContext, type GeneratedGame } from "./shared";
-import { choiceGame, firstLetter, gapGame, linkGame, sequenceGame, sortGame, variantsForLevel } from "./tableaux";
+import { choiceGame, firstLetter, gapGame, levelGroup, linkGame, sequenceGame, sortGame, variantsForLevel } from "./tableaux";
 
 // ===========================================================================
 // LE MATÉRIEL DU PEINTRE
@@ -163,17 +163,27 @@ export function makeStrokeChoice(ctx: GameContext): GeneratedGame {
 // MODELER, PEINDRE, DESSINER
 // ===========================================================================
 
-/** Les trois gestes de la fiche, ce qu'on modèle, peint ou dessine, et ce qu'on prend pour le faire. */
+/**
+ * Les trois gestes de la fiche, trois choses pour chacun, et ce qu'on prend pour le faire. Rangées une de chaque geste à la suite :
+ * chaque tiers de la liste a ses trois gestes, et `variantsForLevel` en donne un tiers à chaque palier (le CP en a trois, joués aux
+ * niveaux 1, 2 et 4). Sans cela, « Que prends-tu pour modeler un pot ? » revenait aux trois paliers de la thématique.
+ */
 export const TECHNIQUES: readonly { verb: string; thing: string; material: string; wrong: readonly string[] }[] = [
   { verb: "modeler", thing: "un pot", material: "argile", wrong: ["pinceau", "ciseaux"] },
   { verb: "peindre", thing: "un mur", material: "pinceau", wrong: ["argile", "ciseaux"] },
   { verb: "dessiner", thing: "une maison", material: "crayon", wrong: ["argile", "ciseaux"] },
+  { verb: "modeler", thing: "un bol", material: "argile", wrong: ["pinceau", "ciseaux"] },
+  { verb: "peindre", thing: "une porte", material: "pinceau", wrong: ["argile", "ciseaux"] },
+  { verb: "dessiner", thing: "un arbre", material: "crayon", wrong: ["argile", "ciseaux"] },
+  { verb: "modeler", thing: "un animal", material: "argile", wrong: ["pinceau", "ciseaux"] },
+  { verb: "peindre", thing: "un tableau", material: "pinceau", wrong: ["argile", "ciseaux"] },
+  { verb: "dessiner", thing: "un bonhomme", material: "crayon", wrong: ["argile", "ciseaux"] },
 ];
 
-/** « Que prends-tu pour modeler un pot ? » : la matière parmi trois, dont aucune ne va aussi. */
+/** « Que prends-tu pour modeler un pot ? » : la matière parmi trois, dont aucune ne va aussi. Trois choses par palier, deux tirées. */
 export function makeTechniqueChoice(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "technique-qcm", "modeler, peindre, dessiner", () => {
-    const entry = pick(ctx.rng, TECHNIQUES);
+    const entry = pick(ctx.rng, variantsForLevel(TECHNIQUES, ctx.level));
     return {
       prompt: `Que prends-tu pour ${entry.verb} ${entry.thing} ?`,
       answer: entry.material,
@@ -183,13 +193,38 @@ export function makeTechniqueChoice(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Relie chaque geste à ce qu'on prend. » : modeler, peindre, dessiner. */
+/** Les gestes qu'on relie à ce qu'on prend : les trois de la fiche, et deux qui s'y ajoutent (on découpe, on colle). */
+export const GESTES: readonly { verb: string; material: string }[] = [
+  { verb: "modeler", material: "argile" },
+  { verb: "peindre", material: "pinceau" },
+  { verb: "dessiner", material: "crayon" },
+  { verb: "découper", material: "ciseaux" },
+  { verb: "coller", material: "colle" },
+];
+
+/**
+ * Les trois gestes de chaque palier (niveau 1, niveau 2, puis niveaux 3 et 4). Avec les trois seuls gestes de la fiche, les trois
+ * paliers de la thématique reliaient les mêmes trois paires : en production, le même exercice aux trois paliers.
+ */
+const GESTE_SETS: readonly (readonly string[])[] = [
+  ["modeler", "peindre", "dessiner"],
+  ["peindre", "découper", "coller"],
+  ["modeler", "dessiner", "découper"],
+];
+
+/** « Relie chaque geste à ce qu'on prend. » : trois gestes parmi cinq, ceux du palier. */
 export function makeTechniqueLinks(ctx: GameContext): GeneratedGame {
-  return linkGame(ctx, "technique-relier", "modeler, peindre, dessiner", () => ({
-    prompt: "Relie chaque geste à ce qu'on prend.",
-    pairs: shuffle(ctx.rng, TECHNIQUES).map((entry) => ({ left: entry.verb, right: entry.material })),
-    hints: ["Pense à ce que tes mains tiennent.", "Touche un geste, puis ce qu'on prend pour le faire.", "Commence par la paire dont tu es le plus sûr."],
-  }));
+  return linkGame(ctx, "technique-relier", "modeler, peindre, dessiner", () => {
+    const verbs = GESTE_SETS[levelGroup(ctx.level)];
+    return {
+      prompt: "Relie chaque geste à ce qu'on prend.",
+      pairs: shuffle(ctx.rng, GESTES.filter((gesture) => verbs.includes(gesture.verb))).map((gesture) => ({
+        left: gesture.verb,
+        right: gesture.material,
+      })),
+      hints: ["Pense à ce que tes mains tiennent.", "Touche un geste, puis ce qu'on prend pour le faire.", "Commence par la paire dont tu es le plus sûr."],
+    };
+  });
 }
 
 // ===========================================================================
