@@ -19,6 +19,18 @@ const MATERIAL: Record<string, string> = { modeler: "argile", peindre: "pinceau"
 /** Le nombre de coins de chaque forme. */
 const CORNERS: Record<string, number> = { carré: 4, triangle: 3, rond: 0, rectangle: 4 };
 
+/** La forme que chaque dessin représente, et le solide que chaque objet rappelle (`forme-nom`, `solide-nom`). */
+const SHAPE_OF: Record<string, string> = {
+  "⬛": "carré", "⬜": "carré", "🔲": "carré", "🔳": "carré",
+  "🔴": "rond", "🔵": "rond", "⚫": "rond", "⚪": "rond",
+  "🔺": "triangle", "🔻": "triangle",
+};
+const SOLID_OF: Record<string, string> = {
+  "🎲": "cube", "🧱": "pavé", "🥫": "cylindre", "🧻": "cylindre", "🔋": "cylindre",
+  "⚽": "boule", "🏀": "boule", "⚾": "boule", "🎾": "boule",
+};
+const SOLID_ARTICLE: Record<string, string> = { cube: "le cube", pavé: "le pavé", cylindre: "le cylindre", boule: "la boule" };
+
 type Exo = { prompt: string; answerKey: string; payload: Record<string, unknown> };
 
 /** Les exercices de chaque palier d'une thématique : un tableau par palier, avec son niveau. */
@@ -78,6 +90,78 @@ describe("technique-relier : les trois paliers ne relient pas les mêmes gestes"
       });
       expect(new Set(sets).size, `${seed} : ${sets.join(" | ")}`).toBe(3);
     }
+  });
+});
+
+/** Le dessin d'un énoncé « … ? ⬛ » : ce qui suit le point d'interrogation. */
+const drawingOf = (exo: Exo) => exo.prompt.split("? ").at(-1)!.trim();
+
+describe("forme-nom et solide-nom : le même dessin ne revient pas d'un palier à l'autre (ma-ci-formes en pose deux de chaque)", () => {
+  it("forme-nom : deux dessins distincts par palier, aucun dans deux paliers, et la bonne forme", () => {
+    for (const seed of SEEDS) {
+      const seen = new Map<string, number>();
+      for (const palier of paliers("CI", 3, "forme-nom", 2, seed)) {
+        expect(new Set(palier.games.map(drawingOf)).size, `${seed} niveau ${palier.level}`).toBe(2);
+        for (const exo of palier.games) {
+          const emoji = drawingOf(exo);
+          expect(SHAPE_OF[emoji], `dessin inconnu « ${emoji} »`).toBeDefined();
+          expect(rightOption(exo), exo.prompt).toBe(`le ${SHAPE_OF[emoji]}`);
+          expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+          // Un carré est un rectangle particulier : « rectangle » ne se propose jamais pour lui.
+          if (SHAPE_OF[emoji] === "carré") expect(options(exo).join(), exo.prompt).not.toContain("rectangle");
+          expect(seen.has(emoji), `${seed} : ${emoji} aux niveaux ${seen.get(emoji)} et ${palier.level}`).toBe(false);
+          seen.set(emoji, palier.level);
+        }
+      }
+    }
+  });
+
+  it("forme-nom : chaque palier garde de la variété (trois dessins aux niveaux 1 et 2, quatre au dernier)", () => {
+    const byLevel = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      for (const palier of paliers("CI", 3, "forme-nom", 2, seed)) {
+        const set = byLevel.get(palier.level) ?? new Set<string>();
+        for (const exo of palier.games) set.add(drawingOf(exo));
+        byLevel.set(palier.level, set);
+      }
+    }
+    expect([...byLevel].map(([level, set]) => `${level}:${set.size}`).sort()).toEqual(["1:3", "2:3", "4:4"]);
+    // Les dix dessins servent tous, à un palier ou à un autre.
+    expect(new Set([...byLevel.values()].flatMap((set) => [...set]))).toEqual(new Set(Object.keys(SHAPE_OF)));
+  });
+
+  it("solide-nom : deux objets distincts par palier, aucun dans deux paliers, et le bon solide", () => {
+    for (const seed of SEEDS) {
+      const seen = new Map<string, number>();
+      for (const palier of paliers("CI", 3, "solide-nom", 2, seed)) {
+        expect(new Set(palier.games.map(drawingOf)).size, `${seed} niveau ${palier.level}`).toBe(2);
+        for (const exo of palier.games) {
+          const emoji = drawingOf(exo);
+          const solid = SOLID_OF[emoji];
+          expect(solid, `objet inconnu « ${emoji} »`).toBeDefined();
+          expect(rightOption(exo), exo.prompt).toBe(SOLID_ARTICLE[solid]);
+          expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+          // Un cube est un pavé particulier : ni « le pavé » pour le dé, ni « le cube » pour la brique.
+          if (solid === "cube") expect(options(exo), exo.prompt).not.toContain("le pavé");
+          if (solid === "pavé") expect(options(exo), exo.prompt).not.toContain("le cube");
+          expect(seen.has(emoji), `${seed} : ${emoji} aux niveaux ${seen.get(emoji)} et ${palier.level}`).toBe(false);
+          seen.set(emoji, palier.level);
+        }
+      }
+    }
+  });
+
+  it("solide-nom : chaque palier garde de la variété (trois objets), et les neuf servent", () => {
+    const byLevel = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      for (const palier of paliers("CI", 3, "solide-nom", 2, seed)) {
+        const set = byLevel.get(palier.level) ?? new Set<string>();
+        for (const exo of palier.games) set.add(drawingOf(exo));
+        byLevel.set(palier.level, set);
+      }
+    }
+    expect([...byLevel].map(([level, set]) => `${level}:${set.size}`).sort()).toEqual(["1:3", "2:3", "4:3"]);
+    expect(new Set([...byLevel.values()].flatMap((set) => [...set]))).toEqual(new Set(Object.keys(SOLID_OF)));
   });
 });
 
