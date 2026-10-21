@@ -28,9 +28,12 @@ import { promptForbidsTileVoice } from "../voice/tiles";
  * il liste ce qui cloche. Un test abîme ensuite chaque gabarit (le bon choix déplacé, une tuile dans la mauvaise case,
  * deux paires échangées, deux couleurs échangées) et exige que son vérificateur le voie : un contrôle qui ne verrait
  * rien ne prouverait rien. Les tables ci-dessous sont une copie figée des modules `plastiqueCi.ts` et `mimesCi.ts`,
- * relue à la main : changer une chose, une forme ou un visage oblige à changer ce fichier, donc à la relire. Le modèle
- * avait écrit seize exercices d'arts que nous avons lus : cinq faux (la mangue « jaune », la goyave « rouge », un
- * ballon « rond », des émotions « dans l'ordre de l'histoire »).
+ * relue à la main : changer une chose, une forme ou un visage oblige à changer ce fichier, donc à la relire. Sur les
+ * seize exercices d'arts du modèle que nous avons lus, cinq étaient faux ; dans l'export de la production, on trouvait
+ * en plus la mangue « jaune », la goyave « rouge », un ballon « rond » et des émotions « dans l'ordre de l'histoire ».
+ *
+ * La variété compte autant que la justesse : les associations ne reprennent pas la même paire d'un palier à l'autre, les
+ * rangements de couleurs ne partagent qu'une chose, et un palier de mimes répartit ses émotions (voir la fin du fichier).
  */
 
 type Exo = { type: string; prompt: string; answerKey: string; hints: string[]; payload: Record<string, unknown> };
@@ -125,6 +128,14 @@ const EMOTION_GAP_ROWS: GapRow[] = [
   { text: "Quand on me donne un beau cadeau, je ___ de joie.", answer: "saute", wrong: ["dors", "mange"] },
   { text: "Le clown me fait ___.", answer: "rire", wrong: ["dormir", "manger"] },
 ];
+/** L'émotion que dit chaque phrase à trou des émotions. */
+const GAP_EMOTION: Record<string, "joie" | "tristesse" | "colère" | "peur" | "surprise"> = {
+  "Quand je suis triste, je ___.": "tristesse",
+  "Quand j'ai peur, je ___.": "peur",
+  "Quand je suis en colère, je ___.": "colère",
+  "Quand on me donne un beau cadeau, je ___ de joie.": "joie",
+  "Le clown me fait ___.": "joie",
+};
 
 const FRISE_EMOJIS = ["🌳", "🏠", "🐟", "⭐", "🌸", "🍌", "🍎", "🐱", "🌙", "🦁", "🐢", "⛵", "🌴", "🥁"];
 /** Le groupe qui se répète et la longueur de la frise montrée, par niveau (1, 2, puis 3 et 4). */
@@ -656,6 +667,7 @@ describe("les tables du test sont celles des modules", () => {
     const gap = (rows: readonly { text: string; answer: string; wrong: readonly [string, string] }[]) => rows.map((row) => ({ text: row.text, answer: row.answer, wrong: [...row.wrong] }));
     expect(gap(SHAPE_GAPS)).toEqual(SHAPE_GAP_ROWS);
     expect(gap(EMOTION_GAPS)).toEqual(EMOTION_GAP_ROWS);
+    expect(EMOTION_GAPS.map((row) => [row.text, row.emotion])).toEqual(EMOTION_GAP_ROWS.map((row) => [row.text, GAP_EMOTION[row.text]]));
     expect([...FRISE_MOTIFS]).toEqual(FRISE_EMOJIS);
   });
 
@@ -1082,8 +1094,79 @@ describe("les quatre thématiques des arts du CI", () => {
         const [a, b] = sorts.map((exo) => itemsOf(exo).map((item) => item.text).sort().join(""));
         expect(a, `palier ${palierIndex} graine ${n}`).not.toBe(b);
         const [za, zb] = sorts.map((exo) => [...zonesOf(exo)].sort().join("+"));
-        if (palierIndex === 1) expect(za, `palier 1 graine ${n}`).not.toBe(zb);
+        if (palierIndex === 1) {
+          expect(za, `palier 1 graine ${n}`).not.toBe(zb);
+          // Les deux paires de cases partagent la joie, qui a trois visages : un seul visage se voit deux fois.
+          const [fa, fb] = sorts.map((exo) => new Set(itemsOf(exo).map((item) => item.text)));
+          expect(common(fa, fb), `palier 1 graine ${n}`).toBe(1);
+        }
       }
+    }
+  });
+
+  /** Les trois paliers d'une thématique, fabriqués chacun avec sa graine, comme la pré-génération. */
+  const palierGames = (key: string, n: number) =>
+    [1, 2, 3].map((palierIndex) => generateGames(entryOf(key).topic.games ?? [], { klass: "CI", palierIndex, palierCount: 3, seed: `${key}:${palierIndex}:${n}` }));
+  const gameOf = (games: ReturnType<typeof generateGames>, kind: string) => games.find((exo) => gameOriginOf(exo.payload)!.kind === kind) as unknown as Exo;
+  const common = (a: Set<string>, b: Set<string>) => [...a].filter((value) => b.has(value)).length;
+
+  it("ne relie jamais la même paire à deux paliers pour les couleurs et les formes, ni plus d'une pour les cris et les visages, ni aucune aux trois", () => {
+    const LINKS: [string, string, number][] = [
+      ["ar-ci-couleurs", "teinte-relier", 0],
+      ["ar-ci-formes", "contour-relier", 0],
+      ["ar-ci-mimes", "cri-relier", 1],
+      ["ar-ci-mimes", "visage-relier", 1],
+    ];
+    for (const [key, kind, most] of LINKS) {
+      for (let n = 0; n < 40; n++) {
+        const sets = palierGames(key, n).map((games) => new Set(pairsOf(gameOf(games, kind)).map((pair) => `${pair.left}~${pair.right}`)));
+        const label = `${kind} graine ${n}`;
+        expect(common(sets[0], sets[1]), label).toBeLessThanOrEqual(most);
+        expect(common(sets[0], sets[2]), label).toBeLessThanOrEqual(most);
+        expect(common(sets[1], sets[2]), label).toBeLessThanOrEqual(most);
+        expect([...sets[0]].filter((pair) => sets[1].has(pair) && sets[2].has(pair)), label).toEqual([]);
+      }
+    }
+  });
+
+  it("ne range pas plus d'une même chose de couleur dans deux paliers, ni plus de deux objets de forme", () => {
+    for (let n = 0; n < 40; n++) {
+      const colours = palierGames("ar-ci-couleurs", n).map((games) => new Set(itemsOf(gameOf(games, "teinte-glisser")).map((item) => item.text)));
+      const shapes = palierGames("ar-ci-formes", n).map((games) => new Set(itemsOf(gameOf(games, "contour-glisser")).map((item) => item.text)));
+      for (const [a, b] of [[0, 1], [0, 2], [1, 2]]) {
+        expect(common(colours[a], colours[b]), `couleurs graine ${n} paliers ${a + 1} et ${b + 1}`).toBeLessThanOrEqual(1);
+        // Le catalogue n'a que deux objets ronds et deux triangulaires : deux tuiles reviennent, pas plus.
+        expect(common(shapes[a], shapes[b]), `formes graine ${n} paliers ${a + 1} et ${b + 1}`).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+
+  it("répartit les émotions d'un palier de mimes : trois au moins sur les cinq exercices à une seule émotion, et aucune plus de deux fois", () => {
+    const EMOTIONS = Object.keys(EMOTION_LABEL) as EmotionName[];
+    const emotionOf = (kind: string, exo: Exo): EmotionName | undefined => {
+      if (kind === "visage-quel") return EMOTIONS.find((emotion) => exo.prompt === `Quel visage montre ${EMOTION_ARTICLE[emotion]} ?`);
+      if (kind === "emotion-geste") return EMOTIONS.find((emotion) => exo.prompt === `Que fais-tu quand tu ressens de ${EMOTION_ARTICLE[emotion]} ?`);
+      if (kind === "visage-emotion") return EMOTIONS.find((emotion) => exo.answerKey === EMOTION_LABEL[emotion]);
+      if (kind === "emotion-situation") return SITUATION_ROWS.find(([text]) => exo.prompt === `${text} Que ressens-tu ?`)?.[1];
+      if (kind === "emotion-trou") return GAP_EMOTION[String(exo.payload.text)];
+      return undefined;
+    };
+    const SINGLE = ["visage-quel", "visage-emotion", "emotion-situation", "emotion-geste", "emotion-trou"];
+    for (let n = 0; n < 40; n++) {
+      palierGames("ar-ci-mimes", n).forEach((games, index) => {
+        const emotions = games
+          .map((exo) => ({ kind: gameOriginOf(exo.payload)!.kind as string, exo: exo as unknown as Exo }))
+          .filter(({ kind }) => SINGLE.includes(kind))
+          .map(({ kind, exo }) => emotionOf(kind, exo));
+        const label = `palier ${index + 1} graine ${n} : ${JSON.stringify(emotions)}`;
+        expect(emotions, label).toHaveLength(5);
+        expect(
+          emotions.every((emotion) => emotion !== undefined),
+          label,
+        ).toBe(true);
+        expect(new Set(emotions).size, label).toBeGreaterThanOrEqual(3);
+        for (const emotion of new Set(emotions)) expect(emotions.filter((other) => other === emotion).length, label).toBeLessThanOrEqual(2);
+      });
     }
   });
 });

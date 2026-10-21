@@ -2,9 +2,9 @@
  * LES GABARITS DES MIMES ET DES ÉMOTIONS DU CI (`ar-ci-mimes`).
  *
  * Cette thématique n'avait aucun jeu : le modèle écrivait ses dix exercices. Sur les seize exercices d'arts du CI relus
- * le 19 octobre 2026, cinq étaient faux. Ceux de « Mimes et émotions » demandaient de mettre des émotions « dans
- * l'ordre de l'histoire » (aucun ordre n'existe), de relier « Colère » à « Quand on perd un jeu » (on peut y être
- * triste), de choisir « Rester immobile » pour la peur (on peut aussi fuir) et de relier des métiers à des verbes. Ici
+ * le 19 octobre 2026, cinq étaient faux. Dans l'export de la production, « Mimes et émotions » demandait de mettre des
+ * émotions « dans l'ordre de l'histoire » (aucun ordre n'existe), de relier « Colère » à « Quand on perd un jeu » (on
+ * peut y être triste), de choisir « Rester immobile » pour la peur (on peut aussi fuir) et de relier des métiers à des verbes. Ici
  * chaque réponse se lit dans un tableau : un visage et son émotion, une situation que tout enfant ressent de la même
  * façon, un geste, le cri d'un animal.
  *
@@ -25,7 +25,10 @@
  *   mauvais choix ne peut être le bon (« pleurer de joie » existe, on ne le propose pas).
  *
  * LA MÊME QUESTION DEUX FOIS, NON. Un gabarit qui a peu de variantes donne à chaque niveau (donc à chaque palier de la
- * thématique) sa part : trois paliers ne répètent jamais la même question.
+ * thématique) sa part : trois paliers ne répètent jamais la même question. Les associations vont plus loin : chaque
+ * niveau a ses visages (`LINK_FACES`) et ses animaux (`CRY_WINDOWS`), donc deux paliers ne relient jamais plus d'une même
+ * paire. Et dans un palier, les cinq exercices à une seule émotion (visage à trouver, émotion d'un visage, d'une
+ * situation, geste, phrase à trou) prennent chacun l'une des émotions les moins prises : aucune n'y revient trois fois.
  *
  * RÈGLES POUR AJOUTER UNE ÉMOTION OU UN GESTE
  * - Une seule émotion, sans doute possible, pour un enfant de six ans. Le visage est un émoji d'Unicode 11 au plus.
@@ -34,7 +37,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { fresh, pickFresh, shuffle, takeFresh, type GameContext, type GeneratedGame } from "./shared";
+import { fresh, pick, pickFresh, shuffle, takeFresh, type GameContext, type GeneratedGame } from "./shared";
 import { linkKey } from "./anglais";
 import { byLevel, choiceGame, gapGame, itemsKey, linkGame, sortGame, type Gap } from "./ciTiles";
 import { variantsForLevel } from "./tableaux";
@@ -121,11 +124,14 @@ function threeEmotions(ctx: GameContext, pool: readonly Emotion[]): Emotion[] {
 /** Deux émotions différentes de `pool`, jamais la peur avec la surprise : les mauvais choix d'une question. */
 const twoOthers = (ctx: GameContext, pool: readonly Emotion[]): Emotion[] => threeEmotions(ctx, pool).slice(0, 2);
 
-/** Les paires de cases du premier palier : deux émotions que tout enfant distingue. Le palier en montre deux, jamais la même paire. */
+/**
+ * Les paires de cases du premier palier : deux émotions que tout enfant distingue. Le palier en montre deux, jamais la même
+ * paire, et deux paires de trois émotions se croisent toujours : elles partagent la joie, qui a trois visages, plutôt que la
+ * colère ou la tristesse, qui n'en ont que deux et se verraient en entier deux fois.
+ */
 const EASY_PAIRS: readonly (readonly Emotion[])[] = [
   ["joie", "tristesse"],
   ["joie", "colère"],
-  ["tristesse", "colère"],
 ];
 
 /** Les émotions des cases de « Glisse chaque visage dans la bonne case. », par niveau. */
@@ -181,13 +187,27 @@ export function makeVisageSort(ctx: GameContext): GeneratedGame {
 /** Les émotions de « Quel visage montre … ? » et de « Que fais-tu quand … ? », par niveau : une part chacun, jamais la même deux fois. */
 const ASKED: readonly [readonly Emotion[], readonly Emotion[], readonly Emotion[]] = [["joie", "tristesse"], ["colère", "peur"], ["surprise"]];
 
-/** La clé d'une émotion déjà demandée dans ce palier, la même pour les deux gabarits qui la demandent. */
-const askedKey = (emotion: Emotion) => `demandee:${emotion}`;
+/**
+ * Combien d'exercices à une seule émotion (le visage à trouver, l'émotion d'un visage ou d'une situation, le geste, la phrase
+ * à trou) ont déjà pris cette émotion dans ce palier. Chacun prend l'une des moins prises : le palier répartit ses émotions
+ * au lieu d'en entasser quatre sur la tristesse.
+ */
+const emotionLoad = (ctx: GameContext, emotion: Emotion) => [...ctx.used].filter((key) => key.startsWith(`demandee:${emotion}#`)).length;
+
+/** Une des émotions de `emotions` les moins prises jusqu'ici dans ce palier, qu'elle compte désormais. */
+function lightestEmotion(ctx: GameContext, emotions: readonly Emotion[]): Emotion {
+  const candidates = [...new Set(emotions)];
+  const least = Math.min(...candidates.map((emotion) => emotionLoad(ctx, emotion)));
+  const chosen = pick(ctx.rng, candidates.filter((emotion) => emotionLoad(ctx, emotion) === least));
+  ctx.used.add(`demandee:${chosen}#${least + 1}`);
+  return chosen;
+}
 
 /** « Quel visage montre la colère ? » : le visage de l'émotion parmi trois visages d'émotions différentes. */
 export function makeVisageWhich(ctx: GameContext): GeneratedGame {
+  // L'émotion se prend une fois, avant `fresh` : un tirage refait ne la compterait pas deux fois.
+  const asked = lightestEmotion(ctx, byLevel(ctx.level, ASKED[0], ASKED[1], ASKED[2]));
   return fresh(ctx, "visage-quel", () => {
-    const asked = pickFresh(ctx, byLevel(ctx.level, ASKED[0], ASKED[1], ASKED[2]), askedKey);
     const answer = pickFresh(ctx, facesOf(asked), visageKey);
     const pool = (ctx.level === 1 ? EASY_EMOTIONS : EMOTIONS).filter((emotion) => emotion !== asked && !NEAR_FACES[asked].includes(emotion));
     const others = twoOthers(ctx, pool).map((emotion) => takeFresh(ctx, facesOf(emotion), 1, visageKey)[0].face);
@@ -201,8 +221,10 @@ export function makeVisageWhich(ctx: GameContext): GeneratedGame {
 
 /** « Quelle émotion montre ce visage ? » : l'émotion d'un visage parmi trois noms d'émotions. */
 export function makeVisageEmotion(ctx: GameContext): GeneratedGame {
+  const candidates = variantsForLevel(FACES, ctx.level);
+  const emotion = lightestEmotion(ctx, candidates.map((face) => face.emotion));
   return fresh(ctx, "visage-emotion", () => {
-    const shown = pickFresh(ctx, variantsForLevel(FACES, ctx.level), visageKey);
+    const shown = pickFresh(ctx, candidates.filter((face) => face.emotion === emotion), visageKey);
     const pool = (ctx.level === 1 ? EASY_EMOTIONS : EMOTIONS).filter(
       (emotion) => emotion !== shown.emotion && !NEAR_FACES[shown.emotion].includes(emotion),
     );
@@ -219,15 +241,28 @@ export function makeVisageEmotion(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Relie chaque visage à son émotion. » : trois visages, trois émotions différentes. */
+/**
+ * Les visages que « Relie chaque visage à son émotion. » montre à chaque niveau. Aucun visage n'est à deux niveaux, sauf la
+ * colère du dernier, qui reprend celle du premier : deux paliers ne partagent jamais plus d'une paire, et aucune paire n'est
+ * aux trois paliers. Le dernier niveau n'a pas la peur : elle ne va pas avec la surprise.
+ */
+const LINK_FACES: readonly [readonly string[], readonly string[], readonly string[]] = [
+  ["😀", "😢", "😠"],
+  ["😊", "😭", "😡", "😨"],
+  ["😄", "😲", "😮", "😠"],
+];
+
+/** « Relie chaque visage à son émotion. » : trois visages, trois émotions différentes, celles du niveau. */
 export function makeVisageLinks(ctx: GameContext): GeneratedGame {
   return fresh(
     ctx,
     "visage-relier",
     () => {
-      const emotions = threeEmotions(ctx, ctx.level === 1 ? EASY_EMOTIONS : EMOTIONS);
+      const shown = byLevel(ctx.level, LINK_FACES[0], LINK_FACES[1], LINK_FACES[2]);
+      const allowed = FACES.filter((face) => shown.includes(face.face));
+      const emotions = threeEmotions(ctx, [...new Set(allowed.map((face) => face.emotion))]);
       const pairs = emotions.map((emotion) => ({
-        left: takeFresh(ctx, facesOf(emotion), 1, visageKey)[0].face,
+        left: takeFresh(ctx, allowed.filter((face) => face.emotion === emotion), 1, visageKey)[0].face,
         right: EMOTION_NAMES[emotion],
       }));
       return linkGame("visage-relier", ctx, "Relie chaque visage à son émotion.", pairs, MIMES_CONCEPT, [
@@ -273,11 +308,13 @@ export const SITUATION_CLUES: Record<Emotion, string> = {
 
 /** « Tu reçois un beau cadeau. Que ressens-tu ? » : l'émotion de la situation parmi trois visages nommés. */
 export function makeEmotionSituation(ctx: GameContext): GeneratedGame {
+  const candidates = variantsForLevel(SITUATIONS, ctx.level);
+  const emotion = lightestEmotion(ctx, candidates.map((row) => row.emotion));
   return fresh(
     ctx,
     "emotion-situation",
     () => {
-      const situation = pickFresh(ctx, variantsForLevel(SITUATIONS, ctx.level), (row) => `situation:${row.text}`);
+      const situation = pickFresh(ctx, candidates.filter((row) => row.emotion === emotion), (row) => `situation:${row.text}`);
       const others = (["joie", "tristesse", "colère", "peur"] as Emotion[]).filter(
         (emotion) => emotion !== situation.emotion && !NEAR_SITUATIONS[situation.emotion].includes(emotion),
       );
@@ -306,8 +343,8 @@ export const GESTURES: Record<Emotion, string> = {
 
 /** « Que fais-tu quand tu ressens de la joie ? » : le geste de l'émotion parmi trois gestes. */
 export function makeEmotionGesture(ctx: GameContext): GeneratedGame {
+  const asked = lightestEmotion(ctx, byLevel(ctx.level, ASKED[0], ASKED[1], ASKED[2]));
   return fresh(ctx, "emotion-geste", () => {
-    const asked = pickFresh(ctx, byLevel(ctx.level, ASKED[0], ASKED[1], ASKED[2]), askedKey);
     const pool = EMOTIONS.filter((emotion) => emotion !== asked && !NEAR_FACES[asked].includes(emotion));
     return choiceGame(
       "emotion-geste",
@@ -363,13 +400,24 @@ export function makeCriAnimal(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Relie chaque animal à son cri. » : trois animaux, trois cris. */
+/**
+ * Les animaux de « Relie chaque animal à son cri. » à chaque niveau, par rang dans `ANIMAL_CRIES` : trois chacun, un seul en
+ * commun avec le niveau voisin (le chien, le mouton), aucun aux trois niveaux. Le premier n'a que les quatre premiers.
+ */
+const CRY_WINDOWS: readonly (readonly number[])[] = [
+  [0, 1, 2],
+  [2, 3, 4],
+  [4, 5, 6],
+];
+
+/** « Relie chaque animal à son cri. » : trois animaux, trois cris, ceux du niveau. */
 export function makeCriLinks(ctx: GameContext): GeneratedGame {
   return fresh(
     ctx,
     "cri-relier",
     () => {
-      const rows = takeFresh(ctx, ctx.level === 1 ? ANIMAL_CRIES.slice(0, 4) : ANIMAL_CRIES, 3, cryKey);
+      const window = byLevel(ctx.level, CRY_WINDOWS[0], CRY_WINDOWS[1], CRY_WINDOWS[2]);
+      const rows = takeFresh(ctx, window.map((rank) => ANIMAL_CRIES[rank]), 3, cryKey);
       return linkGame(
         "cri-relier",
         ctx,
@@ -391,22 +439,33 @@ export function makeCriLinks(ctx: GameContext): GeneratedGame {
 // Les phrases à trou
 // ---------------------------------------------------------------------------
 
-/** Les phrases à trou des émotions : un verbe à la première personne, ou un clown qui fait rire. Une, deux, puis deux par niveau. */
-export const EMOTION_GAPS: readonly Gap[] = [
-  { text: "Quand je suis triste, je ___.", answer: "pleure", wrong: ["saute", "danse"], hint: "Une personne triste a souvent des larmes." },
-  { text: "Quand j'ai peur, je ___.", answer: "tremble", wrong: ["danse", "mange"], hint: "Quand on a très peur, tout le corps bouge tout seul." },
-  { text: "Quand je suis en colère, je ___.", answer: "crie", wrong: ["dors", "danse"], hint: "Quand on est très fâché, on parle très fort." },
-  { text: "Quand on me donne un beau cadeau, je ___ de joie.", answer: "saute", wrong: ["dors", "mange"], hint: "Un beau cadeau nous rend content, et tout le corps bouge." },
-  { text: "Le clown me fait ___.", answer: "rire", wrong: ["dormir", "manger"], hint: "Un clown fait des grimaces drôles." },
+/**
+ * Les phrases à trou des émotions : un verbe à la première personne, ou un clown qui fait rire, et l'émotion qu'elles disent.
+ * Une, deux, puis deux par niveau.
+ */
+export const EMOTION_GAPS: readonly (Gap & { emotion: Emotion })[] = [
+  { text: "Quand je suis triste, je ___.", answer: "pleure", wrong: ["saute", "danse"], hint: "Une personne triste a souvent des larmes.", emotion: "tristesse" },
+  { text: "Quand j'ai peur, je ___.", answer: "tremble", wrong: ["danse", "mange"], hint: "Quand on a très peur, tout le corps bouge tout seul.", emotion: "peur" },
+  { text: "Quand je suis en colère, je ___.", answer: "crie", wrong: ["dors", "danse"], hint: "Quand on est très fâché, on parle très fort.", emotion: "colère" },
+  {
+    text: "Quand on me donne un beau cadeau, je ___ de joie.",
+    answer: "saute",
+    wrong: ["dors", "mange"],
+    hint: "Un beau cadeau nous rend content, et tout le corps bouge.",
+    emotion: "joie",
+  },
+  { text: "Le clown me fait ___.", answer: "rire", wrong: ["dormir", "manger"], hint: "Un clown fait des grimaces drôles.", emotion: "joie" },
 ];
 
 /** « Quand je suis triste, je ___. » : le verbe de l'émotion dans le trou. */
 export function makeEmotionGap(ctx: GameContext): GeneratedGame {
+  const candidates = variantsForLevel(EMOTION_GAPS, ctx.level);
+  const emotion = lightestEmotion(ctx, candidates.map((row) => row.emotion));
   return fresh(
     ctx,
     "emotion-trou",
     () => {
-      const gap = pickFresh(ctx, variantsForLevel(EMOTION_GAPS, ctx.level), (row) => `emotion-trou:${row.text}`);
+      const gap = pickFresh(ctx, candidates.filter((row) => row.emotion === emotion), (row) => `emotion-trou:${row.text}`);
       return gapGame("emotion-trou", ctx, gap, MIMES_CONCEPT);
     },
     // La phrase qu'on lit fait l'identité : la même phrase avec une autre réponse serait la même question.
