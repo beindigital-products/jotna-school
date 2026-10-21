@@ -163,7 +163,8 @@ const LINE_DESC: Record<string, string> = {
 const STRAIGHT = ["le bord d'une règle", "un fil bien tendu", "le bord d'un cahier", "le haut du tableau"];
 const CURVED = ["la forme d'un arc-en-ciel", "le bord d'une roue", "le bord d'une assiette", "le bord d'un ballon"];
 const STROKE_DESC: Record<string, string> = { plein: "est toujours aussi épais", délié: "est très fin", modulé: "est tantôt épais, tantôt fin" };
-const MATERIAL: Record<string, string> = { modeler: "argile", peindre: "pinceau", dessiner: "crayon" };
+// « découper » et « coller » ne servent qu'à relier (technique-relier) : le QCM n'en pose pas.
+const MATERIAL: Record<string, string> = { modeler: "argile", peindre: "pinceau", dessiner: "crayon", découper: "ciseaux", coller: "colle" };
 const WRONG_MATERIAL: Record<string, string[]> = { modeler: ["pinceau", "ciseaux"], peindre: ["argile", "ciseaux"], dessiner: ["argile", "ciseaux"] };
 const LOUDNESS: Record<string, number> = { chuchoter: 0, "parler doucement": 1, "parler fort": 2, crier: 3 };
 const VOICE_SENTENCE: Record<string, string> = {

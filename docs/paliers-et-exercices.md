@@ -1802,6 +1802,15 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     symétriques est trop petit (trois par groupe) pour garantir quoi que ce soit à `pixel-symetrie`. Prix de la règle : le premier palier de chaque
     thématique de CI et de CP tire toujours dans les mêmes quatre motifs (la croix, le petit cœur, la petite maison, le bateau) ; le djembé et la lune
     ne se montrent plus au dernier palier qu'au-delà de quatre dessins.
+  - **Trois autres gabarits répartis par palier**, relevés en lisant les 90 exercices régénérés après la PR #115 (`cpRepetitionsParPalier.test.ts`) :
+    `technique-qcm` (neuf questions, trois par palier : « modeler un pot, un bol, un animal », « peindre un mur, une porte, un tableau », « dessiner une
+    maison, un arbre, un bonhomme », deux tirées par palier), `technique-relier` (cinq gestes au lieu de trois, `découper ~ ciseaux` et `coller ~ colle`
+    s'ajoutant aux trois de la fiche ; chaque palier relie trois gestes, un jeu différent par palier : avec les trois seuls gestes, les trois paliers reliaient
+    les mêmes trois paires) et `forme-coins` (le carré et le triangle au premier palier, le rectangle au deuxième, le rond au dernier ; un palier qui en
+    pose plus qu'il n'en a prend d'autres formes). `frise-objets` n'en fait pas partie : deux frises qui se ressemblent par la structure (ABAB) mais pas par
+    les images ne sont pas la même question. Mesuré sur 200 graines, `ar-cp-decorer` et `ma-cp-figures` ne reprennent plus aucune question d'un palier à
+    l'autre ; `ma-ci-formes`, qui pose six fois `forme-coins` pour quatre formes, en reprend encore (405 questions avant, 358 après). Prix de la règle : à
+    chaque palier, le choix des formes est presque fixé (un seul rectangle au deuxième palier).
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les

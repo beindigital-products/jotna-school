@@ -13,6 +13,7 @@
  */
 import { fresh, originOf, pick, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
 import { CATEGORIES, optionOf, type Thing } from "./things";
+import { levelGroup } from "./tableaux";
 
 type Shape = { name: string; plural: string; corners: number; emojis: readonly string[] };
 
@@ -63,16 +64,23 @@ export function makeShapeName(ctx: GameContext): GeneratedGame {
   });
 }
 
+/** Les formes que chaque palier préfère pour compter les coins : le niveau 1, le niveau 2, puis les niveaux 3 et 4. */
+const OWN_FORMS: readonly (readonly string[])[] = [[SHAPES.carre.name, SHAPES.triangle.name], [RECTANGLE.name], [SHAPES.rond.name]];
+
 /** « Combien de coins a un triangle ? » : un triangle en a trois, un carré et un rectangle quatre, un rond aucun. */
 export function makeCorners(ctx: GameContext): GeneratedGame {
+  // Au premier palier, les deux formes aux coins visibles ; ensuite le rond (aucun coin) et le rectangle.
+  const forms = [
+    { name: SHAPES.carre.name, corners: SHAPES.carre.corners },
+    { name: SHAPES.triangle.name, corners: SHAPES.triangle.corners },
+    ...(ctx.level >= 2 ? [{ name: SHAPES.rond.name, corners: SHAPES.rond.corners }, RECTANGLE] : []),
+  ];
+  // Chaque palier préfère ses formes (le carré et le triangle, puis le rectangle, puis le rond) : sans cela, « Combien de coins a un
+  // carré ? » revenait au premier et au dernier palier de la thématique. Il en prend d'autres quand il en pose plus qu'il n'en a.
+  const own = forms.filter((form) => OWN_FORMS[levelGroup(ctx.level)].includes(form.name));
+  let attempt = 0;
   return fresh(ctx, "forme-coins", () => {
-    // Au premier palier, les deux formes aux coins visibles ; ensuite le rond (aucun coin) et le rectangle.
-    const forms = [
-      { name: SHAPES.carre.name, corners: SHAPES.carre.corners },
-      { name: SHAPES.triangle.name, corners: SHAPES.triangle.corners },
-      ...(ctx.level >= 2 ? [{ name: SHAPES.rond.name, corners: SHAPES.rond.corners }, RECTANGLE] : []),
-    ];
-    const form = pick(ctx.rng, forms);
+    const form = pick(ctx.rng, attempt++ < 2 && own.length > 0 ? own : forms);
     const wrong = shuffle(
       ctx.rng,
       [0, 1, 2, 3, 4, 5].filter((n) => n !== form.corners),
