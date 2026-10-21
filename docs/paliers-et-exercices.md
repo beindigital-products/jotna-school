@@ -1371,6 +1371,37 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `mult-glisser` | glisser-déposer | cases Table de 2 et Table de 3 : `16` et `15` (jamais un multiple de six) |
 | `part-qcm` | QCM | « Fatou partage 15 mangues entre 3 enfants. Combien de mangues chaque enfant reçoit-il ? » : `5` |
 | `part-trou` | phrase à trous | `Je partage 6 billes entre 3 enfants. Chaque enfant reçoit ___ billes.` : `2` |
+| `mesure-unite` | QCM | « Quelle unité sert à mesurer la quantité d'eau dans un seau ? » : `Litre` |
+| `mesure-glisser` | glisser-déposer | cases « Se mesure en mètres » et « Se mesure en litres » : `la longueur d'une corde`, `la quantité de lait dans une bouteille` |
+| `mesure-relier` | association | `la longueur de la cour~Mètre ; la quantité d'eau dans un seau~Litre ; le poids d'un sac de riz~Kilogramme` |
+| `mesure-corps` | QCM | « Avec quelle partie du corps mesure-t-on en empans ? » : `Main` (ou « Quelle mesure est la même pour tous les enfants ? » : `Mètre`) |
+| `mesure-calcul` | QCM | « Un sac de riz pèse 16 kilogrammes. Lamine en vend 3 kilogrammes. Combien de kilogrammes reste-t-il dans le sac ? » : `13` |
+| `mesure-repete` | réponse courte | « Chaque corde mesure 10 mètres. Combien de mètres y a-t-il dans 2 cordes ? Écris le nombre. » : `20` |
+| `mesure-ordre` | ordre | « Range ces poids du plus lourd au plus léger. » : `Kilogramme > Demi-kilogramme > Quart de kilogramme` |
+| `mesure-plus` | QCM | « Quelle corde est la plus courte ? » : `26 mètres` (parmi trois longueurs) |
+| `mesure-kilo` | QCM | « Deux quarts de kilogramme pèsent autant que quoi ? » : `Demi-kilogramme` |
+| `mesure-kilo-trou` | phrase à trous | `Un quart de kilogramme est ___ qu'un demi-kilogramme.` : `plus léger` |
+| `heure-lire` | QCM | « Quelle heure est-il ? 🕓 » : `4 heures` |
+| `heure-relier` | association | `🕝~2 heures et demie ; 🕒~3 heures ; 🕔~5 heures` |
+| `heure-ordre` | ordre | « Range ces heures du matin, du plus tôt au plus tard. » : `🕕 > 🕢 > 🕚` |
+| `heure-trou` | phrase à trous | `Il est 12 heures. Une heure plus tard, il sera ___.` : `1 heure` |
+| `calendrier-combien` | QCM | « Combien de jours y a-t-il dans deux semaines ? » : `14` |
+| `calendrier-glisser` | glisser-déposer | cases Jours et Mois : `dimanche` et `décembre` |
+| `monnaie-payer` | QCM | « Rama doit payer 30 F. Quelles pièces donne-t-elle ? » : `25 F + 5 F` |
+| `monnaie-pieces` | QCM | « Combien de pièces de 25 F faut-il pour payer 50 F ? » : `2` |
+| `monnaie-relier` | association | `3 pièces de 10 F~30 F ; 4 pièces de 5 F~20 F ; 4 pièces de 10 F~40 F` |
+| `pb-operation` | QCM | « Abdou a 14 ballons. Il en reçoit 12. Combien de ballons a-t-il maintenant ? Quelle opération faut-il faire ? » : `14 + 12` |
+| `pb-resoudre` | QCM | « Samba a 54 cahiers. Il en perd 6. Combien de cahiers lui reste-t-il ? » : `48` |
+| `pb-ecrire` | réponse courte | « Ndèye a 30 bonbons. Elle en mange 21. Combien de bonbons lui reste-t-il ? Écris le nombre. » : `9` |
+| `pb-trou` | phrase à trous | `Mamadou a 40 mangues. Il en mange 19. Il lui reste ___ mangues.` : `21` |
+| `pb-manquante` | QCM | « Abdou a 40 bonbons. Il en perd quelques-uns. Combien de bonbons lui reste-t-il ? Que manque-t-il pour répondre ? » : `Le nombre enlevé` |
+| `pb-inutile` | QCM | « Coumba a 11 cahiers. On lui en donne 39. Sa classe a 29 élèves. Combien de cahiers a-t-elle maintenant ? Quel nombre ne sert à rien ? » : `29` |
+| `pb-question` | QCM | « Penda a 24 mangues. Elle en vend 9. Quelle question va avec cette histoire ? » : `Combien de mangues lui reste-t-il ?` |
+| `pb-etapes` | ordre | `Je lis le problème. > Je cherche les nombres de l'histoire. > Je choisis l'opération. > Je fais le calcul.` |
+| `pb-relier` | association | `2 paquets de 6 ballons~2 × 6 ; 60 bonbons, puis 26 de moins~60 − 26 ; 35 billes, puis 9 de plus~35 + 9` |
+| `pb-glisser` | glisser-déposer | cases « On ajoute » et « On enlève » : `Ousmane reçoit 2 mangues` et `Sokhna donne 7 règles` |
+| `outil-geometrie` | QCM | « Avec quoi mesure-t-on la longueur d'un trait ? » : `Double décimètre` |
+| `figure-etapes` | ordre | « …les étapes pour découper une figure. » : `Je dessine la figure sur la feuille. > Je découpe en suivant le trait. > Je colle la figure sur le cahier.` |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -1659,9 +1690,10 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   ont leur cri. Le métier à écrire est désigné par ses gestes, jamais nommé ; les réponses admises sont les noms du même métier (marchand,
   couturier, conducteur, paysan, instituteur).
 - **Les mathématiques du CP, première partie** (`paliers/games/nombresCp.ts`, `calculCp.ts`, `tablesCp.ts`) : vingt-neuf gabarits pour
-  `ma-cp-nombres-50`, `ma-cp-nombres-100`, `ma-cp-retenue` et `ma-cp-multiplier`. Sur l'échantillon de CP, le modèle écrivait 6 exercices faux
-  sur 42 : « huitante » pour 80, « ___ fois 9 égal 72 » et « 7 × 10 » sous « Les nombres jusqu'à 50 », des étapes d'addition où aucune ne parle
-  de retenue, une tuile qui contient la réponse. Ici la réponse est CALCULÉE, jamais écrite.
+  `ma-cp-nombres-50`, `ma-cp-nombres-100`, `ma-cp-retenue` et `ma-cp-multiplier`. Sur l'échantillon lu le 19 octobre, les huit thématiques de
+  mathématiques du CP avaient 6 exercices faux et 8 douteux sur 42 lus : « huitante » pour 80, un nombre de mangues sans mangues, des trous où
+  toute valeur convient, une tuile qui contient la réponse, une table de 9 hors programme, un produit hors sujet sous « Les nombres jusqu'à 50 ».
+  Ici la réponse est CALCULÉE, jamais écrite.
   - **Le plafond de la fiche** voyage par `vocabulary` (`nombres-50`, `nombres-100`) : aucun nombre n'est écrit au-delà, ni dans l'énoncé ni dans
     un choix. Le jeu `suite-nombres` y est soumis lui aussi. Avant, un palier « jusqu'à 50 » pouvait recevoir une suite qui montait à 100, et la
     vitrine du site montrait la même suite.
@@ -1679,6 +1711,39 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   - `convex/__tests__/cpMathsNumbersTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec sa propre arithmétique, abîme volontairement la
     bonne réponse de chaque gabarit pour vérifier que le test le voit, vérifie les règles de la fiche (retenue, emprunt, plafonds, tables) et fabrique
     40 paliers de chacune des quatre thématiques contre le contrôleur.
+- **Les mathématiques du CP, seconde partie** (`paliers/games/mesuresCp.ts`, `heureCp.ts`, `problemesCp.ts`, `figuresCp.ts`) : trente et un gabarits
+  pour `ma-cp-mesures`, `ma-cp-heure-monnaie`, `ma-cp-problemes` et `ma-cp-figures`. Avec elle, les quarante-deux thématiques du CP sont faites par
+  le code. La thématique de l'heure n'avait ni horloge ni pièces ; ses « Il y a ___ jours dans une semaine » renvoyaient à un calendrier que l'écran
+  ne montrait pas. Ici la réponse est CALCULÉE et les mauvais choix sont des erreurs d'enfant.
+  - **L'horloge est un émoji de Unicode** : une horloge pour chaque heure juste (🕐 à 🕛, U+1F550 à U+1F55B) et pour chaque demi-heure (🕜 à 🕧,
+    U+1F55C à U+1F567), toutes en affichage émoji par défaut. Aucun composant n'a été écrit : `ExercisePrompt` pose un émoji seul en grand sur son
+    socle, et la voix de Pio ne lit que l'énoncé, sans l'émoji. L'heure s'écrit « 3 heures » ou « 3 heures et demie », jamais « midi » ni « 15 h » :
+    une horloge de douze heures ne dit pas le matin ou le soir, donc un rangement d'horloges se fait sur les heures du MATIN et l'énoncé le dit.
+    Pas de quart d'heure, pas de minute. Le test écrit les vingt-quatre horloges une à une et les compare à `clockOf`.
+  - **Les mesures** : trois sortes de mesure, chacune avec UNE unité (le mètre, le litre, le kilogramme). Une chose se dit par ce qu'on veut en
+    savoir (« la longueur de… », « la quantité d'eau dans… », « le poids de… ») : l'eau d'un seau se pèse aussi, mais l'énoncé dit qu'on en mesure
+    la quantité. Le demi-kilogramme et le quart de kilogramme (deux demis ou quatre quarts font un kilogramme) ; ni gramme, ni centimètre, ni
+    demi-litre. Le pas, le pied, l'empan et la coudée changent d'une personne à l'autre, seul le mètre est le même pour tous ; « Pied » n'est jamais
+    proposé pour mesurer en pas.
+  - **La monnaie** : des pièces de 5, 10, 25, 50 et 100 F, des sommes multiples de cinq, jamais plus de cent francs, une seule paire de pièces qui
+    fait la somme à payer. La monnaie rendue est celle de `ma-cp-retenue` (`monnaie-rendre`).
+  - **Les problèmes** : l'histoire est tirée du lexique fermé de `stories.ts` (un prénom, une chose avec son genre, son pluriel et ses verbes), avec UNE
+    opération, choisie par le code puis écrite : ajouter (« reçoit », « trouve », « ramasse »), enlever (« mange », « donne », « perd », « vend ») et,
+    dès le deuxième palier, des paquets pareils (un facteur de 2 ou de 3, le résultat sous trente). Dès le deuxième palier aussi, une addition a une
+    retenue et une soustraction un emprunt. Les deux nombres d'une histoire sont différents (« 3 paquets de 3 » ferait deux choix identiques). Une
+    donnée « inutile » est un nombre sans lien avec la question (l'âge de l'enfant, les élèves de sa classe) ; la donnée « manquante » est celle que
+    l'énoncé ne donne pas ; les mauvais choix sont des détails sans aucun lien avec le calcul.
+  - **Les figures** : la thématique avait déjà le dessin à reproduire et la frise de formes. Les lignes droites et courbes viennent des gabarits des arts
+    (`ligne-glisser`, `ligne-relier`, `ligne-qcm`), les coins d'une forme de la géométrie du CI (`forme-coins`). Les deux gabarits neufs sont le matériel
+    du géomètre et les étapes pour reproduire, tracer ou découper une figure. La règle et le double décimètre ne se proposent jamais ensemble : le
+    double décimètre EST une règle graduée.
+  - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
+    groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
+  - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les
+    vingt-quatre horloges, les faits du calendrier, les étapes), abîme volontairement la bonne réponse de chaque gabarit pour vérifier que le test le
+    voit, et fabrique 40 paliers de chacune des quatre thématiques contre le contrôleur. Écrire ce test a fait trouver des défauts que le contrôleur
+    ne voyait pas : deux nombres égaux dans une histoire (« 6 mangues et 6 de plus »), des mauvais choix qui sortaient de cent et ne laissaient que
+    deux options, des indices qui citaient un mot de la réponse.
 - **Les premières phrases et la politesse** (`paliers/games/phrases.ts`, `paliers/games/politesse.ts`) : dix
   gabarits pour le français du CI (`fr-ci-phrases`, `fr-ci-politesse`). Sur l'échantillon lu le 19 octobre 2026,
   16 exercices sur 30 étaient faux en « Mes premières phrases » (onze quiz sur les aliments sans scène, des trous où
@@ -1828,13 +1893,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces soixante-dix thématiques contre un faux modèle qui lève une
+  chaque palier de ces soixante-quatorze thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
   Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
-  haut) : en CI, l'éveil et l'éducation artistique ; toutes les autres classes, sauf le CP, où seules quatre thématiques de mathématiques gardent le modèle (mesures, heure et monnaie, problèmes, figures). Le français (phrases, politesse), l'histoire, la géographie, l'anglais et l'instruction civique du CI, puis
-  tout le CP sauf quatre thématiques de mathématiques (l'histoire, la géographie, l'anglais, le français, les arts, l'instruction civique, les sciences, les nombres, le calcul et les tables), n'appellent plus le modèle.
+  haut) : en CI, l'éveil et l'éducation artistique ; toutes les autres classes, sauf le CP, dont aucune des quarante-deux thématiques n'appelle plus le modèle. Le français (phrases, politesse), l'histoire, la géographie, l'anglais et l'instruction civique du CI, puis
+  tout le CP (l'histoire, la géographie, l'anglais, le français, les arts, l'instruction civique, les sciences et toutes les mathématiques), n'appellent plus le modèle.
   Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
   dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
   rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à

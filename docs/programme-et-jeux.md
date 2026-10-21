@@ -315,7 +315,7 @@ arrivent plus tard.
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
 🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
-`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences, les nombres, le calcul et les tables le sont ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques ; la liste de celles du CI est dans
 `docs/paliers-et-exercices.md`.
 
 ### Français
@@ -338,7 +338,7 @@ arrivent plus tard.
 | Classe | Thématiques |
 | --- | --- |
 | CI | Trier et ranger 🎮 (2 × frise de formes, 2 × frise de couleurs) · Les nombres jusqu'à 10 🎮 (2 × suite de nombres) · Ajouter et enlever jusqu'à 10 · Les nombres de 11 à 20 🎮 (2 × suite de nombres) · Gauche, droite, dessus, dessous 🎮 (2 × reproduire un dessin) · Les formes et les solides 🎮 (2 × frise de formes) · Plus long, plus lourd, plus tard · Petits problèmes |
-| CP | Les nombres jusqu'à 50 🎮 🧩 (2 × suite de nombres) · Additions et soustractions 🧩 · Les nombres jusqu'à 100 🎮 🧩 (2 × suite de nombres) · Multiplier et partager 🧩 · Lignes, frises et figures 🎮 (2 × reproduire un dessin, 2 × frise de formes) · Le mètre, le litre, le kilogramme · L'heure, le calendrier, la monnaie · Résoudre un problème |
+| CP | Les nombres jusqu'à 50 🎮 🧩 (2 × suite de nombres) · Additions et soustractions 🧩 · Les nombres jusqu'à 100 🎮 🧩 (2 × suite de nombres) · Multiplier et partager 🧩 · Lignes, frises et figures 🎮 🧩 (2 × reproduire un dessin, 2 × frise de formes) · Le mètre, le litre, le kilogramme 🧩 · L'heure, le calendrier, la monnaie 🧩 · Résoudre un problème 🧩 |
 | CE1 | Les nombres jusqu'à 1 000 🎮 (2 × suite de nombres) · Les nombres jusqu'à 10 000 🎮 (1 × suite de nombres) · Additions et soustractions · La multiplication et ses tables · Droites, angles et figures 🎮 (1 × reproduire un dessin) · Longueurs, masses, contenances · La monnaie et les durées · Résoudre des problèmes |
 | CE2 | Les nombres jusqu'à 100 000 🎮 (1 × suite de nombres) · Multiplication et calcul mental · La division · La symétrie et les solides 🎮 (3 × symétrie) · Périmètres et aires · Mesures et conversions · Problèmes en plusieurs étapes |
 | CM1 | Les grands nombres · Divisibilité et calcul mental · La division posée · Les fractions · Les nombres décimaux · Figures planes et constructions 🎮 (1 × reproduire un dessin) · Périmètres et aires · Longueurs, masses, capacités, durées |

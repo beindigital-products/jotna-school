@@ -214,9 +214,17 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Lignes, frises et figures",
         description:
           "Activités géométriques, palier 5 du CP : lignes droites et courbes, se servir de la règle et du double décimètre, reproduire et découper une figure, frises géométriques sur quadrillage.",
+        // Dix gabarits : le dessin et la frise (déjà là), les lignes droites et courbes (`arts.ts`), le matériel et les étapes
+        // (`figuresCp.ts`), les coins d'une forme (`geometry.ts`).
         games: [
           { kind: "pixel-copie", count: 2 },
           { kind: "frise-formes", count: 2 },
+          { kind: "ligne-glisser", count: 1 },
+          { kind: "ligne-relier", count: 1 },
+          { kind: "ligne-qcm", count: 1 },
+          { kind: "outil-geometrie", count: 1 },
+          { kind: "figure-etapes", count: 1 },
+          { kind: "forme-coins", count: 1 },
         ],
       },
       {
@@ -224,18 +232,57 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Le mètre, le litre, le kilogramme",
         description:
           "Activités de mesure, paliers 4 et 5 du CP : mesurer avec le pas, le pied, l'empan, la coudée, puis le mètre ; le litre ; le kilogramme, le demi-kilogramme et le quart de kilogramme ; comparer et ranger des mesures.",
+        // Dix gabarits (`mesuresCp.ts`) : une unité par sorte de mesure (mètre, litre, kilogramme), jamais de gramme ni de centimètre.
+        games: [
+          { kind: "mesure-unite", count: 1 },
+          { kind: "mesure-glisser", count: 1 },
+          { kind: "mesure-relier", count: 1 },
+          { kind: "mesure-corps", count: 1 },
+          { kind: "mesure-calcul", count: 1 },
+          { kind: "mesure-repete", count: 1 },
+          { kind: "mesure-ordre", count: 1 },
+          { kind: "mesure-plus", count: 1 },
+          { kind: "mesure-kilo", count: 1 },
+          { kind: "mesure-kilo-trou", count: 1 },
+        ],
       },
       {
         key: "ma-cp-heure-monnaie",
         name: "L'heure, le calendrier, la monnaie",
         description:
           "Palier 6 du CP : lire l'heure (heures justes et demi-heures), les jours, semaines et mois du calendrier, la monnaie de 5 F à 100 F (payer une somme, rendre la monnaie).",
+        // Dix gabarits (`heureCp.ts`, `calculCp.ts`) : l'horloge est un émoji de Unicode, la monnaie rendue vient de `ma-cp-retenue`.
+        games: [
+          { kind: "heure-lire", count: 1 },
+          { kind: "heure-relier", count: 1 },
+          { kind: "heure-ordre", count: 1 },
+          { kind: "heure-trou", count: 1 },
+          { kind: "calendrier-combien", count: 1 },
+          { kind: "calendrier-glisser", count: 1 },
+          { kind: "monnaie-payer", count: 1 },
+          { kind: "monnaie-pieces", count: 1 },
+          { kind: "monnaie-relier", count: 1 },
+          { kind: "monnaie-rendre", count: 1 },
+        ],
       },
       {
         key: "ma-cp-problemes",
         name: "Résoudre un problème",
         description:
           "Résolution de problèmes, paliers 4 et 5 du CP : comprendre un énoncé, trouver les données utiles, inutiles ou manquantes, choisir l'opération, construire la question d'un problème. Nombres jusqu'à 100.",
+        // Dix gabarits (`problemesCp.ts`) : l'histoire est tirée d'un lexique fermé, l'opération choisie puis écrite, le résultat calculé.
+        games: [
+          { kind: "pb-operation", count: 1 },
+          { kind: "pb-resoudre", count: 1 },
+          { kind: "pb-ecrire", count: 1 },
+          { kind: "pb-trou", count: 1 },
+          { kind: "pb-manquante", count: 1 },
+          { kind: "pb-inutile", count: 1 },
+          { kind: "pb-question", count: 1 },
+          { kind: "pb-etapes", count: 1 },
+          { kind: "pb-relier", count: 1 },
+          { kind: "pb-glisser", count: 1 },
+        ],
       },
     ],
     CE1: [

@@ -85,6 +85,11 @@ const WITHOUT_MODEL = [
   "ma-cp-nombres-100",
   "ma-cp-retenue",
   "ma-cp-multiplier",
+  // Les mathématiques du CP, seconde partie : les mesures, l'heure et la monnaie, les problèmes, les lignes et les figures.
+  "ma-cp-mesures",
+  "ma-cp-heure-monnaie",
+  "ma-cp-problemes",
+  "ma-cp-figures",
   // L'anglais du CI : les salutations, les couleurs, les nombres de 0 à 10, les animaux, les fruits.
   "an-ci-hello",
   "an-ci-colours",

@@ -1438,7 +1438,8 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
   it("annonce ces paliers comme gratuits à la pré-génération, et les autres comme payants", () => {
     for (const key of keys) expect(topicUsesModel(key), key).toBe(false);
     expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
-    expect(topicUsesModel("ma-cp-mesures")).toBe(true);
+    // Tout le CP est fait par le code : l'exemple d'une thématique écrite par le modèle vient du CE1.
+    expect(topicUsesModel("ma-ce1-add-sous")).toBe(true);
     expect(topicUsesModel("sc-ci-milieu")).toBe(true);
     expect(topicUsesModel("hi-cm2-empires")).toBe(true);
     // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.

@@ -18,8 +18,9 @@ vi.setConfig({ testTimeout: 30_000 });
  * (écrite autrement que `inWords`, puis comparée à une liste codée en dur des nombres difficiles). Un gabarit dont la réponse
  * contredit le calcul échoue. Les règles de la fiche sont des tests à part : une addition a toujours une retenue, une soustraction
  * toujours un emprunt, aucune table hors de 2 et de 3, jamais un nombre au-delà du plafond de la fiche. À la fin, des MUTATIONS : on
- * abîme la bonne réponse d'un exercice juste, et chaque vérification doit le voir. L'échantillon du modèle comptait six exercices faux
- * sur quarante-deux en mathématiques (« huitante », « ___ fois 9 égal 72 » sous les nombres, une tuile qui contient la réponse).
+ * abîme la bonne réponse d'un exercice juste, et chaque vérification doit le voir. L'échantillon du modèle comptait, en mathématiques,
+ * six exercices faux et huit douteux sur quarante-deux (« huitante », une tuile qui contient la réponse, « ___ fois 9 égal 72 » et « 7 × 10 »
+ * sous les nombres, qui sortent de la fiche).
  */
 
 const LEVELS: GameLevel[] = [1, 2, 3, 4];
