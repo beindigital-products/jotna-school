@@ -146,13 +146,21 @@ export function sequenceGame(
 }
 
 /**
+ * Le groupe de variantes qu'un palier préfère : 0 au niveau 1, 1 au niveau 2, 2 aux niveaux 3 et 4. Le CP a trois paliers, joués
+ * aux niveaux 1, 2 et 4 : chacun a son groupe. Les classes à quatre paliers en ont trois, dont le dernier est partagé.
+ */
+export function levelGroup(level: GameLevel): 0 | 1 | 2 {
+  return level === 1 ? 0 : level === 2 ? 1 : 2;
+}
+
+/**
  * Les variantes d'un gabarit qui n'en a que quelques-unes, réparties par palier : le premier tiers au premier palier, le deuxième
  * au deuxième, le dernier tiers ensuite. Deux paliers d'une même thématique ne tirent ainsi jamais la même variante (le CP a trois
  * paliers, joués aux niveaux 1, 2 et 4) : sans cela, un enfant revoyait « Deux ___ font un kilogramme » aux trois paliers. Il faut
  * au moins trois variantes ; en dessous, toutes restent permises.
  */
 export function variantsForLevel<T>(items: readonly T[], level: GameLevel): T[] {
-  const group = level === 1 ? 0 : level === 2 ? 1 : 2;
+  const group = levelGroup(level);
   const from = Math.floor((items.length * group) / 3);
   const to = Math.floor((items.length * (group + 1)) / 3);
   return to > from ? items.slice(from, to) : [...items];

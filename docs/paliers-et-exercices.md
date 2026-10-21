@@ -1792,6 +1792,16 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     `calendrier-combien`, `outil-geometrie`, `figure-etapes`, `pb-etapes` et, dans `arts.ts`, `ligne-qcm` et `ligne-relier`, que « Les traits et les lignes »
     emploie aussi. Le test fabrique les trois paliers sur 80 graines et exige trois questions différentes. Les gabarits à tirage libre (nombres, prénoms,
     sommes) ne sont pas concernés.
+  - **Les dessins sur quadrillage se répartissent aussi par palier** (`pickMotif`, `paliers/games/pixel.ts`, pour `pixel-copie`, `pixel-memoire`,
+    `coloriage-magique` et, quand il prend un motif du catalogue, `pixel-symetrie`). Le n-ième motif du catalogue appartient au groupe n modulo 3, le
+    même partage que `variantsForLevel` (`levelGroup`, `tableaux.ts`) ; un palier prend d'abord les motifs de son groupe qui n'ont pas encore servi,
+    puis les autres. En production, trois paliers de quatre `pixel-copie` tirés dans onze motifs reprenaient trois dessins (« l'escalier », « la petite
+    fleur », « la croix »). Mesuré sur 200 graines, toutes les thématiques de CI et de CP (qui tirent jusqu'à quatre dessins par palier) ne répètent plus
+    un dessin d'un palier à l'autre, alors qu'elles le faisaient dans 128 à 199 graines sur 200. Chaque palier a quatre motifs à lui à CI et à CP, cinq à
+    partir du CE1 : au-delà (« Le dessin de mémoire » du CM1 en tire sept), il en prend d'autres et un dessin peut revenir. Le catalogue des motifs
+    symétriques est trop petit (trois par groupe) pour garantir quoi que ce soit à `pixel-symetrie`. Prix de la règle : le premier palier de chaque
+    thématique de CI et de CP tire toujours dans les mêmes quatre motifs (la croix, le petit cœur, la petite maison, le bateau) ; le djembé et la lune
+    ne se montrent plus au dernier palier qu'au-delà de quatre dessins.
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les

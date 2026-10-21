@@ -14,7 +14,8 @@
  * langue n'en dessine aucun : un baobab tiré au hasard ne ressemble à rien.
  */
 import { EMPTY_CELL, type PixelArtPayload, type PixelPaint } from "./types";
-import { pick, pickFresh, type GameContext, type GeneratedGame } from "./shared";
+import { pick, type GameContext, type GeneratedGame } from "./shared";
+import { levelGroup } from "./tableaux";
 
 /** Les couleurs des motifs. Une lettre par couleur, écrite dans les lignes. */
 export const PAINTS: Record<string, PixelPaint> = {
@@ -177,6 +178,26 @@ function motifsFor(ctx: GameContext, needMirror: boolean): Motif[] {
   return filtered.length > 0 ? filtered : ALL_MOTIFS.filter((m) => !needMirror || m.mirror);
 }
 
+/** La place de chaque motif dans le catalogue : elle dit quel palier le préfère. */
+const MOTIF_RANK = new Map(ALL_MOTIFS.map((m, i) => [m.key, i]));
+
+/**
+ * Le motif d'un dessin sur quadrillage. Chaque palier préfère « ses » motifs : le n-ième du catalogue va au groupe n modulo 3, le
+ * même partage que `variantsForLevel` (niveau 1, niveau 2, puis niveaux 3 et 4). Sans cela, chaque palier tirait au hasard parmi
+ * tous les motifs, et un enfant revoyait « la croix » ou « la petite fleur » d'un palier à l'autre de la même thématique : trois
+ * paliers de quatre dessins tirés dans 11 motifs en reprenaient trois. Un palier prend d'abord les motifs de son groupe qui n'ont pas encore
+ * servi ; quand il les a tous pris (plus de quatre dessins à CP et à CI), il prend les autres, puis recommence.
+ */
+function pickMotif(ctx: GameContext, needMirror: boolean): Motif {
+  const pool = motifsFor(ctx, needMirror);
+  const keyOf = (m: Motif) => `motif:${m.key}`;
+  const fresh = pool.filter((m) => !ctx.used.has(keyOf(m)));
+  const own = fresh.filter((m) => (MOTIF_RANK.get(m.key) ?? 0) % 3 === levelGroup(ctx.level));
+  const chosen = pick(ctx.rng, own.length > 0 ? own : fresh.length > 0 ? fresh : pool);
+  ctx.used.add(keyOf(chosen));
+  return chosen;
+}
+
 const COPY_HINTS = [
   "Commence par la ligne du haut, case par case.",
   "Compte les cases vides avant chaque case colorée.",
@@ -220,7 +241,7 @@ function finish(
 }
 
 export function makePixelCopy(ctx: GameContext): GeneratedGame {
-  const motif = pickFresh(ctx, motifsFor(ctx, false), (m) => `motif:${m.key}`);
+  const motif = pickMotif(ctx, false);
   const rows = motif.rows;
   return finish(
     ctx,
@@ -250,7 +271,7 @@ function memorySeconds(ctx: GameContext): number {
 }
 
 export function makePixelMemory(ctx: GameContext): GeneratedGame {
-  const motif = pickFresh(ctx, motifsFor(ctx, false), (m) => `motif:${m.key}`);
+  const motif = pickMotif(ctx, false);
   const rows = motif.rows;
   const seconds = memorySeconds(ctx);
   return finish(
@@ -304,7 +325,7 @@ export function makePixelSymmetry(ctx: GameContext): GeneratedGame {
   // Un motif reconnaissable une fois sur deux, un motif inventé sinon : le
   // miroir se comprend mieux sur un papillon, il s'exerce mieux sur l'inconnu.
   const useMotif = ctx.band > 0 && ctx.rng() < 0.5;
-  const motif = useMotif ? pickFresh(ctx, motifsFor(ctx, true), (m) => `motif:${m.key}`) : null;
+  const motif = useMotif ? pickMotif(ctx, true) : null;
   const rows = motif ? motif.rows : randomMirrorRows(ctx);
   const width = rows[0].length;
   const half = width / 2;
@@ -331,7 +352,7 @@ export function makePixelSymmetry(ctx: GameContext): GeneratedGame {
 }
 
 export function makeColorByNumber(ctx: GameContext): GeneratedGame {
-  const motif = pickFresh(ctx, motifsFor(ctx, false), (m) => `motif:${m.key}`);
+  const motif = pickMotif(ctx, false);
   const rows = motif.rows;
   const palette = paletteOf(rows);
   const digitOf = new Map(palette.map((paint, i) => [paint.key, String(i + 1)]));
