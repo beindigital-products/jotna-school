@@ -247,6 +247,33 @@ import {
   makeTimesSort,
   makeTimesWrite,
 } from "./tablesCp";
+// Les mesures (`mesuresCp.ts`), l'heure et la monnaie (`heureCp.ts`), les problèmes (`problemesCp.ts`) et les figures (`figuresCp.ts`) du CP.
+import {
+  makeBodyMeasure,
+  makeKiloGap,
+  makeKiloParts,
+  makeMeasureMost,
+  makeMeasureOrder,
+  makeMeasureRepeat,
+  makeMeasureSum,
+  makeUnitChoice,
+  makeUnitLinks,
+  makeUnitSort,
+} from "./mesuresCp";
+import { makeCalendarCount, makeClockLinks, makeClockOrder, makeCoinCount, makeCoinLinks, makeDayOrMonth, makeLaterGap, makePayCoins, makeReadClock } from "./heureCp";
+import {
+  makeAddOrRemove,
+  makeCpProblemQuestion,
+  makeCpStoryLinks,
+  makeCpUselessDatum,
+  makeMissingDatum,
+  makePickOperation,
+  makeProblemSteps,
+  makeSolve,
+  makeSolveGap,
+  makeSolveWrite,
+} from "./problemesCp";
+import { makeFigureSteps, makeGeometryTool } from "./figuresCp";
 import { makeColorPair, makeColorPick, makeColorResult, makeWarmCold } from "./colors";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
 import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
@@ -784,6 +811,41 @@ export const GAME_KINDS = {
   "mult-glisser": { label: "Glisser des résultats sous « Table de 2 » ou « Table de 3 »", type: "drag-drop", make: makeTimesSort },
   "part-qcm": { label: "Partager en parts pareilles : combien chacun", type: "qcm", make: makeShareQuestion },
   "part-trou": { label: "Compléter un partage", type: "fill-blank", make: makeShareGap },
+  // Les mesures du CP (`mesuresCp.ts`) : le mètre, le litre, le kilogramme, avec le corps puis avec l'unité.
+  "mesure-unite": { label: "L'unité qui sert à mesurer une chose", type: "qcm", make: makeUnitChoice },
+  "mesure-glisser": { label: "Glisser des mesures sous leur unité", type: "drag-drop", make: makeUnitSort },
+  "mesure-relier": { label: "Relier une mesure et son unité", type: "match", make: makeUnitLinks },
+  "mesure-corps": { label: "Mesurer avec son corps, puis avec le mètre", type: "qcm", make: makeBodyMeasure },
+  "mesure-calcul": { label: "Ajouter ou enlever des mesures", type: "qcm", make: makeMeasureSum },
+  "mesure-repete": { label: "Répéter une mesure, le total à écrire", type: "short-answer", make: makeMeasureRepeat },
+  "mesure-ordre": { label: "Ranger des mesures", type: "order", make: makeMeasureOrder },
+  "mesure-plus": { label: "Le plus long, le plus lourd, le plus plein", type: "qcm", make: makeMeasureMost },
+  "mesure-kilo": { label: "Le demi-kilogramme et le quart de kilogramme", type: "qcm", make: makeKiloParts },
+  "mesure-kilo-trou": { label: "Compléter une phrase sur les parts de kilogramme", type: "fill-blank", make: makeKiloGap },
+  // L'heure, le calendrier et la monnaie du CP (`heureCp.ts`) : l'horloge est un émoji de Unicode.
+  "heure-lire": { label: "Lire l'heure sur une horloge", type: "qcm", make: makeReadClock },
+  "heure-relier": { label: "Relier une horloge et son heure", type: "match", make: makeClockLinks },
+  "heure-ordre": { label: "Ranger des horloges du matin", type: "order", make: makeClockOrder },
+  "heure-trou": { label: "Une heure ou une demi-heure plus tard", type: "fill-blank", make: makeLaterGap },
+  "calendrier-combien": { label: "Combien de jours, combien de mois", type: "qcm", make: makeCalendarCount },
+  "calendrier-glisser": { label: "Un jour ou un mois", type: "drag-drop", make: makeDayOrMonth },
+  "monnaie-payer": { label: "Quelles pièces pour payer une somme", type: "qcm", make: makePayCoins },
+  "monnaie-pieces": { label: "Combien de pièces pareilles pour une somme", type: "qcm", make: makeCoinCount },
+  "monnaie-relier": { label: "Relier des pièces et leur somme", type: "match", make: makeCoinLinks },
+  // Résoudre un problème au CP (`problemesCp.ts`) : l'opération, la donnée qui manque, la donnée inutile, la question.
+  "pb-operation": { label: "Choisir l'opération d'un problème", type: "qcm", make: makePickOperation },
+  "pb-resoudre": { label: "Résoudre un petit problème", type: "qcm", make: makeSolve },
+  "pb-ecrire": { label: "Résoudre un petit problème, le nombre à écrire", type: "short-answer", make: makeSolveWrite },
+  "pb-trou": { label: "Compléter la réponse d'un problème", type: "fill-blank", make: makeSolveGap },
+  "pb-manquante": { label: "La donnée qui manque", type: "qcm", make: makeMissingDatum },
+  "pb-inutile": { label: "La donnée qui ne sert à rien", type: "qcm", make: makeCpUselessDatum },
+  "pb-question": { label: "La question qui va avec l'histoire", type: "qcm", make: makeCpProblemQuestion },
+  "pb-etapes": { label: "Les étapes pour résoudre un problème", type: "order", make: makeProblemSteps },
+  "pb-relier": { label: "Relier une histoire et son opération", type: "match", make: makeCpStoryLinks },
+  "pb-glisser": { label: "On ajoute ou on enlève", type: "drag-drop", make: makeAddOrRemove },
+  // Lignes, frises et figures au CP (`figuresCp.ts`).
+  "outil-geometrie": { label: "L'outil du géomètre", type: "qcm", make: makeGeometryTool },
+  "figure-etapes": { label: "Les étapes pour reproduire, tracer ou découper une figure", type: "order", make: makeFigureSteps },
   // Les animaux du CI en anglais (`anglaisCi.ts`) : un dessin et son mot, la ferme ou la nature.
   "animal-mot": { label: "Le mot anglais d'un animal dessiné", type: "qcm", make: makeAnimalWord },
   "animal-francais": { label: "Le mot anglais d'un animal nommé en français", type: "qcm", make: makeAnimalFrench },
