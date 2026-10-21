@@ -4,10 +4,10 @@
  *
  * Ces trois thématiques laissaient au modèle quatre, quatre et deux exercices par palier, à côté des jeux (pots de
  * couleur, frises à compléter, dessins à copier). Sur les seize exercices d'arts du CI relus le 19 octobre 2026, cinq
- * étaient faux. Ceux du modèle rangeaient la mangue, la goyave et la pomme sous trois couleurs, comptaient la table
- * parmi les rectangles, prenaient un ballon pour un rond (c'est une boule) et demandaient « Quelle couleur est souvent
- * utilisée pour décorer les guirlandes ? ». Ici chaque réponse se lit dans un tableau : une chose, sa couleur ou sa
- * forme sur le dessin du catalogue, et rien d'autre.
+ * étaient faux. Dans l'export de la production, le modèle rangeait la mangue, la goyave et la pomme sous trois couleurs,
+ * comptait la table parmi les rectangles, prenait un ballon pour un rond (c'est une boule) et demandait « Quelle couleur
+ * est souvent utilisée pour décorer les guirlandes ? ». Ici chaque réponse se lit dans un tableau : une chose, sa couleur
+ * ou sa forme sur le dessin du catalogue, et rien d'autre.
  *
  * LES TUILES. Une tuile qui nomme une chose est « article + nom », un mot du catalogue des images
  * (`lib/item-images.ts`) : au CI l'écran y met le dessin et garde le nom écrit. Une couleur n'est pas une chose : sa
@@ -28,7 +28,10 @@
  *   quatre premières de l'arc-en-ciel en partant du haut.
  *
  * LA MÊME QUESTION DEUX FOIS, NON. Un gabarit qui a peu de variantes donne à chaque niveau (donc à chaque palier de la
- * thématique) sa part : trois paliers ne répètent jamais la même question.
+ * thématique) sa part : trois paliers ne répètent jamais la même question. Les associations vont plus loin : chaque
+ * niveau a ses propres choses (`LINK_THINGS`, `LINK_OBJECTS`), donc deux paliers ne relient jamais la même paire. Au
+ * rangement des couleurs, deux paliers voisins ne partagent qu'une chose (`SORT_ZONES`). Celui des formes en partage
+ * deux : le catalogue n'a que deux objets ronds et deux triangulaires.
  *
  * RÈGLES POUR AJOUTER UNE CHOSE
  * - Le nom, avec son article, est un mot du catalogue (`pictureForTile` le reconnaît), et un test le vérifie.
@@ -93,9 +96,8 @@ export const COLOUR_THINGS: readonly ColourThing[] = [
 ];
 
 const BASIC_COLOURS: readonly Colour[] = ["rouge", "jaune", "vert", "bleu"];
-const ALL_COLOURS: readonly Colour[] = ["rouge", "jaune", "vert", "bleu", "orange", "violet", "blanc"];
 
-const thingsOf = (colour: Colour) => COLOUR_THINGS.filter((thing) => thing.colour === colour);
+const thingNamed = (name: string): ColourThing => COLOUR_THINGS.find((thing) => thing.name === name) as ColourThing;
 const colourOfThing = (name: string): Colour => (COLOUR_THINGS.find((thing) => thing.name === name) as ColourThing).colour;
 /** La clé d'une chose déjà montrée dans ce palier, la même pour les gabarits de la thématique. */
 const teinteKey = (thing: ColourThing) => `teinte:${thing.name}`;
@@ -123,15 +125,27 @@ export function makeTeinteChoice(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Relie chaque chose à sa couleur. » : trois choses, trois couleurs différentes. */
+/**
+ * Les choses que « Relie chaque chose à sa couleur. » montre à chaque niveau. Une chose n'est que dans un niveau : deux
+ * paliers de la thématique ne relient jamais la même paire. Le premier niveau n'a que des couleurs de base.
+ */
+const LINK_THINGS: readonly [readonly string[], readonly string[], readonly string[]] = [
+  ["la tomate", "la banane", "la feuille", "le ciel"],
+  ["la fraise", "le soleil", "le concombre", "le lait", "la carotte"],
+  ["le poussin", "le brocoli", "le crocodile", "le sel", "l'aubergine"],
+];
+
+/** « Relie chaque chose à sa couleur. » : trois choses, trois couleurs différentes, celles du niveau. */
 export function makeTeinteLinks(ctx: GameContext): GeneratedGame {
   return fresh(
     ctx,
     "teinte-relier",
     () => {
-      const colours = shuffle(ctx.rng, ctx.level === 1 ? BASIC_COLOURS : ALL_COLOURS).slice(0, 3);
+      const names = byLevel(ctx.level, LINK_THINGS[0], LINK_THINGS[1], LINK_THINGS[2]);
+      const allowed = COLOUR_THINGS.filter((thing) => names.includes(thing.name));
+      const colours = shuffle(ctx.rng, [...new Set(allowed.map((thing) => thing.colour))]).slice(0, 3);
       const pairs = colours.map((colour) => {
-        const [thing] = takeFresh(ctx, thingsOf(colour), 1, teinteKey);
+        const [thing] = takeFresh(ctx, allowed.filter((candidate) => candidate.colour === colour), 1, teinteKey);
         return { left: thing.name, right: COLOUR_TILES[colour] };
       });
       return linkGame("teinte-relier", ctx, "Relie chaque chose à sa couleur.", pairs, COULEURS_CONCEPT, [
@@ -144,11 +158,25 @@ export function makeTeinteLinks(ctx: GameContext): GeneratedGame {
   );
 }
 
-/** Les deux cases de « Glisse chaque chose dans sa couleur. », par niveau : la première reçoit trois choses aux niveaux de cinq tuiles. */
-const SORT_COLOURS: readonly (readonly [Colour, Colour])[] = [
-  ["rouge", "jaune"],
-  ["jaune", "vert"],
-  ["vert", "blanc"],
+/**
+ * Une case de « Glisse chaque chose dans sa couleur. » : sa couleur, combien de choses elle reçoit (trois dans la première case
+ * des niveaux de cinq tuiles), celles qui y sont toujours, puis celles dont on tire le reste. Il n'y a que trois choses jaunes
+ * et quatre vertes : elles se partagent entre deux paliers voisins, qui n'en montrent donc qu'une en commun.
+ */
+type SortZone = { colour: Colour; count: number; always: readonly string[]; among: readonly string[] };
+const SORT_ZONES: readonly (readonly [SortZone, SortZone])[] = [
+  [
+    { colour: "rouge", count: 2, always: ["la tomate", "la fraise"], among: [] },
+    { colour: "jaune", count: 2, always: ["la banane", "le soleil"], among: [] },
+  ],
+  [
+    { colour: "jaune", count: 2, always: ["le poussin"], among: ["la banane", "le soleil"] },
+    { colour: "vert", count: 2, always: ["la feuille", "le concombre"], among: [] },
+  ],
+  [
+    { colour: "vert", count: 3, always: ["le brocoli", "le crocodile"], among: ["la feuille", "le concombre"] },
+    { colour: "blanc", count: 2, always: ["le lait", "le sel"], among: [] },
+  ],
 ];
 
 /**
@@ -160,17 +188,20 @@ export function makeTeinteSort(ctx: GameContext): GeneratedGame {
     ctx,
     "teinte-glisser",
     () => {
-      const [first, second] = byLevel(ctx.level, SORT_COLOURS[0], SORT_COLOURS[1], SORT_COLOURS[2]);
-      const counts = ctx.level <= 2 ? [2, 2] : [3, 2];
-      const items = shuffle(ctx.rng, [
-        ...takeFresh(ctx, thingsOf(first), counts[0], teinteKey).map((thing) => ({ text: thing.name, correctZone: COLOUR_TILES[first] })),
-        ...takeFresh(ctx, thingsOf(second), counts[1], teinteKey).map((thing) => ({ text: thing.name, correctZone: COLOUR_TILES[second] })),
-      ]);
+      const zones = byLevel(ctx.level, SORT_ZONES[0], SORT_ZONES[1], SORT_ZONES[2]);
+      const items = shuffle(
+        ctx.rng,
+        zones.flatMap((zone) => {
+          for (const name of zone.always) ctx.used.add(teinteKey(thingNamed(name)));
+          const extra = takeFresh(ctx, zone.among.map(thingNamed), zone.count - zone.always.length, teinteKey).map((thing) => thing.name);
+          return [...zone.always, ...extra].map((name) => ({ text: name, correctZone: COLOUR_TILES[zone.colour] }));
+        }),
+      );
       return sortGame(
         "teinte-glisser",
         ctx,
         "Glisse chaque chose dans sa couleur.",
-        [COLOUR_TILES[first], COLOUR_TILES[second]],
+        zones.map((zone) => COLOUR_TILES[zone.colour]),
         items,
         COULEURS_CONCEPT,
         ["Regarde la couleur de chaque dessin.", "Pose d'abord les choses dont tu es sûr.", "Chaque chose va dans la case de sa couleur."],
@@ -262,7 +293,6 @@ export const OBJECT_SHAPES: readonly ObjectShape[] = [
   { name: "la règle", shape: "rectangle" },
 ];
 
-const SHAPES_WITH_OBJECTS: readonly Shape[] = ["rond", "carré", "triangle", "rectangle", "étoile"];
 const SIMPLE_SHAPES: readonly Shape[] = ["rond", "carré", "triangle", "rectangle"];
 
 const objectsOf = (shape: Shape) => OBJECT_SHAPES.filter((object) => object.shape === shape);
@@ -292,15 +322,28 @@ export function makeContourChoice(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Relie chaque chose à sa forme. » : trois objets de trois formes différentes. */
+/**
+ * Les objets que « Relie chaque chose à sa forme. » montre à chaque niveau : trois formes différentes, et jamais le même
+ * objet à deux niveaux. Le catalogue n'a que deux objets ronds, deux triangulaires, un carré et une étoile : le carré et
+ * l'étoile viennent au dernier niveau, avec un rectangle.
+ */
+const LINK_OBJECTS: readonly [readonly string[], readonly string[], readonly string[]] = [
+  ["l'assiette", "le toit", "le drapeau"],
+  ["la pizza", "la tente", "le livre"],
+  ["la fenêtre", "l'étoile de mer", "le cahier", "la règle"],
+];
+
+/** « Relie chaque chose à sa forme. » : trois objets de trois formes différentes, ceux du niveau. */
 export function makeContourLinks(ctx: GameContext): GeneratedGame {
   return fresh(
     ctx,
     "contour-relier",
     () => {
-      const shapes = shuffle(ctx.rng, ctx.level === 1 ? SIMPLE_SHAPES : SHAPES_WITH_OBJECTS).slice(0, 3);
+      const names = byLevel(ctx.level, LINK_OBJECTS[0], LINK_OBJECTS[1], LINK_OBJECTS[2]);
+      const allowed = OBJECT_SHAPES.filter((object) => names.includes(object.name));
+      const shapes = shuffle(ctx.rng, [...new Set(allowed.map((object) => object.shape))]).slice(0, 3);
       const pairs = shapes.map((shape) => {
-        const [object] = takeFresh(ctx, objectsOf(shape), 1, contourKey);
+        const [object] = takeFresh(ctx, allowed.filter((candidate) => candidate.shape === shape), 1, contourKey);
         return { left: object.name, right: SHAPE_TILES[shape] };
       });
       return linkGame("contour-relier", ctx, "Relie chaque chose à sa forme.", pairs, FORMES_CONCEPT, [

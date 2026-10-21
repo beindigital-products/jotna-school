@@ -1764,8 +1764,11 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   le code. La thématique de l'heure n'avait ni horloge ni pièces ; ses « Il y a ___ jours dans une semaine » renvoyaient à un calendrier que l'écran
   ne montrait pas. Ici la réponse est CALCULÉE et les mauvais choix sont des erreurs d'enfant.
   - **L'horloge est un émoji de Unicode** : une horloge pour chaque heure juste (🕐 à 🕛, U+1F550 à U+1F55B) et pour chaque demi-heure (🕜 à 🕧,
-    U+1F55C à U+1F567), toutes en affichage émoji par défaut. Aucun composant n'a été écrit : `ExercisePrompt` pose un émoji seul en grand sur son
-    socle, et la voix de Pio ne lit que l'énoncé, sans l'émoji. L'heure s'écrit « 3 heures » ou « 3 heures et demie », jamais « midi » ni « 15 h » :
+    U+1F55C à U+1F567), toutes en affichage émoji par défaut. Aucun composant d'horloge n'a été écrit, mais la TAILLE compte : relu sur l'iPhone 17 le
+    21 octobre 2026, un cadran de la taille d'un mot (36 px) n'a plus d'aiguilles lisibles. `segmentPrompt` (`choix-texte.ts`) donne donc un segment
+    « horloge » à un cadran seul, que `ExercisePrompt` pose en grand (80 px) sur son socle, centré sous la phrase ; une tuile qui ne porte qu'un cadran
+    (`TileGlyphs`) le dessine à 48 px au lieu de 28. Quatre tuiles de cette taille ne tiennent pas sur le premier écran d'un petit téléphone : on relie
+    trois horloges, jamais quatre. La voix de Pio ne lit que l'énoncé, sans l'émoji. L'heure s'écrit « 3 heures » ou « 3 heures et demie », jamais « midi » ni « 15 h » :
     une horloge de douze heures ne dit pas le matin ou le soir, donc un rangement d'horloges se fait sur les heures du MATIN et l'énoncé le dit.
     Pas de quart d'heure, pas de minute. Le test écrit les vingt-quatre horloges une à une et les compare à `clockOf`.
   - **Les mesures** : trois sortes de mesure, chacune avec UNE unité (le mètre, le litre, le kilogramme). Une chose se dit par ce qu'on veut en
@@ -1811,6 +1814,24 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     les images ne sont pas la même question. Mesuré sur 200 graines, `ar-cp-decorer` et `ma-cp-figures` ne reprennent plus aucune question d'un palier à
     l'autre ; `ma-ci-formes`, qui pose six fois `forme-coins` pour quatre formes, en reprend encore (405 questions avant, 358 après). Prix de la règle : à
     chaque palier, le choix des formes est presque fixé (un seul rectangle au deuxième palier).
+  - **`forme-nom` et `solide-nom` répartis par palier** (`SHAPE_DRAWINGS` et `SOLID_OBJECTS`, `geometry.ts`, `variantsForLevel`), relevés en lisant les 30
+    exercices régénérés de « Les formes et les solides » (CI) : le même rond 🔵 au premier et au deuxième palier, la boule 🏀 aux paliers 2 et 3, le pavé
+    🧱 aux paliers 1 et 3. Les dix dessins de forme et les neuf objets de solide sont rangés pour que chaque tiers mêle les formes, et un palier en
+    prend un tiers (trois dessins aux niveaux 1 et 2, quatre au dernier ; trois objets par palier). La forme d'un dessin se lit toujours dans `SHAPES`,
+    le solide d'un objet dans `SOLIDS`. Mesuré sur 200 graines : `forme-nom` reprenait 205 questions et `solide-nom` 279 dans `ma-ci-formes`, `forme-nom` 52 dans
+    `fr-cp-decrire` ; ils n'en reprennent plus aucune. `forme-coins` n'est pas concerné : quatre formes seulement pour six tirages, `ma-ci-formes` en reprend
+    encore (358). La réponse peut se répéter d'un palier à l'autre (« le rond ») : c'est un autre dessin.
+  - **« Décrire et comparer » (`fr-cp-decrire`) et `monnaie-payer` répartis par palier**, relevés en lisant les 90 exercices régénérés après la PR #117 :
+    « Quel mot est le contraire de « lourd » ? » aux trois paliers, « Qu'est-ce qui est rouge ? » (la fraise) aux paliers 1 et 3, « doit payer 15 F » aux
+    paliers 1 et 2. Deux aides dans `tableaux.ts` : `pickPreferred` tire d'abord parmi les variantes que le palier préfère et qui n'ont pas servi dans ce
+    palier, puis parmi les autres, puis n'importe laquelle ; `pickForLevel` lui donne pour variantes préférées un tiers de la liste (`variantsForLevel`) ou une
+    place sur trois (`spreadForLevel`, pour les longues listes sans ordre). `contraire-qcm` : dix mots, le premier de chaque paire puis le second, trois ou
+    quatre par palier ; `contraire-trou` : une, deux puis deux phrases ; `couleur-objet` : la couleur demandée est le rouge, puis le jaune ou le vert, puis
+    l'orange ou le violet ; `comparer-trou` : les 50 comparaisons (une échelle, deux bêtes, l'ordre), une sur trois par palier ; `comparer-mesure` : le mot
+    « lourd », puis « léger », puis « grand » ou « petit » (au CI, qui en pose quatre par palier, les quatre mots changent à chaque fois) ; `monnaie-payer` :
+    des sommes jusqu'à 35 F, puis de 50 à 60 F, puis 75 F et plus. Mesuré sur 200 graines : `fr-cp-decrire` reprenait 204 questions de `contraire-qcm`, 102 de
+    `contraire-trou`, 77 de `couleur-objet`, 58 de `comparer-trou` et 57 de `comparer-mesure` ; plus aucune. `adjectif-ordre` (3 sur 200) et `contraire-relier`
+    (2) n'ont pas été touchés. `ma-cp-heure-monnaie` reprend encore `heure-lire` (30), `heure-trou` (28), `monnaie-pieces` (32) et `monnaie-relier` (11).
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les
@@ -1966,12 +1987,23 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     dessin de métier) et aucun mauvais choix qui puisse être bon : « pleurer de joie » existe, on ne le propose pas.
   - **Trois paliers, jamais la même question.** Un gabarit qui a peu de variantes donne à chaque niveau sa part (`variantsForLevel`) :
     rouge ou jaune au premier palier, vert ou bleu au deuxième, orange, violet ou blanc au troisième ; un tiers des objets, des visages,
-    des situations et des cris ; des émotions différentes à chaque palier pour les gestes et les visages à trouver. Les deux
-    glisser-déposer de visages d'un même palier ne reprennent pas les mêmes cases.
+    des situations et des cris. Les associations vont plus loin, car trois paires reconnues d'un palier à l'autre se remarquent : chaque
+    niveau a ses propres choses, objets, visages et animaux (`LINK_THINGS`, `LINK_OBJECTS`, `LINK_FACES`, `CRY_WINDOWS`). Deux paliers ne
+    relient jamais la même paire de couleurs ou de formes, jamais plus d'une paire de visages ou de cris, et aucune paire n'est aux trois
+    paliers. Mesuré sur 300 tirages, deux paliers partageaient avant presque toujours une paire, et deux paires ou plus dans plus d'un
+    tirage sur deux. Aux rangements de couleurs, deux paliers voisins ne partagent qu'une chose (`SORT_ZONES`) ; le catalogue n'a que deux
+    objets ronds et deux triangulaires, donc les rangements de formes en partagent deux.
+  - **Les émotions se répartissent dans un palier de mimes.** Cinq exercices ne disent qu'une émotion : le visage à trouver, l'émotion d'un
+    visage, celle d'une situation, le geste, la phrase à trous. Chacun prend l'une des émotions les moins prises dans le palier
+    (`lightestEmotion`) : aucune n'y revient plus de deux fois et au moins trois s'y montrent. Avant, le premier palier n'en montrait que
+    deux dans près de deux tirages sur trois, et une même émotion revenait quatre fois dans un tirage sur sept. La phrase à trous passe
+    pour cela avant les autres dans le programme, car au premier niveau elle n'a qu'une phrase (la tristesse) et les autres se répartissent
+    autour d'elle. Les deux glisser-déposer de visages du premier palier ont la joie en commun, qui a trois visages, et ne montrent donc
+    qu'un visage deux fois.
   - **Ce que l'écran montre.** Mesurés dans la séance de la galerie, sur un écran de 375 × 812 : un QCM, une association et un ordre
     tiennent au-dessus du dock, frises et gestes comprises. Un glisser-déposer laisse sa seconde case sous le dock tant que l'écran n'a
     pas défilé, comme ceux des sciences ; avec trois cases de visages, rangées sur deux colonnes, la troisième dépasse un peu.
-  - **`convex/__tests__/ciArtsTemplates.test.ts`** (174 tests) a un VÉRIFICATEUR par gabarit, écrit avec une copie figée des tableaux
+  - **`convex/__tests__/ciArtsTemplates.test.ts`** (177 tests) a un VÉRIFICATEUR par gabarit, écrit avec une copie figée des tableaux
     (choses et couleurs, objets et formes, visages, situations, gestes, cris, phrases à trous) qu'un test compare au module : changer une
     chose ou un visage oblige à relire le test. Il abîme ensuite chaque gabarit (le bon choix déplacé, une tuile dans la mauvaise case, deux
     paires croisées, deux pas échangés, un mot faux dans le trou) et exige que son vérificateur le voie 120 fois sur 120. Il vérifie les
@@ -1980,7 +2012,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     questions de chaque palier. Il a trouvé cinq défauts en route : le contrôleur ne reconnaît pas « de haut en bas » comme le critère d'un
     ordre de couleurs (le feu s'énonce donc « Mets dans l'ordre les lumières du feu, de haut en bas »), une consigne avait deux apostrophes
     droites, entre lesquelles l'écran coupe, le verbe « souris » est aussi un mot du catalogue (la souris), les deux glisser-déposer de
-    visages du premier palier se ressemblaient, et la même question de couleur revenait à deux paliers.
+    visages du premier palier se ressemblaient, et la même question de couleur revenait à deux paliers. Il garde aussi la variété, sur
+    40 tirages : aucune paire commune à deux paliers pour les couleurs et les formes, une au plus pour les cris et les visages, une chose
+    au plus au rangement des couleurs, trois émotions au moins et deux exercices au plus sur la même dans un palier de mimes. Onze
+    mutations de ces règles (une chose passée d'un niveau à l'autre, une fenêtre de cris décalée, l'émotion tirée au hasard, la phrase à
+    trous remise en dernier) sont toutes vues. Le correctif a trouvé un piège : `fresh` refait un tirage jusqu'à huit fois quand sa clé est
+    déjà prise, et pour la phrase à trous elle l'est toujours, car `pickFresh` la pose lui-même. Le choix de l'émotion, fait dans le tirage,
+    comptait donc neuf fois la tristesse. Il se fait avant `fresh`.
 - **L'histoire et la géographie du CE1** (`paliers/games/ce1Histoire.ts`, `ce1Geographie.ts`, leurs outils dans `ce1Outils.ts`) :
   soixante-trois gabarits pour `hi-ce1-temps`, `hi-ce1-famille`, `hi-ce1-ecole`, `hi-ce1-quartier`, `ge-ce1-orientation`, `ge-ce1-saisons`,
   `ge-ce1-eau-relief` et `ge-ce1-plan`, les huit premières thématiques du CE1 que le modèle n'écrit plus. Sur l'échantillon de CE1 lu le

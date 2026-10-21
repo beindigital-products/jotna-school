@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   emojiRowSizeClass,
   graphemeCount,
+  isClockEmoji,
   isEmojiGrapheme,
   qcmLayout,
   segmentPrompt,
@@ -18,6 +19,9 @@ const MANGO = String.fromCodePoint(0x1f96d);
 const DRESS = String.fromCodePoint(0x1f457);
 const COPYRIGHT = String.fromCodePoint(0xa9);
 const FLAG_SN = String.fromCodePoint(0x1f1f8, 0x1f1f3);
+// Deux cadrans d'horloge : trois heures (U+1F552) et onze heures et demie (U+1F566).
+const CLOCK_3 = String.fromCodePoint(0x1f552);
+const CLOCK_1130 = String.fromCodePoint(0x1f566);
 
 describe("isEmojiGrapheme — un émoji est un graphème qui se dessine en couleur", () => {
   it("reconnaît les émojis du contenu, pas les symboles de texte ni les chiffres", () => {
@@ -30,6 +34,20 @@ describe("isEmojiGrapheme — un émoji est un graphème qui se dessine en coule
 
   it("compte un drapeau pour un seul graphème", () => {
     expect(graphemeCount(`${FLAG_SN} Dakar`)).toBe(7);
+  });
+});
+
+describe("isClockEmoji — un cadran d'horloge d'Unicode", () => {
+  it("reconnaît les vingt-quatre cadrans (les heures justes et les demi-heures), pas un autre émoji", () => {
+    for (let code = 0x1f550; code <= 0x1f567; code++) expect(isClockEmoji(String.fromCodePoint(code)), code.toString(16)).toBe(true);
+    expect(isClockEmoji(String.fromCodePoint(0x1f54f))).toBe(false);
+    expect(isClockEmoji(String.fromCodePoint(0x1f568))).toBe(false);
+    expect(isClockEmoji(FISH)).toBe(false);
+    expect(isClockEmoji("")).toBe(false);
+  });
+
+  it("ne reconnaît qu'UN cadran : deux à la suite ne sont pas « un cadran »", () => {
+    expect(isClockEmoji(`${CLOCK_3}${CLOCK_3}`)).toBe(false);
   });
 });
 
@@ -69,6 +87,21 @@ describe("segmentPrompt — la consigne découpée sans perdre un caractère", (
     ]);
   });
 
+  it("pose un cadran d'horloge seul à part : c'est ce que l'enfant lit", () => {
+    expect(segmentPrompt(`Quelle heure est-il ? ${CLOCK_1130}`)).toEqual([
+      { kind: "texte", text: "Quelle heure est-il ? " },
+      { kind: "horloge", text: CLOCK_1130 },
+    ]);
+  });
+
+  it("garde deux cadrans à la suite dans une rangée, et un autre émoji seul en ligne", () => {
+    expect(segmentPrompt(`${CLOCK_3} ${CLOCK_1130}`)).toEqual([{ kind: "rangee", text: `${CLOCK_3} ${CLOCK_1130}`, count: 2 }]);
+    expect(segmentPrompt(`Une robe ${DRESS}`)).toEqual([
+      { kind: "texte", text: "Une robe " },
+      { kind: "emoji", text: DRESS },
+    ]);
+  });
+
   it("recompose exactement la consigne, quelle qu'elle soit", () => {
     const prompts = [
       row,
@@ -77,6 +110,8 @@ describe("segmentPrompt — la consigne découpée sans perdre un caractère", (
       "Quel est le résultat de 3 + 4 ?",
       "",
       `  ${FISH}  `,
+      `Quelle heure est-il ? ${CLOCK_1130}`,
+      `${CLOCK_3}${CLOCK_1130} et ${CLOCK_3}.`,
     ];
     for (const prompt of prompts) {
       expect(segmentPrompt(prompt).map((segment) => segment.text).join(""), prompt).toBe(prompt);

@@ -4,8 +4,10 @@
  *
  * Sur l'échantillon de CP, la thématique n'avait ni horloge ni pièces : « Il y a ___ jours dans une semaine » renvoyait à un calendrier
  * que l'écran ne montrait pas. L'HORLOGE est ici un ÉMOJI : Unicode donne une horloge pour chaque heure juste (🕐 à 🕛, U+1F550 à
- * U+1F55B) et pour chaque demi-heure (🕜 à 🕧, U+1F55C à U+1F567). Aucun composant n'est nécessaire : `ExercisePrompt` pose un émoji seul
- * sur son socle, en grand, et la voix de Pio ne lit que l'énoncé, sans l'émoji.
+ * U+1F55B) et pour chaque demi-heure (🕜 à 🕧, U+1F55C à U+1F567). Aucun composant d'horloge n'est nécessaire, mais la TAILLE compte : à la
+ * taille d'un mot (36 px), les aiguilles ne se lisent pas (relu sur l'iPhone 17, le 21 octobre 2026). L'énoncé (`ExercisePrompt`, segment
+ * « horloge » de `choix-texte.ts`) pose donc un cadran seul en grand sur son socle, sous la phrase, et les tuiles (`TileGlyphs`) le dessinent à
+ * 48 px. La voix de Pio ne lit que l'énoncé, sans l'émoji.
  *
  * CE QUE CE FICHIER NE FAIT PAS SORTIR DE LA FICHE
  * - Des heures justes et des demi-heures, jamais un quart d'heure ni une minute. L'heure s'écrit « 3 heures » ou « 3 heures et demie »,
@@ -21,7 +23,7 @@
  */
 import { pick, pickFresh, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 import { CHILDREN, pronoun } from "./stories";
-import { choiceGame, gapGame, linkGame, sequenceGame, sortGame, variantsForLevel } from "./tableaux";
+import { choiceGame, gapGame, levelGroup, linkGame, pickPreferred, sequenceGame, sortGame, variantsForLevel } from "./tableaux";
 import { wrongNumbers } from "./nombresCp";
 
 // ===========================================================================
@@ -65,10 +67,10 @@ export function makeReadClock(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Relie chaque horloge à son heure. » : trois ou quatre horloges, chacune avec son heure en lettres. */
+/** « Relie chaque horloge à son heure. » : trois horloges (quatre tuiles de 48 px ne tiennent pas sur le premier écran d'un petit téléphone), chacune avec son heure en lettres. */
 export function makeClockLinks(ctx: GameContext): GeneratedGame {
   return linkGame(ctx, "heure-relier", "relier une horloge et son heure", () => {
-    const count = ctx.level === 1 ? 3 : 4;
+    const count = 3;
     const hours = shuffle(
       ctx.rng,
       Array.from({ length: 12 }, (_, i) => i + 1),
@@ -202,6 +204,9 @@ export function makeDayOrMonth(ctx: GameContext): GeneratedGame {
 /** La plus grande somme servie, selon le palier. */
 const MONEY_TOP: Record<GameLevel, number> = { 1: 35, 2: 60, 3: 80, 4: 100 };
 
+/** La tranche d'une somme : jusqu'à 35 F, de 36 à 60 F, au-delà. Chaque palier préfère la sienne (`makePayCoins`). */
+const moneyBand = (sum: number): 0 | 1 | 2 => (sum <= 35 ? 0 : sum <= 60 ? 1 : 2);
+
 /** « 25 F + 10 F » : les pièces d'une somme, la plus grosse d'abord. */
 const coinsText = (coins: readonly number[]): string =>
   [...coins]
@@ -222,7 +227,9 @@ export function makePayCoins(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "monnaie-payer", "payer une somme avec des pièces", () => {
     const child = pickFresh(ctx, CHILDREN, (candidate) => `payer:${candidate.name}`);
     const pairs = coinPairs(MONEY_TOP[ctx.level]);
-    const [a, b] = pick(ctx.rng, pairs);
+    // Chaque palier a sa tranche de sommes (jusqu'à 35 F, puis de 50 à 60 F, puis 75 F et plus) : sans cela, « doit payer 15 F » revenait aux paliers 1 et 2.
+    const own = pairs.filter(([x, y]) => moneyBand(x + y) === levelGroup(ctx.level));
+    const [a, b] = pickPreferred(ctx, pairs, own, ([x, y]) => `payer-somme:${x + y}`);
     const price = a + b;
     // Des paires proches de la somme, jamais la même somme : une seule réponse juste.
     const others = shuffle(

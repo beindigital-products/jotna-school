@@ -13,7 +13,7 @@
  */
 import { fresh, originOf, pick, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
 import { CATEGORIES, optionOf, type Thing } from "./things";
-import { levelGroup } from "./tableaux";
+import { levelGroup, variantsForLevel } from "./tableaux";
 
 type Shape = { name: string; plural: string; corners: number; emojis: readonly string[] };
 
@@ -32,12 +32,19 @@ const SHAPE_KEYS = Object.keys(SHAPES) as ShapeKey[];
 
 const withArticle = (name: string) => `le ${name}`;
 
+/**
+ * Les dessins de « Quel est le nom de cette forme ? », rangés pour que chaque tiers de la liste ait des formes différentes : un palier en prend
+ * un tiers (`variantsForLevel`, le CP et le CI ont trois paliers joués aux niveaux 1, 2 et 4). Sans cela, le même rond 🔵 revenait au premier et au
+ * deuxième palier de « Les formes et les solides ». La forme d'un dessin se lit dans `SHAPES`.
+ */
+const SHAPE_DRAWINGS: readonly string[] = ["⬛", "🔴", "🔺", "⬜", "🔵", "🔻", "🔲", "⚫", "🔳", "⚪"];
+
 /** « Quel est le nom de cette forme ? ⬛ » : trois noms, dont un seul est celui de la forme dessinée. */
 export function makeShapeName(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "forme-nom", () => {
-    const key = pick(ctx.rng, SHAPE_KEYS);
+    const emoji = pick(ctx.rng, variantsForLevel(SHAPE_DRAWINGS, ctx.level));
+    const key = SHAPE_KEYS.find((k) => SHAPES[k].emojis.includes(emoji)) ?? SHAPE_KEYS[0];
     const shape = SHAPES[key];
-    const emoji = pick(ctx.rng, shape.emojis);
     // Un carré est un rectangle particulier : « rectangle » ne se propose jamais pour un carré.
     const others = [
       ...SHAPE_KEYS.filter((k) => k !== key).map((k) => SHAPES[k].name),
@@ -118,11 +125,17 @@ const SOLIDS: { name: string; objects: readonly string[]; never: string | null }
 
 const SOLID_ARTICLE: Record<string, string> = { cube: "le cube", pavé: "le pavé", cylindre: "le cylindre", boule: "la boule" };
 
+/**
+ * Les objets de « Quel est le nom du solide qui ressemble à cet objet ? », rangés comme `SHAPE_DRAWINGS` : un tiers par palier, chaque tiers mêlant
+ * les solides (le dé et la brique, seuls de leur sorte, tombent dans deux tiers différents). Le solide d'un objet se lit dans `SOLIDS`.
+ */
+const SOLID_OBJECTS: readonly string[] = ["🎲", "🥫", "⚽", "🧱", "🧻", "🏀", "🔋", "⚾", "🎾"];
+
 /** « Quel est le nom du solide qui ressemble à cet objet ? 🎲 » */
 export function makeSolidName(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "solide-nom", () => {
-    const solid = pick(ctx.rng, SOLIDS);
-    const emoji = pick(ctx.rng, solid.objects);
+    const emoji = pick(ctx.rng, variantsForLevel(SOLID_OBJECTS, ctx.level));
+    const solid = SOLIDS.find((s) => s.objects.includes(emoji)) ?? SOLIDS[0];
     const wrong = shuffle(
       ctx.rng,
       SOLIDS.filter((s) => s.name !== solid.name && s.name !== solid.never).map((s) => s.name),

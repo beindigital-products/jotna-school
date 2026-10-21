@@ -19,6 +19,18 @@ const MATERIAL: Record<string, string> = { modeler: "argile", peindre: "pinceau"
 /** Le nombre de coins de chaque forme. */
 const CORNERS: Record<string, number> = { carré: 4, triangle: 3, rond: 0, rectangle: 4 };
 
+/** La forme que chaque dessin représente, et le solide que chaque objet rappelle (`forme-nom`, `solide-nom`). */
+const SHAPE_OF: Record<string, string> = {
+  "⬛": "carré", "⬜": "carré", "🔲": "carré", "🔳": "carré",
+  "🔴": "rond", "🔵": "rond", "⚫": "rond", "⚪": "rond",
+  "🔺": "triangle", "🔻": "triangle",
+};
+const SOLID_OF: Record<string, string> = {
+  "🎲": "cube", "🧱": "pavé", "🥫": "cylindre", "🧻": "cylindre", "🔋": "cylindre",
+  "⚽": "boule", "🏀": "boule", "⚾": "boule", "🎾": "boule",
+};
+const SOLID_ARTICLE: Record<string, string> = { cube: "le cube", pavé: "le pavé", cylindre: "le cylindre", boule: "la boule" };
+
 type Exo = { prompt: string; answerKey: string; payload: Record<string, unknown> };
 
 /** Les exercices de chaque palier d'une thématique : un tableau par palier, avec son niveau. */
@@ -78,6 +90,247 @@ describe("technique-relier : les trois paliers ne relient pas les mêmes gestes"
       });
       expect(new Set(sets).size, `${seed} : ${sets.join(" | ")}`).toBe(3);
     }
+  });
+});
+
+/** Les contraires et les phrases à trou de « Décrire et comparer » (`fr-cp-decrire`), écrits ici. */
+const CONTRARY: Record<string, string> = {
+  grand: "petit", petit: "grand", chaud: "froid", froid: "chaud", lourd: "léger", léger: "lourd", plein: "vide", vide: "plein", long: "court", court: "long",
+};
+const GAP_ANSWER: Record<string, string> = {
+  "Le feu est chaud, la glace est ___.": "froid",
+  "Le chat est petit, le lion est ___.": "grand",
+  "Le coton est léger, le fer est ___.": "lourd",
+  "Le verre n'est pas plein, il est ___.": "vide",
+  "Le crayon est long, le bout de crayon est ___.": "court",
+};
+/** Les choses de chaque couleur (`couleur-objet`) et les animaux, du plus petit au plus grand puis du plus léger au plus lourd (`comparer-*`). */
+const COLOUR_OF: Record<string, string> = { rouge: "🍎🍓🍅", jaune: "🍌🍋", vert: "🥒🥦", orange: "🥕", violet: "🍆" };
+const SIZE_ORDER = ["🐜", "🐭", "🐔", "🐕", "🐄", "🦒"];
+const WEIGHT_ORDER = ["🐜", "🐭", "🐔", "🐕", "🐑", "🐄", "🐘"];
+const MASCULINE: Record<string, string> = { grande: "grand", petite: "petit", lourde: "lourd", légère: "léger" };
+
+/** Les niveaux d'un thème de trois paliers (CP, CI) et la graine d'un palier. */
+const blanks = (exo: Exo) => exo.payload.blanks as { options: string[]; answer: string }[];
+
+describe("fr-cp-decrire : les contraires, les couleurs et les comparaisons ne reviennent pas d'un palier à l'autre", () => {
+  it("contraire-qcm : deux mots distincts par palier, aucun dans deux paliers, et le bon contraire", () => {
+    for (const seed of SEEDS) {
+      const seen = new Map<string, number>();
+      for (const palier of paliers("CP", 3, "contraire-qcm", 2, seed)) {
+        expect(new Set(palier.games.map((g) => g.prompt)).size, `${seed} niveau ${palier.level}`).toBe(2);
+        for (const exo of palier.games) {
+          const word = /« (.+) »/u.exec(exo.prompt)![1];
+          expect(rightOption(exo), exo.prompt).toBe(CONTRARY[word]);
+          expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+          expect(seen.has(word), `${seed} : « ${word} » aux niveaux ${seen.get(word)} et ${palier.level}`).toBe(false);
+          seen.set(word, palier.level);
+        }
+      }
+    }
+  });
+
+  it("contraire-qcm : chaque palier garde de la variété (trois mots aux niveaux 1 et 2, quatre au dernier)", () => {
+    const byLevel = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      for (const palier of paliers("CP", 3, "contraire-qcm", 2, seed)) {
+        const set = byLevel.get(palier.level) ?? new Set<string>();
+        for (const exo of palier.games) set.add(exo.prompt);
+        byLevel.set(palier.level, set);
+      }
+    }
+    expect([...byLevel].map(([level, set]) => `${level}:${set.size}`).sort()).toEqual(["1:3", "2:3", "4:4"]);
+  });
+
+  it("contraire-trou : une phrase différente à chaque palier, avec le bon mot, et les cinq phrases servent", () => {
+    const byLevel = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      const seenIn = new Map<string, number>();
+      for (const palier of paliers("CP", 3, "contraire-trou", 1, seed)) {
+        const [exo] = palier.games;
+        const text = exo.payload.text as string;
+        expect(GAP_ANSWER[text], `phrase inconnue « ${text} »`).toBeDefined();
+        expect(blanks(exo)[0].answer, text).toBe(GAP_ANSWER[text]);
+        expect(blanks(exo)[0].options, text).toContain(GAP_ANSWER[text]);
+        expect(seenIn.has(text), `${seed} : « ${text} » aux niveaux ${seenIn.get(text)} et ${palier.level}`).toBe(false);
+        seenIn.set(text, palier.level);
+        const set = byLevel.get(palier.level) ?? new Set<string>();
+        set.add(text);
+        byLevel.set(palier.level, set);
+      }
+    }
+    expect([...byLevel].map(([level, set]) => `${level}:${set.size}`).sort()).toEqual(["1:1", "2:2", "4:2"]);
+  });
+
+  it("couleur-objet : une couleur demandée différente à chaque palier, et la bonne chose", () => {
+    const byLevel = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      const seenIn = new Map<string, number>();
+      for (const palier of paliers("CP", 3, "couleur-objet", 1, seed)) {
+        const [exo] = palier.games;
+        const colour = /^Qu'est-ce qui est (.+) \?$/u.exec(exo.prompt)![1];
+        expect(COLOUR_OF[colour], exo.prompt).toBeDefined();
+        expect(COLOUR_OF[colour], `${exo.prompt} → ${rightOption(exo)}`).toContain(Array.from(rightOption(exo))[0]);
+        expect(seenIn.has(colour), `${seed} : « ${colour} » aux niveaux ${seenIn.get(colour)} et ${palier.level}`).toBe(false);
+        seenIn.set(colour, palier.level);
+        const set = byLevel.get(palier.level) ?? new Set<string>();
+        set.add(colour);
+        byLevel.set(palier.level, set);
+      }
+    }
+    expect([...byLevel].map(([level, set]) => `${level}:${[...set].sort().join("+")}`).sort()).toEqual(["1:rouge", "2:jaune+vert", "4:orange+violet"]);
+  });
+
+  it("comparer-trou : deux comparaisons distinctes par palier, aucune dans deux paliers, et le bon mot", () => {
+    for (const seed of SEEDS) {
+      const seen = new Map<string, number>();
+      for (const palier of paliers("CP", 3, "comparer-trou", 2, seed)) {
+        expect(new Set(palier.games.map((g) => g.prompt)).size, `${seed} niveau ${palier.level}`).toBe(2);
+        for (const exo of palier.games) {
+          const [first, second] = exo.prompt.split("\n")[1].split(" ");
+          const answer = blanks(exo)[0].answer;
+          const base = MASCULINE[answer] ?? answer;
+          const order = base === "grand" || base === "petit" ? SIZE_ORDER : WEIGHT_ORDER;
+          const more = base === "grand" || base === "lourd";
+          expect(order.indexOf(first) > order.indexOf(second), `${exo.prompt} → ${answer}`).toBe(more);
+          const signature = `${first} ${second} ${more ? "plus" : "moins"} ${order === SIZE_ORDER ? "taille" : "poids"}`;
+          expect(seen.has(signature), `${seed} : ${signature} aux niveaux ${seen.get(signature)} et ${palier.level}`).toBe(false);
+          seen.set(signature, palier.level);
+        }
+      }
+    }
+  });
+
+  it("comparer-mesure : un mot différent à chaque palier (lourd, léger, puis grand ou petit), et le bon animal", () => {
+    const byLevel = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      const seenIn = new Map<string, number>();
+      for (const palier of paliers("CP", 3, "comparer-mesure", 1, seed)) {
+        const [exo] = palier.games;
+        const word = /le plus (\p{L}+) \?$/u.exec(exo.prompt)![1];
+        const order = word === "grand" || word === "petit" ? SIZE_ORDER : WEIGHT_ORDER;
+        const ranks = options(exo).map((option) => order.indexOf(Array.from(option)[0]));
+        expect(ranks.every((rank) => rank >= 0), exo.prompt).toBe(true);
+        const wanted = word === "grand" || word === "lourd" ? Math.max(...ranks) : Math.min(...ranks);
+        expect(order.indexOf(Array.from(rightOption(exo))[0]), exo.prompt).toBe(wanted);
+        expect(seenIn.has(word), `${seed} : « ${word} » aux niveaux ${seenIn.get(word)} et ${palier.level}`).toBe(false);
+        seenIn.set(word, palier.level);
+        const set = byLevel.get(palier.level) ?? new Set<string>();
+        set.add(word);
+        byLevel.set(palier.level, set);
+      }
+    }
+    expect([...byLevel].map(([level, set]) => `${level}:${[...set].sort().join("+")}`).sort()).toEqual(["1:lourd", "2:léger", "4:grand+petit"]);
+  });
+
+  it("comparer-mesure, au CI où il en pose quatre par palier : quatre mots différents dans chaque palier", () => {
+    for (const seed of SEEDS) {
+      for (const palier of paliers("CI", 3, "comparer-mesure", 4, seed)) {
+        expect(new Set(palier.games.map((g) => g.prompt)).size, `${seed} niveau ${palier.level}`).toBe(4);
+      }
+    }
+  });
+});
+
+describe("monnaie-payer : la somme à payer ne revient pas d'un palier à l'autre", () => {
+  it("une tranche de sommes par palier (jusqu'à 35 F, de 50 à 60 F, 75 F et plus), la bonne somme, des choix distincts", () => {
+    const byLevel = new Map<number, Set<number>>();
+    for (const seed of SEEDS) {
+      const seenIn = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "monnaie-payer", 1, seed)) {
+        const [exo] = palier.games;
+        const price = Number(/doit payer (\d+) F/u.exec(exo.prompt)![1]);
+        const total = (text: string) => text.split(" + ").reduce((sum, part) => sum + Number(part.replace(" F", "")), 0);
+        expect(total(rightOption(exo)), exo.prompt).toBe(price);
+        expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+        for (const wrong of options(exo).filter((option) => option !== rightOption(exo))) expect(total(wrong), `${exo.prompt} → ${wrong}`).not.toBe(price);
+        if (palier.level === 1) expect(price, exo.prompt).toBeLessThanOrEqual(35);
+        if (palier.level === 2) expect([price >= 50, price <= 60], exo.prompt).toEqual([true, true]);
+        if (palier.level === 4) expect(price, exo.prompt).toBeGreaterThanOrEqual(75);
+        expect(seenIn.has(price), `${seed} : ${price} F aux niveaux ${seenIn.get(price)} et ${palier.level}`).toBe(false);
+        seenIn.set(price, palier.level);
+        const set = byLevel.get(palier.level) ?? new Set<number>();
+        set.add(price);
+        byLevel.set(palier.level, set);
+      }
+    }
+    expect([...byLevel].map(([level, set]) => `${level}:${[...set].sort((a, b) => a - b).join(",")}`).sort()).toEqual([
+      "1:10,15,20,30,35",
+      "2:50,55,60",
+      "4:75,100",
+    ]);
+  });
+});
+
+/** Le dessin d'un énoncé « … ? ⬛ » : ce qui suit le point d'interrogation. */
+const drawingOf = (exo: Exo) => exo.prompt.split("? ").at(-1)!.trim();
+
+describe("forme-nom et solide-nom : le même dessin ne revient pas d'un palier à l'autre (ma-ci-formes en pose deux de chaque)", () => {
+  it("forme-nom : deux dessins distincts par palier, aucun dans deux paliers, et la bonne forme", () => {
+    for (const seed of SEEDS) {
+      const seen = new Map<string, number>();
+      for (const palier of paliers("CI", 3, "forme-nom", 2, seed)) {
+        expect(new Set(palier.games.map(drawingOf)).size, `${seed} niveau ${palier.level}`).toBe(2);
+        for (const exo of palier.games) {
+          const emoji = drawingOf(exo);
+          expect(SHAPE_OF[emoji], `dessin inconnu « ${emoji} »`).toBeDefined();
+          expect(rightOption(exo), exo.prompt).toBe(`le ${SHAPE_OF[emoji]}`);
+          expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+          // Un carré est un rectangle particulier : « rectangle » ne se propose jamais pour lui.
+          if (SHAPE_OF[emoji] === "carré") expect(options(exo).join(), exo.prompt).not.toContain("rectangle");
+          expect(seen.has(emoji), `${seed} : ${emoji} aux niveaux ${seen.get(emoji)} et ${palier.level}`).toBe(false);
+          seen.set(emoji, palier.level);
+        }
+      }
+    }
+  });
+
+  it("forme-nom : chaque palier garde de la variété (trois dessins aux niveaux 1 et 2, quatre au dernier)", () => {
+    const byLevel = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      for (const palier of paliers("CI", 3, "forme-nom", 2, seed)) {
+        const set = byLevel.get(palier.level) ?? new Set<string>();
+        for (const exo of palier.games) set.add(drawingOf(exo));
+        byLevel.set(palier.level, set);
+      }
+    }
+    expect([...byLevel].map(([level, set]) => `${level}:${set.size}`).sort()).toEqual(["1:3", "2:3", "4:4"]);
+    // Les dix dessins servent tous, à un palier ou à un autre.
+    expect(new Set([...byLevel.values()].flatMap((set) => [...set]))).toEqual(new Set(Object.keys(SHAPE_OF)));
+  });
+
+  it("solide-nom : deux objets distincts par palier, aucun dans deux paliers, et le bon solide", () => {
+    for (const seed of SEEDS) {
+      const seen = new Map<string, number>();
+      for (const palier of paliers("CI", 3, "solide-nom", 2, seed)) {
+        expect(new Set(palier.games.map(drawingOf)).size, `${seed} niveau ${palier.level}`).toBe(2);
+        for (const exo of palier.games) {
+          const emoji = drawingOf(exo);
+          const solid = SOLID_OF[emoji];
+          expect(solid, `objet inconnu « ${emoji} »`).toBeDefined();
+          expect(rightOption(exo), exo.prompt).toBe(SOLID_ARTICLE[solid]);
+          expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+          // Un cube est un pavé particulier : ni « le pavé » pour le dé, ni « le cube » pour la brique.
+          if (solid === "cube") expect(options(exo), exo.prompt).not.toContain("le pavé");
+          if (solid === "pavé") expect(options(exo), exo.prompt).not.toContain("le cube");
+          expect(seen.has(emoji), `${seed} : ${emoji} aux niveaux ${seen.get(emoji)} et ${palier.level}`).toBe(false);
+          seen.set(emoji, palier.level);
+        }
+      }
+    }
+  });
+
+  it("solide-nom : chaque palier garde de la variété (trois objets), et les neuf servent", () => {
+    const byLevel = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      for (const palier of paliers("CI", 3, "solide-nom", 2, seed)) {
+        const set = byLevel.get(palier.level) ?? new Set<string>();
+        for (const exo of palier.games) set.add(drawingOf(exo));
+        byLevel.set(palier.level, set);
+      }
+    }
+    expect([...byLevel].map(([level, set]) => `${level}:${set.size}`).sort()).toEqual(["1:3", "2:3", "4:3"]);
+    expect(new Set([...byLevel.values()].flatMap((set) => [...set]))).toEqual(new Set(Object.keys(SOLID_OF)));
   });
 });
 
