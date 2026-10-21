@@ -2073,6 +2073,51 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     Les cases sont dites « en haut à gauche », « au centre », « en bas à droite ». Le seul émoji que ces gabarits écrivent est dans l'énoncé
     d'un plan, jamais sur une tuile ni dans un indice. Une étiquette est un nom seul, sans article, et une case de glissé n'a pas d'article
     non plus (« Personne », « Lieu », « Document ») : `templatePictures.test.ts` les joue au CI.
+- **Les sciences du CE1** (`paliers/games/ce1Vivant.ts`, `ce1Matiere.ts`, leurs aides dans `ce1SciencesOutils.ts`) : cinquante-deux
+  gabarits pour les six thématiques `sc-ce1-nutrition`, `sc-ce1-respiration`, `sc-ce1-paludisme` (29 gabarits, `ce1Vivant.ts`),
+  `sc-ce1-substances`, `sc-ce1-eau` et `sc-ce1-objets` (23, `ce1Matiere.ts`), que le modèle n'écrit plus. Sur l'échantillon de CE1 lu le
+  21 octobre 2026, 6 exercices sur 36 étaient faux en sciences : un ordre arbitraire de la prévention du paludisme, des aliments sans
+  rapport avec le paludisme, « Quel aliment aide les poumons ? » (le bissap), la farine qui se dissout, un ordre « bouillir puis filtrer »
+  à l'envers de l'usage, une question ouverte sur un robinet. Ici chaque exercice lit une ligne d'un tableau fermé, écrite à la main, dont
+  la bonne réponse est dans la ligne et dont les mauvais choix ne peuvent pas être une deuxième bonne réponse. Les noms des gabarits
+  commencent par `ce1-` ; ceux de l'eau potable par `ce1-pot-`, parce que `ce1-eau-*` est déjà la géographie du CE1. Les fonctions sont des
+  `makeCe1…` (le CI et le CP ont leurs `makeTool…`, `makeBody…` et d'autres noms voisins : `index.ts` les importe tous).
+  - **`ce1SciencesOutils.ts`** porte la forme commune : `factChoice` (un QCM de trois choix), `factGap` (une phrase à trou), `factWrite` (une
+    réponse courte d'un mot de la liste), `binSort` (un glissé entre deux cases), `pickPairs` (trois paires prises parmi tous les trios
+    possibles d'un tableau), `stepsOrder` (un ordre). `pickLine` préfère, quand un palier lit deux fois le même gabarit, deux lignes dont la
+    bonne réponse diffère.
+  - **Quatre parts qui couvrent tout le tableau.** `windowFor` (lot 1) fait glisser une fenêtre sur la liste et laisse hors fenêtre des lignes
+    qu'aucun niveau ne sert jamais : en comptant, quatre lignes sur six, quatre sur huit, une sur neuf ou dix n'étaient jamais posées, et l'une
+    d'elles avait deux apostrophes dans son énoncé, sans qu'aucun test puisse la voir. `partOf(items, index, parts)` et `quarter(items, level, uses)`
+    coupent la liste en parts égales à une près : chaque ligne appartient à un niveau, aucune à deux. Les ordres et les chaînes alimentaires
+    prennent la moitié de la liste courte aux niveaux 1 et 2, la moitié de la liste longue aux niveaux 3 et 4. Mesuré sur 200 graines par
+    thématique, aucune question n'est revue d'un palier à l'autre (0,0 %), et le test relit 40 tirages par thématique.
+  - **Ce que les tables écrivent.** Nutrition : le régime de chaque animal (herbivore, carnivore, omnivore), qui mange quoi dans une chaîne
+    (l'herbe, le mouton, le lion), ce dont une plante a besoin (l'eau, la lumière, le sol). Un herbivore se cherche parmi des carnivores, un
+    carnivore parmi des herbivores : la poule et l'homme, omnivores, ne sont jamais un mauvais choix discutable. Respiration : les poumons et les
+    branchies, par où l'air entre, ce qui pollue l'air. Substances : seuls le sel et le sucre se dissolvent, le sable, le caillou, le riz et
+    d'autres non. Eau potable : le puits, le forage, le robinet et le fleuve ; bouillir, filtrer, quelques gouttes de javel ; un récipient propre
+    et couvert. Paludisme : le moustique, la moustiquaire, les eaux stagnantes, les mains lavées contre les vers, le dispensaire en cas de
+    fièvre. Objets : lampe torche, ciseaux, robinet, cadenas, avec comment ils marchent et s'entretiennent. HORS FICHE, À FAIRE RELIRE : les
+    animaux au-delà du mouton, du lion et de l'homme, les chaînes qui ne sont pas « herbe, mouton, lion », les trois polluants de l'air
+    (fumée, poussière, déchets brûlés), « les poumons sont dans la poitrine », les produits qui ne se dissolvent pas hors du sable, « laisser
+    refroidir » après avoir fait bouillir, les moustiques qui se développent dans l'eau stagnante, l'infirmier du dispensaire, les objets
+    usuels (règle, balai, seau, craie, cartable) et les gestes de l'école (poubelle, trousse, adulte prévenu).
+  - **Les ordres suivent la logique des choses.** Chaque suite est celle qu'on fait vraiment (ouvrir la lampe, retirer les piles, mettre des
+    piles neuves) ou la chaîne des causes (une eau qui reste, des moustiques, une piqûre, la fièvre), jamais un classement d'importance. Aux
+    niveaux 1 et 2, trois étapes ; aux niveaux 3 et 4, quatre. Les indices d'un ordre ne nomment aucune étape : ils disent comment chercher.
+  - **Pièges rencontrés.** (1) `templatePictures.test.ts` joue tous les gabarits au CI : un choix « Le puits », « La fumée », « Du sucre » ou
+    « Les agrandir » (un verbe précédé de « les » se lit comme un nom) est refusé. Les choix qui nomment une chose sont des noms seuls avec
+    leur majuscule (« Puits », « Fumée », « Sucre »). (2) Un énoncé a une apostrophe droite au plus : « Qu'est-ce qui pollue l'air ? » en a deux,
+    il devient « Quelle chose pollue l'air ? ». (3) Le test des indices compte les mots de quatre lettres ou plus de toutes les étiquettes,
+    « pour », « dans » et « avec » compris. (4) Un appariement de trois paires veut trois valeurs différentes à droite : « animal relié à son
+    organe » n'en a que deux, il devient « mot relié à ce qu'il veut dire ». (5) Deux QCM d'objets d'un même palier ne parlent pas du même
+    objet, et le robinet et le seau ne sont jamais mêlés dans une question sur l'eau.
+  - **Mesuré** : 127 tests (`convex/__tests__/ce1SciencesTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à
+    part ; 29 pannes provoquées dans le code (le lion herbivore, le sucre qui rend l'eau potable, le cadenas qui coupe du papier, les deux
+    trous complétés par le même mot…) toutes vues ; le contrôleur ne signale aucun défaut sur 4 800 paliers fabriqués (48 000 exercices) ; les
+    paliers lus à la main ; l'ordre, le glissé, l'appariement et le QCM vus sur l'iPhone 17 (Safari du simulateur, galerie `/dev/exercices`
+    avec des spécimens détournés provisoirement). L'appariement coupe les mots dans ses colonnes étroites (« stag-nantes »), comme au CP.
   - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un ordre sur « L'histoire de ma
     famille » (`ce1-famille-ordre`) et une réponse courte sur « Le plan de la classe et de l'école » (`ce1-plan-ecrire`).
   - `convex/__tests__/ce1HistoryGeographyTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé, avec ses propres tables (des années lues

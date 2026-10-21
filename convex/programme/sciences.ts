@@ -190,36 +190,106 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
         name: "Comment se nourrissent les êtres vivants",
         description:
           "IST, étape 2, paliers 1-2 : la nutrition. Herbivores, carnivores, omnivores ; une chaîne alimentaire simple (herbe → mouton → lion) ; les besoins des plantes (eau, lumière, sol).",
+        // Dix gabarits (`ce1Vivant.ts`) : le régime d'un animal (trois façons de le demander, ranger, relier), la chaîne alimentaire (ranger, lire), les besoins d'une plante (un parmi trois, une phrase à trou, ranger).
+        games: [
+          { kind: "ce1-nutri-regime-qcm", count: 1 },
+          { kind: "ce1-nutri-mot-qcm", count: 1 },
+          { kind: "ce1-nutri-mange-qcm", count: 1 },
+          { kind: "ce1-nutri-regime-glisser", count: 1 },
+          { kind: "ce1-nutri-regime-relier", count: 1 },
+          { kind: "ce1-nutri-chaine-ordre", count: 1 },
+          { kind: "ce1-nutri-chaine-qcm", count: 1 },
+          { kind: "ce1-nutri-plante-qcm", count: 1 },
+          { kind: "ce1-nutri-plante-trou", count: 1 },
+          { kind: "ce1-nutri-plante-glisser", count: 1 },
+        ],
       },
       {
         key: "sc-ce1-respiration",
         name: "La respiration",
         description:
           "IST, étape 2, paliers 1-2 : la respiration. L'homme respire avec ses poumons (par le nez et la bouche), le poisson avec ses branchies ; air pur et air pollué (fumée, poussière).",
+        // Dix gabarits (`ce1Vivant.ts`) : avec quoi un animal respire (un parmi trois, quel animal, ranger), le trajet de l'air, ce qui pollue l'air (un parmi trois, ranger), relier les mots, une phrase à trou, un mot à écrire.
+        games: [
+          { kind: "ce1-resp-organe-qcm", count: 1 },
+          { kind: "ce1-resp-organe-nom", count: 1 },
+          { kind: "ce1-resp-organe-glisser", count: 1 },
+          { kind: "ce1-resp-voie-qcm", count: 1 },
+          { kind: "ce1-resp-air-qcm", count: 1 },
+          { kind: "ce1-resp-air-glisser", count: 1 },
+          { kind: "ce1-resp-relier", count: 1 },
+          { kind: "ce1-resp-trou", count: 2 },
+          { kind: "ce1-resp-ecrire", count: 1 },
+        ],
       },
       {
         key: "sc-ce1-substances",
         name: "Les substances autour de nous",
         description:
           "IST, étape 2, paliers 1-2 : substances physiques et chimiques. Le sel et le sucre se dissolvent dans l'eau, le sable non ; mélanger, filtrer, laisser reposer (décanter).",
+        // Dix gabarits (`ce1Matiere.ts`) : ce qui se dissout dans l'eau (un parmi trois, ranger, compter), dissoudre, mélanger, filtrer, laisser reposer (un parmi trois, relier, ranger les gestes, une phrase à trou).
+        games: [
+          { kind: "ce1-subst-dissout-qcm", count: 2 },
+          { kind: "ce1-subst-dissout-glisser", count: 1 },
+          { kind: "ce1-subst-dissout-compte", count: 1 },
+          { kind: "ce1-subst-devient-qcm", count: 2 },
+          { kind: "ce1-subst-relier", count: 1 },
+          { kind: "ce1-subst-ordre", count: 1 },
+          { kind: "ce1-subst-trou", count: 2 },
+        ],
       },
       {
         key: "sc-ce1-eau",
         name: "L'eau potable",
         description:
           "Vivre dans son milieu, étape 2, paliers 1-2 : d'où vient l'eau (robinet, puits, forage, fleuve), comment la rendre potable (la faire bouillir, la filtrer, quelques gouttes d'eau de javel), la conserver dans un récipient propre et couvert.",
+        // Dix gabarits (`ce1Matiere.ts`) : d'où vient l'eau (un parmi trois, relier), comment la rendre potable (un parmi trois, ranger, ranger les gestes), comment la garder, une phrase à trou, un mot à écrire.
+        games: [
+          { kind: "ce1-pot-source", count: 1 },
+          { kind: "ce1-pot-relier", count: 1 },
+          { kind: "ce1-pot-geste", count: 2 },
+          { kind: "ce1-pot-garde", count: 1 },
+          { kind: "ce1-pot-glisser", count: 1 },
+          { kind: "ce1-pot-ordre", count: 1 },
+          { kind: "ce1-pot-trou", count: 2 },
+          { kind: "ce1-pot-ecrire", count: 1 },
+        ],
       },
       {
         key: "sc-ce1-paludisme",
         name: "Les parasites et le paludisme",
         description:
           "Vivre dans son milieu, étape 2, paliers 1-2 : les vers intestinaux (mains sales, aliments mal lavés) ; le paludisme, transmis par la piqûre du moustique anophèle ; se protéger (moustiquaire imprégnée, supprimer les eaux stagnantes) ; aller au dispensaire en cas de fièvre.",
+        // Dix gabarits (`ce1Vivant.ts`) : la cause du paludisme, se protéger des moustiques, éviter les vers, que faire en cas de fièvre (un parmi trois), ranger ce qui protège et ce qui donne des vers, relier, ranger les gestes, une phrase à trou, un mot à écrire.
+        games: [
+          { kind: "ce1-palu-cause-qcm", count: 1 },
+          { kind: "ce1-palu-proteger-qcm", count: 1 },
+          { kind: "ce1-palu-vers-qcm", count: 1 },
+          { kind: "ce1-palu-fievre-qcm", count: 1 },
+          { kind: "ce1-palu-glisser", count: 1 },
+          { kind: "ce1-palu-vers-glisser", count: 1 },
+          { kind: "ce1-palu-relier", count: 1 },
+          { kind: "ce1-palu-ordre", count: 1 },
+          { kind: "ce1-palu-trou", count: 1 },
+          { kind: "ce1-palu-ecrire", count: 1 },
+        ],
       },
       {
         key: "sc-ce1-objets",
         name: "Les objets techniques simples",
         description:
           "IST, étape 2, paliers 1-2 : objets technologiques simples (lampe torche, ciseaux, robinet, cadenas) : à quoi ils servent, comment ils fonctionnent, comment les entretenir ; prendre soin de l'environnement de l'école.",
+        // Dix gabarits (`ce1Matiere.ts`) : à quoi sert un objet (un parmi trois dans les deux sens, ranger, relier), comment il marche et s'entretient, prendre soin de l'école, ranger les gestes, une phrase à trou.
+        games: [
+          { kind: "ce1-objet-usage-qcm", count: 1 },
+          { kind: "ce1-objet-qui-qcm", count: 1 },
+          { kind: "ce1-objet-glisser", count: 1 },
+          { kind: "ce1-objet-relier", count: 1 },
+          { kind: "ce1-objet-marche-qcm", count: 2 },
+          { kind: "ce1-ecole-qcm", count: 1 },
+          { kind: "ce1-objet-ordre", count: 1 },
+          { kind: "ce1-objet-trou", count: 2 },
+        ],
       },
     ],
     CE2: [
