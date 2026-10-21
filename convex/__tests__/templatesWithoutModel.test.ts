@@ -107,6 +107,11 @@ const WITHOUT_MODEL = [
   "sc-ci-plantes",
   "sc-ci-hygiene",
   "sc-ci-outils",
+  // Les arts du CI : les couleurs, les formes, les frises, les mimes et les émotions.
+  "ar-ci-couleurs",
+  "ar-ci-formes",
+  "ar-ci-frises",
+  "ar-ci-mimes",
 ] as const;
 const MODEL_CALLED = "LE MODÈLE A ÉTÉ APPELÉ";
 
@@ -268,9 +273,10 @@ describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) =>
 });
 
 describe("le faux modèle ne laisse rien passer", () => {
-  it("fait échouer un palier qui a besoin du modèle (ar-ci-mimes : dix exercices à écrire)", async () => {
-    const { ctx, modelCalls, upserts } = fakeConvex("ar-ci-mimes");
-    await expect(generateBucketCore(ctx, bucket(1))).rejects.toThrow(MODEL_CALLED);
+  // Tout le CI et tout le CP sont faits par le code : l'exemple d'une thématique écrite par le modèle vient du CE1.
+  it("fait échouer un palier qui a besoin du modèle (ma-ce1-add-sous : des exercices à écrire)", async () => {
+    const { ctx, modelCalls, upserts, entry } = fakeConvex("ma-ce1-add-sous");
+    await expect(generateBucketCore(ctx, bucket(1, entry.klass as "CI" | "CP"))).rejects.toThrow(MODEL_CALLED);
     expect(modelCalls).toEqual(["aiGateway/index:generate"]);
     // Rien n'est écrit : le palier reste « generating », sans exercice.
     expect(upserts.map((u) => u.status)).toEqual(["generating"]);

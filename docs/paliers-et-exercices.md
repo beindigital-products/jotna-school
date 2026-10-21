@@ -1274,6 +1274,25 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `outil-ordre` | ordre | « Mets les gestes dans l'ordre pour utiliser le balai. » : `Je prends le balai > Je balaie la cour > Je range le balai` |
 | `outil-geste` | QCM | « Tu vas enfoncer un clou avec le marteau. Que fais-tu ? » : `👀 Je regarde bien le clou en frappant`, parmi deux gestes à éviter |
 | `outil-glisser` | glisser-déposer | cases `✅ À faire` et `❌ À éviter` : `🧺 Je range les ciseaux à leur place` à gauche, `🤾 Je lance le marteau à mon ami` à droite |
+| `teinte-chose` | QCM | « Quelle chose est jaune ? » : `la banane`, parmi deux choses d'une autre couleur (rouge ou jaune au premier palier, vert ou bleu au deuxième, orange, violet ou blanc au troisième) |
+| `teinte-relier` | association | `la fraise~🔴 rouge ; la feuille~💚 vert ; le poussin~💛 jaune` (trois couleurs différentes) |
+| `teinte-glisser` | glisser-déposer | cases `🔴 rouge` et `💛 jaune` : `la tomate` et `la fraise` d'un côté, `le soleil` et `la banane` de l'autre (jaune et vert au deuxième palier, vert et blanc au troisième, avec cinq tuiles) |
+| `teinte-ordre` | ordre | « Mets les couleurs du drapeau du Sénégal dans l'ordre, de gauche à droite. » : `💚 vert > 💛 jaune > 🔴 rouge` ; au deuxième palier les lumières du feu de haut en bas, au troisième les quatre premières couleurs de l'arc-en-ciel |
+| `contour-chose` | QCM | « Quelle forme a le drapeau ? » : `le rectangle`, parmi deux autres formes |
+| `contour-relier` | association | `le toit~le triangle ; la fenêtre~le carré ; la pizza~le rond` (trois formes différentes) |
+| `contour-glisser` | glisser-déposer | cases `le rectangle` et `le rond` : `le cahier` et `la règle` d'un côté, `l'assiette` et `la pizza` de l'autre |
+| `contour-trou` | phrase à trous | `Le triangle a ___ coins.` : `trois`, parmi `quatre` et `cinq` ; `Le drapeau a la forme d'un ___.` : `rectangle`, parmi `triangle` et `rond` |
+| `guirlande-suite` | QCM | « Quel dessin continue la frise ? » puis `🥁 🐟 🥁 🐟 🥁 ❓` : `🐟`, parmi l'autre dessin de la frise et un dessin qui n'y est pas (le motif répété est `AB` au premier palier, `AAB` au deuxième, `ABC` au troisième) |
+| `guirlande-intrus` | QCM | « Quel dessin n'est pas à sa place dans la frise ? » puis `🏠 🍌 🏠 🍌 🏠 🍌 ⛵ 🍌` : `⛵`, parmi les deux dessins de la frise |
+| `visage-glisser` | glisser-déposer | cases `Joie` et `Tristesse` : `😀 😊` et `😢 😭` (trois cases aux paliers suivants, jamais la peur avec la surprise) |
+| `visage-quel` | QCM | « Quel visage montre la tristesse ? » : `😢`, parmi deux visages d'autres émotions |
+| `visage-emotion` | QCM | « Quelle émotion montre ce visage ? » puis 😀 : `Joie`, parmi `Colère` et `Tristesse` |
+| `visage-relier` | association | `😀~Joie ; 😡~Colère ; 😢~Tristesse` |
+| `emotion-situation` | QCM | « Tu reçois un beau cadeau. Que ressens-tu ? » : `😀 Joie`, parmi `😨 Peur` et `😢 Tristesse` (jamais la tristesse avec la colère) |
+| `emotion-geste` | QCM | « Que fais-tu quand tu ressens de la peur ? » : `🙈 Je me cache et je tremble`, parmi deux gestes d'autres émotions |
+| `cri-animal` | QCM | « Quel animal fait miaou ? » : `le chat`, parmi deux autres animaux |
+| `cri-relier` | association | `la vache~meuh ; le chat~miaou ; le chien~ouaf ouaf` |
+| `emotion-trou` | phrase à trous | `Quand je suis triste, je ___.` : `pleure`, parmi `danse` et `saute` |
 | `lire-dessin` | QCM | « Quel mot va avec ce dessin ? » puis 🐇 : `lapin`, parmi trois mots à lire (aux paliers suivants, trois mots qui commencent pareil) |
 | `lire-relier` | association | « Relie chaque mot à son dessin. » : `tomate~🍅 ; banane~🍌…` |
 | `lire-syllabes` | ordre | « Remets les syllabes dans l'ordre pour écrire le mot de ce dessin. » puis 🍅 : `to > ma > te` (trois syllabes au moins) |
@@ -1898,6 +1917,51 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     trois paliers, jugés par le contrôleur avec la matière « Éveil scientifique ». Il a trouvé trois défauts en route : deux phrases à
     trous identiques dans un même palier, et, parce qu'il n'y a que cinq plantes, deux associations et deux rangements de plantes qui
     étaient les mêmes.
+- **Les arts du CI** (`paliers/games/plastiqueCi.ts` et `paliers/games/mimesCi.ts`, leurs outils dans `paliers/games/ciTiles.ts`) :
+  dix-neuf gabarits pour `ar-ci-couleurs`, `ar-ci-formes`, `ar-ci-frises` et `ar-ci-mimes`. Les trois premières thématiques laissaient au
+  modèle quatre, quatre et deux exercices par palier, à côté des jeux (pots de couleur, frises à compléter, dessins à copier) ; la
+  quatrième lui laissait les dix. Sur les seize exercices d'arts du CI relus le 19 octobre 2026, cinq étaient faux. Dans l'export de la
+  production, le modèle avait écrit, entre autres : la mangue, la goyave et la pomme rangées sous trois couleurs (elles en ont
+  plusieurs), la table comptée parmi les rectangles (il y en a de rondes), un ballon pris pour un rond (c'est une boule), « Quelle
+  couleur est souvent utilisée pour décorer les guirlandes ? », des émotions à mettre « dans l'ordre de l'histoire » (il n'y a pas
+  d'histoire) et « Colère » reliée à « Quand on perd un jeu » (on peut y être triste).
+  - **Dix gabarits par palier, sans le modèle.** Les couleurs en ajoutent quatre (choisir, relier, ranger, ordonner), les formes quatre
+    (choisir, relier, ranger, compléter), les frises deux (continuer la frise, trouver l'intrus) et les mimes neuf (des visages, des
+    situations, des gestes, des cris, une phrase à trous). Chaque thématique garde les types que la démonstration de la page d'accueil lui
+    donne : une association et un ordre pour les couleurs, une phrase à trous pour les formes, un QCM pour les frises, un glisser-déposer
+    pour les mimes.
+  - **Les tuiles.** Une tuile qui nomme une chose, un objet, une forme ou un animal s'écrit « article + nom », un mot du catalogue des
+    images : l'écran y met le dessin. Une couleur n'est pas une chose : sa tuile est un rond ou un cœur de sa couleur suivi de son nom
+    (`💛 jaune`), comme au CI en anglais, et la voix dit le nom seul. Un visage est un émoji seul. Une émotion est un nom sans article
+    (`Joie`, comme à la démonstration), seul ou après son visage (`😀 Joie`) : « la joie » aurait la forme d'une chose sans dessin, et le
+    contrôleur le signalerait. Un geste est un émoji puis quatre mots au moins, et son émoji n'est pas le visage de l'émotion qu'il
+    désigne. Une frise est faite d'émojis seuls. Aucun émoji n'est d'Unicode 12 ou plus, aucun n'est suivi d'un sélecteur de variation.
+  - **Ce que les tableaux ne disent pas, on ne le demande pas.** Les fruits qui changent de couleur en mûrissant (la mangue, la pomme, la
+    goyave, le citron, le bissap) ne sont jamais demandés : les choses sont celles dont le dessin du catalogue ne laisse aucun doute. Les
+    formes sont celles que montre le dessin de l'objet : l'assiette et la pizza rondes, la fenêtre carrée, le drapeau, le livre, le cahier
+    et la règle rectangles, le toit et la tente triangles, l'étoile de mer. Pas de ballon (une boule), pas de table (rectangle ou ronde
+    selon la table). Un seul ordre juste : les couleurs du drapeau du Sénégal de gauche à droite, celles d'un feu de haut en bas, les
+    quatre premières de l'arc-en-ciel. Sur un visage, les yeux grands ouverts disent la peur comme la surprise : elles ne se côtoient
+    jamais. La tristesse et la colère ne se côtoient pas dans les choix d'une situation, car perdre un jeu, c'est l'une ou l'autre. Aucune
+    situation de surprise (elle est presque toujours aussi de la joie ou de la peur), aucun métier à deviner (le catalogue n'a pas de
+    dessin de métier) et aucun mauvais choix qui puisse être bon : « pleurer de joie » existe, on ne le propose pas.
+  - **Trois paliers, jamais la même question.** Un gabarit qui a peu de variantes donne à chaque niveau sa part (`variantsForLevel`) :
+    rouge ou jaune au premier palier, vert ou bleu au deuxième, orange, violet ou blanc au troisième ; un tiers des objets, des visages,
+    des situations et des cris ; des émotions différentes à chaque palier pour les gestes et les visages à trouver. Les deux
+    glisser-déposer de visages d'un même palier ne reprennent pas les mêmes cases.
+  - **Ce que l'écran montre.** Mesurés dans la séance de la galerie, sur un écran de 375 × 812 : un QCM, une association et un ordre
+    tiennent au-dessus du dock, frises et gestes comprises. Un glisser-déposer laisse sa seconde case sous le dock tant que l'écran n'a
+    pas défilé, comme ceux des sciences ; avec trois cases de visages, rangées sur deux colonnes, la troisième dépasse un peu.
+  - **`convex/__tests__/ciArtsTemplates.test.ts`** (174 tests) a un VÉRIFICATEUR par gabarit, écrit avec une copie figée des tableaux
+    (choses et couleurs, objets et formes, visages, situations, gestes, cris, phrases à trous) qu'un test compare au module : changer une
+    chose ou un visage oblige à relire le test. Il abîme ensuite chaque gabarit (le bon choix déplacé, une tuile dans la mauvaise case, deux
+    paires croisées, deux pas échangés, un mot faux dans le trou) et exige que son vérificateur le voie 120 fois sur 120. Il vérifie les
+    émojis contre une liste d'Unicode 11 au plus, fait passer chaque tuile par la résolution des images du CI, et fabrique 40 paliers de
+    chacune des quatre thématiques pour trois paliers, jugés par le contrôleur avec la matière « Éducation artistique », en comptant les
+    questions de chaque palier. Il a trouvé cinq défauts en route : le contrôleur ne reconnaît pas « de haut en bas » comme le critère d'un
+    ordre de couleurs (le feu s'énonce donc « Mets dans l'ordre les lumières du feu, de haut en bas »), une consigne avait deux apostrophes
+    droites, entre lesquelles l'écran coupe, le verbe « souris » est aussi un mot du catalogue (la souris), les deux glisser-déposer de
+    visages du premier palier se ressemblaient, et la même question de couleur revenait à deux paliers.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
@@ -1914,7 +1978,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `ma-ci-nombres-20`, `ma-ci-trier`, `ma-ci-espace`, `ma-ci-formes`, `ma-ci-mesures` et
   `ma-ci-problemes`, puis `hi-ci-journee`, `hi-ci-ordre`, `hi-ci-hier-demain`, `hi-ci-semaine`, `ge-ci-position`,
   `ge-ci-lateralite`, `ge-ci-reperes`, `ge-ci-quadrillage`, `fr-ci-phrases`, `fr-ci-politesse`, `an-ci-hello`, `an-ci-colours`, `an-ci-numbers`, `an-ci-animals`, `an-ci-fruits`, `ci-ci-politesse`, `ci-ci-ecole`, `ci-ci-entraide`,
-  `ci-ci-route`, `sc-ci-milieu`, `sc-ci-animaux`, `sc-ci-plantes`, `sc-ci-hygiene` et `sc-ci-outils` au CI, puis `hi-cp-calendrier`, `hi-cp-durees`,
+  `ci-ci-route`, `sc-ci-milieu`, `sc-ci-animaux`, `sc-ci-plantes`, `sc-ci-hygiene`, `sc-ci-outils`, `ar-ci-couleurs`, `ar-ci-formes`, `ar-ci-frises` et `ar-ci-mimes` au CI, puis `hi-cp-calendrier`, `hi-cp-durees`,
   `hi-cp-frequences`, `hi-cp-emploi-du-temps`, `ge-cp-itineraire`, `ge-cp-distances`, `ge-cp-plan`, `ge-cp-quartier`, `an-cp-family`, `an-cp-body`, `an-cp-classroom`, `an-cp-numbers-20`, `an-cp-food`, `fr-cp-lecture` et
   `fr-cp-ecrire` au CP (`convex/programme`), dix exercices par palier, voir plus bas ; le modèle n'écrit plus rien. (Quand une fiche garde des exercices du
   modèle, le seuil de validation exige tous les exercices écrits : le modèle en
@@ -1991,4 +2055,4 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   calendrier » (`mois-ecart`) et à « Près ou loin ? » (`pas-difference`), les deux gabarits qui demandent un nombre à écrire. L'anglais du CI est tout en gabarits : ses cinq types de la vitrine sont ceux d'un
   gabarit de leur thématique (le QCM des couleurs, le glisser-déposer des fruits, le relier des animaux, l'ordre des nombres, la phrase à
   trous des salutations). L'instruction civique du CI l'est aussi : le QCM de « Traverser la rue » est un `civ-situation`, le glisser-déposer de « À l'école chaque jour » un `civ-glisser`,
-  l'association et la phrase à trous de « Bonjour, merci, pardon » un `civ-relier` ou un `politesse-relier` et un `politesse-trou`, l'ordre de « On s'entraide » un `civ-ordre`. Les sciences du CI le sont aussi : le QCM de « Naturel ou fabriqué ? » est un `milieu-intrus`, le glisser-déposer de « Les animaux autour de moi » un `faune-glisser`, l'association de « Les outils de la maison et de l'école » un `outil-relier`, l'ordre de « Mon corps et la propreté » un `hygiene-ordre` (le lavage des mains) et la phrase à trous de « Les plantes autour de moi » un `plante-trou`.
+  l'association et la phrase à trous de « Bonjour, merci, pardon » un `civ-relier` ou un `politesse-relier` et un `politesse-trou`, l'ordre de « On s'entraide » un `civ-ordre`. Les sciences du CI le sont aussi : le QCM de « Naturel ou fabriqué ? » est un `milieu-intrus`, le glisser-déposer de « Les animaux autour de moi » un `faune-glisser`, l'association de « Les outils de la maison et de l'école » un `outil-relier`, l'ordre de « Mon corps et la propreté » un `hygiene-ordre` (le lavage des mains) et la phrase à trous de « Les plantes autour de moi » un `plante-trou`. Les arts du CI le sont aussi : l'association et l'ordre de « Les couleurs » sont un `teinte-relier` et un `teinte-ordre`, la phrase à trous de « Les formes » un `contour-trou`, le QCM de « Frises et guirlandes » un `guirlande-suite` ou un `guirlande-intrus`, le glisser-déposer de « Mimes et émotions » un `visage-glisser`.

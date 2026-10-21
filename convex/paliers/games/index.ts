@@ -120,6 +120,29 @@ import {
   makeToolWho,
 } from "./soinsCi";
 import {
+  makeContourChoice,
+  makeContourGap,
+  makeContourLinks,
+  makeContourSort,
+  makeFriseNext,
+  makeFriseOdd,
+  makeTeinteChoice,
+  makeTeinteLinks,
+  makeTeinteOrder,
+  makeTeinteSort,
+} from "./plastiqueCi";
+import {
+  makeCriAnimal,
+  makeCriLinks,
+  makeEmotionGap,
+  makeEmotionGesture,
+  makeEmotionSituation,
+  makeVisageEmotion,
+  makeVisageLinks,
+  makeVisageSort,
+  makeVisageWhich,
+} from "./mimesCi";
+import {
   makeWriteArticle,
   makeWriteCount,
   makeWriteNumberSort,
@@ -923,6 +946,27 @@ export const GAME_KINDS = {
   "outil-ordre": { label: "Remettre les gestes d'un outil dans l'ordre", type: "order", make: makeToolSteps },
   "outil-geste": { label: "Que fais-tu avec cet outil, dans cette situation", type: "qcm", make: makeToolChoice },
   "outil-glisser": { label: "Glisser des gestes d'outil sous « à faire » ou « à éviter »", type: "drag-drop", make: makeToolSort },
+  // Les arts plastiques du CI (`plastiqueCi.ts`) : les couleurs, les formes, les frises.
+  "teinte-chose": { label: "Quelle chose est de cette couleur, parmi trois", type: "qcm", make: makeTeinteChoice },
+  "teinte-relier": { label: "Relier une chose et sa couleur", type: "match", make: makeTeinteLinks },
+  "teinte-glisser": { label: "Glisser des choses sous leur couleur", type: "drag-drop", make: makeTeinteSort },
+  "teinte-ordre": { label: "Remettre les couleurs du drapeau, du feu ou de l'arc-en-ciel dans l'ordre", type: "order", make: makeTeinteOrder },
+  "contour-chose": { label: "Quelle forme a cet objet, parmi trois formes", type: "qcm", make: makeContourChoice },
+  "contour-relier": { label: "Relier un objet et sa forme", type: "match", make: makeContourLinks },
+  "contour-glisser": { label: "Glisser des objets sous leur forme", type: "drag-drop", make: makeContourSort },
+  "contour-trou": { label: "Compléter une phrase sur la forme d'un objet", type: "fill-blank", make: makeContourGap },
+  "guirlande-suite": { label: "Quel dessin continue la frise, parmi trois", type: "qcm", make: makeFriseNext },
+  "guirlande-intrus": { label: "Quel dessin n'est pas à sa place dans la frise, parmi trois", type: "qcm", make: makeFriseOdd },
+  // Les mimes et les émotions du CI (`mimesCi.ts`).
+  "visage-glisser": { label: "Glisser des visages sous leur émotion", type: "drag-drop", make: makeVisageSort },
+  "visage-quel": { label: "Quel visage montre cette émotion, parmi trois", type: "qcm", make: makeVisageWhich },
+  "visage-emotion": { label: "Quelle émotion montre ce visage, parmi trois", type: "qcm", make: makeVisageEmotion },
+  "visage-relier": { label: "Relier un visage et son émotion", type: "match", make: makeVisageLinks },
+  "emotion-situation": { label: "Quelle émotion ressens-tu dans cette situation", type: "qcm", make: makeEmotionSituation },
+  "emotion-geste": { label: "Quel geste fais-tu avec cette émotion", type: "qcm", make: makeEmotionGesture },
+  "cri-animal": { label: "Quel animal fait ce cri, parmi trois dessins", type: "qcm", make: makeCriAnimal },
+  "cri-relier": { label: "Relier un animal et son cri", type: "match", make: makeCriLinks },
+  "emotion-trou": { label: "Compléter une phrase sur ce que l'on fait avec une émotion", type: "fill-blank", make: makeEmotionGap },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
