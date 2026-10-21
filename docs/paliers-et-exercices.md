@@ -1342,6 +1342,35 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `metier-ecrire` | réponse courte | « Dans un jeu de rôles, tu lances un filet à la mer pour attraper des poissons. Quel métier joues-tu ? Écris le mot. » : `pêcheur` |
 | `imiter-qcm` | QCM | « Quel animal fait « miaou » ? » : `Chat` (ou « Que dit le chat ? » : `miaou`) |
 | `imiter-relier` | association | `Chat~miaou ; Vache~meuh ; Coq~cocorico` |
+| `nb-voisin` | QCM | « Quel nombre vient juste après 69 ? » : `70`, le plafond de la fiche jamais dépassé |
+| `nb-comparer` | QCM | « Quel est le plus grand de ces nombres ? » : trois nombres, dont deux de la même dizaine dès le deuxième palier |
+| `nb-ordre` | ordre | `52 > 54 > 56 > 70` |
+| `nb-dizaines` | QCM | « Dans 53, combien y a-t-il de dizaines ? » : `5` (ou « d'unités », ou « dans une centaine » : `10`) |
+| `nb-decomposer` | phrase à trous | `37 = 30 + ___` : `7` ; `3 dizaines et 7 unités, c'est le nombre ___.` ; `5 × 10 + 2 = ___` (fiche de 100) |
+| `nb-glisser` | glisser-déposer | cases Moins de 60 et Plus de 60 : `54` et `63` |
+| `nb-lettres` | QCM | « Quel nombre s'écrit « quatre-vingts » ? » : `80` |
+| `nb-relier` | association | `53~cinquante-trois ; 69~soixante-neuf ; 90~quatre-vingt-dix` |
+| `nb-ecrire` | réponse courte | « Écris en chiffres le nombre « soixante-quinze ». » : `75` |
+| `calc-ajouter` | QCM | « Combien font 47 + 38 ? » : `85` (les unités passent dix) |
+| `calc-enlever` | QCM | « Combien font 62 − 38 ? » : `24`, contre `36` (l'erreur de qui n'emprunte pas) |
+| `calc-retenue` | QCM | « Dans 47 + 38, les unités font 15. On écrit 5. Combien retient-on ? » : `1` |
+| `calc-trou` | phrase à trous | `66 − ___ = 59` : `7` ; `27 + ___ = 45` |
+| `calc-ordre` | ordre | `J'additionne les unités. > J'écris les unités et je retiens une dizaine. > J'additionne les dizaines avec la retenue.` |
+| `calc-relier` | association | `70 − 64~6 ; 47 − 19~28 ; 38 + 26~64` |
+| `calc-glisser` | glisser-déposer | cases Avec retenue et Sans retenue : `32 + 18` et `12 + 16` |
+| `monnaie-somme` | QCM | « Cheikh a 1 pièce de 50 F et 1 pièce de 10 F. Combien a-t-il en tout ? » : `60` |
+| `monnaie-rendre` | QCM | « Lamine achète une orange à 10 F. Il paie avec une pièce de 50 F. Combien lui rend-on ? » : `40` |
+| `monnaie-achat` | réponse courte | « Cheikh a 40 F. Il achète un ballon à 30 F. Combien lui reste-t-il ? Écris le nombre. » : `10` |
+| `mult-paquets` | QCM | « Modou a 3 paquets de 4 pains. Combien de pains a-t-il en tout ? » : `12` |
+| `mult-ecrire` | réponse courte | la même histoire, suivie de « Écris le nombre. » : `12` |
+| `mult-addition` | QCM | « Quelle multiplication donne le même résultat que 2 + 2 + 2 + 2 ? » : `4 × 2` |
+| `mult-table` | QCM | « Combien font 3 × 5 ? » : `15` (ou « Quel est le double de 8 ? ») |
+| `mult-trou` | phrase à trous | `3 × ___ = 15` : `5` |
+| `mult-relier` | association | `3 × 3~9 ; 4 × 2~8 ; 5 × 2~10` |
+| `mult-suite` | ordre | « …les résultats de la table de 2. » : `2 > 12 > 16 > 18` |
+| `mult-glisser` | glisser-déposer | cases Table de 2 et Table de 3 : `16` et `15` (jamais un multiple de six) |
+| `part-qcm` | QCM | « Fatou partage 15 mangues entre 3 enfants. Combien de mangues chaque enfant reçoit-il ? » : `5` |
+| `part-trou` | phrase à trous | `Je partage 6 billes entre 3 enfants. Chaque enfant reçoit ___ billes.` : `2` |
 
 - **Le vocabulaire** (`paliers/games/words.ts`, `LEXICON`) reprend les mots des
   thématiques « Les sons… » du CI, chacun avec sa découpe en syllabes relue à la
@@ -1629,6 +1658,27 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   sans rien de vrai ni de faux. Ici huit métiers ont chacun UN objet et DEUX gestes qui ne sont à aucun autre métier de la table, et huit animaux
   ont leur cri. Le métier à écrire est désigné par ses gestes, jamais nommé ; les réponses admises sont les noms du même métier (marchand,
   couturier, conducteur, paysan, instituteur).
+- **Les mathématiques du CP, première partie** (`paliers/games/nombresCp.ts`, `calculCp.ts`, `tablesCp.ts`) : vingt-neuf gabarits pour
+  `ma-cp-nombres-50`, `ma-cp-nombres-100`, `ma-cp-retenue` et `ma-cp-multiplier`. Sur l'échantillon de CP, le modèle écrivait 6 exercices faux
+  sur 42 : « huitante » pour 80, « ___ fois 9 égal 72 » et « 7 × 10 » sous « Les nombres jusqu'à 50 », des étapes d'addition où aucune ne parle
+  de retenue, une tuile qui contient la réponse. Ici la réponse est CALCULÉE, jamais écrite.
+  - **Le plafond de la fiche** voyage par `vocabulary` (`nombres-50`, `nombres-100`) : aucun nombre n'est écrit au-delà, ni dans l'énoncé ni dans
+    un choix. Le jeu `suite-nombres` y est soumis lui aussi. Avant, un palier « jusqu'à 50 » pouvait recevoir une suite qui montait à 100, et la
+    vitrine du site montrait la même suite.
+  - **Les nombres en lettres** viennent d'UNE fonction, `inWords` : « vingt et un », « soixante et onze », « quatre-vingts », « quatre-vingt-un »,
+    « quatre-vingt-onze », « cent ». Le test les recalcule avec sa propre table et une liste codée en dur de vingt-huit nombres difficiles ;
+    « huitante », « septante » et « nonante » sont refusés.
+  - **Une addition de ces gabarits a toujours une retenue, une soustraction toujours un emprunt**, et le résultat ne passe jamais cent. Les mauvais
+    choix sont les erreurs d'un enfant : oublier la retenue, la compter deux fois, enlever le petit chiffre du grand sans emprunter (62 − 38 donne
+    alors 36). Dans la case « Sans retenue », aucun total ne fait cent, car les dizaines retiendraient une centaine.
+  - **L'argent** : des pièces de 5, 10, 25, 50 et 100 F, des prix multiples de cinq, jamais plus de cent francs ; une monnaie rendue n'est jamais nulle.
+  - **Multiplier** : toute multiplication a un facteur égal à 2 ou à 3 (l'autre va de 2 à 10), le résultat ne passe jamais 30, le partage se fait entre
+    2 ou 3 enfants sans reste, et aucun signe de division n'est écrit. Cela vaut aussi pour les mauvais choix : le test a trouvé « 5 × 4 » parmi
+    eux, le gabarit a été corrigé. Sous « Table de 2 » et « Table de 3 », aucun résultat n'est un multiple de six, qui est dans les deux tables.
+  - **Aucun indice n'écrit un chiffre** : un résultat se lirait dedans.
+  - `convex/__tests__/cpMathsNumbersTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec sa propre arithmétique, abîme volontairement la
+    bonne réponse de chaque gabarit pour vérifier que le test le voit, vérifie les règles de la fiche (retenue, emprunt, plafonds, tables) et fabrique
+    40 paliers de chacune des quatre thématiques contre le contrôleur.
 - **Les premières phrases et la politesse** (`paliers/games/phrases.ts`, `paliers/games/politesse.ts`) : dix
   gabarits pour le français du CI (`fr-ci-phrases`, `fr-ci-politesse`). Sur l'échantillon lu le 19 octobre 2026,
   16 exercices sur 30 étaient faux en « Mes premières phrases » (onze quiz sur les aliments sans scène, des trous où
@@ -1778,13 +1828,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `topicUsesModel`). Un exercice raté par l'enfant se refait par le code
   (`regenerateGame`) : le modèle n'est appelé que pour un exercice qu'il a écrit.
   `convex/__tests__/templatesWithoutModel.test.ts` joue la génération complète de
-  chaque palier de ces soixante-six thématiques contre un faux modèle qui lève une
+  chaque palier de ces soixante-dix thématiques contre un faux modèle qui lève une
   exception au moindre appel. Il reste un appel au modèle pour ces paliers :
   l'explication pas à pas qu'un enfant demande après cinq essais ratés
   (`explainExercise`, `convex/explainMistake.ts`), mise en cache par exercice.
   Les autres thématiques gardent des exercices du modèle, avec leurs défauts connus (voir plus
-  haut) : en CI, l'éveil et l'éducation artistique ; toutes les autres classes, sauf le CP, où seules les mathématiques gardent le modèle. Le français (phrases, politesse), l'histoire, la géographie, l'anglais et l'instruction civique du CI, puis
-  tout le CP sauf les mathématiques (l'histoire, la géographie, l'anglais, le français, les arts, l'instruction civique, les sciences), n'appellent plus le modèle.
+  haut) : en CI, l'éveil et l'éducation artistique ; toutes les autres classes, sauf le CP, où seules quatre thématiques de mathématiques gardent le modèle (mesures, heure et monnaie, problèmes, figures). Le français (phrases, politesse), l'histoire, la géographie, l'anglais et l'instruction civique du CI, puis
+  tout le CP sauf quatre thématiques de mathématiques (l'histoire, la géographie, l'anglais, le français, les arts, l'instruction civique, les sciences, les nombres, le calcul et les tables), n'appellent plus le modèle.
   Les fiches de géométrie et de mesure du CI ne couvrent pas tout leur programme : ni « dessus,
   dessous » (il faudrait une mise en page verticale), ni « plus long » ni « plus plein », et le
   rectangle n'est jamais la bonne réponse d'un nom de forme (aucun émoji sûr) ; ils restent à

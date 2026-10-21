@@ -189,6 +189,31 @@ import {
   makeRepairLinks,
 } from "./sciences";
 import { makeCryChoice, makeCryLinks, makeJobGap, makeJobLinks, makeJobOrder, makeJobSort, makeJobTool, makeJobWho, makeJobWrite } from "./metiers";
+// Les mathématiques du CP : les nombres jusqu'à 50 et 100 (`nombresCp.ts`), retenue, emprunt et monnaie (`calculCp.ts`), tables de 2 et de 3 (`tablesCp.ts`).
+import {
+  makeCpCompare,
+  makeCpDecompose,
+  makeCpNeighbour,
+  makeCpOrder,
+  makeCpSortThreshold,
+  makeCpTensUnits,
+  makeCpWordLinks,
+  makeCpWords,
+  makeCpWriteNumber,
+} from "./nombresCp";
+import { makeBorrowSub, makeCalcGap, makeCalcLinks, makeCalcSort, makeCalcSteps, makeCarryAdd, makeCarryAsk, makeChangeDue, makeCoinsTotal, makeShopLeft } from "./calculCp";
+import {
+  makeShareGap,
+  makeShareQuestion,
+  makeTimesFact,
+  makeTimesGap,
+  makeTimesLinks,
+  makeTimesOrder,
+  makeTimesPacks,
+  makeTimesRepeated,
+  makeTimesSort,
+  makeTimesWrite,
+} from "./tablesCp";
 import { makeColorPair, makeColorPick, makeColorResult, makeWarmCold } from "./colors";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
 import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
@@ -694,6 +719,38 @@ export const GAME_KINDS = {
   "metier-ecrire": { label: "Écrire le nom du métier que l'on joue", type: "short-answer", make: makeJobWrite },
   "imiter-qcm": { label: "Quel animal fait ce cri, ou quel cri fait cet animal", type: "qcm", make: makeCryChoice },
   "imiter-relier": { label: "Relier un animal et son cri", type: "match", make: makeCryLinks },
+  // Les nombres du CP (`nombresCp.ts`) : jusqu'à 50, puis jusqu'à 100.
+  "nb-voisin": { label: "Le nombre juste avant ou juste après, jusqu'à 100", type: "qcm", make: makeCpNeighbour },
+  "nb-comparer": { label: "Le plus grand ou le plus petit de trois nombres", type: "qcm", make: makeCpCompare },
+  "nb-ordre": { label: "Ranger quatre nombres", type: "order", make: makeCpOrder },
+  "nb-dizaines": { label: "Combien de dizaines ou d'unités dans un nombre", type: "qcm", make: makeCpTensUnits },
+  "nb-decomposer": { label: "Décomposer un nombre : 30 + 7, 3 × 10 + 7", type: "fill-blank", make: makeCpDecompose },
+  "nb-glisser": { label: "Glisser des nombres sous « Moins de » ou « Plus de »", type: "drag-drop", make: makeCpSortThreshold },
+  "nb-lettres": { label: "Quel nombre s'écrit en lettres", type: "qcm", make: makeCpWords },
+  "nb-relier": { label: "Relier un nombre et son écriture en lettres", type: "match", make: makeCpWordLinks },
+  "nb-ecrire": { label: "Écrire en chiffres un nombre dit en lettres", type: "short-answer", make: makeCpWriteNumber },
+  // L'addition avec retenue, la soustraction avec emprunt et la monnaie du CP (`calculCp.ts`).
+  "calc-ajouter": { label: "Une addition dont les unités passent dix", type: "qcm", make: makeCarryAdd },
+  "calc-enlever": { label: "Une soustraction avec emprunt", type: "qcm", make: makeBorrowSub },
+  "calc-retenue": { label: "Ce qu'on écrit, ce qu'on retient, ce qu'on emprunte", type: "qcm", make: makeCarryAsk },
+  "calc-trou": { label: "Le nombre qui manque dans un calcul", type: "fill-blank", make: makeCalcGap },
+  "calc-ordre": { label: "Les étapes d'un calcul posé dans l'ordre", type: "order", make: makeCalcSteps },
+  "calc-relier": { label: "Relier un calcul et son résultat", type: "match", make: makeCalcLinks },
+  "calc-glisser": { label: "Glisser des additions sous « Avec retenue » ou « Sans retenue »", type: "drag-drop", make: makeCalcSort },
+  "monnaie-somme": { label: "Additionner des pièces", type: "qcm", make: makeCoinsTotal },
+  "monnaie-rendre": { label: "Rendre la monnaie", type: "qcm", make: makeChangeDue },
+  "monnaie-achat": { label: "Ce qui reste après un achat, à écrire", type: "short-answer", make: makeShopLeft },
+  // Multiplier et partager au CP (`tablesCp.ts`) : les tables de 2 et de 3.
+  "mult-paquets": { label: "Des paquets pareils : combien en tout", type: "qcm", make: makeTimesPacks },
+  "mult-ecrire": { label: "Des paquets pareils : le total, à écrire", type: "short-answer", make: makeTimesWrite },
+  "mult-addition": { label: "Une addition répétée écrite en multiplication", type: "qcm", make: makeTimesRepeated },
+  "mult-table": { label: "Un résultat des tables de 2 et de 3", type: "qcm", make: makeTimesFact },
+  "mult-trou": { label: "Le facteur qui manque", type: "fill-blank", make: makeTimesGap },
+  "mult-relier": { label: "Relier une multiplication et son résultat", type: "match", make: makeTimesLinks },
+  "mult-suite": { label: "Ranger les résultats d'une table", type: "order", make: makeTimesOrder },
+  "mult-glisser": { label: "Glisser des résultats sous « Table de 2 » ou « Table de 3 »", type: "drag-drop", make: makeTimesSort },
+  "part-qcm": { label: "Partager en parts pareilles : combien chacun", type: "qcm", make: makeShareQuestion },
+  "part-trou": { label: "Compléter un partage", type: "fill-blank", make: makeShareGap },
   // Les animaux du CI en anglais (`anglaisCi.ts`) : un dessin et son mot, la ferme ou la nature.
   "animal-mot": { label: "Le mot anglais d'un animal dessiné", type: "qcm", make: makeAnimalWord },
   "animal-francais": { label: "Le mot anglais d'un animal nommé en français", type: "qcm", make: makeAnimalFrench },
