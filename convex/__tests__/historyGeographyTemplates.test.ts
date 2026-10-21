@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { auditExercise } from "../paliers/exerciseAudit";
 import { GAME_KINDS, generateGames, type GameKind } from "../paliers/games";
 import { SCENE_THINGS } from "../paliers/games/espace";
@@ -7,6 +7,9 @@ import { topicUsesModel } from "../paliers/pregen";
 import { allProgrammeEntries } from "../programme";
 import { PALIER_SIZE } from "../paliers/scoring";
 import { pictureForTile } from "../../lib/item-pictures";
+
+// Ces tests jouent des milliers de tirages : sur une machine chargée ou sur le serveur de CI, l'un d'eux dépasse les 5 secondes par défaut.
+vi.setConfig({ testTimeout: 30_000 });
 
 /**
  * LES GABARITS DU TEMPS (histoire) ET DE L'ESPACE (géographie) DU CI : les jours de la semaine, hier et

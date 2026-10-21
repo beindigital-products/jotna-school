@@ -80,6 +80,11 @@ const WITHOUT_MODEL = [
   "sc-cp-maladies",
   "sc-cp-nature",
   "ar-cp-roles",
+  // Les mathématiques du CP, première partie : les nombres jusqu'à 50 et 100, retenue et emprunt, multiplier et partager.
+  "ma-cp-nombres-50",
+  "ma-cp-nombres-100",
+  "ma-cp-retenue",
+  "ma-cp-multiplier",
   // L'anglais du CI : les salutations, les couleurs, les nombres de 0 à 10, les animaux, les fruits.
   "an-ci-hello",
   "an-ci-colours",

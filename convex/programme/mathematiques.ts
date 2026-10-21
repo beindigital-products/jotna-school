@@ -140,26 +140,74 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Les nombres jusqu'à 50",
         description:
           "Activités numériques, palier 4 du CP : lire, écrire et dénombrer jusqu'à 50, dizaines et unités, comparer et ranger. Aucun nombre au-delà de 50.",
-        games: [{ kind: "suite-nombres", count: 2 }],
+        // Dix gabarits (`nombresCp.ts`, `patterns.ts`) : `vocabulary` donne le plafond de la fiche (50), jamais dépassé.
+        games: [
+          { kind: "suite-nombres", count: 2, vocabulary: "nombres-50" },
+          { kind: "nb-voisin", count: 1, vocabulary: "nombres-50" },
+          { kind: "nb-comparer", count: 1, vocabulary: "nombres-50" },
+          { kind: "nb-ordre", count: 1, vocabulary: "nombres-50" },
+          { kind: "nb-dizaines", count: 1, vocabulary: "nombres-50" },
+          { kind: "nb-decomposer", count: 1, vocabulary: "nombres-50" },
+          { kind: "nb-glisser", count: 1, vocabulary: "nombres-50" },
+          { kind: "nb-lettres", count: 1, vocabulary: "nombres-50" },
+          { kind: "nb-relier", count: 1, vocabulary: "nombres-50" },
+        ],
       },
       {
         key: "ma-cp-retenue",
         name: "Additions et soustractions",
         description:
           "Palier 4 du CP : l'addition avec retenue et la soustraction avec emprunt (nombres jusqu'à 100), en ligne et posées ; problèmes du marché en FCFA avec les pièces de 5 F à 100 F.",
+        // Dix gabarits (`calculCp.ts`) : toute addition a une retenue, toute soustraction un emprunt, tout résultat reste sous cent.
+        games: [
+          { kind: "calc-ajouter", count: 1 },
+          { kind: "calc-enlever", count: 1 },
+          { kind: "calc-retenue", count: 1 },
+          { kind: "calc-trou", count: 1 },
+          { kind: "calc-ordre", count: 1 },
+          { kind: "calc-relier", count: 1 },
+          { kind: "calc-glisser", count: 1 },
+          { kind: "monnaie-somme", count: 1 },
+          { kind: "monnaie-rendre", count: 1 },
+          { kind: "monnaie-achat", count: 1 },
+        ],
       },
       {
         key: "ma-cp-nombres-100",
         name: "Les nombres jusqu'à 100",
         description:
           "Paliers 5 et 6 du CP : les nombres de 51 à 100 ; unités, dizaines et centaine ; écritures additives (70 + 8) et multiplicatives (7 × 10 + 8).",
-        games: [{ kind: "suite-nombres", count: 2 }],
+        // Dix gabarits (`nombresCp.ts`, `patterns.ts`) : `vocabulary` donne le plafond de la fiche (100), les nombres en lettres vont jusqu'à « cent ».
+        games: [
+          { kind: "suite-nombres", count: 2, vocabulary: "nombres-100" },
+          { kind: "nb-voisin", count: 1, vocabulary: "nombres-100" },
+          { kind: "nb-ordre", count: 1, vocabulary: "nombres-100" },
+          { kind: "nb-dizaines", count: 1, vocabulary: "nombres-100" },
+          { kind: "nb-decomposer", count: 1, vocabulary: "nombres-100" },
+          { kind: "nb-glisser", count: 1, vocabulary: "nombres-100" },
+          { kind: "nb-lettres", count: 1, vocabulary: "nombres-100" },
+          { kind: "nb-relier", count: 1, vocabulary: "nombres-100" },
+          { kind: "nb-ecrire", count: 1, vocabulary: "nombres-100" },
+        ],
       },
       {
         key: "ma-cp-multiplier",
         name: "Multiplier et partager",
         description:
           "Palier 5 du CP : le sens de la multiplication (3 paquets de 4 mangues), les tables de 2 et de 3, le sens de la division-partage (partager 12 bonbons entre 3 enfants). Aucune autre table que celles de 2 et de 3.",
+        // Dix gabarits (`tablesCp.ts`) : toute multiplication a un facteur égal à 2 ou à 3, le résultat ne passe pas 30, le partage se fait entre 2 ou 3 enfants.
+        games: [
+          { kind: "mult-paquets", count: 1 },
+          { kind: "mult-addition", count: 1 },
+          { kind: "mult-table", count: 1 },
+          { kind: "mult-trou", count: 1 },
+          { kind: "mult-relier", count: 1 },
+          { kind: "mult-suite", count: 1 },
+          { kind: "mult-glisser", count: 1 },
+          { kind: "part-qcm", count: 1 },
+          { kind: "part-trou", count: 1 },
+          { kind: "mult-ecrire", count: 1 },
+        ],
       },
       {
         key: "ma-cp-figures",
