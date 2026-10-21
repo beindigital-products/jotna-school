@@ -262,6 +262,108 @@ describe("monnaie-payer : la somme à payer ne revient pas d'un palier à l'autr
   });
 });
 
+/** « 3 heures et demie » : l'heure en lettres, écrite ici. */
+const timeWords = (hour: number, half: boolean) => `${hour} heure${hour > 1 ? "s" : ""}${half ? " et demie" : ""}`;
+/** L'heure d'une horloge d'émoji (U+1F550 à U+1F55B les heures justes, U+1F55C à U+1F567 les heures et demie), lue dans le code du glyphe. */
+const clockTime = (glyph: string) => {
+  const code = glyph.codePointAt(0)!;
+  return code >= 0x1f55c ? { hour: code - 0x1f55c + 1, half: true } : { hour: code - 0x1f550 + 1, half: false };
+};
+/** Les heures que chaque niveau (1, 2, 4) a pour lui : une sur trois. */
+const HOURS_OF_LEVEL: Record<number, number[]> = { 1: [1, 4, 7, 10], 2: [2, 5, 8, 11], 4: [3, 6, 9, 12] };
+
+describe("heure-lire et heure-trou : la même heure ne revient pas d'un palier à l'autre", () => {
+  it("heure-lire : une heure du palier, la bonne réponse, jamais la même heure dans deux paliers", () => {
+    const seen = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      const hours = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "heure-lire", 1, seed)) {
+        const [exo] = palier.games;
+        const { hour, half } = clockTime(Array.from(exo.prompt.split("? ").at(-1)!.trim())[0]);
+        expect(rightOption(exo), exo.prompt).toBe(timeWords(hour, half));
+        expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+        expect(HOURS_OF_LEVEL[palier.level], `${seed} niveau ${palier.level}`).toContain(hour);
+        if (palier.level === 1) expect(half, `${seed} : le premier palier n'a que des heures justes`).toBe(false);
+        expect(hours.has(hour), `${seed} : ${hour} h aux niveaux ${hours.get(hour)} et ${palier.level}`).toBe(false);
+        hours.set(hour, palier.level);
+        const set = seen.get(palier.level) ?? new Set<string>();
+        set.add(`${hour}${half ? "½" : ""}`);
+        seen.set(palier.level, set);
+      }
+    }
+    expect([...seen].map(([level, set]) => `${level}:${set.size}`).sort()).toEqual(["1:4", "2:8", "4:8"]);
+  });
+
+  it("heure-trou : une heure de départ du palier, la bonne heure d'arrivée, jamais le même départ dans deux paliers", () => {
+    const seen = new Map<number, Set<number>>();
+    for (const seed of SEEDS) {
+      const hours = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "heure-trou", 1, seed)) {
+        const [exo] = palier.games;
+        const match = /^Il est (\d+) heures?( et demie)?\. (Une heure|Une demi-heure) plus tard, il sera ___\.$/u.exec(exo.payload.text as string);
+        expect(match, exo.payload.text as string).not.toBeNull();
+        const hour = Number(match![1]);
+        const half = match![2] !== undefined;
+        const minutes = (hour % 12) * 60 + (half ? 30 : 0) + (match![3] === "Une heure" ? 60 : 30);
+        const arrival = minutes % 720;
+        expect(blanks(exo)[0].answer, exo.payload.text as string).toBe(timeWords(Math.floor(arrival / 60) || 12, arrival % 60 === 30));
+        expect(HOURS_OF_LEVEL[palier.level], `${seed} niveau ${palier.level}`).toContain(hour);
+        if (palier.level === 1) expect(half).toBe(false);
+        expect(hours.has(hour), `${seed} : départ ${hour} h aux niveaux ${hours.get(hour)} et ${palier.level}`).toBe(false);
+        hours.set(hour, palier.level);
+        const set = seen.get(palier.level) ?? new Set<number>();
+        set.add(hour);
+        seen.set(palier.level, set);
+      }
+    }
+    // Les quatre heures de chaque palier servent, le 12 au dernier palier aussi.
+    const summary = [...seen].map(([level, set]) => `${level}:${[...set].sort((a, b) => a - b).join(",")}`).sort();
+    expect(summary).toEqual(["1:1,4,7,10", "2:2,5,8,11", "4:3,6,9,12"]);
+  });
+});
+
+describe("monnaie-pieces et monnaie-relier : la même somme ne revient pas d'un palier à l'autre", () => {
+  it("monnaie-pieces : une tranche de sommes par palier (jusqu'à 35 F, de 36 à 60 F, au-delà), la bonne réponse, jamais la même somme", () => {
+    for (const seed of SEEDS) {
+      const seen = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "monnaie-pieces", 1, seed)) {
+        const [exo] = palier.games;
+        const match = /pièces de (\d+) F faut-il pour payer (\d+) F \?$/u.exec(exo.prompt);
+        expect(match, exo.prompt).not.toBeNull();
+        const coin = Number(match![1]);
+        const total = Number(match![2]);
+        expect(total % coin, exo.prompt).toBe(0);
+        expect(rightOption(exo), exo.prompt).toBe(String(total / coin));
+        expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+        if (palier.level === 1) expect(total, exo.prompt).toBeLessThanOrEqual(35);
+        if (palier.level === 2) expect([total > 35, total <= 60], exo.prompt).toEqual([true, true]);
+        if (palier.level === 4) expect(total, exo.prompt).toBeGreaterThan(60);
+        expect(seen.has(total), `${seed} : ${total} F aux niveaux ${seen.get(total)} et ${palier.level}`).toBe(false);
+        seen.set(total, palier.level);
+      }
+    }
+  });
+
+  it("monnaie-relier : trois groupes de sommes différentes par palier, justes, et jamais les mêmes trois groupes dans deux paliers", () => {
+    for (const seed of SEEDS) {
+      const sets = paliers("CP", 3, "monnaie-relier", 1, seed).map((palier) => {
+        const [exo] = palier.games;
+        expect(pairs(exo), `${seed} niveau ${palier.level}`).toHaveLength(3);
+        const totals = pairs(exo).map((pair) => {
+          const match = /^(\d+) pièces de (\d+) F$/u.exec(pair.left)!;
+          const total = Number(match[1]) * Number(match[2]);
+          expect(pair.right, pair.left).toBe(`${total} F`);
+          return total;
+        });
+        expect(new Set(totals).size, `${seed} niveau ${palier.level}`).toBe(3);
+        if (palier.level === 1) expect(Math.max(...totals), `${seed} : le premier palier n'a que de petites sommes`).toBeLessThanOrEqual(35);
+        return pairs(exo).map((pair) => pair.left).sort().join(" | ");
+      });
+      expect(new Set(sets).size, `${seed} : ${sets.join(" // ")}`).toBe(3);
+    }
+  });
+});
+
 /** Le dessin d'un énoncé « … ? ⬛ » : ce qui suit le point d'interrogation. */
 const drawingOf = (exo: Exo) => exo.prompt.split("? ").at(-1)!.trim();
 
