@@ -227,24 +227,61 @@ export const FRANCAIS: ProgrammeSubject = {
       {
         key: "fr-ce1-phrase",
         name: "La phrase, le verbe et le sujet",
+        games: [
+          { kind: "ce1-fr-phrase-verbe", count: 2 },
+          { kind: "ce1-fr-phrase-sujet", count: 2 },
+          { kind: "ce1-fr-phrase-ecrite", count: 1 },
+          { kind: "ce1-fr-phrase-groupe", count: 1 },
+          { kind: "ce1-fr-phrase-glisser", count: 1 },
+          { kind: "ce1-fr-phrase-ordre", count: 2 },
+          { kind: "ce1-fr-phrase-relier", count: 1 },
+        ],
         description:
           "Grammaire, palier 1 du CE1 : reconnaître une phrase (majuscule, point), trouver le verbe (le mot qui change quand on dit hier ou demain), le sujet (qui fait l'action), le complément, le groupe nominal (déterminant et nom). Phrases simples de la vie de tous les jours.",
       },
       {
         key: "fr-ce1-nom-adjectif",
         name: "Le nom, l'article et l'adjectif",
+        games: [
+          { kind: "ce1-fr-nom-article", count: 2 },
+          { kind: "ce1-fr-nom-accord", count: 3 },
+          { kind: "ce1-fr-nom-genre", count: 1 },
+          { kind: "ce1-fr-nom-ordre", count: 1 },
+          { kind: "ce1-fr-nom-relier", count: 1 },
+          { kind: "ce1-fr-nom-ecrire", count: 2 },
+        ],
         description:
           "Grammaire, palier 2 du CE1 : les articles (le, la, les, l', un, une, des), l'adjectif qualificatif, le genre (masculin, féminin) et le nombre (singulier, pluriel) dans le groupe nominal ; accorder l'adjectif avec le nom (un grand arbre, une grande case, des grands arbres).",
       },
       {
         key: "fr-ce1-present-passe",
         name: "Le présent et le passé composé",
+        games: [
+          { kind: "ce1-fr-present-present", count: 2 },
+          { kind: "ce1-fr-present-passe", count: 2 },
+          { kind: "ce1-fr-present-temps", count: 1 },
+          { kind: "ce1-fr-present-reconnaitre", count: 1 },
+          { kind: "ce1-fr-present-glisser", count: 1 },
+          { kind: "ce1-fr-present-relier", count: 1 },
+          { kind: "ce1-fr-present-ordre", count: 1 },
+          { kind: "ce1-fr-present-ecrire", count: 1 },
+        ],
         description:
           "Conjugaison, paliers 1 et 2 du CE1 : le présent et le passé composé des verbes du 1er groupe (chanter, jouer, manger, danser), des verbes avoir et être, et des verbes aller, partir et finir, à toutes les personnes. Reconnaître le temps grâce à aujourd'hui, maintenant, hier.",
       },
       {
         key: "fr-ce1-imperatif-futur",
         name: "L'impératif et le futur",
+        games: [
+          { kind: "ce1-fr-imperatif-imperatif", count: 2 },
+          { kind: "ce1-fr-imperatif-futur", count: 2 },
+          { kind: "ce1-fr-imperatif-sorte", count: 1 },
+          { kind: "ce1-fr-imperatif-temps", count: 1 },
+          { kind: "ce1-fr-imperatif-glisser", count: 1 },
+          { kind: "ce1-fr-imperatif-ordre", count: 1 },
+          { kind: "ce1-fr-imperatif-relier", count: 1 },
+          { kind: "ce1-fr-imperatif-ecrire", count: 1 },
+        ],
         description:
           "Conjugaison et grammaire, palier 3 du CE1 : l'impératif présent (tu, nous, vous) et le futur simple des verbes du 1er groupe ; la phrase impérative (« Ferme la porte. »), la phrase impersonnelle (« Il pleut. ») et la phrase infinitive (« Ne pas marcher sur les fleurs. »).",
       },
@@ -257,6 +294,16 @@ export const FRANCAIS: ProgrammeSubject = {
       {
         key: "fr-ce1-dictionnaire",
         name: "Le dictionnaire et les mots de liaison",
+        games: [
+          { kind: "ce1-fr-dico-ordre", count: 2 },
+          { kind: "ce1-fr-dico-premier", count: 1 },
+          { kind: "ce1-fr-dico-apres", count: 1 },
+          { kind: "ce1-fr-dico-temps", count: 1 },
+          { kind: "ce1-fr-dico-logique", count: 2 },
+          { kind: "ce1-fr-dico-recit", count: 1 },
+          { kind: "ce1-fr-dico-relier", count: 1 },
+          { kind: "ce1-fr-dico-theme", count: 1 },
+        ],
         description:
           "Vocabulaire du CE1 : l'ordre alphabétique (ranger des mots, trouver le mot qui vient avant ou après dans le dictionnaire), les connecteurs de temps (d'abord, ensuite, puis, enfin) et de logique (mais, parce que, donc), les mots d'un même thème (le marché, l'école, la ferme, la mer).",
       },

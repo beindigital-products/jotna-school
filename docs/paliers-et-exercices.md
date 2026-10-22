@@ -2228,6 +2228,39 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     palier à l'autre.
   - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un QCM sur se présenter, une réponse
     courte sur les jours, un glissé sur a ou an, un ordre sur les vêtements, un trou sur j'aime, un appariement sur les ordres de la classe.
+- **Le français du CE1, première moitié** (`paliers/games/ce1Francais.ts`, avec les aides de `ce1SciencesOutils.ts`) : trente-sept gabarits
+  pour les cinq thématiques `fr-ce1-phrase` (la phrase, le verbe et le sujet), `fr-ce1-nom-adjectif`, `fr-ce1-present-passe`,
+  `fr-ce1-imperatif-futur` et `fr-ce1-dictionnaire`, que le modèle n'écrit plus. Les homophones (`fr-ce1-homophones`) et la lecture
+  (`fr-ce1-lecture`) restent au modèle : ils demandent des textes à fabriquer et font un lot à part. Sur l'échantillon de CE1 lu le
+  21 octobre 2026, 17 exercices de français sur 42 étaient faux : « Fatou a mangé au yassa » (une phrase qui n'est pas du français), un mot
+  « avant » donné à l'envers, « je irai », des ordres sans critère, des trous qui acceptent deux mots. Ici chaque exercice lit une ligne d'un
+  tableau fermé, écrit à la main. Les noms des gabarits commencent par `ce1-fr-` ; les fonctions sont des `makeCe1Fr…`. Ces cinq fiches ont
+  quatre paliers : `quarter` coupe chaque tableau en quatre parts qui le couvrent tout, une par niveau.
+  - **Un mauvais choix n'est jamais une deuxième bonne réponse.** Pour une conjugaison, c'est une forme du présent ou d'une autre personne,
+    jamais l'imparfait, que la fiche n'apprend pas. Le test recalcule la réponse avec ses propres tables : les neuf verbes au présent, leurs
+    participes, les terminaisons du futur, l'ordre alphabétique sans accents. Pour chaque trou, il vérifie que la réponse est une forme de la
+    personne de l'énoncé et qu'aucun mauvais choix ne l'est aussi.
+  - **Les pièges du français que les tableaux évitent.** (1) Un mot qui est aussi un nom (« lave », « joue », « ferme », « lit ») ne sert jamais
+    d'étiquette de verbe : les verbes des glissés sont des formes qui n'existent que comme verbes (« mangeons », « dormez », « sautent »).
+    (2) L'accord du participe avec « être » n'est demandé qu'avec un sujet masculin (« Moussa est allé », « Ils sont partis »), et jamais avec
+    « je », « tu », « nous » ni « vous » : on ne saurait pas le genre. (3) Une phrase à remettre dans l'ordre n'a qu'un ordre possible : jamais
+    un adverbe qu'on peut placer avant ou après. (4) Un ordre à deux tuiles (« Il pleut. ») n'est pas à remettre dans l'ordre : le contrôleur le
+    signale. (5) Les noms des glissés sont abstraits (« joie », « peur », « histoire »), parce que `templatePictures.test.ts` refuse au CI une
+    tuile qui nomme une chose sans image ; les thèmes de l'école et du marché sont faits de verbes.
+  - **HORS FICHE, À FAIRE RELIRE** : les phrases de la vie courante (Awa, Moussa, Fatou, le ballon, le riz, le marché, la cour), les verbes
+    écouter, regarder, ranger, fermer et laver au-delà de chanter, jouer, manger et danser, les noms abstraits des glissés, les prénoms de
+    l'ordre alphabétique, et le classement « Sujet, Verbe, Phrase, Groupe nominal » de l'appariement.
+  - **Pièges rencontrés.** (1) Un indice ne répète aucun mot de quatre lettres ou plus d'une étiquette, d'une case ou d'une réponse : « futur »
+    (une case), « d'abord » et « enfin » (des réponses), « hier » (une réponse), « verbe » (une case), « idée » (une étiquette) ont tous été
+    écrits par un premier jet d'indice. (2) Un énoncé a une apostrophe droite au plus : « dans l'ordre de l'histoire » en avait deux.
+    (3) Un indice « Regarde entre parenthèses » contenait le verbe « Regarde » d'une réponse. (4) Une ligne dont la réponse revenait à deux
+    paliers (« Malick » premier du dictionnaire aux niveaux 3 et 4) comptait comme une question revue.
+  - **Mesuré** : 93 tests (`convex/__tests__/ce1FrancaisTemplates.test.ts`), dont une vérification par gabarit contre des tables et des règles
+    écrites à part, à 4 niveaux et 60 graines ; 40 pannes provoquées dans le code (« tu fermes la porte », « ils sont allé », « la mangue » devenue
+    masculine, l'ordre alphabétique à l'envers, « enfin » avant « ensuite »…) toutes vues ; le contrôleur ne signale aucun défaut sur 4 000 paliers
+    fabriqués (40 000 exercices), sans doublon dans un palier ; 0,0 % de questions revues d'un palier à l'autre.
+  - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un glissé sur le nom et l'adjectif,
+    un appariement sur le présent et le passé composé, un ordre sur le dictionnaire, une réponse courte sur l'impératif et le futur.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
