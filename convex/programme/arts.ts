@@ -40,6 +40,7 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "teinte-glisser", count: 1 },
           { kind: "teinte-chose", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "ar-ci-formes",
@@ -55,6 +56,7 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "contour-relier", count: 1 },
           { kind: "contour-glisser", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "ar-ci-frises",
@@ -69,6 +71,7 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "guirlande-suite", count: 1 },
           { kind: "guirlande-intrus", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "ar-ci-grave-aigu",
@@ -79,6 +82,7 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "ecoute-hauteur", count: 7 },
           { kind: "ecoute-melodie", count: 3 },
         ],
+        byLevel: true,
       },
       {
         key: "ar-ci-long-fort",
@@ -89,6 +93,7 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "ecoute-duree", count: 5 },
           { kind: "ecoute-intensite", count: 5 },
         ],
+        byLevel: true,
       },
       {
         key: "ar-ci-mimes",
@@ -109,6 +114,7 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "cri-animal", count: 1 },
           { kind: "cri-relier", count: 1 },
         ],
+        byLevel: true,
       },
     ],
     CP: [

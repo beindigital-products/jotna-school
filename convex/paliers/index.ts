@@ -759,6 +759,7 @@ export async function generateBucketCore(
     palierCount,
     seed: `${args.topicId}:${args.palierIndex}:${now}`,
     accept: gameAcceptor({ class: args.class, subject: subject.subjectName, tally: gameAudit }),
+    windowed: programme?.topic.byLevel === true,
   }).map((game) => ({
     type: game.type,
     prompt: game.prompt,

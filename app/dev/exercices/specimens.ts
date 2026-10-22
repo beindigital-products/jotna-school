@@ -226,9 +226,10 @@ const BARE_LABELS = dragDrop({
 /**
  * « Tu sors de classe. Ta maman est de l'autre côté de la route. Que fais-tu ? » (`ro8`) : la plus
  * longue des 41 situations, un énoncé de trois ou quatre lignes sous le clip. C'est le pire cas du
- * premier écran, celui que `scripts/shoot-exercises.mjs --seance-types qcm-scene` mesure.
+ * premier écran, celui que `scripts/shoot-exercises.mjs --seance-types qcm-scene` mesure. Les scènes se partagent entre les paliers :
+ * celle-ci est la huitième de la route, donc au dernier tiers, joué aux niveaux 3 et 4 (voir `ProgrammeTopic.byLevel`).
  */
-const SEED_SCENE_CLIP = "galerie-scene-9";
+const SEED_SCENE_CLIP = "galerie-scene-0";
 
 /** Les dix-neuf spécimens. Calculés une fois par page : les graines sont fixes, le résultat aussi. */
 export function buildSpecimens(): Record<Kind, Specimen> {
@@ -251,7 +252,7 @@ export function buildSpecimens(): Record<Kind, Specimen> {
     "qcm-mots-seuls": specimen("qcm-mots-seuls", "CI", handmade("qcm-mots-seuls", BARE_NAMES)),
     "match-mots": specimen("match-mots", "CI", handmade("match-mots", BARE_PAIRS)),
     "drag-drop-savane": specimen("drag-drop-savane", "CI", handmade("drag-drop-savane", BARE_LABELS)),
-    "qcm-scene": specimen("qcm-scene", "CI", template("civ-situation", "CI", SEED_SCENE_CLIP)),
+    "qcm-scene": specimen("qcm-scene", "CI", template("civ-situation", "CI", SEED_SCENE_CLIP, 4)),
   };
 }
 

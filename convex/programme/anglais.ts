@@ -62,6 +62,7 @@ export const ANGLAIS: ProgrammeSubject = {
           { kind: "salut-trou", count: 1 },
           { kind: "salut-trou-dessin", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "an-ci-colours",
@@ -77,6 +78,7 @@ export const ANGLAIS: ProgrammeSubject = {
           { kind: "couleur-glisser", count: 1 },
           { kind: "couleur-phrase", count: 2 },
         ],
+        byLevel: true,
       },
       {
         key: "an-ci-numbers",
@@ -94,6 +96,7 @@ export const ANGLAIS: ProgrammeSubject = {
           { kind: "compte-suite", count: 1 },
           { kind: "compte-glisser", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "an-ci-animals",
@@ -107,6 +110,7 @@ export const ANGLAIS: ProgrammeSubject = {
           { kind: "animal-glisser", count: 1 },
           { kind: "animal-intrus", count: 2 },
         ],
+        byLevel: true,
       },
       {
         key: "an-ci-fruits",
@@ -121,6 +125,7 @@ export const ANGLAIS: ProgrammeSubject = {
           { kind: "fruit-glisser", count: 1 },
           { kind: "fruit-intrus", count: 2 },
         ],
+        byLevel: true,
       },
     ],
     CP: [

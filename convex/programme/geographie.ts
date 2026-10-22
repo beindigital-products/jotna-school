@@ -32,6 +32,7 @@ export const GEOGRAPHIE: ProgrammeSubject = {
           { kind: "pres-loin", count: 1 },
           { kind: "position-glisser", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "ge-ci-lateralite",
@@ -46,6 +47,7 @@ export const GEOGRAPHIE: ProgrammeSubject = {
           { kind: "gauche-droite-glisser", count: 2 },
           { kind: "rangee-copie", count: 2 },
         ],
+        byLevel: true,
       },
       {
         key: "ge-ci-reperes",
@@ -58,6 +60,7 @@ export const GEOGRAPHIE: ProgrammeSubject = {
           { kind: "repere-intrus", count: 2 },
           { kind: "repere-trajet", count: 3 },
         ],
+        byLevel: true,
       },
       {
         key: "ge-ci-quadrillage",
@@ -72,6 +75,7 @@ export const GEOGRAPHIE: ProgrammeSubject = {
           { kind: "grille-ligne-colonne", count: 1 },
           { kind: "grille-glisser", count: 1 },
         ],
+        byLevel: true,
       },
     ],
     CP: [
