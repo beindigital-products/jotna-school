@@ -1839,7 +1839,11 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     Les sommes se rangent en trois tranches (`moneyBand` : jusqu'à 35 F, de 36 à 60 F, au-delà, la même que `monnaie-payer`). `monnaie-pieces` prend une somme de la
     tranche du palier ; `monnaie-relier` prend trois groupes de sommes différentes, de préférence de la tranche (le premier palier n'a que de petites sommes, les suivants
     en ont deux de la leur : deux paliers ne relient jamais les mêmes trois groupes). Mesuré sur 200 graines, en comparant la phrase des textes à trou : `heure-lire`
-    reprenait 30 questions, `monnaie-pieces` 32, `monnaie-relier` 11, `heure-trou` 15 ; plus aucune. `heure-ordre` (2), `heure-relier` (1) et `monnaie-rendre` (2) n'ont pas été touchés.
+    reprenait 30 questions, `monnaie-pieces` 32, `monnaie-relier` 11, `heure-trou` 15 ; plus aucune. `heure-relier` (1) n'a pas été touché. `heure-ordre` (2 reprises sur 200) et `monnaie-rendre` (2) ont reçu le même traitement ensuite : `heure-ordre` tire
+    ses trois ou quatre horloges dans le groupe d'heures du palier (`ownHour` : 7 et 10, puis 8 et 11, puis 6 et 9, justes et et demie), si bien que deux paliers ne rangent jamais les
+    mêmes horloges ; `monnaie-rendre` (`calculCp.ts`, aussi dans `ma-cp-retenue`) prend un prix de la tranche du palier (jusqu'à 30 F, de 35 à 60 F, 65 F et plus, `priceBand`), et le
+    premier palier ne paie qu'avec une pièce de 50 F. Mesuré sur 200 graines : plus aucune reprise. `calc-ordre` de `ma-cp-retenue` se répète en revanche à chaque graine (il n'a que
+    deux jeux d'étapes) : il n'est pas traité.
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les

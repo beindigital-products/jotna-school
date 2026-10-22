@@ -18,7 +18,7 @@
  */
 import { fresh, originOf, pick, pickFresh, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 import { CHILDREN, hasHe, pronoun } from "./stories";
-import { cap, choiceGame, gapGame, linkGame, sequenceGame, sortGame } from "./tableaux";
+import { cap, choiceGame, gapGame, levelGroup, linkGame, pickPreferred, sequenceGame, sortGame } from "./tableaux";
 import { wrongNumbers } from "./nombresCp";
 
 const ADD_TOP: Record<GameLevel, number> = { 1: 70, 2: 90, 3: 100, 4: 100 };
@@ -282,13 +282,26 @@ export function makeCoinsTotal(ctx: GameContext): GeneratedGame {
   });
 }
 
+/** La tranche d'un prix : jusqu'à 30 F, de 35 à 60 F, 65 F et plus. Chaque palier préfère la sienne (`makeChangeDue`). */
+const priceBand = (price: number): 0 | 1 | 2 => (price <= 30 ? 0 : price <= 60 ? 1 : 2);
+
 /** « Moussa achète un pain à 35 F. Il paie avec une pièce de 50 F. Combien lui rend-on ? » */
 export function makeChangeDue(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "monnaie-rendre", "rendre la monnaie", () => {
     const child = pickFresh(ctx, CHILDREN, (candidate) => `monnaie-rendre:${candidate.name}`);
     const good = pick(ctx.rng, GOODS);
-    const paid = ctx.level === 1 ? 50 : pick(ctx.rng, [50, 100]);
-    const price = 5 * randomInt(ctx.rng, 1, (paid - 5) / 5);
+    // Chaque palier a sa tranche de prix (jusqu'à 30 F, de 35 à 60 F, 65 F et plus : le prix de 65 F ou plus ne se paie qu'avec une pièce de 100 F) :
+    // sans cela, « achète un pain à 35 F, paie avec une pièce de 50 F » pouvait revenir d'un palier à l'autre. Le premier palier ne paie qu'avec 50 F.
+    const purchases: { paid: number; price: number }[] = [];
+    for (const coin of ctx.level === 1 ? [50] : [50, 100]) {
+      for (let price = 5; price <= coin - 5; price += 5) purchases.push({ paid: coin, price });
+    }
+    const { paid, price } = pickPreferred(
+      ctx,
+      purchases,
+      purchases.filter((purchase) => priceBand(purchase.price) === levelGroup(ctx.level)),
+      (purchase) => `rendre-prix:${purchase.paid}:${purchase.price}`,
+    );
     const change = paid - price;
     return {
       prompt: `${child.name} achète ${good} à ${price} F. ${cap(pronoun(child))} paie avec une pièce de ${paid} F. Combien lui rend-on ?`,
