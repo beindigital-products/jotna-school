@@ -2304,6 +2304,68 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     fabriqués (40 000 exercices), sans doublon dans un palier ; 0,0 % de questions revues d'un palier à l'autre.
   - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un glissé sur le nom et l'adjectif,
     un appariement sur le présent et le passé composé, un ordre sur le dictionnaire, une réponse courte sur l'impératif et le futur.
+- **L'histoire et la géographie du CE2** (`paliers/games/ce2Histoire.ts`, `ce2Geographie.ts`, leurs aides dans `ce2Outils.ts`) : soixante et un
+  gabarits pour `hi-ce2-progres`, `hi-ce2-royaumes-1`, `hi-ce2-royaumes-2`, `hi-ce2-rois`, `ge-ce2-carte`, `ge-ce2-regions`,
+  `ge-ce2-activites` et `ge-ce2-habitat`, les huit premières thématiques du CE2 que le modèle n'écrit plus (lot 1 sur six, voir
+  `docs/programme-et-jeux.md`). Sur l'échantillon de CE2 lu le 22 octobre 2026 (267 exercices, 6 par thématique), 18 exercices sur 48 étaient
+  faux en histoire et en géographie : « le Walo, le royaume le plus au sud » (il est au nord, sur le fleuve), « Alboury, roi du Fouta »,
+  « Toucouleur » rangé parmi les royaumes wolofs, des royaumes rangés « par importance », une échelle « qui montre la hauteur des montagnes »,
+  un glissé dont les étiquettes et les cases sont inversées. Les noms des gabarits commencent par `ce2-` ; les fonctions sont des `makeCe2…`.
+  - **Les aides** (`ce2Outils.ts`) : des tableaux de lignes fermés (une question, une phrase à trou, un ordre, un appariement, un glissé, une
+    réponse à écrire), chaque ligne avec ses trois indices. `ce2Question`, `ce2Gap`, `ce2Order`, `ce2Link`, `ce2Sort` et `ce2Write` en tirent une
+    ligne dans la fenêtre du niveau (un quart de la liste, comme `windowFor` du CE1, avec `uses` lignes au moins). Une liste de moins de quatre
+    fois `uses` lignes oblige deux paliers voisins à se partager des lignes : il faut l'allonger.
+  - **Un fait ne revient pas trois fois dans un palier.** Une ligne porte un `fact` (« royaume:Cayor », « besoin:cuisiner ») que tous les gabarits
+    de la thématique partagent, et chaque gabarit prend un `shift`, un décalage de quarts : le titre du roi du Cayor n'est plus demandé à la fois
+    en QCM, en phrase à trou et à écrire. Les listes qui partagent des faits sont rangées dans le même ordre (royaume par royaume). Sans le
+    décalage, un premier jet reprenait un fait hors de la fenêtre du niveau, et 17 % des questions du progrès et 19 % de celles des rois
+    revenaient d'un palier à l'autre.
+  - **Les royaumes et leurs titres** ne disent que ce que la fiche dit : le Djolof (fondé, selon la tradition, par Ndiadiane Ndiaye), le Cayor, le
+    Baol et le Walo (wolofs), le Sine et le Saloum (sérères), le Tékrour et le Fouta (vallée du fleuve), le Gabou et les royaumes de Casamance ;
+    le Bourba, le Damel, le Teigne, le Brak, le Bour (Sine et Saloum), l'Almamy et le Mansa. Aucun autre roi, aucune date. La place sur la carte
+    n'a que trois valeurs (au nord, au centre, au sud) et ne s'écrit que pour les royaumes dont la place ne se discute pas : le Walo, le Tékrour et
+    le Fouta au nord, le Baol, le Sine et le Saloum au centre, le Gabou et la Casamance au sud. Le Djolof et le Cayor ne sont jamais posés. Les
+    questions « le plus au nord » donnent un royaume de chaque partie, jamais deux de la même.
+  - **Le progrès** compare des moyens d'un même besoin (s'éclairer, donner des nouvelles, cuisiner, se déplacer), du plus ancien au plus récent.
+    Le train n'est jamais rangé avec le car rapide, dont l'ordre dans le temps se discute. Une question « plus récent que la lettre » n'a qu'une
+    bonne réponse parmi ses choix, les deux autres servant d'autres besoins.
+  - **La carte** est un quadrillage de carrés de couleur (🟥 🟦 🟩 🟨 🟪 🟧) et de cases vides (⬜), avec sa légende écrite dans l'énoncé et « Le nord est en
+    haut. » : trois lignes de quatre cases aux niveaux 1 et 2, quatre lignes de cinq cases ensuite. Trois gabarits la lisent (la direction d'un
+    lieu, le lieu voisin, la légende). L'échelle est toujours dite dans l'énoncé (« 1 cm montre 10 km ») : l'élève multiplie ou divise, la
+    réponse tombe juste (un nombre entier de centimètres) et n'est jamais un nombre de l'énoncé.
+  - **Les régions** se placent par les coordonnées de leurs chefs-lieux : le nord et le sud par la latitude, l'ouest et l'est par la longitude, avec
+    un écart minimal entre deux régions comparées (0,9 degré de latitude, 1,2 de longitude ; 0,5 et 0,7 pour ranger quatre régions). Le test a sa
+    propre table de coordonnées et recalcule chaque réponse. « De gauche à droite sur la carte du Sénégal » dit l'ouest et l'est, parce qu'un
+    ordre « de l'ouest à l'est » aurait trois apostrophes. Les faits sont ceux qui ne se discutent pas : Dakar est la capitale et la plus petite
+    région, Tambacounda la plus grande, Saint-Louis est au bord du fleuve Sénégal, Ziguinchor en Casamance, Kédougou aux collines du sud-est.
+  - **Les activités et l'habitat** : l'agriculture (mil, arachide, riz, légumes des Niayes), l'élevage, la pêche (Kayar, Joal) et le tourisme
+    (Saly, le Cap Skirring). Mbour et Saint-Louis, à la fois ports de pêche et lieux de tourisme, ne sont jamais rangés d'un seul côté. Le
+    village et la ville, leurs matériaux (la terre, la paille, le béton, la tôle), la route, le chemin de fer, le port et l'aéroport, l'exode rural
+    et les départs de la saison sèche.
+  - **Une tuile est un nom nu, sans article** (« Pêche », « Roi », « Ciment », « Nord ») : `templatePictures.test.ts` joue chaque gabarit au CI et
+    refuse « La pêche » ou « Du ciment » (un article et un seul mot). Une tuile de plusieurs mots (« Lampe électrique », « Aller à pied », « La
+    saison sèche ») n'est pas jugée.
+  - **HORS FICHE, À FAIRE RELIRE** : la place des royaumes en trois parties ; les coordonnées des quatorze chefs-lieux ; les couples du progrès
+    (la lampe à pétrole et la lampe électrique, la lettre, le téléphone et le téléphone portable, le feu de bois et la cuisinière à gaz, aller à
+    pied, la charrette et le car rapide) ; les lieux d'activité (Kayar et Joal pour la pêche, Saly et le Cap Skirring pour le tourisme, les Niayes
+    pour les légumes) ; les villes qui ne sont chefs-lieux d'aucune région (Mbour, Touba, Pikine, Rufisque, Richard-Toll, Podor, Linguère, Bakel) ;
+    les étapes d'une sortie de pêche et d'une culture de mil ; les vitesses (à pied, charrette, voiture, avion).
+  - **Pièges rencontrés.** (1) La clé d'une ligne tirée dans un tableau ne doit pas être celle que `fresh` pose pour une question servie
+    (`kind:énoncé|réponse`) : `fresh` croyait la question déjà vue, reprenait huit lignes pour rien et rendait la même ligne deux fois dans un
+    palier (3 747 doublons sur 6 400 paliers avant le préfixe `ligne|`). (2) Une question dont beaucoup de lignes partagent l'énoncé
+    (« Lequel de ces royaumes est un royaume wolof ? ») se compte par énoncé et réponse, et ses lignes sont rangées par réponse, sinon une
+    fenêtre n'a que deux réponses. (3) Un énoncé a une apostrophe droite au plus : « Un téléphone qu'on met dans la poche s'appelle… » en avait
+    deux, et un ordre « de l'ouest à l'est » trois. (4) Un indice n'écrit aucun mot de quatre lettres ou plus d'une étiquette ou d'une réponse :
+    « carte », « région », « Sénégal », « plage », « champ », « ville », « dans » et « lettre » (dans « la lettre L ») ont tous été écrits par un premier
+    jet. (5) `Almamy` prend « l'Almamy » et non « le Almamy ». (6) Deux phrases à écrire ne reprennent pas une phrase à trou du même palier.
+  - **Mesuré** : 145 tests (`convex/__tests__/ce2HistoryGeographyTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites
+    à part (titres, peuples, coordonnées, cartes lues case par case, échelle refaite avec une multiplication), à 4 niveaux et 60 graines ; 39
+    pannes provoquées dans le code (le Walo au sud, l'est vers la gauche, une échelle additionnée, un titre échangé, un camion sur l'eau…) toutes
+    vues ; le contrôleur ne signale aucun défaut sur 8 000 paliers fabriqués (80 000 exercices), tous de dix exercices et d'au moins quatre types,
+    sans doublon dans un palier ; sur 200 graines par thématique, 2,3 % des questions reviennent d'un palier à l'autre par leur énoncé et leur
+    réponse (« le plus au sud » a toujours pour réponse le Gabou), 0,1 % en comptant les choix. Vu sur l'iPhone 17 (Safari du simulateur, galerie
+    `/dev/exercices/` avec des spécimens détournés provisoirement, fichier restauré) : la carte, le glissé des régions et l'ordre des titres. PAS vu :
+    les autres gabarits à l'écran, un vrai iPhone, la production.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

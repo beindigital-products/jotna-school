@@ -216,24 +216,62 @@ export const HISTOIRE: ProgrammeSubject = {
         name: "Hier et aujourd'hui : le progrès",
         description:
           "Histoire, étape 2, paliers 3-4 : l'idée de progrès. Se déplacer (à pied, en charrette, en car rapide, en train), s'éclairer (lampe à pétrole, électricité), communiquer (lettre, téléphone, téléphone portable), cuisiner (feu de bois, gaz).",
+        games: [
+          { kind: "ce2-progres-compare", count: 2 },
+          { kind: "ce2-progres-rang", count: 1 },
+          { kind: "ce2-progres-ordre", count: 1 },
+          { kind: "ce2-progres-glisser", count: 1 },
+          { kind: "ce2-progres-relier", count: 1 },
+          { kind: "ce2-progres-trou", count: 2 },
+          { kind: "ce2-progres-ecrire", count: 2 },
+        ],
       },
       {
         key: "hi-ce2-royaumes-1",
         name: "Les royaumes du Sénégal (1)",
         description:
           "Histoire, étape 2, paliers 3-4 : l'organisation du Sénégal avant l'indépendance. Le Djolof, fondé selon la tradition par Ndiadiane Ndiaye ; le Cayor, le Baol et le Walo, royaumes wolofs ; leur place sur la carte du Sénégal.",
+        games: [
+          { kind: "ce2-fondateur", count: 1 },
+          { kind: "ce2-wolof-trou", count: 1 },
+          { kind: "ce2-wolof-compte", count: 2 },
+          { kind: "ce2-peuple-glisser", count: 2 },
+          { kind: "ce2-royaume-peuple", count: 1 },
+          { kind: "ce2-wolof-place", count: 1 },
+          { kind: "ce2-wolof-nord-sud", count: 1 },
+          { kind: "ce2-place-relier", count: 1 },
+        ],
       },
       {
         key: "hi-ce2-royaumes-2",
         name: "Les royaumes du Sénégal (2)",
         description:
           "Histoire, étape 2, paliers 3-4 : le Sine et le Saloum (royaumes sérères), le Tékrour et le Fouta (vallée du fleuve Sénégal), le Gabou et les royaumes de Casamance ; un roi, des conseillers, des villages.",
+        games: [
+          { kind: "ce2-vallee", count: 1 },
+          { kind: "ce2-serere-trou", count: 1 },
+          { kind: "ce2-royaume-place", count: 2 },
+          { kind: "ce2-royaume-glisser", count: 1 },
+          { kind: "ce2-royaume-ordre", count: 1 },
+          { kind: "ce2-role-qcm", count: 1 },
+          { kind: "ce2-role-trou", count: 1 },
+          { kind: "ce2-role-relier", count: 1 },
+          { kind: "ce2-royaume-nord-sud", count: 1 },
+        ],
       },
       {
         key: "hi-ce2-rois",
         name: "Les rois et leurs titres",
         description:
           "Histoire, étape 2, paliers 3-4 : faits saillants et personnages marquants. Le titre du roi dans chaque royaume : le Bourba au Djolof, le Damel au Cayor, le Teigne au Baol, le Brak au Walo, le Bour au Sine et au Saloum, l'Almamy au Fouta, le Mansa au Gabou. Ne citer aucun autre roi ni aucune date.",
+        games: [
+          { kind: "ce2-titre-qcm", count: 2 },
+          { kind: "ce2-titre-trou", count: 2 },
+          { kind: "ce2-titre-relier", count: 2 },
+          { kind: "ce2-titre-glisser", count: 1 },
+          { kind: "ce2-titre-ecrire", count: 2 },
+          { kind: "ce2-titre-ordre", count: 1 },
+        ],
       },
     ],
     CM1: [
