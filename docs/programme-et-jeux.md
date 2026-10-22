@@ -249,6 +249,13 @@ arrivent plus tard.
 - **Des jeux dans une thématique** : son champ `games`
   (`{ kind, count }`, dix exercices au plus par palier). La génération lit
   la fiche par sa clé : aucun rechargement n'est nécessaire.
+- **Partager les variantes entre les paliers** : le champ `byLevel: true` d'une thématique. Sans lui, chaque palier tire au hasard dans les
+  mêmes listes et la même question revient d'un palier à l'autre (17,7 % des questions des thématiques de CI, mesuré sur 200 graines).
+  Avec lui, le premier tiers de chaque liste va au premier palier, le deuxième au deuxième, le dernier ensuite (`variantsForLevel`, dans
+  `games/shared.ts`), et les jeux de la thématique prennent des tiers décalés (`GameContext.window`, selon leur place dans `games`) pour ne
+  pas se disputer les mêmes faits. `pickFresh`, `takeFresh` et `freshWord` suivent le tiers du palier ; un jeu qui tire autrement (`pick`,
+  `randomInt`) passe par `pickForLevel` ou `variantsForLevel`. À mettre quand les listes ont au moins trois fois plus de variantes qu'un
+  palier n'en pose : en dessous, des variantes reviennent de toute façon. Tout le CI l'a, aucune autre classe pour l'instant.
 - **Un nouveau jeu** : une fonction dans `convex/paliers/games/`, déclarée
   dans `GAME_KINDS` (`games/index.ts`). Les tests de
   `convex/__tests__/games.test.ts` le jouent alors à tous les niveaux et dans

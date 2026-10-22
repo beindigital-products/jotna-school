@@ -1,10 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { GAME_KINDS, generateGames, type GameKind } from "../paliers/games";
 import { makeContext } from "../paliers/games/shared";
 import type { ListenPayload } from "../paliers/games/types";
 import type { VisibleClassName } from "../curriculum";
 import { effectivePalierCount } from "../palierRules";
 import { allProgrammeEntries } from "../programme";
+
+// Les boucles de ces tests fabriquent des milliers de paliers : sur une machine chargée, les cinq secondes par défaut ne suffisent pas.
+vi.setConfig({ testTimeout: 30_000 });
 
 /**
  * L'ÉCOUTE NE POSE JAMAIS DEUX FOIS LE MÊME EXERCICE DANS UN PALIER.

@@ -1596,6 +1596,11 @@ export type GameRunOptions = {
    * que les gabarits : les quatre jeux ne passent pas par là.
    */
   accept?: GameAccept;
+  /**
+   * Vrai quand la thématique partage ses variantes entre ses paliers (`ProgrammeTopic.byLevel`) : chaque jeu reçoit un décalage de groupe
+   * (`GameContext.window`), selon sa place dans la liste des jeux de la thématique.
+   */
+  windowed?: boolean;
 };
 
 /**
@@ -1621,12 +1626,14 @@ export function generateGames(specs: readonly GameSpec[], opts: GameRunOptions):
   const used = new Set<string>();
   const out: GeneratedGame[] = [];
   let n = 0;
-  for (const spec of specs) {
+  for (const [specIndex, spec] of specs.entries()) {
     if (!isGameKind(spec.kind)) continue;
+    // Les trois premiers jeux d'une thématique préfèrent des tiers différents de leurs listes ; le quatrième reprend le premier tiers.
+    const window = opts.windowed ? ((specIndex % 3) as 0 | 1 | 2) : undefined;
     for (let i = 0; i < spec.count && out.length < PALIER_SIZE; i++) {
       const seed = `${opts.seed}:${spec.kind}:${n++}`;
       const game = makeAccepted(
-        (suffix) => GAME_KINDS[spec.kind].make(makeContext(opts.klass, level, `${seed}${suffix}`, used, spec.vocabulary)),
+        (suffix) => GAME_KINDS[spec.kind].make(makeContext(opts.klass, level, `${seed}${suffix}`, used, spec.vocabulary, window)),
         opts.accept,
       );
       if (game) out.push(game);

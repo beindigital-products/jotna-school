@@ -33,6 +33,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "politesse-trou", count: 1 },
           { kind: "politesse-rencontre", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "fr-ci-sons-1",
@@ -49,6 +50,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "syllabe-finale", count: 1, vocabulary: "mots-1" },
           { kind: "lettres-compter", count: 1, vocabulary: "mots-1" },
         ],
+        byLevel: true,
       },
       {
         key: "fr-ci-sons-2",
@@ -65,6 +67,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "syllabe-finale", count: 1, vocabulary: "mots-2" },
           { kind: "mot-syllabe", count: 1, vocabulary: "mots-2" },
         ],
+        byLevel: true,
       },
       {
         key: "fr-ci-sons-3",
@@ -81,6 +84,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "lettres-compter", count: 1, vocabulary: "mots-3" },
           { kind: "mot-syllabe", count: 1, vocabulary: "mots-3" },
         ],
+        byLevel: true,
       },
       {
         key: "fr-ci-sons-4",
@@ -98,6 +102,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "syllabe-finale", count: 1, vocabulary: "mots-4" },
           { kind: "mot-syllabe", count: 1, vocabulary: "mots-4" },
         ],
+        byLevel: true,
       },
       {
         key: "fr-ci-alphabet",
@@ -114,6 +119,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "phrase-trou", count: 1, vocabulary: "mots-4" },
           { kind: "lettres-compter", count: 1, vocabulary: "mots-4" },
         ],
+        byLevel: true,
       },
       {
         key: "fr-ci-phrases",
@@ -127,6 +133,7 @@ export const FRANCAIS: ProgrammeSubject = {
           { kind: "phrase-mots-compter", count: 1 },
           { kind: "phrase-mot-place", count: 1 },
         ],
+        byLevel: true,
       },
     ],
     CP: [

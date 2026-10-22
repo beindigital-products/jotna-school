@@ -29,7 +29,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { fresh, originOf, pick, pickFresh, randomInt, shuffle, sortedOptions, type GameContext, type GeneratedGame } from "./shared";
+import { fresh, levelGroup, originOf, pick, pickFresh, randomInt, shuffle, sortedOptions, type GameContext, type GeneratedGame } from "./shared";
 import { CATEGORIES, optionOf, type Thing } from "./things";
 
 const isElided = (thing: Thing) => /^l['’]/.test(thing.label);
@@ -357,12 +357,15 @@ export const POINTING = [
   { emoji: "👇", direction: "le bas" },
 ] as const;
 
+/** Les directions que chaque groupe de niveaux demande : la droite ou la gauche d'abord, puis le haut, puis le bas. */
+const POINTING_ASKS: readonly (readonly (typeof POINTING)[number][])[] = [POINTING.slice(0, 2), [POINTING[2]], [POINTING[3]]];
+
 /** « Quel doigt montre la droite ? » : trois doigts à choisir, sans mot à lire. */
 export function makePointing(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "doigt-direction", () => {
-    // Au premier palier, seulement la droite et la gauche ; ensuite aussi le haut et le bas.
-    // Deux questions dans un même palier ne sont jamais la même : on épuise les directions avant d'en reprendre une.
-    const asked = pickFresh(ctx, ctx.level === 1 ? POINTING.slice(0, 2) : POINTING, (finger) => `doigt-direction-sens:${finger.direction}`);
+    // Chaque palier a sa direction : la droite ou la gauche au premier, le haut au deuxième, le bas au dernier. Trois paliers ne posent
+    // ainsi jamais la même question.
+    const asked = pickFresh(ctx, POINTING_ASKS[levelGroup(ctx.level)], (finger) => `doigt-direction-sens:${finger.direction}`);
     const wrong = shuffle(
       ctx.rng,
       POINTING.filter((finger) => finger.emoji !== asked.emoji),

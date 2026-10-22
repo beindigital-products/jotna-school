@@ -2057,6 +2057,41 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     du dernier niveau, des visages en plus répartis au hasard, la peur avec la surprise, trois visages dans une case) sont toutes vues. Le correctif a trouvé un piège : `fresh` refait un tirage jusqu'à huit fois quand sa clé est
     déjà prise, et pour la phrase à trous elle l'est toujours, car `pickFresh` la pose lui-même. Le choix de l'émotion, fait dans le tirage,
     comptait donc neuf fois la tristesse. Il se fait avant `fresh`.
+- **La même question ne revient plus d'un palier à l'autre, au CI** (`ProgrammeTopic.byLevel`, `paliers/games/shared.ts`) : chaque palier
+  d'une thématique est fabriqué seul, avec sa graine, et tirait au hasard dans les mêmes petites listes. Sur 200 graines, 17,7 % des
+  questions d'une thématique de CI revenaient dans un autre palier de la même thématique, jusqu'à 57 % pour « Plus long, plus lourd, plus
+  tard ». Les 43 thématiques de CI portent maintenant `byLevel` : le premier tiers de chaque liste va au premier palier, le deuxième au
+  deuxième, le dernier ensuite (`variantsForLevel`). Les jeux d'une thématique prennent chacun un tiers décalé, selon leur place dans
+  `games`, car ils puisent souvent dans les mêmes faits : trois jeux d'outils posent ainsi six outils différents dans un palier, deux par
+  jeu, et aucun ne revient au palier suivant.
+  - **Ce que le réglage change.** `pickFresh`, `takeFresh` et `freshWord` préfèrent le tiers du palier parmi les variantes pas encore
+    prises. Quand tout a servi, le tiers ne compte plus : y rester reposerait le même exercice dans le palier. Une liste réduite à un niveau
+    (les six couleurs du premier palier, la droite et la gauche) garde les tiers de la liste entière (`universe`). Les autres classes n'ont
+    pas le réglage : leurs tirages ne changent pas.
+  - **Mesuré sur 200 graines**, la part moyenne des questions qui reviennent passe de 17,7 % à 10,4 %, et 26 thématiques sur 43 sont sous
+    10 % (15 avant). Les plus changées : les outils (37,5 % à 1,3 %), la route (24,5 % à 0,6 %), les mesures (56,7 % à 24,4 %), l'hygiène
+    (46,8 % à 22,7 %), l'entraide (40,0 % à 18,3 %), les animaux en anglais (28,4 % à 8,2 %), la semaine (22,1 % à 4,1 %). Aucune thématique
+    n'empire de plus d'un point, et aucun palier ne pose deux fois le même exercice.
+  - **Des genres réécrits** là où le tirage n'est pas une liste : le rang d'un jour (`jour-rang`) demande le premier et le dernier jour au
+    premier palier, le deuxième et le troisième au deuxième, le quatrième et le cinquième au dernier ; `doigt-direction` la droite ou la gauche,
+    puis le haut, puis le bas ; `faune-vit` le poisson, l'étoile de mer, l'oiseau ; `comparer-mesure` change la bête gagnante à chaque
+    palier (`windowedTrio`) ; les scènes, les suites et les phrases à trou de l'instruction civique, les scènes, suites, phrases à trou et
+    sens de l'hygiène, les outils et les activités du jour passent par `pickForLevel`. Les suites et les associations des outils ont leur
+    propre clé, pour ne pas épuiser les outils des autres jeux. Les tableaux des outils sont rangés dans le même ordre, pour que deux
+    jeux ne prennent pas le même outil.
+  - **Ce qui reste.** Le partage ne crée pas de variantes : une thématique dont un genre n'a que trois ou quatre questions en reposera. Les
+    plus touchées sont `fr-ci-sons-1` (42 %, une seule suite de lettres à ranger), `sc-ci-plantes` (39 %), `hi-ci-hier-demain` (31 %,
+    trois suites de mots du temps) et `ar-ci-couleurs` (27 %) : il faut écrire des variantes, avec leurs images au catalogue. Les genres de
+    nombres (`double-moitie`, `dizaine-unites`, `nombre-voisin`), de mots (`lettre-initiale`, `syllabes-ordre`) et `repere-qcm` tirent surtout
+    avec `randomInt` ou `pick` : à convertir un par un.
+  - **`convex/__tests__/ciVarieteParPalier.test.ts`** (35 tests) refait le calcul sans lire les listes du code : les tiers d'une liste ne se
+    touchent pas et font la liste entière, le décalage prend le tiers suivant, `pickFresh` et `takeFresh` restent dans le tiers puis
+    sortent quand il est épuisé, treize couples de thématique et de genre ne reposent jamais la même question sur 120 graines, aucun palier ne pose deux fois le même
+    exercice, la part moyenne reste sous 14 % et aucune thématique ne repasse au-dessus de 65 %. Treize mutations (le tiers ignoré, le
+    décalage ignoré, l'univers ignoré, le réglage non passé à `generateGames`, le décalage par place de jeu, le câblage de la fabrication,
+    les rangs, les directions, les trios, les scènes, la clé de la faune, le décalage des phrases à trou) sont toutes vues. Le test des
+    doublons d'un palier a trouvé deux défauts du premier jet : le tiers gardait les mêmes variantes quand tout avait servi,
+    et deux rangements de milieux, comme deux phrases de couleurs, sortaient identiques.
 - **L'histoire et la géographie du CE1** (`paliers/games/ce1Histoire.ts`, `ce1Geographie.ts`, leurs outils dans `ce1Outils.ts`) :
   soixante-trois gabarits pour `hi-ce1-temps`, `hi-ce1-famille`, `hi-ce1-ecole`, `hi-ce1-quartier`, `ge-ce1-orientation`, `ge-ce1-saisons`,
   `ge-ce1-eau-relief` et `ge-ce1-plan`, les huit premières thématiques du CE1 que le modèle n'écrit plus. Sur l'échantillon de CE1 lu le

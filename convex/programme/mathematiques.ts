@@ -34,6 +34,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
           { kind: "couleur-objet", count: 1 },
           { kind: "animaux-ordre", count: 2 },
         ],
+        byLevel: true,
       },
       {
         key: "ma-ci-nombres-10",
@@ -49,6 +50,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
           { kind: "nombre-plus-grand", count: 1, vocabulary: "nombres-10" },
           { kind: "nombre-en-lettres", count: 1, vocabulary: "nombres-10" },
         ],
+        byLevel: true,
       },
       {
         key: "ma-ci-calcul-10",
@@ -62,6 +64,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
           { kind: "double-moitie", count: 2, vocabulary: "nombres-10" },
           { kind: "complement", count: 1, vocabulary: "nombres-10" },
         ],
+        byLevel: true,
       },
       {
         key: "ma-ci-nombres-20",
@@ -77,6 +80,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
           { kind: "nombres-ordre", count: 1, vocabulary: "nombres-20" },
           { kind: "calcul-ecrit", count: 1, vocabulary: "nombres-20" },
         ],
+        byLevel: true,
       },
       {
         key: "ma-ci-espace",
@@ -88,6 +92,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
           { kind: "rangee-position", count: 4 },
           { kind: "rangee-ordinal", count: 4 },
         ],
+        byLevel: true,
       },
       {
         key: "ma-ci-formes",
@@ -101,6 +106,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
           { kind: "solide-nom", count: 2 },
           { kind: "classer-formes", count: 2 },
         ],
+        byLevel: true,
       },
       {
         key: "ma-ci-mesures",
@@ -112,6 +118,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
           { kind: "moment-journee", count: 3 },
           { kind: "jour-voisin", count: 3 },
         ],
+        byLevel: true,
       },
       {
         key: "ma-ci-problemes",
@@ -132,6 +139,7 @@ export const MATHEMATIQUES: ProgrammeSubject = {
           { kind: "donnee-inutile", count: 1, vocabulary: "nombres-20" },
           { kind: "probleme-inutile", count: 1, vocabulary: "nombres-20" },
         ],
+        byLevel: true,
       },
     ],
     CP: [
