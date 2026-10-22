@@ -92,6 +92,7 @@ const ofNoun = (noun: string) => (/^[aeiouyéè]/i.test(noun) ? `d'${noun}` : `d
 
 /** Les étapes d'un calcul posé, chacune dans un seul ordre. */
 const STEPS: [string, string[]][] = [
+  ["Mets dans le bon ordre les étapes pour poser une addition.", ["J'écris un nombre en haut.", "J'écris l'autre nombre en dessous, unités sous unités.", "Je trace un trait sous les nombres.", "J'additionne en commençant par les unités."]],
   ["Mets dans le bon ordre les étapes d'une addition avec retenue.", ["J'additionne les unités.", "J'écris les unités et je retiens une dizaine.", "J'additionne les dizaines avec la retenue."]],
   ["Mets dans le bon ordre les étapes d'une soustraction avec emprunt.", ["Je regarde les unités.", "J'emprunte une dizaine pour avoir plus d'unités.", "J'enlève les unités.", "J'enlève les dizaines qui restent."]],
 ];

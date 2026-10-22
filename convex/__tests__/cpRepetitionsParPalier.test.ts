@@ -523,3 +523,149 @@ describe("forme-coins : la même forme ne revient pas d'un palier à l'autre", (
     }
   });
 });
+
+describe("heure-relier : les trois horloges du palier, jamais les mêmes dans deux paliers", () => {
+  it("trois heures différentes, justes, toutes du palier, et aucune heure dans deux paliers", () => {
+    const seen = new Map<number, Set<number>>();
+    for (const seed of SEEDS) {
+      const hours = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "heure-relier", 1, seed)) {
+        const [exo] = palier.games;
+        expect(pairs(exo), `${seed} niveau ${palier.level}`).toHaveLength(3);
+        for (const pair of pairs(exo)) {
+          const { hour, half } = clockTime(Array.from(pair.left)[0]);
+          expect(pair.right, pair.left).toBe(timeWords(hour, half));
+          expect(HOURS_OF_LEVEL[palier.level], `${seed} niveau ${palier.level}`).toContain(hour);
+          if (palier.level === 1) expect(half, `${seed} : le premier palier n'a que des heures justes`).toBe(false);
+          expect(hours.has(hour), `${seed} : ${hour} h aux niveaux ${hours.get(hour)} et ${palier.level}`).toBe(false);
+          hours.set(hour, palier.level);
+          const set = seen.get(palier.level) ?? new Set<number>();
+          set.add(hour);
+          seen.set(palier.level, set);
+        }
+        expect(new Set(pairs(exo).map((pair) => pair.right)).size, `${seed} niveau ${palier.level}`).toBe(3);
+      }
+    }
+    // Les quatre heures de chaque palier servent, le 12 au dernier palier aussi.
+    const summary = [...seen].map(([level, set]) => `${level}:${[...set].sort((a, b) => a - b).join(",")}`).sort();
+    expect(summary).toEqual(["1:1,4,7,10", "2:2,5,8,11", "4:3,6,9,12"]);
+  });
+});
+
+/** Les étapes d'un calcul posé, écrites ici : une suite par palier (niveaux 1, 2 et 4). */
+const CALC_STEPS_OF_LEVEL: Record<number, { prompt: string; steps: string[] }> = {
+  1: {
+    prompt: "Mets dans le bon ordre les étapes pour poser une addition.",
+    steps: ["J'écris un nombre en haut.", "J'écris l'autre nombre en dessous, unités sous unités.", "Je trace un trait sous les nombres.", "J'additionne en commençant par les unités."],
+  },
+  2: {
+    prompt: "Mets dans le bon ordre les étapes d'une addition avec retenue.",
+    steps: ["J'additionne les unités.", "J'écris les unités et je retiens une dizaine.", "J'additionne les dizaines avec la retenue."],
+  },
+  4: {
+    prompt: "Mets dans le bon ordre les étapes d'une soustraction avec emprunt.",
+    steps: ["Je regarde les unités.", "J'emprunte une dizaine pour avoir plus d'unités.", "J'enlève les unités.", "J'enlève les dizaines qui restent."],
+  },
+};
+
+describe("calc-ordre : une suite d'étapes par palier", () => {
+  it("chaque palier pose sa suite, dans le bon ordre, et les trois paliers en posent trois différentes", () => {
+    for (const seed of SEEDS) {
+      const prompts: string[] = [];
+      for (const palier of paliers("CP", 3, "calc-ordre", 1, seed)) {
+        const [exo] = palier.games;
+        const expected = CALC_STEPS_OF_LEVEL[palier.level];
+        expect(exo.prompt, `${seed} niveau ${palier.level}`).toBe(expected.prompt);
+        expect(exo.payload.correctSequence, exo.prompt).toEqual(expected.steps);
+        expect(exo.answerKey, exo.prompt).toBe(expected.steps.join(" "));
+        prompts.push(exo.prompt);
+      }
+      expect(new Set(prompts).size, `${seed} : ${prompts.join(" // ")}`).toBe(3);
+    }
+  });
+});
+
+describe("contraire-relier : les paires reliées ne sont pas les mêmes d'un palier à l'autre", () => {
+  /** La paire d'un lien, par son mot de la liste (le premier de la paire, quel que soit le côté). */
+  const FIRST_OF: Record<string, string> = {
+    grand: "grand", petit: "grand", chaud: "chaud", froid: "chaud", lourd: "lourd", léger: "lourd", plein: "plein", vide: "plein", long: "long", court: "long",
+  };
+  const ALL = ["grand", "chaud", "lourd", "plein", "long"];
+
+  it("trois paires au premier palier, quatre ensuite, toutes justes, et jamais deux paliers avec les mêmes paires", () => {
+    for (const seed of SEEDS) {
+      const sets: string[] = [];
+      for (const palier of paliers("CP", 3, "contraire-relier", 1, seed)) {
+        const [exo] = palier.games;
+        expect(pairs(exo), `${seed} niveau ${palier.level}`).toHaveLength(palier.level === 1 ? 3 : 4);
+        for (const pair of pairs(exo)) expect(CONTRARY[pair.left], `« ${pair.left} » relié à « ${pair.right} »`).toBe(pair.right);
+        const used = pairs(exo).map((pair) => FIRST_OF[pair.left]);
+        expect(new Set(used).size, `${seed} niveau ${palier.level}`).toBe(used.length);
+        sets.push([...used].sort().join(","));
+      }
+      expect(new Set(sets).size, `${seed} : ${sets.join(" // ")}`).toBe(3);
+    }
+  });
+
+  it("chaque palier laisse de côté ses paires : les deux premières au premier palier, « chaud » ou « long » au deuxième, « lourd » au dernier", () => {
+    const leftOut = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      for (const palier of paliers("CP", 3, "contraire-relier", 1, seed)) {
+        const used = pairs(palier.games[0]).map((pair) => FIRST_OF[pair.left]);
+        const left = ALL.filter((word) => !used.includes(word));
+        if (palier.level === 1) expect(left, `${seed} niveau 1`).toEqual(["grand", "plein"]);
+        if (palier.level === 2) expect(["chaud", "long"], `${seed} niveau 2`).toContain(left[0]);
+        if (palier.level === 4) expect(left, `${seed} niveau 4`).toEqual(["lourd"]);
+        const set = leftOut.get(palier.level) ?? new Set<string>();
+        for (const word of left) set.add(word);
+        leftOut.set(palier.level, set);
+      }
+    }
+    // Au deuxième palier, les deux paires possibles servent tour à tour : le palier garde de la variété.
+    expect([...(leftOut.get(2) ?? [])].sort()).toEqual(["chaud", "long"]);
+  });
+});
+
+describe("adjectif-ordre : un nom par palier, donc jamais la même phrase", () => {
+  /** Les noms de chaque palier (niveaux 1, 2 et 4) avec leur genre et le verbe de la phrase, écrits ici. */
+  const NOUNS_OF_LEVEL: Record<number, Record<string, { determiner: string; verb: string }>> = {
+    1: { ballon: { determiner: "un", verb: "a" }, livre: { determiner: "un", verb: "a" }, poule: { determiner: "une", verb: "voit" } },
+    2: { cartable: { determiner: "un", verb: "porte" }, chat: { determiner: "un", verb: "voit" }, vache: { determiner: "une", verb: "voit" } },
+    4: { robe: { determiner: "une", verb: "porte" }, chien: { determiner: "un", verb: "voit" }, mouton: { determiner: "un", verb: "voit" } },
+  };
+  const NAMES = ["Awa", "Fatou", "Aminata", "Moussa", "Cheikh", "Modou"];
+  const SIZES = ["grand", "grande", "petit", "petite", "joli", "jolie", "gros", "grosse"];
+  const COLOURS = ["rouge", "jaune", "bleu", "bleue", "vert", "verte", "blanc", "blanche", "noir", "noire"];
+
+  it("cinq mots, un nom du palier, le bon article et le bon verbe, un adjectif de taille avant le nom ou de couleur après", () => {
+    const seen = new Map<number, Set<string>>();
+    for (const seed of SEEDS) {
+      const nouns = new Map<string, number>();
+      for (const palier of paliers("CP", 3, "adjectif-ordre", 1, seed)) {
+        const [exo] = palier.games;
+        const tiles = exo.payload.correctSequence as string[];
+        expect(tiles, `${seed} niveau ${palier.level}`).toHaveLength(5);
+        const [name, verb, determiner, third, fourth] = tiles;
+        const before = SIZES.includes(third);
+        const noun = (before ? fourth : third).replace(/\.$/u, "");
+        const row = NOUNS_OF_LEVEL[palier.level][noun];
+        expect(row, `${seed} niveau ${palier.level} : « ${tiles.join(" ")} »`).toBeDefined();
+        expect(NAMES, tiles.join(" ")).toContain(name);
+        expect([verb, determiner], tiles.join(" ")).toEqual([row.verb, row.determiner]);
+        if (before) expect(fourth, tiles.join(" ")).toBe(`${noun}.`);
+        else expect(COLOURS, tiles.join(" ")).toContain(fourth.replace(/\.$/u, ""));
+        expect(nouns.has(noun), `${seed} : ${noun} aux niveaux ${nouns.get(noun)} et ${palier.level}`).toBe(false);
+        nouns.set(noun, palier.level);
+        const set = seen.get(palier.level) ?? new Set<string>();
+        set.add(noun);
+        seen.set(palier.level, set);
+      }
+    }
+    // Les trois noms de chaque palier servent tous.
+    expect([...seen].map(([level, set]) => `${level}:${[...set].sort().join(",")}`).sort()).toEqual([
+      "1:ballon,livre,poule",
+      "2:cartable,chat,vache",
+      "4:chien,mouton,robe",
+    ]);
+  });
+});
