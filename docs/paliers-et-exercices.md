@@ -2186,6 +2186,48 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     Le contrôleur ne signale aucun défaut sur 9 000 paliers fabriqués (90 000 exercices) ; les paliers des neuf thématiques ont été lus à la
     main.
   - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices ; les neuf thématiques les ont.
+- **L'anglais du CE1** (`paliers/games/ce1Anglais.ts`, avec les aides de `ce1SciencesOutils.ts` et `anglais.ts`) : quarante gabarits pour
+  les six thématiques `an-ce1-who` (se présenter), `an-ce1-days` (les jours), `an-ce1-a-an`, `an-ce1-clothes` (les vêtements),
+  `an-ce1-likes` (j'aime, je n'aime pas) et `an-ce1-commands` (les ordres de la classe), que le modèle n'écrit plus. Sur l'échantillon de CE1 lu le
+  21 octobre 2026, 12 exercices d'anglais sur 36 étaient faux : « Today is ___ » sans aucune donnée qui dise quel jour on est, des phrases qui ne
+  sont pas de l'anglais, des consignes en anglais qu'un enfant de sept ans ne lit pas, des trous qui acceptent deux mots. Ici le vocabulaire et
+  les phrases sont la liste fermée de la fiche, la bonne réponse se lit dans un tableau écrit à la main ou se recalcule par une règle (le rang
+  d'un jour dans la semaine, la première lettre d'un mot pour « a » ou « an »). Les noms des gabarits commencent par `ce1-en-` ; les fonctions
+  sont des `makeCe1En…`.
+  - **Deux ou trois paliers, pas quatre.** `an-ce1-days`, `-clothes` et `-commands` n'ont que deux paliers, joués aux niveaux 1 et 4 ; `-who`,
+    `-a-an` et `-likes` en ont trois, joués aux niveaux 1, 2 et 4. Les lots précédents coupaient chaque tableau en quatre parts (`quarter`), une par
+    niveau : ici la part du niveau 3 n'aurait jamais été jouée. `bandPart` coupe en moitiés (deux paliers) ou en tiers (trois paliers), et toutes
+    les lignes sont servies. Le test compte les questions différentes de chaque gabarit sur 250 graines et exige le nombre exact de lignes du
+    tableau : une ligne perdue le fait échouer.
+  - **Une consigne en français, de l'anglais seulement dans ce que l'enfant apprend.** Aucune écoute ni prononciation. Aucun indice n'écrit un mot
+    anglais de la réponse (il peut en donner la première lettre) ; le test le vérifie sur chaque indice et sur toutes les étiquettes. Un indice du
+    glissé des jours ne dit pas « lundi », la case s'appelle « Du lundi au vendredi ».
+  - **Ce que les tableaux écrivent.** Se présenter : « What is your name? », « How are you? », « How old are you? », « Where are you from? » et
+    leurs réponses, les cinq pays de la fiche, jamais un mauvais choix qui répondrait aussi à la question. Les jours : le jour d'avant, le jour
+    d'après, « Today is Monday. Tomorrow is ___. » (le jour qui manque se compte sur la semaine), « Du lundi au vendredi » et « Week-end ». A ou an :
+    une voyelle écrite ouvre « an », sur des mots sans exception (ni hour ni university). Les vêtements : la couleur avant le nom (« It is a red
+    dress. »), jamais orange, qui prendrait « an ». J'aime : « I like rice. », « I do not like fish. », « Do you like mango? » avec « Yes, I do. » et
+    « No, I do not. », et le sens français de chaque phrase. Les ordres : « stand up », « open your book », « be quiet », avec la situation de classe qui
+    les appelle.
+  - **HORS FICHE, À FAIRE RELIRE PAR UN PROFESSEUR D'ANGLAIS** : les prénoms autres qu'Awa, les âges autres que huit, « Hello. » et « Goodbye. » dans
+    les dialogues, le français de chaque jour et les cases « Du lundi au vendredi » et « Week-end », les mots de a ou an qui ne sont pas dans la fiche
+    (cat, bird, fish, lion, pen, door, ear, eye…), le français de chaque vêtement et les sept couleurs des phrases, les seuls aliments des phrases
+    (rice, fish, bread, chicken, milk, water, mango : « I like banana. » n'est pas naturel au singulier), le français de chaque phrase avec « like »,
+    et les situations de classe et les cases « Avec mon livre » et « Avec mon corps ».
+  - **Pièges rencontrés.** (1) `templatePictures.test.ts` joue les gabarits au CI : une case « Un prénom » ou « Le week-end » est refusée, elle
+    s'écrit « Prénom » et « Week-end ». (2) Un indice ne répète aucun mot de quatre lettres ou plus d'une étiquette ou d'une case : « Regarde les
+    éléments » écrivait « regarde » (un ordre français), « Avec mon livre » interdisait « livre » et « corps », « J'aime » interdisait « aime »,
+    « Du lundi au vendredi » interdisait « lundi ». (3) Un ordre de deux tuiles (« Look, please. ») est signalé par le contrôleur : seuls les ordres de
+    trois mots ou plus restent. (4) Deux phrases à trou de même texte (« What is it? It is ___. ») se prenaient pour un doublon : chacune porte le
+    mot dans son énoncé. (5) `programme.test.ts` réservait les gabarits d'anglais au CI et au CP ; le CE1 y est ajouté, la règle sur l'écoute et
+    l'oral reste.
+  - **Mesuré** : 99 tests (`convex/__tests__/ce1AnglaisTemplates.test.ts`), dont une vérification par gabarit contre des règles et des tables
+    écrites à part, à 4 niveaux et 60 graines ; 31 pannes provoquées dans le code (Mali rangé parmi les prénoms, « It is a apple. », « I is
+    eight. », une robe rouge devenue bleue, le dessin de look pour listen, tous les paliers qui lisent la même part…) toutes vues ; le contrôleur
+    ne signale aucun défaut sur 3 000 paliers fabriqués (30 000 exercices), sans doublon dans un palier ; 0,0 à 0,1 % de questions revues d'un
+    palier à l'autre.
+  - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un QCM sur se présenter, une réponse
+    courte sur les jours, un glissé sur a ou an, un ordre sur les vêtements, un trou sur j'aime, un appariement sur les ordres de la classe.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
