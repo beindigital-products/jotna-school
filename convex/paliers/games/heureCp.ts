@@ -83,10 +83,13 @@ export function makeReadClock(ctx: GameContext): GeneratedGame {
 export function makeClockLinks(ctx: GameContext): GeneratedGame {
   return linkGame(ctx, "heure-relier", "relier une horloge et son heure", () => {
     const count = 3;
-    const hours = shuffle(
-      ctx.rng,
-      Array.from({ length: 12 }, (_, i) => i + 1),
-    ).slice(0, count);
+    // Trois heures du palier (voir `ownHour`) : les heures 1, 4, 7 et 10, puis 2, 5, 8 et 11, puis 3, 6, 9 et 12. Deux paliers ne relient donc jamais
+    // les mêmes horloges ; sans cela, les trois mêmes pouvaient revenir d'un palier à l'autre.
+    const hours: number[] = [];
+    while (hours.length < count) {
+      const rest = Array.from({ length: 12 }, (_, i) => i + 1).filter((hour) => !hours.includes(hour));
+      hours.push(pickPreferred(ctx, rest, rest.filter((hour) => ownHour(ctx, hour)), (hour) => `relier:${hour}`));
+    }
     return {
       prompt: "Relie chaque horloge à son heure.",
       pairs: hours.map((hour) => {

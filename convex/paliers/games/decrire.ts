@@ -28,8 +28,8 @@
  * MODULE PUR (voir `types.ts`).
  */
 import { genderOf } from "../genders";
-import { pick, pickFresh, shuffle, type GameContext, type GeneratedGame } from "./shared";
-import { cap, choiceGame, firstLetter, gapGame, linkGame, pickForLevel, sequenceGame } from "./tableaux";
+import { pick, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { cap, choiceGame, firstLetter, gapGame, linkGame, pickForLevel, pickPreferred, sequenceGame, spreadForLevel } from "./tableaux";
 import { SIZE_SCALE, WEIGHT_SCALE, type Thing } from "./things";
 
 // ===========================================================================
@@ -85,9 +85,18 @@ export function makeContraryChoice(ctx: GameContext): GeneratedGame {
 export function makeContraryLinks(ctx: GameContext): GeneratedGame {
   return linkGame(ctx, "contraire-relier", "les mots contraires", () => {
     const count = ctx.level === 1 ? 3 : 4;
-    const pairs = shuffle(ctx.rng, CONTRARIES)
-      .slice(0, count)
-      .map(([first, second]) => (ctx.rng() < 0.5 ? { left: first, right: second } : { left: second, right: first }));
+    // Les paires LAISSÉES DE CÔTÉ (cinq paires, trois ou quatre reliées) sont prises dans celles du groupe du palier (`spreadForLevel` : la 1re et la
+    // 4e au premier palier, la 2e et la 5e au deuxième, la 3e au dernier). Les trois paliers n'ont donc jamais les mêmes paires reliées : sans cela, les
+    // deux derniers (quatre paires sur cinq chacun) pouvaient poser exactement la même question.
+    const left: (typeof CONTRARIES)[number][] = [];
+    while (left.length < CONTRARIES.length - count) {
+      const rest = CONTRARIES.filter((pair) => !left.includes(pair));
+      left.push(pickPreferred(ctx, rest, spreadForLevel(CONTRARIES, ctx.level).filter((pair) => rest.includes(pair)), (pair) => `contraire-relier:${pair[0]}`));
+    }
+    const pairs = shuffle(
+      ctx.rng,
+      CONTRARIES.filter((pair) => !left.includes(pair)),
+    ).map(([first, second]) => (ctx.rng() < 0.5 ? { left: first, right: second } : { left: second, right: first }));
     return {
       prompt: "Relie chaque mot à son contraire.",
       pairs,
@@ -228,7 +237,9 @@ export const AFTER_NOUN: readonly (readonly [string, string])[] = [
 /** « Remets les mots dans l'ordre pour écrire une phrase. » : « Awa a un grand ballon. » ou « Awa porte une robe rouge. » */
 export function makeAdjectiveOrder(ctx: GameContext): GeneratedGame {
   return sequenceGame(ctx, "adjectif-ordre", "l'adjectif et son nom", () => {
-    const entry = pickFresh(ctx, NOUNS_WITH_COLOURS, (candidate) => `adjectif:${candidate.noun}`);
+    // Un nom du palier (`spreadForLevel` : ballon, livre et poule au premier palier ; cartable, chat et vache au deuxième ; robe, chien et mouton ensuite) :
+    // chaque nom n'a qu'un palier, donc deux paliers ne rangent jamais la même phrase.
+    const entry = pickForLevel(ctx, NOUNS_WITH_COLOURS, (candidate) => `adjectif:${candidate.noun}`, "spread");
     const feminine = genderOf(entry.noun) === "f";
     const determiner = feminine ? "une" : "un";
     const before = ctx.rng() < 0.5;

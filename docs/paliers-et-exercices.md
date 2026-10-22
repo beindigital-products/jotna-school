@@ -1831,7 +1831,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     « lourd », puis « léger », puis « grand » ou « petit » (au CI, qui en pose quatre par palier, les quatre mots changent à chaque fois) ; `monnaie-payer` :
     des sommes jusqu'à 35 F, puis de 50 à 60 F, puis 75 F et plus. Mesuré sur 200 graines : `fr-cp-decrire` reprenait 204 questions de `contraire-qcm`, 102 de
     `contraire-trou`, 77 de `couleur-objet`, 58 de `comparer-trou` et 57 de `comparer-mesure` ; plus aucune. `adjectif-ordre` (3 sur 200) et `contraire-relier`
-    (2) n'ont pas été touchés. `ma-cp-heure-monnaie` reprend encore `heure-lire` (30), `heure-trou` (28), `monnaie-pieces` (32) et `monnaie-relier` (11).
+    (2) ont reçu le même traitement ensuite (puce plus bas). `ma-cp-heure-monnaie` reprend encore `heure-lire` (30), `heure-trou` (28), `monnaie-pieces` (32) et `monnaie-relier` (11).
   - **`heure-lire`, `heure-trou`, `monnaie-pieces` et `monnaie-relier` répartis par palier** (`heureCp.ts`, avec `pickPreferred` de `tableaux.ts`), relevés dans la
     thématique « L'heure, le calendrier, la monnaie » après la PR #119 : « 25 F pour payer 50 F » aux paliers 1 et 2, et la même heure ou le même départ d'un
     palier à l'autre. Les heures se partagent en trois (la 1re, la 4e, la 7e et la 10e au premier palier ; la 2e, la 5e, la 8e et la 11e au deuxième ; la 3e, la 6e, la 9e
@@ -1839,11 +1839,21 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     Les sommes se rangent en trois tranches (`moneyBand` : jusqu'à 35 F, de 36 à 60 F, au-delà, la même que `monnaie-payer`). `monnaie-pieces` prend une somme de la
     tranche du palier ; `monnaie-relier` prend trois groupes de sommes différentes, de préférence de la tranche (le premier palier n'a que de petites sommes, les suivants
     en ont deux de la leur : deux paliers ne relient jamais les mêmes trois groupes). Mesuré sur 200 graines, en comparant la phrase des textes à trou : `heure-lire`
-    reprenait 30 questions, `monnaie-pieces` 32, `monnaie-relier` 11, `heure-trou` 15 ; plus aucune. `heure-relier` (1) n'a pas été touché. `heure-ordre` (2 reprises sur 200) et `monnaie-rendre` (2) ont reçu le même traitement ensuite : `heure-ordre` tire
+    reprenait 30 questions, `monnaie-pieces` 32, `monnaie-relier` 11, `heure-trou` 15 ; plus aucune. `heure-relier` (1) a été traité ensuite (puce plus bas). `heure-ordre` (2 reprises sur 200) et `monnaie-rendre` (2) ont reçu le même traitement ensuite : `heure-ordre` tire
     ses trois ou quatre horloges dans le groupe d'heures du palier (`ownHour` : 7 et 10, puis 8 et 11, puis 6 et 9, justes et et demie), si bien que deux paliers ne rangent jamais les
     mêmes horloges ; `monnaie-rendre` (`calculCp.ts`, aussi dans `ma-cp-retenue`) prend un prix de la tranche du palier (jusqu'à 30 F, de 35 à 60 F, 65 F et plus, `priceBand`), et le
-    premier palier ne paie qu'avec une pièce de 50 F. Mesuré sur 200 graines : plus aucune reprise. `calc-ordre` de `ma-cp-retenue` se répète en revanche à chaque graine (il n'a que
-    deux jeux d'étapes) : il n'est pas traité.
+    premier palier ne paie qu'avec une pièce de 50 F. Mesuré sur 200 graines : plus aucune reprise. `calc-ordre` de `ma-cp-retenue` se répétait en revanche à chaque graine (il n'avait que
+    deux jeux d'étapes) : voir la puce suivante.
+  - **`calc-ordre`, `heure-relier`, `contraire-relier` et `adjectif-ordre` répartis par palier** (`calculCp.ts`, `heureCp.ts`, `decrire.ts`), les dernières reprises relevées après la PR #123.
+    `calc-ordre` de `ma-cp-retenue` se répétait à chaque graine : il n'avait que deux suites d'étapes pour trois paliers. Il en a maintenant trois, une par palier
+    (`pickForLevel`) : poser une addition au premier palier, l'addition avec retenue au deuxième, la soustraction avec emprunt au dernier. `heure-relier` tire ses trois horloges
+    dans le groupe d'heures du palier (`ownHour`, comme `heure-lire`) : deux paliers ne relient jamais la même horloge. `contraire-relier` a cinq paires pour trois ou quatre
+    liens : les paires laissées de côté sont prises dans celles du palier (`spreadForLevel` : « grand » et « plein » au premier palier, « chaud » ou « long » au deuxième, « lourd »
+    au dernier), si bien que deux paliers ne relient jamais les mêmes paires. `adjectif-ordre` prend un nom du palier (`spreadForLevel` : ballon, livre et poule, puis cartable, chat et
+    vache, puis robe, chien et mouton) : chaque nom n'a qu'un palier, donc la même phrase ne revient jamais. Mesuré sur 200 graines : `calc-ordre` reprenait sa suite à chaque graine,
+    `adjectif-ordre` 3 fois, `contraire-relier` 2 fois et `heure-relier` 1 fois ; plus aucune reprise. Les tuiles du premier palier de `calc-ordre` ne reprennent aucun mot des
+    indices (« Pense à ce qu'on fait en premier » interdisait « J'écris le premier nombre »). Il reste de petites reprises dues au hasard dans `ma-cp-retenue`, qui tire ses
+    nombres dans des plages qui se recouvrent d'un palier à l'autre : sur 1 000 graines, `calc-enlever` 8, `calc-ajouter` 2, `calc-trou` 2, `monnaie-somme` 2 et `calc-retenue` 1.
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les

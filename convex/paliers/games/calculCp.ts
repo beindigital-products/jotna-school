@@ -18,7 +18,7 @@
  */
 import { fresh, originOf, pick, pickFresh, randomInt, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
 import { CHILDREN, hasHe, pronoun } from "./stories";
-import { cap, choiceGame, gapGame, levelGroup, linkGame, pickPreferred, sequenceGame, sortGame } from "./tableaux";
+import { cap, choiceGame, gapGame, levelGroup, linkGame, pickForLevel, pickPreferred, sequenceGame, sortGame } from "./tableaux";
 import { wrongNumbers } from "./nombresCp";
 
 const ADD_TOP: Record<GameLevel, number> = { 1: 70, 2: 90, 3: 100, 4: 100 };
@@ -163,8 +163,21 @@ export function makeCalcGap(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** Les étapes d'un calcul posé : l'addition avec retenue et la soustraction avec emprunt, chacune dans un seul ordre. */
+/**
+ * Les étapes d'un calcul posé, chacune dans un seul ordre : poser une addition, l'addition avec retenue, la soustraction avec emprunt. Il y en a
+ * trois parce que le CP a trois paliers : chacun prend la sienne (`pickForLevel`, un tiers de la liste). Avec deux suites seulement, le dernier
+ * palier reprenait celle d'un autre à chaque fois.
+ */
 export const CALC_STEPS: readonly { prompt: string; steps: readonly string[] }[] = [
+  {
+    prompt: "Mets dans le bon ordre les étapes pour poser une addition.",
+    steps: [
+      "J'écris un nombre en haut.",
+      "J'écris l'autre nombre en dessous, unités sous unités.",
+      "Je trace un trait sous les nombres.",
+      "J'additionne en commençant par les unités.",
+    ],
+  },
   {
     prompt: "Mets dans le bon ordre les étapes d'une addition avec retenue.",
     steps: ["J'additionne les unités.", "J'écris les unités et je retiens une dizaine.", "J'additionne les dizaines avec la retenue."],
@@ -178,7 +191,7 @@ export const CALC_STEPS: readonly { prompt: string; steps: readonly string[] }[]
 /** « Mets dans le bon ordre les étapes d'une addition avec retenue. » */
 export function makeCalcSteps(ctx: GameContext): GeneratedGame {
   return sequenceGame(ctx, "calc-ordre", "remettre dans l'ordre les étapes d'un calcul", () => {
-    const entry = pickFresh(ctx, CALC_STEPS, (candidate) => `calc-ordre:${candidate.prompt}`);
+    const entry = pickForLevel(ctx, CALC_STEPS, (candidate) => `calc-ordre:${candidate.prompt}`);
     return {
       prompt: entry.prompt,
       sequence: entry.steps,
