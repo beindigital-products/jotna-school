@@ -148,3 +148,25 @@ export function stepsOrder(ctx: GameContext, kind: string, concept: string, step
     return { prompt: entry.prompt, sequence: entry.sequence, hints: entry.hints };
   });
 }
+
+/** Une réponse à écrire lue dans un tableau, de préférence une dont le mot juste n'a pas déjà servi dans ce palier (le mot juste est la première écriture admise). */
+export function factWriteLine(ctx: GameContext, kind: string, concept: string, facts: readonly WriteFact[], uses = 1): GeneratedGame {
+  const lines = quarter(facts, ctx.level, uses).map((fact) => ({ fact, answer: fact.accepted[0] }));
+  const chosen = pickLine(ctx, kind, lines, (line) => `${kind}:${line.fact.prompt}`).fact;
+  return {
+    type: "short-answer",
+    prompt: chosen.prompt,
+    payload: { acceptedAnswers: [...chosen.accepted], game: originOf(kind, ctx), concept },
+    answerKey: chosen.accepted[0],
+    hints: [...chosen.hints],
+  };
+}
+
+/**
+ * Un ordre dont les suites sont écrites en deux versions, une courte (trois étapes, aux niveaux 1 et 2) et une longue (quatre, aux niveaux 3 et 4) :
+ * chaque niveau lit sa moitié de la liste de son niveau, toutes les suites sont servies à un niveau ou à un autre.
+ */
+export function stepsByLevel(ctx: GameContext, kind: string, concept: string, short: readonly Steps[], long: readonly Steps[]): GeneratedGame {
+  const steps = ctx.level <= 2 ? partOf(short, ctx.level - 1, 2) : partOf(long, ctx.level - 3, 2);
+  return stepsOrder(ctx, kind, concept, steps);
+}

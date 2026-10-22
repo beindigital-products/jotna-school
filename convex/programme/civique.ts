@@ -167,24 +167,64 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
         name: "Les symboles de la Nation",
         description:
           "Vivre ensemble, étape 2, paliers 1-2 : les symboles de la Nation. Le drapeau vert, or et rouge, avec une étoile verte à cinq branches au centre ; la devise « Un Peuple – Un But – Une Foi » ; l'hymne national, « Le Lion rouge », dont les paroles sont de Léopold Sédar Senghor ; le lion et le baobab des armoiries. Ne citer aucune autre parole de l'hymne que son titre.",
+        // Dix gabarits (`ce1Civique.ts`) : un fait sur le drapeau, la devise, l'hymne ou les armoiries (trois fois), quel symbole est décrit, ranger ce qui est sur le drapeau ou sur les armoiries, ranger les couleurs ou la devise, relier, une phrase à trou (deux fois), un mot ou un nombre à écrire.
+        games: [
+          { kind: "ce1-symbole-qcm", count: 3 },
+          { kind: "ce1-symbole-nom", count: 1 },
+          { kind: "ce1-symbole-glisser", count: 1 },
+          { kind: "ce1-symbole-ordre", count: 1 },
+          { kind: "ce1-symbole-relier", count: 1 },
+          { kind: "ce1-symbole-trou", count: 2 },
+          { kind: "ce1-symbole-ecrire", count: 1 },
+        ],
       },
       {
         key: "ci-ce1-civisme",
         name: "Le civisme",
         description:
           "Vivre ensemble, étape 2, paliers 1-2 : respecter le bien public (l'école, la rue, les arbres, les bornes-fontaines), ne pas gaspiller l'eau ni l'électricité, garder la rue propre.",
+        // Dix gabarits (`ce1Civique.ts`) : le bon geste d'élève devant une scène (trois fois), pourquoi prendre soin du bien commun, ranger les gestes qui protègent ou abîment, relier un bien commun à un bon geste, ranger les gestes d'un bon geste, une phrase à trou (deux fois), un mot à écrire.
+        games: [
+          { kind: "ce1-civisme-situation", count: 3 },
+          { kind: "ce1-civisme-pourquoi", count: 1 },
+          { kind: "ce1-civisme-glisser", count: 1 },
+          { kind: "ce1-civisme-relier", count: 1 },
+          { kind: "ce1-civisme-ordre", count: 1 },
+          { kind: "ce1-civisme-trou", count: 2 },
+          { kind: "ce1-civisme-ecrire", count: 1 },
+        ],
       },
       {
         key: "ci-ce1-autorites",
         name: "Respecter les autorités",
         description:
           "Vivre ensemble, étape 2, paliers 1-2 : le maire, le chef de village, le directeur d'école ; les forces de l'ordre et de secours (policier, gendarme, sapeur-pompier) et ce qu'elles font pour nous.",
+        // Dix gabarits (`ce1Civique.ts`) : qui a quel rôle (trois fois), ce que fait une autorité, ranger ceux qui dirigent et ceux qui protègent, relier, ranger ce qui se passe quand les secours viennent, une phrase à trou (deux fois), un mot à écrire.
+        games: [
+          { kind: "ce1-autorite-qui", count: 3 },
+          { kind: "ce1-autorite-role", count: 1 },
+          { kind: "ce1-autorite-glisser", count: 1 },
+          { kind: "ce1-autorite-relier", count: 1 },
+          { kind: "ce1-autorite-ordre", count: 1 },
+          { kind: "ce1-autorite-trou", count: 2 },
+          { kind: "ce1-autorite-ecrire", count: 1 },
+        ],
       },
       {
         key: "ci-ce1-diversite",
         name: "Nos différences, notre richesse",
         description:
           "Vivre ensemble, étape 2, paliers 1-2 : le respect des différences et de la diversité (langues, ethnies, religions, handicap) ; le cousinage à plaisanterie, qui rapproche les familles par le rire.",
+        // Dix gabarits (`ce1Civique.ts`) : le geste qui respecte les différences (trois fois), les mots des différences, ranger les gestes qui respectent ou non, relier, ranger les gestes d'un bon accueil, une phrase à trou (deux fois), un mot à écrire.
+        games: [
+          { kind: "ce1-diff-situation", count: 3 },
+          { kind: "ce1-diff-mot", count: 1 },
+          { kind: "ce1-diff-glisser", count: 1 },
+          { kind: "ce1-diff-relier", count: 1 },
+          { kind: "ce1-diff-ordre", count: 1 },
+          { kind: "ce1-diff-trou", count: 2 },
+          { kind: "ce1-diff-ecrire", count: 1 },
+        ],
       },
     ],
     CE2: [
