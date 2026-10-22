@@ -669,3 +669,126 @@ describe("adjectif-ordre : un nom par palier, donc jamais la même phrase", () =
     ]);
   });
 });
+
+describe("ma-cp-retenue : les calculs et les sommes tirés au hasard ne reviennent pas d'un palier à l'autre", () => {
+  /** Le groupe de chaque niveau (1, 2 et 4) : le premier nombre d'un calcul a ce reste dans la division par 3. */
+  const GROUP: Record<number, number> = { 1: 0, 2: 1, 4: 2 };
+  const units = (n: number) => n % 10;
+  /** Les premiers nombres vus par niveau, sur les 80 graines : chaque palier garde de la variété. */
+  const firsts = () => ({ 1: new Set<number>(), 2: new Set<number>(), 4: new Set<number>() }) as Record<number, Set<number>>;
+
+  it("calc-ajouter : une addition avec retenue, juste, dont le premier nombre est du palier", () => {
+    const seen = firsts();
+    for (const seed of SEEDS) {
+      const all = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "calc-ajouter", 1, seed)) {
+        const [exo] = palier.games;
+        const match = /^Combien font (\d+) \+ (\d+) \?$/u.exec(exo.prompt)!;
+        const [a, b] = [Number(match[1]), Number(match[2])];
+        expect(units(a) + units(b), exo.prompt).toBeGreaterThanOrEqual(10);
+        expect(a + b, exo.prompt).toBeLessThanOrEqual(100);
+        expect(Number(rightOption(exo)), exo.prompt).toBe(a + b);
+        expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+        expect(a % 3, `${seed} niveau ${palier.level} : ${exo.prompt}`).toBe(GROUP[palier.level]);
+        expect(all.has(a), `${seed} : ${a} aux niveaux ${all.get(a)} et ${palier.level}`).toBe(false);
+        all.set(a, palier.level);
+        seen[palier.level].add(a);
+      }
+    }
+    for (const level of [1, 2, 4]) expect(seen[level].size, `niveau ${level}`).toBeGreaterThanOrEqual(10);
+  });
+
+  it("calc-enlever : une soustraction avec emprunt, juste, dont le premier nombre est du palier", () => {
+    const seen = firsts();
+    for (const seed of SEEDS) {
+      const all = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "calc-enlever", 1, seed)) {
+        const [exo] = palier.games;
+        const match = /^Combien font (\d+) − (\d+) \?$/u.exec(exo.prompt)!;
+        const [a, b] = [Number(match[1]), Number(match[2])];
+        expect(units(a), exo.prompt).toBeLessThan(units(b));
+        expect(a, exo.prompt).toBeLessThanOrEqual(99);
+        expect(Number(rightOption(exo)), exo.prompt).toBe(a - b);
+        expect(a % 3, `${seed} niveau ${palier.level} : ${exo.prompt}`).toBe(GROUP[palier.level]);
+        expect(all.has(a), `${seed} : ${a} aux niveaux ${all.get(a)} et ${palier.level}`).toBe(false);
+        all.set(a, palier.level);
+        seen[palier.level].add(a);
+      }
+    }
+    for (const level of [1, 2, 4]) expect(seen[level].size, `niveau ${level}`).toBeGreaterThanOrEqual(10);
+  });
+
+  it("calc-retenue : l'addition ou la soustraction de l'énoncé a un premier nombre du palier, avec retenue ou emprunt", () => {
+    for (const seed of SEEDS) {
+      const all = new Map<string, number>();
+      for (const palier of paliers("CP", 3, "calc-retenue", 1, seed)) {
+        const [exo] = palier.games;
+        const match = /^Dans (\d+) ([+−]) (\d+)/u.exec(exo.prompt)!;
+        const [a, b] = [Number(match[1]), Number(match[3])];
+        if (match[2] === "+") expect(units(a) + units(b), exo.prompt).toBeGreaterThanOrEqual(10);
+        else expect(units(a), exo.prompt).toBeLessThan(units(b));
+        expect(a % 3, `${seed} niveau ${palier.level} : ${exo.prompt}`).toBe(GROUP[palier.level]);
+        const key = `${a}${match[2]}${b}`;
+        expect(all.has(key), `${seed} : ${key} aux niveaux ${all.get(key)} et ${palier.level}`).toBe(false);
+        all.set(key, palier.level);
+      }
+    }
+  });
+
+  it("calc-trou : le nombre qui manque est juste, et le premier nombre est du palier", () => {
+    for (const seed of SEEDS) {
+      const all = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "calc-trou", 1, seed)) {
+        const [exo] = palier.games;
+        const text = exo.payload.text as string;
+        const match = /^(\d+) ([+−]) ___ = (\d+)$/u.exec(text)!;
+        const [a, result] = [Number(match[1]), Number(match[3])];
+        const missing = match[2] === "+" ? result - a : a - result;
+        expect(blanks(exo)[0].answer, text).toBe(String(missing));
+        expect(a % 3, `${seed} niveau ${palier.level} : ${text}`).toBe(GROUP[palier.level]);
+        expect(all.has(a), `${seed} : ${a} aux niveaux ${all.get(a)} et ${palier.level}`).toBe(false);
+        all.set(a, palier.level);
+      }
+    }
+  });
+
+  it("calc-relier : chaque calcul relié a un premier nombre du palier, et le bon résultat", () => {
+    for (const seed of SEEDS) {
+      for (const palier of paliers("CP", 3, "calc-relier", 1, seed)) {
+        for (const pair of pairs(palier.games[0])) {
+          const match = /^(\d+) ([+−]) (\d+)$/u.exec(pair.left)!;
+          const [a, b] = [Number(match[1]), Number(match[3])];
+          expect(pair.right, pair.left).toBe(String(match[2] === "+" ? a + b : a - b));
+          expect(a % 3, `${seed} niveau ${palier.level} : ${pair.left}`).toBe(GROUP[palier.level]);
+        }
+      }
+    }
+  });
+
+  it("monnaie-somme : la somme des pièces est juste, de la tranche du palier, et jamais la même dans deux paliers", () => {
+    const BAND: Record<number, [number, number]> = { 1: [15, 35], 2: [40, 60], 4: [65, 100] };
+    const totals: Record<number, Set<number>> = { 1: new Set(), 2: new Set(), 4: new Set() };
+    for (const seed of SEEDS) {
+      const all = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "monnaie-somme", 1, seed)) {
+        const [exo] = palier.games;
+        const parts = [...exo.prompt.matchAll(/(\d+) pièces? de (\d+) F/gu)].map((m) => ({ count: Number(m[1]), value: Number(m[2]) }));
+        const total = parts.reduce((sum, part) => sum + part.count * part.value, 0);
+        expect(Number(rightOption(exo)), exo.prompt).toBe(total);
+        expect(new Set(parts.map((part) => part.value)).size, exo.prompt).toBe(parts.length);
+        for (const part of parts) {
+          expect([5, 10, 25, 50], exo.prompt).toContain(part.value);
+          expect([part.count >= 1, part.count <= 3], exo.prompt).toEqual([true, true]);
+        }
+        if (palier.level === 1) expect(parts, exo.prompt).toHaveLength(2);
+        else expect([2, 3], exo.prompt).toContain(parts.length);
+        const [low, high] = BAND[palier.level];
+        expect([total >= low, total <= high], `${seed} niveau ${palier.level} : ${exo.prompt}`).toEqual([true, true]);
+        expect(all.has(total), `${seed} : ${total} F aux niveaux ${all.get(total)} et ${palier.level}`).toBe(false);
+        all.set(total, palier.level);
+        totals[palier.level].add(total);
+      }
+    }
+    for (const level of [1, 2, 4]) expect(totals[level].size, `niveau ${level}`).toBeGreaterThanOrEqual(3);
+  });
+});
