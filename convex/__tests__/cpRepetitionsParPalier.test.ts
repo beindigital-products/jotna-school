@@ -322,6 +322,65 @@ describe("heure-lire et heure-trou : la même heure ne revient pas d'un palier �
   });
 });
 
+describe("heure-ordre et monnaie-rendre : la même suite ou le même achat ne revient pas d'un palier à l'autre", () => {
+  const sequenceOf = (exo: Exo) => exo.payload.correctSequence as string[];
+
+  it("heure-ordre : les horloges du palier, rangées du plus tôt au plus tard, jamais la même horloge dans deux paliers", () => {
+    const seen = new Map<number, Set<string>>();
+    // Les heures de chaque niveau pour ce jeu (de 6 h à 11 h 30) : le premier palier 7 et 10, le deuxième 8 et 11, le dernier 6 et 9.
+    const HOURS: Record<number, number[]> = { 1: [7, 10], 2: [8, 11], 4: [6, 9] };
+    for (const seed of SEEDS) {
+      const clocks = new Map<string, number>();
+      for (const palier of paliers("CP", 3, "heure-ordre", 1, seed)) {
+        const [exo] = palier.games;
+        const times = sequenceOf(exo).map((glyph) => clockTime(glyph));
+        expect(times, `${seed} niveau ${palier.level}`).toHaveLength(palier.level === 4 ? 4 : 3);
+        const minutes = times.map((time) => time.hour * 60 + (time.half ? 30 : 0));
+        expect(minutes, `${seed} : pas dans l'ordre`).toEqual([...minutes].sort((a, b) => a - b));
+        expect(new Set(minutes).size, `${seed} : deux fois la même horloge`).toBe(minutes.length);
+        for (const time of times) {
+          expect(HOURS[palier.level], `${seed} niveau ${palier.level} : ${time.hour} h`).toContain(time.hour);
+          const key = `${time.hour}${time.half ? "½" : ""}`;
+          expect(clocks.has(key), `${seed} : ${key} aux niveaux ${clocks.get(key)} et ${palier.level}`).toBe(false);
+          clocks.set(key, palier.level);
+          const set = seen.get(palier.level) ?? new Set<string>();
+          set.add(key);
+          seen.set(palier.level, set);
+        }
+      }
+    }
+    // Les quatre horloges de chaque palier servent, trois sur quatre à la fois aux deux premiers.
+    expect([...seen].map(([level, set]) => `${level}:${set.size}`).sort()).toEqual(["1:4", "2:4", "4:4"]);
+  });
+
+  it("monnaie-rendre : une tranche de prix par palier (jusqu'à 30 F, de 35 à 60 F, 65 F et plus), la bonne monnaie, jamais le même prix", () => {
+    const seen = new Map<number, Set<number>>();
+    for (const seed of SEEDS) {
+      const prices = new Map<number, number>();
+      for (const palier of paliers("CP", 3, "monnaie-rendre", 1, seed)) {
+        const [exo] = palier.games;
+        const match = /à (\d+) F\. .+ paie avec une pièce de (\d+) F\./u.exec(exo.prompt);
+        expect(match, exo.prompt).not.toBeNull();
+        const price = Number(match![1]);
+        const paid = Number(match![2]);
+        expect(price < paid && price % 5 === 0, exo.prompt).toBe(true);
+        expect(rightOption(exo), exo.prompt).toBe(String(paid - price));
+        expect(new Set(options(exo)).size, exo.prompt).toBe(3);
+        if (palier.level === 1) expect([paid, price <= 30], exo.prompt).toEqual([50, true]);
+        if (palier.level === 2) expect([price >= 35, price <= 60], exo.prompt).toEqual([true, true]);
+        if (palier.level === 4) expect([paid, price >= 65], exo.prompt).toEqual([100, true]);
+        expect(prices.has(price), `${seed} : ${price} F aux niveaux ${prices.get(price)} et ${palier.level}`).toBe(false);
+        prices.set(price, palier.level);
+        const set = seen.get(palier.level) ?? new Set<number>();
+        set.add(price);
+        seen.set(palier.level, set);
+      }
+    }
+    // Les prix de chaque tranche servent tous : six, six et sept.
+    expect([...seen].map(([level, set]) => `${level}:${set.size}`).sort()).toEqual(["1:6", "2:6", "4:7"]);
+  });
+});
+
 describe("monnaie-pieces et monnaie-relier : la même somme ne revient pas d'un palier à l'autre", () => {
   it("monnaie-pieces : une tranche de sommes par palier (jusqu'à 35 F, de 36 à 60 F, au-delà), la bonne réponse, jamais la même somme", () => {
     for (const seed of SEEDS) {

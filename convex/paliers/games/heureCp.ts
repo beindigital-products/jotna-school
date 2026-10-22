@@ -104,9 +104,14 @@ export function makeClockOrder(ctx: GameContext): GeneratedGame {
     const all: Clock[] = [];
     for (let hour = 6; hour <= 11; hour++) all.push({ hour, half: false }, { hour, half: true });
     const count = ctx.level <= 2 ? 3 : 4;
-    const chosen = shuffle(ctx.rng, all)
-      .slice(0, count)
-      .sort((x, y) => x.hour + (x.half ? 0.5 : 0) - (y.hour + (y.half ? 0.5 : 0)));
+    // Les horloges du palier (voir `ownHour` : les heures 7 et 10, puis 8 et 11, puis 6 et 9, chacune juste et et demie) : trois ou quatre horloges, toutes de
+    // ce groupe, si bien que deux paliers ne rangent jamais les mêmes horloges. Sans cela, la même suite pouvait revenir d'un palier à l'autre.
+    const picked: Clock[] = [];
+    while (picked.length < count) {
+      const rest = all.filter((clock) => picked.every((other) => other.hour !== clock.hour || other.half !== clock.half));
+      picked.push(pickPreferred(ctx, rest, rest.filter((clock) => ownHour(ctx, clock.hour)), (clock) => `ordre:${clock.hour}:${clock.half}`));
+    }
+    const chosen = picked.sort((x, y) => x.hour + (x.half ? 0.5 : 0) - (y.hour + (y.half ? 0.5 : 0)));
     return {
       prompt: "Range ces heures du matin, du plus tôt au plus tard.",
       sequence: chosen.map((clock) => clockOf(clock.hour, clock.half)),
