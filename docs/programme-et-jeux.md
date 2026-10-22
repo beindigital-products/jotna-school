@@ -199,6 +199,21 @@ vérifient leurs couleurs et leur symétrie. Sur un téléphone, l'écran du
 dessin tient sans défiler, « Valider » compris : les cases prennent la place
 libre, entre 26 et 44 px (`components/exercises/pixel-grid-fit.ts`).
 
+Un palier ne pose jamais deux fois le même exercice d'écoute : les mêmes
+sons avec la même question. Grave ou aigu, long ou court, fort ou doux
+et la mélodie n'ont que quelques variantes par niveau, de quatre à
+quarante-huit. Un palier les tire donc l'une après l'autre, sans en
+reprendre aucune (`pickFresh`). Compter les coups, reconnaître un rythme
+et comparer deux mélodies en ont des centaines : un tirage identique à
+un exercice déjà posé est refait (`fresh`). Quand un palier demande plus
+d'exercices que le genre n'a de variantes, elles reviennent. Avant, sur
+300 graines par palier, « Grave ou aigu ? » et « Long ou court, fort ou
+doux » du CI avaient un exercice en double dans 90 % et 79 % de leurs
+paliers, et les sept thématiques d'écoute du CE1 au CM2 dans 8 à 38 % ;
+il n'y en a plus aucun. `convex/__tests__/ecouteSansDoublon.test.ts` le
+vérifie sur tout le programme, recalcule chaque réponse depuis les sons
+et vérifie que chaque variante reste atteignable.
+
 Dans l'administration, ces types s'éditent par leur JSON, avec un exemple de
 départ. L'aperçu montre l'écran de l'enfant, jouable, et dit si la réponse
 donnée est juste.

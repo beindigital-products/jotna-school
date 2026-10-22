@@ -1689,7 +1689,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   motifs attachés à un objet sans que la fiche le dise. Ici on ne dessine jamais une ligne : on la DÉCRIT par ce qu'on voit, ou on la reconnaît
   dans une chose de tous les jours. Les « lignes brisées » de la fiche ne sont pas posées : un zigzag en est déjà une. Les voix vont de la plus
   douce à la plus forte (chuchoter, parler doucement, parler fort, crier). Les jeux d'écoute (`listen.ts`) ne refont pas un tirage déjà servi dans le
-  palier : une thématique faite tout entière par le code les sert une fois chacun, sinon deux exercices identiques pourraient se suivre.
+  palier (voir `programme-et-jeux.md`) ; une thématique faite tout entière par le code les sert une fois chacun.
   - `convex/__tests__/cpFrancaisArtsTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (le sens de chaque
     verbe de consigne, les contraires, l'ordre des bêtes de la fourmi à l'éléphant, les histoires, les invitations et les conseils, les lignes,
     les traits, les voix), abîme volontairement la bonne réponse de chaque gabarit pour vérifier que le test le voit, et fabrique 40 paliers de
