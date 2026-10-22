@@ -337,7 +337,7 @@ arrivent plus tard.
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
 🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
-`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie, les sciences, l'instruction civique, l'éducation artistique, l'anglais et les sept thématiques de français (trente-six thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie, les sciences, l'instruction civique, l'éducation artistique, l'anglais et les sept thématiques de français (trente-six thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle. Au CE2, l'histoire et la géographie (huit thématiques sur quarante-cinq, lot 1 sur six) le sont depuis le 22 octobre 2026 ; le reste du CE2 est écrit par le modèle, sauf les jeux de six thématiques mixtes ; la liste de celles du CI est dans
 `docs/paliers-et-exercices.md`.
 
 ### Français
@@ -388,7 +388,7 @@ arrivent plus tard.
 | CI | Le matin, le midi, le soir · Avant, pendant, après · Hier, aujourd'hui, demain · Les jours de la semaine |
 | CP | C'est long, c'est court 🧩 · Souvent, parfois, jamais 🧩 · Le calendrier 🧩 · L'emploi du temps 🧩 |
 | CE1 | Le temps qui passe 🧩 · L'histoire de ma famille 🧩 · L'histoire de mon école 🧩 · Mon quartier, mon village, ma commune 🧩 |
-| CE2 | Hier et aujourd'hui : le progrès · Les royaumes du Sénégal (1) · Les royaumes du Sénégal (2) · Les rois et leurs titres |
+| CE2 | Hier et aujourd'hui : le progrès 🧩 · Les royaumes du Sénégal (1) 🧩 · Les royaumes du Sénégal (2) 🧩 · Les rois et leurs titres 🧩 |
 | CM1 | La préhistoire · Les royaumes avant les Européens · Les premiers contacts · Les résistants · Résister sans les armes |
 | CM2 | Les grands empires · Grandes découvertes et traite négrière · La conquête coloniale · La marche vers l'indépendance · Les progrès des sciences et des techniques |
 
@@ -401,7 +401,7 @@ arrivent plus tard.
 | CI | Devant, derrière, à côté · Ma droite et ma gauche · Les repères de mon école · Se repérer sur un quadrillage 🎮 (3 × reproduire un dessin) |
 | CP | Le chemin de l'école 🧩 · Près ou loin ? 🧩 · Vu de dessus 🧩 · Se repérer dans le quartier 🧩 |
 | CE1 | Les points cardinaux 🧩 · Le climat et les saisons 🧩 · Le relief et les cours d'eau 🧩 · Le plan de la classe et de l'école 🧩 |
-| CE2 | Lire une carte · Ma région et les régions du Sénégal · Les activités des hommes · L'habitat et les déplacements |
+| CE2 | Lire une carte 🧩 · Ma région et les régions du Sénégal 🧩 · Les activités des hommes 🧩 · L'habitat et les déplacements 🧩 |
 | CM1 | Le Sénégal en Afrique de l'Ouest · Climats et végétation · Le découpage administratif · Ressources et activités économiques · Les voies de communication |
 | CM2 | Le milieu et les activités · Protéger nos ressources · La population du Sénégal · Villes et campagnes |
 
