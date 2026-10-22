@@ -295,6 +295,18 @@ export const FRANCAIS: ProgrammeSubject = {
       {
         key: "fr-ce1-homophones",
         name: "a/à, et/est, on/ont",
+        games: [
+          { kind: "ce1-fr-homo-a", count: 1 },
+          { kind: "ce1-fr-homo-et", count: 1 },
+          { kind: "ce1-fr-homo-on", count: 1 },
+          { kind: "ce1-fr-homo-astuce", count: 1 },
+          { kind: "ce1-fr-homo-phrase", count: 1 },
+          { kind: "ce1-fr-homo-accord", count: 1 },
+          { kind: "ce1-fr-homo-signe", count: 1 },
+          { kind: "ce1-fr-homo-ecrire", count: 1 },
+          { kind: "ce1-fr-homo-relier", count: 1 },
+          { kind: "ce1-fr-homo-glisser", count: 1 },
+        ],
         description:
           "Orthographe du CE1 : les homophones a/à, et/est, on/ont, avec les astuces (a → avait, est → était, ont → avaient) ; l'accord du verbe avec son sujet ; la ponctuation (point, point d'interrogation, point d'exclamation, virgule). Exercices de choix de mots dans des phrases.",
       },
@@ -317,6 +329,18 @@ export const FRANCAIS: ProgrammeSubject = {
       {
         key: "fr-ce1-lecture",
         name: "Lire et comprendre",
+        games: [
+          { kind: "ce1-fr-lec-qui", count: 1 },
+          { kind: "ce1-fr-lec-quoi", count: 1 },
+          { kind: "ce1-fr-lec-ou", count: 1 },
+          { kind: "ce1-fr-lec-quand", count: 1 },
+          { kind: "ce1-fr-lec-ordre", count: 1 },
+          { kind: "ce1-fr-lec-vrai", count: 1 },
+          { kind: "ce1-fr-lec-relier", count: 1 },
+          { kind: "ce1-fr-lec-animal", count: 1 },
+          { kind: "ce1-fr-lec-recette", count: 1 },
+          { kind: "ce1-fr-lec-regle", count: 1 },
+        ],
         description:
           "Lecture, paliers 1 à 3 du CE1 : comprendre un texte narratif (qui, quoi, où, quand), un texte descriptif (les caractéristiques d'un animal, d'un lieu) et un texte injonctif (suivre une recette, une règle de jeu). Textes courts de 3 à 6 phrases, écrits pour l'exercice, dans un cadre sénégalais.",
       },

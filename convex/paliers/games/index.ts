@@ -562,6 +562,32 @@ import {
   makeCe1FrPresentWrite,
   makeCe1FrSentenceKind,
 } from "./ce1Francais";
+// Les homophones du CE1 (`ce1Homophones.ts`) : a ou à, et ou est, on ou ont, l'accord du verbe, le signe de fin.
+import {
+  makeCe1FrHomoA,
+  makeCe1FrHomoAgree,
+  makeCe1FrHomoEt,
+  makeCe1FrHomoLink,
+  makeCe1FrHomoOn,
+  makeCe1FrHomoSign,
+  makeCe1FrHomoSort,
+  makeCe1FrHomoTrick,
+  makeCe1FrHomoWritten,
+  makeCe1FrHomoWrite,
+} from "./ce1Homophones";
+// La lecture du CE1 (`ce1Lecture.ts`) : un texte narratif, descriptif ou injonctif, et des questions qu'on y lit.
+import {
+  makeCe1FrReadAnimal,
+  makeCe1FrReadLink,
+  makeCe1FrReadOrder,
+  makeCe1FrReadRecipe,
+  makeCe1FrReadRule,
+  makeCe1FrReadTrue,
+  makeCe1FrReadWhat,
+  makeCe1FrReadWhen,
+  makeCe1FrReadWhere,
+  makeCe1FrReadWho,
+} from "./ce1Lecture";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
 import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
 import {
@@ -1626,6 +1652,28 @@ export const GAME_KINDS = {
   "ce2-materiau-trou": { label: "Compléter une phrase sur les matériaux de l'habitat", type: "fill-blank", make: makeCe2MaterialGap },
   "ce2-vitesse-ordre": { label: "Ranger des moyens de transport du plus lent au plus rapide", type: "order", make: makeCe2SpeedOrder },
   "ce2-moyen-ecrire": { label: "Écrire un moyen de transport ou une voie", type: "short-answer", make: makeCe2MeansWrite },
+  // Les homophones du CE1 (`ce1Homophones.ts`).
+  "ce1-fr-homo-a": { label: "a ou à dans une phrase", type: "fill-blank", make: makeCe1FrHomoA },
+  "ce1-fr-homo-et": { label: "et ou est dans une phrase", type: "fill-blank", make: makeCe1FrHomoEt },
+  "ce1-fr-homo-on": { label: "on ou ont dans une phrase", type: "fill-blank", make: makeCe1FrHomoOn },
+  "ce1-fr-homo-astuce": { label: "L'astuce : par quel mot remplacer a, est, ont", type: "qcm", make: makeCe1FrHomoTrick },
+  "ce1-fr-homo-phrase": { label: "La phrase bien écrite", type: "qcm", make: makeCe1FrHomoWritten },
+  "ce1-fr-homo-accord": { label: "Accorder le verbe avec son sujet", type: "fill-blank", make: makeCe1FrHomoAgree },
+  "ce1-fr-homo-signe": { label: "Le signe qui termine une phrase", type: "qcm", make: makeCe1FrHomoSign },
+  "ce1-fr-homo-ecrire": { label: "Écrire est, et, on ou ont", type: "short-answer", make: makeCe1FrHomoWrite },
+  "ce1-fr-homo-relier": { label: "Relier une phrase au mot qui la complète", type: "match", make: makeCe1FrHomoLink },
+  "ce1-fr-homo-glisser": { label: "Ranger des phrases sous a et à, est et et, on et ont", type: "drag-drop", make: makeCe1FrHomoSort },
+  // La lecture du CE1 (`ce1Lecture.ts`).
+  "ce1-fr-lec-qui": { label: "Qui fait l'action dans un texte", type: "qcm", make: makeCe1FrReadWho },
+  "ce1-fr-lec-quoi": { label: "Ce que fait la personne dans un texte", type: "qcm", make: makeCe1FrReadWhat },
+  "ce1-fr-lec-ou": { label: "Où se passe l'histoire", type: "qcm", make: makeCe1FrReadWhere },
+  "ce1-fr-lec-quand": { label: "Quand se passe l'histoire", type: "qcm", make: makeCe1FrReadWhen },
+  "ce1-fr-lec-ordre": { label: "Remettre les phrases d'une histoire dans l'ordre", type: "order", make: makeCe1FrReadOrder },
+  "ce1-fr-lec-vrai": { label: "Vrai ou faux d'après un texte", type: "drag-drop", make: makeCe1FrReadTrue },
+  "ce1-fr-lec-relier": { label: "Relier un prénom à son action dans un texte", type: "match", make: makeCe1FrReadLink },
+  "ce1-fr-lec-animal": { label: "De quel animal parle le texte", type: "qcm", make: makeCe1FrReadAnimal },
+  "ce1-fr-lec-recette": { label: "Suivre une recette", type: "qcm", make: makeCe1FrReadRecipe },
+  "ce1-fr-lec-regle": { label: "Lire la règle d'un jeu", type: "qcm", make: makeCe1FrReadRule },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
