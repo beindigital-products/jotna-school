@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Mail, ShieldCheck } from "lucide-react";
 
+import { LEGAL_LINKS } from "@/lib/legal/docs";
+
 import { Brand } from "./brand";
 
 type FooterColumn = {
@@ -32,14 +34,8 @@ const COLUMNS: FooterColumn[] = [
   },
   {
     title: "Légal",
-    links: [
-      { label: "Mentions légales", href: "/legal/mentions" },
-      { label: "Conditions générales", href: "/legal/cgu" },
-      { label: "Politique de confidentialité", href: "/legal/confidentialite" },
-      { label: "Cookies", href: "/legal/cookies" },
-      { label: "Protection des mineurs", href: "/legal/mineurs" },
-      { label: "Accessibilité", href: "/legal/accessibilite" },
-    ],
+    // Tiré de `lib/legal/docs.ts` : un lien n'existe que si sa page existe.
+    links: LEGAL_LINKS,
   },
 ];
 
