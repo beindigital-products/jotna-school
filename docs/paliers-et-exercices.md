@@ -1852,8 +1852,16 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     au dernier), si bien que deux paliers ne relient jamais les mêmes paires. `adjectif-ordre` prend un nom du palier (`spreadForLevel` : ballon, livre et poule, puis cartable, chat et
     vache, puis robe, chien et mouton) : chaque nom n'a qu'un palier, donc la même phrase ne revient jamais. Mesuré sur 200 graines : `calc-ordre` reprenait sa suite à chaque graine,
     `adjectif-ordre` 3 fois, `contraire-relier` 2 fois et `heure-relier` 1 fois ; plus aucune reprise. Les tuiles du premier palier de `calc-ordre` ne reprennent aucun mot des
-    indices (« Pense à ce qu'on fait en premier » interdisait « J'écris le premier nombre »). Il reste de petites reprises dues au hasard dans `ma-cp-retenue`, qui tire ses
-    nombres dans des plages qui se recouvrent d'un palier à l'autre : sur 1 000 graines, `calc-enlever` 8, `calc-ajouter` 2, `calc-trou` 2, `monnaie-somme` 2 et `calc-retenue` 1.
+    indices (« Pense à ce qu'on fait en premier » interdisait « J'écris le premier nombre »). Il restait de petites reprises dues au hasard dans `ma-cp-retenue` : voir la puce
+    suivante.
+  - **Les calculs et les sommes tirés au hasard de `ma-cp-retenue` répartis par palier** (`calculCp.ts`), derniers restes de la mesure après la PR #125. `calc-ajouter`, `calc-enlever`,
+    `calc-retenue`, `calc-trou` et `calc-relier` tirent leurs nombres dans des plages qui se recouvrent d'un palier à l'autre : sur 1 000 graines, `calc-enlever` reprenait la même
+    question 8 fois, `calc-ajouter` 2, `calc-trou` 2 et `calc-retenue` 1. `carryPair` et `borrowPair` ont maintenant un paramètre `own` : avec lui, le premier nombre `a` vérifie
+    `a % 3 = groupe du palier` (`ownFirst` : 0, 1 puis 2 aux niveaux 1, 2 et 4), si bien que deux paliers ne tirent jamais le même premier nombre, donc jamais la même opération. Rien
+    ne se voit pour l'enfant. Les appels de `problemesCp.ts` ne passent pas `own` et ne changent pas. `monnaie-somme` choisit sa combinaison de pièces parmi toutes celles du niveau
+    (`coinCombos`), de préférence dans la tranche de somme du palier (`sumBand` : de 15 à 35 F, de 40 à 60 F, de 65 à 100 F, la même que `moneyBand` dans `heureCp.ts`), et dit les
+    pièces dans un ordre au hasard : deux paliers ne comptent jamais la même somme. Mesuré sur 1 000 graines : `ma-cp-retenue`, `ma-cp-problemes` et `ma-cp-heure-monnaie` ne
+    reprennent plus aucune question (15 reprises dans `ma-cp-retenue` avant).
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les
@@ -2049,6 +2057,41 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     du dernier niveau, des visages en plus répartis au hasard, la peur avec la surprise, trois visages dans une case) sont toutes vues. Le correctif a trouvé un piège : `fresh` refait un tirage jusqu'à huit fois quand sa clé est
     déjà prise, et pour la phrase à trous elle l'est toujours, car `pickFresh` la pose lui-même. Le choix de l'émotion, fait dans le tirage,
     comptait donc neuf fois la tristesse. Il se fait avant `fresh`.
+- **La même question ne revient plus d'un palier à l'autre, au CI** (`ProgrammeTopic.byLevel`, `paliers/games/shared.ts`) : chaque palier
+  d'une thématique est fabriqué seul, avec sa graine, et tirait au hasard dans les mêmes petites listes. Sur 200 graines, 17,7 % des
+  questions d'une thématique de CI revenaient dans un autre palier de la même thématique, jusqu'à 57 % pour « Plus long, plus lourd, plus
+  tard ». Les 43 thématiques de CI portent maintenant `byLevel` : le premier tiers de chaque liste va au premier palier, le deuxième au
+  deuxième, le dernier ensuite (`variantsForLevel`). Les jeux d'une thématique prennent chacun un tiers décalé, selon leur place dans
+  `games`, car ils puisent souvent dans les mêmes faits : trois jeux d'outils posent ainsi six outils différents dans un palier, deux par
+  jeu, et aucun ne revient au palier suivant.
+  - **Ce que le réglage change.** `pickFresh`, `takeFresh` et `freshWord` préfèrent le tiers du palier parmi les variantes pas encore
+    prises. Quand tout a servi, le tiers ne compte plus : y rester reposerait le même exercice dans le palier. Une liste réduite à un niveau
+    (les six couleurs du premier palier, la droite et la gauche) garde les tiers de la liste entière (`universe`). Les autres classes n'ont
+    pas le réglage : leurs tirages ne changent pas.
+  - **Mesuré sur 200 graines**, la part moyenne des questions qui reviennent passe de 17,7 % à 10,4 %, et 26 thématiques sur 43 sont sous
+    10 % (15 avant). Les plus changées : les outils (37,5 % à 1,3 %), la route (24,5 % à 0,6 %), les mesures (56,7 % à 24,4 %), l'hygiène
+    (46,8 % à 22,7 %), l'entraide (40,0 % à 18,3 %), les animaux en anglais (28,4 % à 8,2 %), la semaine (22,1 % à 4,1 %). Aucune thématique
+    n'empire de plus d'un point, et aucun palier ne pose deux fois le même exercice.
+  - **Des genres réécrits** là où le tirage n'est pas une liste : le rang d'un jour (`jour-rang`) demande le premier et le dernier jour au
+    premier palier, le deuxième et le troisième au deuxième, le quatrième et le cinquième au dernier ; `doigt-direction` la droite ou la gauche,
+    puis le haut, puis le bas ; `faune-vit` le poisson, l'étoile de mer, l'oiseau ; `comparer-mesure` change la bête gagnante à chaque
+    palier (`windowedTrio`) ; les scènes, les suites et les phrases à trou de l'instruction civique, les scènes, suites, phrases à trou et
+    sens de l'hygiène, les outils et les activités du jour passent par `pickForLevel`. Les suites et les associations des outils ont leur
+    propre clé, pour ne pas épuiser les outils des autres jeux. Les tableaux des outils sont rangés dans le même ordre, pour que deux
+    jeux ne prennent pas le même outil.
+  - **Ce qui reste.** Le partage ne crée pas de variantes : une thématique dont un genre n'a que trois ou quatre questions en reposera. Les
+    plus touchées sont `fr-ci-sons-1` (42 %, une seule suite de lettres à ranger), `sc-ci-plantes` (39 %), `hi-ci-hier-demain` (31 %,
+    trois suites de mots du temps) et `ar-ci-couleurs` (27 %) : il faut écrire des variantes, avec leurs images au catalogue. Les genres de
+    nombres (`double-moitie`, `dizaine-unites`, `nombre-voisin`), de mots (`lettre-initiale`, `syllabes-ordre`) et `repere-qcm` tirent surtout
+    avec `randomInt` ou `pick` : à convertir un par un.
+  - **`convex/__tests__/ciVarieteParPalier.test.ts`** (35 tests) refait le calcul sans lire les listes du code : les tiers d'une liste ne se
+    touchent pas et font la liste entière, le décalage prend le tiers suivant, `pickFresh` et `takeFresh` restent dans le tiers puis
+    sortent quand il est épuisé, treize couples de thématique et de genre ne reposent jamais la même question sur 120 graines, aucun palier ne pose deux fois le même
+    exercice, la part moyenne reste sous 14 % et aucune thématique ne repasse au-dessus de 65 %. Treize mutations (le tiers ignoré, le
+    décalage ignoré, l'univers ignoré, le réglage non passé à `generateGames`, le décalage par place de jeu, le câblage de la fabrication,
+    les rangs, les directions, les trios, les scènes, la clé de la faune, le décalage des phrases à trou) sont toutes vues. Le test des
+    doublons d'un palier a trouvé deux défauts du premier jet : le tiers gardait les mêmes variantes quand tout avait servi,
+    et deux rangements de milieux, comme deux phrases de couleurs, sortaient identiques.
 - **L'histoire et la géographie du CE1** (`paliers/games/ce1Histoire.ts`, `ce1Geographie.ts`, leurs outils dans `ce1Outils.ts`) :
   soixante-trois gabarits pour `hi-ce1-temps`, `hi-ce1-famille`, `hi-ce1-ecole`, `hi-ce1-quartier`, `ge-ce1-orientation`, `ge-ce1-saisons`,
   `ge-ce1-eau-relief` et `ge-ce1-plan`, les huit premières thématiques du CE1 que le modèle n'écrit plus. Sur l'échantillon de CE1 lu le
@@ -2228,6 +2271,39 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     palier à l'autre.
   - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un QCM sur se présenter, une réponse
     courte sur les jours, un glissé sur a ou an, un ordre sur les vêtements, un trou sur j'aime, un appariement sur les ordres de la classe.
+- **Le français du CE1, première moitié** (`paliers/games/ce1Francais.ts`, avec les aides de `ce1SciencesOutils.ts`) : trente-sept gabarits
+  pour les cinq thématiques `fr-ce1-phrase` (la phrase, le verbe et le sujet), `fr-ce1-nom-adjectif`, `fr-ce1-present-passe`,
+  `fr-ce1-imperatif-futur` et `fr-ce1-dictionnaire`, que le modèle n'écrit plus. Les homophones (`fr-ce1-homophones`) et la lecture
+  (`fr-ce1-lecture`) restent au modèle : ils demandent des textes à fabriquer et font un lot à part. Sur l'échantillon de CE1 lu le
+  21 octobre 2026, 17 exercices de français sur 42 étaient faux : « Fatou a mangé au yassa » (une phrase qui n'est pas du français), un mot
+  « avant » donné à l'envers, « je irai », des ordres sans critère, des trous qui acceptent deux mots. Ici chaque exercice lit une ligne d'un
+  tableau fermé, écrit à la main. Les noms des gabarits commencent par `ce1-fr-` ; les fonctions sont des `makeCe1Fr…`. Ces cinq fiches ont
+  quatre paliers : `quarter` coupe chaque tableau en quatre parts qui le couvrent tout, une par niveau.
+  - **Un mauvais choix n'est jamais une deuxième bonne réponse.** Pour une conjugaison, c'est une forme du présent ou d'une autre personne,
+    jamais l'imparfait, que la fiche n'apprend pas. Le test recalcule la réponse avec ses propres tables : les neuf verbes au présent, leurs
+    participes, les terminaisons du futur, l'ordre alphabétique sans accents. Pour chaque trou, il vérifie que la réponse est une forme de la
+    personne de l'énoncé et qu'aucun mauvais choix ne l'est aussi.
+  - **Les pièges du français que les tableaux évitent.** (1) Un mot qui est aussi un nom (« lave », « joue », « ferme », « lit ») ne sert jamais
+    d'étiquette de verbe : les verbes des glissés sont des formes qui n'existent que comme verbes (« mangeons », « dormez », « sautent »).
+    (2) L'accord du participe avec « être » n'est demandé qu'avec un sujet masculin (« Moussa est allé », « Ils sont partis »), et jamais avec
+    « je », « tu », « nous » ni « vous » : on ne saurait pas le genre. (3) Une phrase à remettre dans l'ordre n'a qu'un ordre possible : jamais
+    un adverbe qu'on peut placer avant ou après. (4) Un ordre à deux tuiles (« Il pleut. ») n'est pas à remettre dans l'ordre : le contrôleur le
+    signale. (5) Les noms des glissés sont abstraits (« joie », « peur », « histoire »), parce que `templatePictures.test.ts` refuse au CI une
+    tuile qui nomme une chose sans image ; les thèmes de l'école et du marché sont faits de verbes.
+  - **HORS FICHE, À FAIRE RELIRE** : les phrases de la vie courante (Awa, Moussa, Fatou, le ballon, le riz, le marché, la cour), les verbes
+    écouter, regarder, ranger, fermer et laver au-delà de chanter, jouer, manger et danser, les noms abstraits des glissés, les prénoms de
+    l'ordre alphabétique, et le classement « Sujet, Verbe, Phrase, Groupe nominal » de l'appariement.
+  - **Pièges rencontrés.** (1) Un indice ne répète aucun mot de quatre lettres ou plus d'une étiquette, d'une case ou d'une réponse : « futur »
+    (une case), « d'abord » et « enfin » (des réponses), « hier » (une réponse), « verbe » (une case), « idée » (une étiquette) ont tous été
+    écrits par un premier jet d'indice. (2) Un énoncé a une apostrophe droite au plus : « dans l'ordre de l'histoire » en avait deux.
+    (3) Un indice « Regarde entre parenthèses » contenait le verbe « Regarde » d'une réponse. (4) Une ligne dont la réponse revenait à deux
+    paliers (« Malick » premier du dictionnaire aux niveaux 3 et 4) comptait comme une question revue.
+  - **Mesuré** : 93 tests (`convex/__tests__/ce1FrancaisTemplates.test.ts`), dont une vérification par gabarit contre des tables et des règles
+    écrites à part, à 4 niveaux et 60 graines ; 40 pannes provoquées dans le code (« tu fermes la porte », « ils sont allé », « la mangue » devenue
+    masculine, l'ordre alphabétique à l'envers, « enfin » avant « ensuite »…) toutes vues ; le contrôleur ne signale aucun défaut sur 4 000 paliers
+    fabriqués (40 000 exercices), sans doublon dans un palier ; 0,0 % de questions revues d'un palier à l'autre.
+  - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un glissé sur le nom et l'adjectif,
+    un appariement sur le présent et le passé composé, un ordre sur le dictionnaire, une réponse courte sur l'impératif et le futur.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

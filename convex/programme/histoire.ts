@@ -36,6 +36,7 @@ export const HISTOIRE: ProgrammeSubject = {
           { kind: "moment-voisin", count: 1 },
           { kind: "activite-moments", count: 2 },
         ],
+        byLevel: true,
       },
       {
         key: "hi-ci-ordre",
@@ -50,6 +51,7 @@ export const HISTOIRE: ProgrammeSubject = {
           { kind: "avant-apres-glisser", count: 2 },
           { kind: "grandir-relier", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "hi-ci-hier-demain",
@@ -63,6 +65,7 @@ export const HISTOIRE: ProgrammeSubject = {
           { kind: "temps-ordre", count: 2 },
           { kind: "jour-voisin", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "hi-ci-semaine",
@@ -77,6 +80,7 @@ export const HISTOIRE: ProgrammeSubject = {
           { kind: "jour-rang", count: 2 },
           { kind: "jours-relier", count: 1 },
         ],
+        byLevel: true,
       },
     ],
     CP: [

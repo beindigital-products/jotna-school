@@ -269,7 +269,7 @@ function threeColours(ctx: GameContext, answer: Colour, pool: readonly Colour[])
 export function makeColourWord(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "couleur-mot", () => {
     const pool = coloursOf(ctx.level);
-    const answer = freshWord(ctx, pool);
+    const answer = freshWord(ctx, pool, COLOURS);
     const options = threeColours(ctx, answer, pool);
     return {
       type: "qcm",
@@ -288,6 +288,7 @@ export function makeColourThing(ctx: GameContext): GeneratedGame {
     const answer = freshWord(
       ctx,
       pool.filter((colour) => colour.things.length > 0),
+      COLOURS.filter((colour) => colour.things.length > 0),
     );
     const thing = pick(ctx.rng, answer.things);
     const options = threeColours(ctx, answer, pool);
@@ -349,7 +350,7 @@ export function makeColourSort(ctx: GameContext): GeneratedGame {
 export function makeColourSentence(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "couleur-phrase", () => {
     const pool = coloursOf(ctx.level);
-    const answer = freshWord(ctx, pool);
+    const answer = freshWord(ctx, pool, COLOURS);
     const options = threeColours(ctx, answer, pool);
     return {
       type: "fill-blank",

@@ -34,6 +34,7 @@
  */
 import { fresh, originOf, pickFresh, randomInt, shuffle, sortedOptions, takeFresh, type GameContext, type GeneratedGame } from "./shared";
 import { linkKey } from "./anglais";
+import { pickForLevel } from "./tableaux";
 
 const capital = (text: string) => text.charAt(0).toLocaleUpperCase("fr") + text.slice(1);
 
@@ -413,8 +414,10 @@ export function makeFauneLives(ctx: GameContext): GeneratedGame {
     ctx,
     "faune-vit",
     () => {
-      const inWater = ctx.rng() < 0.5;
-      const [answer] = takeFresh(ctx, inWater ? WATER : AIR, 1, faunaKey);
+      // Trois questions en tout (le poisson, l'étoile de mer, l'oiseau) : chaque palier a la sienne. Leur clé est à elles : les autres jeux de
+      // la thématique ont déjà pris ces bêtes dans le palier, et la fenêtre du palier serait vide.
+      const asks = [...WATER.map((name) => ({ inWater: true, answer: name })), ...AIR.map((name) => ({ inWater: false, answer: name }))];
+      const { inWater, answer } = pickForLevel(ctx, asks, (ask) => `faune-vit-question:${ask.answer}`);
       return choiceGame(
         "faune-vit",
         ctx,

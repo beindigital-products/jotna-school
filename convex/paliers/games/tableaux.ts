@@ -14,7 +14,10 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { fresh, originOf, pick, shuffle, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
+import { fresh, levelGroup, originOf, pick, shuffle, variantsForLevel, type GameContext, type GameLevel, type GeneratedGame } from "./shared";
+
+// Les aides de partage par palier vivent dans `shared.ts` (`pickFresh` et `takeFresh` s'en servent) ; on les réexporte ici pour les gabarits à tableau.
+export { levelGroup, variantsForLevel };
 
 /** Les trois indices d'un exercice : le premier relit la consigne, le dernier mène le plus près de la réponse. */
 export type Hints = readonly [string, string, string];
@@ -146,33 +149,12 @@ export function sequenceGame(
 }
 
 /**
- * Le groupe de variantes qu'un palier préfère : 0 au niveau 1, 1 au niveau 2, 2 aux niveaux 3 et 4. Le CP a trois paliers, joués
- * aux niveaux 1, 2 et 4 : chacun a son groupe. Les classes à quatre paliers en ont trois, dont le dernier est partagé.
- */
-export function levelGroup(level: GameLevel): 0 | 1 | 2 {
-  return level === 1 ? 0 : level === 2 ? 1 : 2;
-}
-
-/**
- * Les variantes d'un gabarit qui n'en a que quelques-unes, réparties par palier : le premier tiers au premier palier, le deuxième
- * au deuxième, le dernier tiers ensuite. Deux paliers d'une même thématique ne tirent ainsi jamais la même variante (le CP a trois
- * paliers, joués aux niveaux 1, 2 et 4) : sans cela, un enfant revoyait « Deux ___ font un kilogramme » aux trois paliers. Il faut
- * au moins trois variantes ; en dessous, toutes restent permises.
- */
-export function variantsForLevel<T>(items: readonly T[], level: GameLevel): T[] {
-  const group = levelGroup(level);
-  const from = Math.floor((items.length * group) / 3);
-  const to = Math.floor((items.length * (group + 1)) / 3);
-  return to > from ? items.slice(from, to) : [...items];
-}
-
-/**
  * Les variantes d'un palier quand la liste est longue et rangée sans ordre voulu : celles dont la place, dans la liste, tombe dans le groupe du
  * palier (la 1re, la 4e, la 7e… au niveau 1 ; la 2e, la 5e… au niveau 2). Là où `variantsForLevel` donne un tiers d'un seul bloc, celle-ci
  * mêle : un palier a un peu de tout.
  */
-export function spreadForLevel<T>(items: readonly T[], level: GameLevel): T[] {
-  const mine = items.filter((_, index) => index % 3 === levelGroup(level));
+export function spreadForLevel<T>(items: readonly T[], level: GameLevel, shift = 0): T[] {
+  const mine = items.filter((_, index) => index % 3 === (levelGroup(level) + shift) % 3);
   return mine.length > 0 ? mine : [...items];
 }
 
@@ -191,9 +173,19 @@ export function pickPreferred<T>(ctx: GameContext, items: readonly T[], own: rea
   return chosen;
 }
 
-/** `pickPreferred` avec, pour variantes du palier, son tiers de la liste (`variantsForLevel`), ou ses places mêlées (`spreadForLevel`). */
-export function pickForLevel<T>(ctx: GameContext, items: readonly T[], keyOf: (item: T) => string, mode: "thirds" | "spread" = "thirds"): T {
-  const own = mode === "thirds" ? variantsForLevel(items, ctx.level) : spreadForLevel(items, ctx.level);
+/**
+ * `pickPreferred` avec, pour variantes du palier, son tiers de la liste (`variantsForLevel`), ou ses places mêlées (`spreadForLevel`).
+ * `shift` décale le groupe de 0, 1 ou 2 crans : plusieurs genres d'une même thématique, qui puisent dans la même banque de faits, prennent
+ * chacun un décalage différent et préfèrent ainsi, dans un même palier, des tiers différents au lieu de se disputer le même.
+ */
+export function pickForLevel<T>(
+  ctx: GameContext,
+  items: readonly T[],
+  keyOf: (item: T) => string,
+  mode: "thirds" | "spread" = "thirds",
+  shift = 0,
+): T {
+  const own = mode === "thirds" ? variantsForLevel(items, ctx.level, shift) : spreadForLevel(items, ctx.level, shift);
   return pickPreferred(ctx, items, own, keyOf);
 }
 

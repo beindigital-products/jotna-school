@@ -26,6 +26,14 @@ export type ProgrammeTopic = {
   palierCount?: number;
   /** Les jeux fabriqués par le code à mêler à chaque palier (`paliers/games`). */
   games?: GameSpec[];
+  /**
+   * Les jeux de la thématique se partagent leurs variantes entre les paliers : le premier tiers de chaque liste au premier palier, le
+   * deuxième au deuxième, le dernier ensuite (`pickFresh`, `takeFresh`), et deux jeux qui puisent dans les mêmes faits préfèrent des
+   * tiers différents dans un même palier. Sans cela, chaque palier tire au hasard dans toute la liste et la même question revient d'un
+   * palier à l'autre (deux paliers sur cinq, au CI, avant ce réglage). À mettre quand les listes des jeux ont au moins trois fois
+   * plus de variantes qu'un palier n'en pose ; sinon des variantes reviennent de toute façon.
+   */
+  byLevel?: boolean;
 };
 
 export type ProgrammeSubjectKey =

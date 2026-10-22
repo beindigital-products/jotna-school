@@ -249,6 +249,13 @@ arrivent plus tard.
 - **Des jeux dans une thématique** : son champ `games`
   (`{ kind, count }`, dix exercices au plus par palier). La génération lit
   la fiche par sa clé : aucun rechargement n'est nécessaire.
+- **Partager les variantes entre les paliers** : le champ `byLevel: true` d'une thématique. Sans lui, chaque palier tire au hasard dans les
+  mêmes listes et la même question revient d'un palier à l'autre (17,7 % des questions des thématiques de CI, mesuré sur 200 graines).
+  Avec lui, le premier tiers de chaque liste va au premier palier, le deuxième au deuxième, le dernier ensuite (`variantsForLevel`, dans
+  `games/shared.ts`), et les jeux de la thématique prennent des tiers décalés (`GameContext.window`, selon leur place dans `games`) pour ne
+  pas se disputer les mêmes faits. `pickFresh`, `takeFresh` et `freshWord` suivent le tiers du palier ; un jeu qui tire autrement (`pick`,
+  `randomInt`) passe par `pickForLevel` ou `variantsForLevel`. À mettre quand les listes ont au moins trois fois plus de variantes qu'un
+  palier n'en pose : en dessous, des variantes reviennent de toute façon. Tout le CI l'a, aucune autre classe pour l'instant.
 - **Un nouveau jeu** : une fonction dans `convex/paliers/games/`, déclarée
   dans `GAME_KINDS` (`games/index.ts`). Les tests de
   `convex/__tests__/games.test.ts` le jouent alors à tous les niveaux et dans
@@ -330,7 +337,7 @@ arrivent plus tard.
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
 🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
-`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie, les sciences, l'instruction civique, l'éducation artistique et l'anglais (vingt-neuf thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie, les sciences, l'instruction civique, l'éducation artistique, l'anglais et cinq thématiques de français (trente-quatre thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle ; la liste de celles du CI est dans
 `docs/paliers-et-exercices.md`.
 
 ### Français
@@ -341,7 +348,7 @@ arrivent plus tard.
 | --- | --- |
 | CI | Bonjour, merci, s'il te plaît · Les sons a, i, o, l, t · Les sons n, e, p, d, m, b · Les sons f, u, ou, é, è · Les sons s, r, au, eau, on, om · Les lettres et les mots · Mes premières phrases |
 | CP | Je lis des syllabes et des mots 🧩 · Inviter et conseiller 🧩 · Raconter une histoire 🧩 · Décrire et comparer 🧩 · Les consignes 🧩 · J'écris des phrases 🧩 |
-| CE1 | La phrase, le verbe et le sujet · Le nom, l'article et l'adjectif · Le présent et le passé composé · L'impératif et le futur · a/à, et/est, on/ont · Le dictionnaire et les mots de liaison · Lire et comprendre |
+| CE1 | La phrase, le verbe et le sujet 🧩 · Le nom, l'article et l'adjectif 🧩 · Le présent et le passé composé 🧩 · L'impératif et le futur 🧩 · a/à, et/est, on/ont · Le dictionnaire et les mots de liaison 🧩 · Lire et comprendre |
 | CE2 | COD, COI et pronoms · Les compléments circonstanciels · Possessifs et démonstratifs · L'imparfait et le passé composé · L'impératif et le futur simple · Féminin, pluriel, ou/où, son/sont · Synonymes, familles, homonymes · Lire une lettre, une affiche, un poème |
 | CM1 | Comprendre un récit et une description · Les textes qui expliquent et qui informent · Nature et fonction des mots · Les temps de l'indicatif · Les accords · Préfixes, suffixes et sens des mots · Les homophones grammaticaux |
 | CM2 | Lire pour s'informer et comprendre · Donner son avis · Le dialogue · La poésie · Conditionnel et subjonctif · La phrase complexe · Révisions du CFEE |
