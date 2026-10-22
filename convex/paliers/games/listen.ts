@@ -10,9 +10,16 @@
  * (`lib/sounds/synth.ts`). Aucun fichier à télécharger, rien à mettre en
  * cache pour jouer sans réseau, et la bonne réponse se calcule sur les
  * fréquences et les durées : elle ne peut pas être fausse.
+ *
+ * UN PALIER NE POSE JAMAIS DEUX FOIS LE MÊME EXERCICE : mêmes sons, même
+ * question. Les genres qui n'ont que quelques variantes (grave ou aigu, long
+ * ou court, fort ou doux, la mélodie) les dressent toutes et en tirent une qui
+ * n'a pas encore servi (`pickFresh`) ; les autres, qui en ont des centaines,
+ * refont un tirage identique à un exercice déjà posé (`fresh`). Quand un palier
+ * demande plus d'exercices qu'un genre n'a de variantes, elles reviennent.
  */
 import type { ListenClip, ListenNote, ListenPayload } from "./types";
-import { pick, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { fresh, pick, pickFresh, randomInt, shuffle, type GameContext, type GeneratedGame } from "./shared";
 
 /** Les notes de la gamme de do, en hertz. */
 const NOTE = {
@@ -54,40 +61,63 @@ function drum(gapAfter: number, v = 0.9): ListenNote[] {
   ];
 }
 
+/** Les entiers de `from` à `to`, bornes comprises. */
+function inclusive(from: number, to: number): number[] {
+  return Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i);
+}
+
+/** Toutes les façons de ranger quelques éléments : les ordres dans lesquels on joue les sons. */
+function orders<T>(items: readonly T[]): T[][] {
+  if (items.length <= 1) return [[...items]];
+  return items.flatMap((item, i) => orders([...items.slice(0, i), ...items.slice(i + 1)]).map((rest) => [item, ...rest]));
+}
+
 /**
- * Le plus aigu (ou le plus grave) parmi deux ou trois sons. L'écart se
- * resserre avec le palier : deux octaves en découverte, une tierce en
- * maîtrise.
+ * Ce que l'enfant entend et ce qu'on lui demande : l'énoncé et les sons. Deux tirages qui s'y confondent sont le même
+ * exercice, même si les choix écrits n'y sont pas dans le même ordre.
+ */
+const heard = (game: GeneratedGame) => JSON.stringify([game.prompt, game.payload.clips]);
+
+/**
+ * Les paires de sons de chaque niveau. L'écart se resserre avec le palier :
+ * deux octaves en découverte, une tierce en maîtrise.
+ */
+const PITCH_PAIRS: Record<number, [number, number][]> = {
+  1: [
+    [NOTE.C3, NOTE.C5],
+    [NOTE.E3, NOTE.E5],
+    [NOTE.G3, NOTE.C6],
+  ],
+  2: [
+    [NOTE.C4, NOTE.C5],
+    [NOTE.E3, NOTE.E4],
+    [NOTE.G3, NOTE.G4],
+  ],
+  3: [
+    [NOTE.C4, NOTE.G4],
+    [NOTE.D4, NOTE.A4],
+    [NOTE.E4, NOTE.B4],
+  ],
+  4: [
+    [NOTE.C4, NOTE.E4],
+    [NOTE.F4, NOTE.A4],
+    [NOTE.G4, NOTE.B4],
+  ],
+};
+
+/**
+ * Le plus aigu (ou le plus grave) parmi deux ou trois sons. Un niveau pose chaque paire dans chaque ordre, pour « le plus
+ * aigu » et pour « le plus grave » : douze exercices en tout (trente-six avec trois sons), et un palier n'en repose aucun.
  */
 export function makePitch(ctx: GameContext): GeneratedGame {
-  const pairs: Record<number, [number, number][]> = {
-    1: [
-      [NOTE.C3, NOTE.C5],
-      [NOTE.E3, NOTE.E5],
-      [NOTE.G3, NOTE.C6],
-    ],
-    2: [
-      [NOTE.C4, NOTE.C5],
-      [NOTE.E3, NOTE.E4],
-      [NOTE.G3, NOTE.G4],
-    ],
-    3: [
-      [NOTE.C4, NOTE.G4],
-      [NOTE.D4, NOTE.A4],
-      [NOTE.E4, NOTE.B4],
-    ],
-    4: [
-      [NOTE.C4, NOTE.E4],
-      [NOTE.F4, NOTE.A4],
-      [NOTE.G4, NOTE.B4],
-    ],
-  };
   const level = Math.min(4, ctx.level + (ctx.band === 2 ? 1 : 0));
-  const [low, high] = pick(ctx.rng, pairs[level]);
   const threeSounds = ctx.band > 0 && ctx.level >= 3;
-  const freqs = threeSounds ? [low, high, (low + high) / 2] : [low, high];
-  const order = shuffle(ctx.rng, freqs);
-  const askHigh = ctx.rng() < 0.5;
+  const variants = PITCH_PAIRS[level].flatMap(([low, high]) =>
+    orders(threeSounds ? [low, high, (low + high) / 2] : [low, high]).flatMap((order) =>
+      [true, false].map((askHigh) => ({ order, askHigh })),
+    ),
+  );
+  const { order, askHigh } = pickFresh(ctx, variants, (v) => `ecoute-hauteur:${v.order.join("-")}:${v.askHigh}`);
   const target = askHigh ? Math.max(...order) : Math.min(...order);
   const labels = soundLabels(order.length);
   const payload: ListenPayload = {
@@ -110,19 +140,33 @@ export function makePitch(ctx: GameContext): GeneratedGame {
   };
 }
 
-/** Le plus long (ou le plus court) : même note, durées différentes. */
+/** Les durées du son court et du son long, en millisecondes : l'écart se resserre avec le palier. */
+const DURATION_GAPS: Record<number, [number, number]> = {
+  1: [300, 1600],
+  2: [400, 1200],
+  3: [500, 1000],
+  4: [600, 900],
+};
+
+/** Les notes sur lesquelles on compare des durées. */
+const DURATION_NOTES = [NOTE.C4, NOTE.E4, NOTE.G4, NOTE.A4];
+
+/**
+ * Le plus long (ou le plus court) : même note, durées différentes. Chaque note est jouée dans chaque ordre, pour « le plus
+ * long » et pour « le plus court » : seize exercices (quarante-huit avec trois sons), et un palier n'en repose aucun.
+ */
 export function makeDuration(ctx: GameContext): GeneratedGame {
-  const gaps: Record<number, [number, number]> = {
-    1: [300, 1600],
-    2: [400, 1200],
-    3: [500, 1000],
-    4: [600, 900],
-  };
-  const [short, long] = gaps[Math.min(4, ctx.level + (ctx.band === 2 ? 1 : 0))];
-  const f = pick(ctx.rng, [NOTE.C4, NOTE.E4, NOTE.G4, NOTE.A4]);
+  const [short, long] = DURATION_GAPS[Math.min(4, ctx.level + (ctx.band === 2 ? 1 : 0))];
   const threeSounds = ctx.band > 0 && ctx.level >= 3;
-  const durations = shuffle(ctx.rng, threeSounds ? [short, long, Math.round((short + long) / 2)] : [short, long]);
-  const askLong = ctx.rng() < 0.5;
+  const lengths = threeSounds ? [short, long, Math.round((short + long) / 2)] : [short, long];
+  const variants = DURATION_NOTES.flatMap((f) =>
+    orders(lengths).flatMap((durations) => [true, false].map((askLong) => ({ f, durations, askLong }))),
+  );
+  const { f, durations, askLong } = pickFresh(
+    ctx,
+    variants,
+    (v) => `ecoute-duree:${v.f}:${v.durations.join("-")}:${v.askLong}`,
+  );
   const target = askLong ? Math.max(...durations) : Math.min(...durations);
   const labels = soundLabels(durations.length);
   const payload: ListenPayload = {
@@ -143,18 +187,31 @@ export function makeDuration(ctx: GameContext): GeneratedGame {
   };
 }
 
-/** Le plus fort (ou le plus doux) : même note, volumes différents. */
+/** Les volumes du son doux et du son fort : l'écart se resserre avec le palier. */
+const VOLUME_LEVELS: Record<number, [number, number]> = {
+  1: [0.15, 1],
+  2: [0.25, 0.9],
+  3: [0.35, 0.85],
+  4: [0.45, 0.85],
+};
+
+/** Les notes sur lesquelles on compare des volumes. */
+const VOLUME_NOTES = [NOTE.C4, NOTE.G4, NOTE.A4];
+
+/**
+ * Le plus fort (ou le plus doux) : même note, volumes différents. Chaque note est jouée dans chaque ordre, pour « le plus
+ * fort » et pour « le plus doux » : douze exercices, et un palier n'en repose aucun.
+ */
 export function makeVolume(ctx: GameContext): GeneratedGame {
-  const volumes: Record<number, [number, number]> = {
-    1: [0.15, 1],
-    2: [0.25, 0.9],
-    3: [0.35, 0.85],
-    4: [0.45, 0.85],
-  };
-  const [soft, loud] = volumes[Math.min(4, ctx.level + (ctx.band === 2 ? 1 : 0))];
-  const f = pick(ctx.rng, [NOTE.C4, NOTE.G4, NOTE.A4]);
-  const levels = shuffle(ctx.rng, [soft, loud]);
-  const askLoud = ctx.rng() < 0.5;
+  const [soft, loud] = VOLUME_LEVELS[Math.min(4, ctx.level + (ctx.band === 2 ? 1 : 0))];
+  const variants = VOLUME_NOTES.flatMap((f) =>
+    orders([soft, loud]).flatMap((levels) => [true, false].map((askLoud) => ({ f, levels, askLoud }))),
+  );
+  const { f, levels, askLoud } = pickFresh(
+    ctx,
+    variants,
+    (v) => `ecoute-intensite:${v.f}:${v.levels.join("-")}:${v.askLoud}`,
+  );
   const target = askLoud ? Math.max(...levels) : Math.min(...levels);
   const labels = soundLabels(levels.length);
   const payload: ListenPayload = {
@@ -177,6 +234,10 @@ export function makeVolume(ctx: GameContext): GeneratedGame {
 
 /** Combien de coups de tam-tam ? */
 export function makeBeatCount(ctx: GameContext): GeneratedGame {
+  return fresh(ctx, "ecoute-rythme", () => beatCount(ctx), heard);
+}
+
+function beatCount(ctx: GameContext): GeneratedGame {
   const ranges: Record<number, [number, number]> = { 0: [2, 5], 1: [3, 7], 2: [4, 9] };
   const [min, max] = ranges[ctx.band];
   const count = randomInt(ctx.rng, min, max);
@@ -214,6 +275,10 @@ function rhythmText(pattern: ("L" | "S")[]): string {
 }
 
 export function makeRhythmPattern(ctx: GameContext): GeneratedGame {
+  return fresh(ctx, "ecoute-motif-rythmique", () => rhythmPattern(ctx), heard);
+}
+
+function rhythmPattern(ctx: GameContext): GeneratedGame {
   const length = Math.min(7, 3 + ctx.band + (ctx.level >= 3 ? 1 : 0));
   const make = (): ("L" | "S")[] => Array.from({ length }, () => (ctx.rng() < 0.5 ? "L" : "S"));
   let pattern = make();
@@ -251,22 +316,32 @@ export function makeRhythmPattern(ctx: GameContext): GeneratedGame {
   };
 }
 
-/** La mélodie monte, descend, ou monte puis descend. */
+type MelodyShape = "up" | "down" | "arch";
+
+/**
+ * La mélodie monte, descend, ou monte puis descend. Chaque forme part de chaque note où elle tient dans la gamme : une
+ * mélodie de trois notes en découverte a douze départs possibles, et un palier n'en repose aucun.
+ */
 export function makeMelody(ctx: GameContext): GeneratedGame {
   const length = ctx.band === 0 ? 3 : ctx.band === 1 ? 4 : 5;
   const allowArch = ctx.level >= 3;
-  const shape = pick(ctx.rng, allowArch ? (["up", "down", "arch"] as const) : (["up", "down"] as const));
   // Un pas de deux notes en découverte s'entend mieux qu'un pas d'une note.
   const step = ctx.level >= 2 ? 1 : 2;
+  // L'arche monte d'une note à chaque fois jusqu'au sommet, puis redescend : le départ laisse la place de redescendre
+  // sans sortir de la gamme.
+  const top = Math.ceil(length / 2);
+  const shapes: readonly MelodyShape[] = allowArch ? ["up", "down", "arch"] : ["up", "down"];
+  const variants = shapes.flatMap((shape) =>
+    (shape === "arch"
+      ? inclusive(Math.max(0, length + 1 - 2 * top), SCALE.length - top)
+      : inclusive(0, SCALE.length - 1 - (length - 1) * step)
+    ).map((start) => ({ shape, start })),
+  );
+  const { shape, start } = pickFresh(ctx, variants, (v) => `ecoute-melodie:${v.shape}:${v.start}`);
   let indexes: number[];
   if (shape === "arch") {
-    // Monte d'une note à chaque fois jusqu'au sommet, puis redescend :
-    // le départ laisse la place de redescendre sans sortir de la gamme.
-    const top = Math.ceil(length / 2);
-    const start = randomInt(ctx.rng, Math.max(0, length + 1 - 2 * top), SCALE.length - top);
     indexes = Array.from({ length }, (_, i) => (i < top ? start + i : start + 2 * (top - 1) - i));
   } else {
-    const start = randomInt(ctx.rng, 0, SCALE.length - 1 - (length - 1) * step);
     const span = Array.from({ length }, (_, i) => start + i * step);
     indexes = shape === "up" ? span : [...span].reverse();
   }
@@ -295,6 +370,10 @@ export function makeMelody(ctx: GameContext): GeneratedGame {
 
 /** Deux mélodies : pareilles, ou une note a changé ? */
 export function makeSameDifferent(ctx: GameContext): GeneratedGame {
+  return fresh(ctx, "ecoute-pareil", () => sameDifferent(ctx), heard);
+}
+
+function sameDifferent(ctx: GameContext): GeneratedGame {
   const length = ctx.band === 0 ? 3 : 4;
   const melody = Array.from({ length }, () => randomInt(ctx.rng, 0, SCALE.length - 1));
   const same = ctx.rng() < 0.5;
