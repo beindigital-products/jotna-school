@@ -110,7 +110,7 @@ export function binSort(
 }
 
 /** Toutes les façons de prendre trois paires dans un tableau, rangées dans l'ordre du tableau. */
-function triples<T>(items: readonly T[]): T[][] {
+export function triples<T>(items: readonly T[]): T[][] {
   const out: T[][] = [];
   for (let a = 0; a < items.length; a++)
     for (let b = a + 1; b < items.length; b++) for (let c = b + 1; c < items.length; c++) out.push([items[a], items[b], items[c]]);

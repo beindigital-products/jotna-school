@@ -214,6 +214,15 @@ export const ANGLAIS: ProgrammeSubject = {
         key: "an-ce1-who",
         name: "Se présenter en anglais",
         palierCount: 3,
+        games: [
+          { kind: "ce1-en-who-reponse", count: 3 },
+          { kind: "ce1-en-who-question", count: 1 },
+          { kind: "ce1-en-who-relier", count: 1 },
+          { kind: "ce1-en-who-trou", count: 2 },
+          { kind: "ce1-en-who-ordre", count: 1 },
+          { kind: "ce1-en-who-phrase", count: 1 },
+          { kind: "ce1-en-who-glisser", count: 1 },
+        ],
         description:
           "Anglais, niveau A1 : se présenter. Échanges fermés : « What is your name? / My name is Awa. », « How are you? / I am fine, thank you. », « How old are you? / I am eight. », « Where are you from? / I am from Senegal. » Pays : Senegal, Mali, Guinea, Gambia, France. L'enfant associe chaque question à sa réponse, complète un petit dialogue, remet un dialogue de trois répliques dans l'ordre.",
       },
@@ -221,6 +230,15 @@ export const ANGLAIS: ProgrammeSubject = {
         key: "an-ce1-days",
         name: "Les jours de la semaine",
         palierCount: 2,
+        games: [
+          { kind: "ce1-en-days-ordre", count: 2 },
+          { kind: "ce1-en-days-apres", count: 2 },
+          { kind: "ce1-en-days-trou", count: 2 },
+          { kind: "ce1-en-days-ecrire", count: 1 },
+          { kind: "ce1-en-days-relier", count: 1 },
+          { kind: "ce1-en-days-glisser", count: 1 },
+          { kind: "ce1-en-days-phrase", count: 1 },
+        ],
         description:
           "Anglais, niveau A1 : les jours. Vocabulaire fermé : Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, today, tomorrow. Structures : « Today is Monday. », « Tomorrow is Tuesday. » L'enfant remet les jours dans l'ordre, trouve le jour d'avant ou d'après, complète « Today is ___. » ; les jours s'écrivent avec une majuscule.",
       },
@@ -228,6 +246,14 @@ export const ANGLAIS: ProgrammeSubject = {
         key: "an-ce1-a-an",
         name: "A ou an ?",
         palierCount: 3,
+        games: [
+          { kind: "ce1-en-aan-glisser", count: 2 },
+          { kind: "ce1-en-aan-phrase", count: 2 },
+          { kind: "ce1-en-aan-trou", count: 2 },
+          { kind: "ce1-en-aan-ordre", count: 1 },
+          { kind: "ce1-en-aan-relier", count: 1 },
+          { kind: "ce1-en-aan-ecrire", count: 2 },
+        ],
         description:
           "Anglais, niveau A1 : l'article a / an. « a » devant un mot qui commence par une consonne (a dog, a banana, a mango, a book), « an » devant une voyelle (an apple, an orange, an egg, an elephant). Structure : « What is it? / It is a dog. » Mots des thématiques déjà vues, au singulier ; jamais de mot comme hour ou university, pas de pluriel, pas de « the ».",
       },
@@ -235,6 +261,15 @@ export const ANGLAIS: ProgrammeSubject = {
         key: "an-ce1-clothes",
         name: "Les vêtements en anglais",
         palierCount: 2,
+        games: [
+          { kind: "ce1-en-clothes-mot", count: 1 },
+          { kind: "ce1-en-clothes-francais", count: 2 },
+          { kind: "ce1-en-clothes-relier", count: 1 },
+          { kind: "ce1-en-clothes-couleur", count: 2 },
+          { kind: "ce1-en-clothes-phrase", count: 2 },
+          { kind: "ce1-en-clothes-trou", count: 1 },
+          { kind: "ce1-en-clothes-trou-mot", count: 1 },
+        ],
         description:
           "Anglais, niveau A1 : les vêtements. Vocabulaire fermé : T-shirt, shirt, trousers, skirt, dress, shoes, socks, hat, cap, boubou. Structure : « It is a red dress. » : article + couleur + vêtement, avec les couleurs déjà vues ; en anglais la couleur se place AVANT le nom (« a red dress », pas « a dress red »). L'enfant associe le mot au vêtement (👕 T-shirt, 👗 dress, 👟 shoes, 🧦 socks, 🧢 cap). Shoes, socks et trousers s'apprennent comme des mots entiers, sans phrase.",
       },
@@ -242,6 +277,14 @@ export const ANGLAIS: ProgrammeSubject = {
         key: "an-ce1-likes",
         name: "J'aime, je n'aime pas",
         palierCount: 3,
+        games: [
+          { kind: "ce1-en-likes-trou", count: 2 },
+          { kind: "ce1-en-likes-reponse", count: 2 },
+          { kind: "ce1-en-likes-sens", count: 2 },
+          { kind: "ce1-en-likes-phrase", count: 2 },
+          { kind: "ce1-en-likes-relier", count: 1 },
+          { kind: "ce1-en-likes-glisser", count: 1 },
+        ],
         description:
           "Anglais, niveau A1 : dire ce qu'on aime. Structures fermées : « I like rice. », « I do not like fish. », « Do you like mango? / Yes, I do. / No, I do not. » Aliments : rice, fish, bread, chicken, milk, water, mango, banana, orange, apple. L'enfant complète la phrase, choisit la bonne réponse à une question, remet les mots d'une phrase dans l'ordre ; les formes contractées (don't) sont acceptées en réponse mais jamais exigées.",
       },
@@ -249,6 +292,15 @@ export const ANGLAIS: ProgrammeSubject = {
         key: "an-ce1-commands",
         name: "Les ordres de la classe",
         palierCount: 2,
+        games: [
+          { kind: "ce1-en-cmd-mot", count: 2 },
+          { kind: "ce1-en-cmd-francais", count: 2 },
+          { kind: "ce1-en-cmd-relier", count: 1 },
+          { kind: "ce1-en-cmd-situation", count: 2 },
+          { kind: "ce1-en-cmd-phrase", count: 1 },
+          { kind: "ce1-en-cmd-trou", count: 1 },
+          { kind: "ce1-en-cmd-glisser", count: 1 },
+        ],
         description:
           "Anglais, niveau A1 : comprendre les consignes de la classe. Vocabulaire fermé : stand up, sit down, open your book, close your book, look, listen, write, read, come here, be quiet, please. L'enfant associe l'ordre à l'image (🧍 stand up, 🪑 sit down, 📖 open your book, 🤫 be quiet) et choisit l'ordre qui convient à une situation ; impératif seulement (« Open your book, please. »).",
       },
