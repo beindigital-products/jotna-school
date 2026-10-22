@@ -60,7 +60,8 @@ export const linkKey = (game: GeneratedGame) =>
     .join(",");
 
 /** Un mot qui n'a pas encore servi dans ce palier, quel que soit le jeu : les mêmes mots ne reviennent pas d'un exercice à l'autre. */
-export const freshWord = <T extends Word>(ctx: GameContext, words: readonly T[]): T => pickFresh(ctx, words, (word) => `en:${word.en}`);
+export const freshWord = <T extends Word>(ctx: GameContext, words: readonly T[], universe: readonly T[] = words): T =>
+  pickFresh(ctx, words, (word) => `en:${word.en}`, universe);
 
 /** La bonne réponse d'un mot et deux autres mots de la liste, mélangés : les trois choix d'un QCM ou d'un trou. */
 export function threeWords(ctx: GameContext, answer: Word, words: readonly Word[]): string[] {

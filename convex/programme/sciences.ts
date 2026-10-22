@@ -36,6 +36,7 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
           { kind: "milieu-glisser", count: 4 },
           { kind: "milieu-trou", count: 3 },
         ],
+        byLevel: true,
       },
       {
         key: "sc-ci-animaux",
@@ -52,6 +53,7 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
           { kind: "faune-relier", count: 1 },
           { kind: "faune-trou", count: 1 },
         ],
+        byLevel: true,
       },
       {
         key: "sc-ci-plantes",
@@ -67,6 +69,7 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
           { kind: "plante-ordre", count: 1 },
           { kind: "plante-trou", count: 2 },
         ],
+        byLevel: true,
       },
       {
         key: "sc-ci-hygiene",
@@ -83,6 +86,7 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
           { kind: "hygiene-trou", count: 1 },
           { kind: "hygiene-sens", count: 2 },
         ],
+        byLevel: true,
       },
       {
         key: "sc-ci-outils",
@@ -98,6 +102,7 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
           { kind: "outil-geste", count: 2 },
           { kind: "outil-glisser", count: 1 },
         ],
+        byLevel: true,
       },
     ],
     CP: [

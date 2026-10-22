@@ -30,8 +30,9 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { fresh, originOf, pick, pickFresh, shuffle, sortedOptions, takeFresh, type GameContext, type GeneratedGame } from "./shared";
+import { fresh, originOf, pick, shuffle, sortedOptions, takeFresh, type GameContext, type GeneratedGame } from "./shared";
 import { linkKey } from "./anglais";
+import { pickForLevel, variantsForLevel } from "./tableaux";
 
 /** Un geste : son émoji, puis ce que l'enfant fait, à la première personne. */
 export type Act = readonly [emoji: string, text: string];
@@ -282,9 +283,9 @@ const TOOLS: Bank = {
 // ===========================================================================
 
 /** « Tu vas manger ton repas. Que fais-tu ? » : le bon geste parmi trois, deux mauvais de longueur voisine pris dans les trois de la scène. */
-function sceneChoice(kind: string, bank: Bank, ctx: GameContext): GeneratedGame {
+function sceneChoice(kind: string, bank: Bank, ctx: GameContext, shift = 0): GeneratedGame {
   return fresh(ctx, kind, () => {
-    const scene = pickFresh(ctx, bank.scenes, (candidate) => factKey(bank, candidate));
+    const scene = pickForLevel(ctx, bank.scenes, (candidate) => factKey(bank, candidate), "thirds", shift);
     const [first, second, third] = scene.wrong;
     const pairs: [Act, Act][] = [
       [first, second],
@@ -312,12 +313,18 @@ function sceneChoice(kind: string, bank: Bank, ctx: GameContext): GeneratedGame 
  * préférence des scènes que le palier n'a pas encore montrées. L'appelant marque les scènes prises (`markSeen`) une fois
  * le tirage accepté : un tirage refusé n'en use aucune.
  */
-function drawActs(ctx: GameContext, bank: Bank, goodCount: number, badCount: number): { good: Act[]; bad: Act[]; scenes: Scene[] } {
+function drawActs(ctx: GameContext, bank: Bank, goodCount: number, badCount: number, shift = 0): { good: Act[]; bad: Act[]; scenes: Scene[] } {
   let drawn: { good: Act[]; bad: Act[]; scenes: Scene[] } = { good: [], bad: [], scenes: [] };
   for (let attempt = 0; attempt < 30; attempt++) {
-    const unseen = shuffle(ctx.rng, bank.scenes.filter((scene) => !ctx.used.has(factKey(bank, scene))));
+    // Les scènes que le palier préfère d'abord (son tiers de la banque), puis les autres scènes pas encore montrées.
+    const own = new Set(variantsForLevel(bank.scenes, ctx.level, shift));
+    const unseen = bank.scenes.filter((scene) => !ctx.used.has(factKey(bank, scene)));
     const seen = shuffle(ctx.rng, bank.scenes.filter((scene) => ctx.used.has(factKey(bank, scene))));
-    const picked = [...unseen, ...seen].slice(0, goodCount + badCount);
+    const picked = [
+      ...shuffle(ctx.rng, unseen.filter((scene) => own.has(scene))),
+      ...shuffle(ctx.rng, unseen.filter((scene) => !own.has(scene))),
+      ...seen,
+    ].slice(0, goodCount + badCount);
     drawn = {
       good: picked.slice(0, goodCount).map((scene) => scene.right),
       bad: picked.slice(goodCount).map((scene) => pick(ctx.rng, scene.wrong)),
@@ -341,12 +348,12 @@ const ZONES = ["✅ À faire", "❌ À éviter"] as const;
  * « Glisse chaque geste dans la bonne case. » : quatre gestes, deux de chaque côté, à tous les niveaux. Des phrases
  * entières font des tuiles hautes : à cinq, la page de la séance dépasse l'écran d'un téléphone de 375 × 812 de 440 px.
  */
-function sceneSort(kind: string, bank: Bank, ctx: GameContext): GeneratedGame {
+function sceneSort(kind: string, bank: Bank, ctx: GameContext, shift = 0): GeneratedGame {
   return fresh(
     ctx,
     kind,
     () => {
-      const { good, bad, scenes } = drawActs(ctx, bank, 2, 2);
+      const { good, bad, scenes } = drawActs(ctx, bank, 2, 2, shift);
       markSeen(ctx, bank, scenes);
       const items = shuffle(ctx.rng, [
         ...good.map((act) => ({ text: actTile(act), correctZone: ZONES[0] as string })),
@@ -369,13 +376,13 @@ function sceneSort(kind: string, bank: Bank, ctx: GameContext): GeneratedGame {
 }
 
 /** « Quel geste est bon pour la santé ? » ou « … mauvais pour la santé ? » : trois gestes de trois scènes, un seul d'un côté. */
-function sceneOdd(kind: string, bank: Bank, ask: { good: string; bad: string }, ctx: GameContext): GeneratedGame {
+function sceneOdd(kind: string, bank: Bank, ask: { good: string; bad: string }, ctx: GameContext, shift = 0): GeneratedGame {
   return fresh(
     ctx,
     kind,
     () => {
       const answerIsBad = ctx.rng() < 0.5;
-      const draw = () => drawActs(ctx, bank, answerIsBad ? 2 : 1, answerIsBad ? 1 : 2);
+      const draw = () => drawActs(ctx, bank, answerIsBad ? 2 : 1, answerIsBad ? 1 : 2, shift);
       let drawn = draw();
       // Les trois gestes de longueur voisine : la réponse ne se devine pas au texte le plus long ou le plus court.
       for (let attempt = 0; attempt < 30 && spread([...drawn.good, ...drawn.bad]) >= 1.8; attempt++) drawn = draw();
@@ -409,16 +416,21 @@ function sceneOdd(kind: string, bank: Bank, ask: { good: string; bad: string }, 
 type Sequence = { id: string; prompt: string; steps: readonly Act[]; fact?: string };
 
 /**
- * Une suite au hasard. Une suite qui apprend la même chose qu'une scène déjà montrée dans le palier passe après les
- * autres.
+ * Une suite que le palier n'a pas encore posée, de préférence dans son tiers de la liste (`pickForLevel`). Sa clé est à
+ * elle : sept exercices d'outils se partagent six outils, et une suite qui prendrait la même clé qu'une scène ferait
+ * déborder l'exercice suivant sur le tiers d'un autre palier.
  */
-function sceneSteps(kind: string, bank: Bank, sequences: readonly Sequence[], ctx: GameContext): GeneratedGame {
+function sceneSteps(kind: string, bank: Bank, sequences: readonly Sequence[], ctx: GameContext, shift = 0): GeneratedGame {
   return fresh(
     ctx,
     kind,
     () => {
-      const sequence = pickFresh(ctx, sequences, (candidate) =>
-        candidate.fact ? `${bank.name}-fait:${candidate.fact}` : `${kind}-seq:${candidate.prompt}`,
+      const sequence = pickForLevel(
+        ctx,
+        sequences,
+        (candidate) => `${kind}-seq:${candidate.prompt}`,
+        "thirds",
+        shift,
       );
       const tiles = sequence.steps.map(actTile);
       return {
@@ -443,9 +455,10 @@ function gapGame<G extends Gap>(
   ctx: GameContext,
   lastHint: string,
   keyOf: (gap: G) => string = (gap) => `${kind}-gap:${gap.text}`,
+  shift = 0,
 ): GeneratedGame {
   return fresh(ctx, kind, () => {
-    const gap = pickFresh(ctx, gaps, keyOf);
+    const gap = pickForLevel(ctx, gaps, keyOf, "thirds", shift);
     return {
       type: "fill-blank",
       prompt: "Complète la phrase.",
@@ -470,7 +483,7 @@ export function makeHygieneChoice(ctx: GameContext): GeneratedGame {
 }
 
 export function makeHygieneSort(ctx: GameContext): GeneratedGame {
-  return sceneSort("hygiene-glisser", HYGIENE, ctx);
+  return sceneSort("hygiene-glisser", HYGIENE, ctx, 1);
 }
 
 export function makeHygieneOdd(ctx: GameContext): GeneratedGame {
@@ -479,6 +492,7 @@ export function makeHygieneOdd(ctx: GameContext): GeneratedGame {
     HYGIENE,
     { good: "Quel geste est bon pour la santé ?", bad: "Quel geste est mauvais pour la santé ?" },
     ctx,
+    2,
   );
 }
 
@@ -543,7 +557,7 @@ export function makeHygieneSense(ctx: GameContext): GeneratedGame {
     ctx,
     "hygiene-sens",
     () => {
-      const sense = pickFresh(ctx, SENSES, (candidate) => `hygiene-sens:${candidate.answer}`);
+      const sense = pickForLevel(ctx, SENSES, (candidate) => `hygiene-sens:${candidate.answer}`);
       const others = SENSES.filter((other) => other !== sense).map((other) => other.answer);
       const options = shuffle(ctx.rng, [sense.answer, ...shuffle(ctx.rng, others).slice(0, 2)]);
       return {
@@ -681,7 +695,7 @@ export function makeToolWho(ctx: GameContext): GeneratedGame {
     ctx,
     "outil-qui",
     () => {
-      const tool = pickFresh(ctx, TOOLS_LIST, (candidate) => `outil-fait:${candidate.id}`);
+      const tool = pickForLevel(ctx, TOOLS_LIST, (candidate) => `outil-fait:${candidate.id}`);
       const options = shuffle(ctx.rng, [tool.name, ...shuffle(ctx.rng, tool.others).slice(0, 2)]);
       return {
         type: "qcm",
@@ -708,7 +722,7 @@ export function makeToolLinks(ctx: GameContext): GeneratedGame {
       for (const tool of TOOLS_LIST) groups.set(tool.group, [...(groups.get(tool.group) ?? []), tool]);
       const chosen = shuffle(ctx.rng, [...groups.values()])
         .slice(0, 3)
-        .map((tools) => takeFresh(ctx, tools, 1, (tool) => `outil-fait:${tool.id}`)[0]);
+        .map((tools) => takeFresh(ctx, tools, 1, (tool) => `outil-relier:${tool.id}`)[0]);
       const pairs = chosen.map((tool) => ({ left: tool.name, right: tool.use }));
       return {
         type: "match",
@@ -731,39 +745,19 @@ type ToolGap = Gap & { tool: string };
 
 export const TOOL_GAPS: readonly ToolGap[] = [
   { tool: "ciseaux", text: "Je coupe le papier avec ___.", answer: "les ciseaux", wrong: ["le marteau", "le balai"], hint: "Il a deux lames qui se ferment." },
+  { tool: "marteau", text: "J'enfonce un clou avec ___.", answer: "le marteau", wrong: ["le balai", "les ciseaux"], hint: "Sa tête est dure, pour frapper." },
   { tool: "balai", text: "Pour balayer la cour, je prends ___.", answer: "le balai", wrong: ["les ciseaux", "l'arrosoir"], hint: "Il a un long manche." },
   { tool: "arrosoir", text: "J'arrose les plantes avec ___.", answer: "l'arrosoir", wrong: ["le balai", "le marteau"], hint: "L'eau sort par son bec." },
-  { tool: "marteau", text: "J'enfonce un clou avec ___.", answer: "le marteau", wrong: ["le balai", "les ciseaux"], hint: "Sa tête est dure, pour frapper." },
   { tool: "pilon", text: "Je pile le mil avec ___.", answer: "le pilon", wrong: ["les ciseaux", "le balai"], hint: "C'est un gros bâton lourd." },
   { tool: "seau", text: "Je porte de l'eau dans ___.", answer: "le seau", wrong: ["le balai", "les ciseaux"], hint: "Il a une anse pour le porter." },
 ];
 
 /** « Je coupe le papier avec ___. » : l'outil juste parmi trois, deux qui ne conviennent pas. Un outil déjà demandé dans le palier passe après les autres. */
 export function makeToolGap(ctx: GameContext): GeneratedGame {
-  return gapGame("outil-trou", TOOL_GAPS, TOOLS.concept, ctx, "Écarte les outils qui ne conviennent pas.", (gap) => `outil-fait:${gap.tool}`);
+  return gapGame("outil-trou", TOOL_GAPS, TOOLS.concept, ctx, "Écarte les outils qui ne conviennent pas.", (gap) => `outil-fait:${gap.tool}`, 1);
 }
 
 export const TOOL_SEQUENCES: readonly Sequence[] = [
-  {
-    id: "sq-ou-balai",
-    fact: "balai",
-    prompt: "Mets les gestes dans l'ordre pour utiliser le balai.",
-    steps: [
-      ["🧹", "Je prends le balai"],
-      ["💨", "Je balaie la cour"],
-      ["🧺", "Je range le balai"],
-    ],
-  },
-  {
-    id: "sq-ou-arrosoir",
-    fact: "arrosoir",
-    prompt: "Mets les gestes dans l'ordre pour arroser les plantes.",
-    steps: [
-      ["🚰", "Je remplis l'arrosoir d'eau"],
-      ["💧", "J'arrose les plantes"],
-      ["🧺", "Je range l'arrosoir"],
-    ],
-  },
   {
     id: "sq-ou-ciseaux",
     fact: "ciseaux",
@@ -785,6 +779,26 @@ export const TOOL_SEQUENCES: readonly Sequence[] = [
     ],
   },
   {
+    id: "sq-ou-balai",
+    fact: "balai",
+    prompt: "Mets les gestes dans l'ordre pour utiliser le balai.",
+    steps: [
+      ["🧹", "Je prends le balai"],
+      ["💨", "Je balaie la cour"],
+      ["🧺", "Je range le balai"],
+    ],
+  },
+  {
+    id: "sq-ou-arrosoir",
+    fact: "arrosoir",
+    prompt: "Mets les gestes dans l'ordre pour arroser les plantes.",
+    steps: [
+      ["🚰", "Je remplis l'arrosoir d'eau"],
+      ["💧", "J'arrose les plantes"],
+      ["🧺", "Je range l'arrosoir"],
+    ],
+  },
+  {
     id: "sq-ou-mil",
     fact: "pilon",
     prompt: "Mets les gestes dans l'ordre pour piler le mil.",
@@ -797,11 +811,11 @@ export const TOOL_SEQUENCES: readonly Sequence[] = [
 ];
 
 export function makeToolSteps(ctx: GameContext): GeneratedGame {
-  return sceneSteps("outil-ordre", TOOLS, TOOL_SEQUENCES, ctx);
+  return sceneSteps("outil-ordre", TOOLS, TOOL_SEQUENCES, ctx, 1);
 }
 
 export function makeToolChoice(ctx: GameContext): GeneratedGame {
-  return sceneChoice("outil-geste", TOOLS, ctx);
+  return sceneChoice("outil-geste", TOOLS, ctx, 2);
 }
 
 export function makeToolSort(ctx: GameContext): GeneratedGame {

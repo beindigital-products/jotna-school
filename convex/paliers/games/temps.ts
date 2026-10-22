@@ -28,6 +28,7 @@
  */
 import { fresh, originOf, pick, pickFresh, randomInt, shuffle, sortedOptions, type GameContext, type GeneratedGame } from "./shared";
 import { DAYS } from "./things";
+import { levelGroup, pickForLevel } from "./tableaux";
 
 type Day = (typeof DAYS)[number];
 
@@ -210,15 +211,19 @@ const ORDINALS: readonly (readonly [string, number])[] = [
   ["dernier", 6],
 ];
 
+/** Les rangs (places de `ORDINALS`) que chaque groupe de niveaux demande : jamais deux paliers sur le même. */
+const RANK_WINDOWS: readonly (readonly number[])[] = [
+  [0, 5],
+  [1, 2],
+  [3, 4],
+];
+
 /** « Quel est le troisième jour de la semaine ? » : le rang d'un jour, du lundi au dimanche. */
 export function makeDayRank(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "jour-rang", () => {
-    const asks =
-      ctx.level === 1
-        ? [ORDINALS[0], ORDINALS[1], ORDINALS[5]]
-        : ctx.level === 2
-          ? [...ORDINALS.slice(0, 3), ORDINALS[5]]
-          : ORDINALS;
+    // Chaque palier a ses deux rangs : le premier et le dernier jour d'abord, puis le deuxième et le troisième, enfin le quatrième
+    // et le cinquième. Trois paliers ne posent ainsi jamais la même question.
+    const asks = RANK_WINDOWS[levelGroup(ctx.level)].map((rank) => ORDINALS[rank]);
     // Deux questions dans un même palier ne sont jamais la même : on épuise les rangs avant d'en reprendre un.
     const [word, index] = pickFresh(ctx, asks, ([rank]) => `jour-rang-rang:${rank}`);
     const answer = DAYS[index];
@@ -486,7 +491,8 @@ export function makeTimeWords(ctx: GameContext): GeneratedGame {
 /** « Quand dîne-t-on ? » : l'activité n'a qu'un moment, les mauvais choix ne vont pas avec elle. */
 export function makeActivityMoment(ctx: GameContext): GeneratedGame {
   return fresh(ctx, "activite-moment", () => {
-    const activity = pick(ctx.rng, ACTIVITIES);
+    // Les activités sont rangées dans l'ordre de la journée : le premier palier prend le matin, le deuxième le milieu de la journée, le dernier le soir.
+    const activity = pickForLevel(ctx, ACTIVITIES, (candidate) => `activite-moment:${candidate.text}`);
     const pool = DAY_MOMENTS.filter((moment) => moment.name !== activity.moment && !activity.avoid.includes(moment.name));
     let wrong = shuffle(ctx.rng, pool).slice(0, 2);
     // Le soir et la nuit ne se proposent jamais ensemble : une fois le soleil couché, il fait noir ET c'est encore le soir.
@@ -728,7 +734,7 @@ export function makeBeforeAfter(ctx: GameContext): GeneratedGame {
     const before = ctx.level >= 2 && ctx.rng() < 0.5;
     const candidates = BECOMES.filter((step) => !before || !step.to.startsWith("l'"));
     // Trois questions dans un même palier : on épuise les étapes avant d'en reprendre une.
-    const step = pickFresh(ctx, candidates, (candidate) => `avant-apres-pas:${before ? "avant" : "apres"}:${candidate.from}`);
+    const step = pickForLevel(ctx, candidates, (candidate) => `avant-apres-pas:${before ? "avant" : "apres"}:${candidate.from}`);
     const answer = before ? step.from : step.to;
     const asked = before ? step.to : step.from;
     const pool = BECOMES.filter((other) => other.family !== step.family).flatMap((other) => [other.from, other.to]);

@@ -71,6 +71,27 @@ export function gameLevel(palierIndex: number, palierCount: number): GameLevel {
   }
 }
 
+/**
+ * Le groupe de variantes qu'un palier préfère : 0 au niveau 1, 1 au niveau 2, 2 aux niveaux 3 et 4. Le CP et le CI ont trois paliers, joués
+ * aux niveaux 1, 2 et 4 : chacun a son groupe. Les classes à quatre paliers en ont trois, dont le dernier est partagé.
+ */
+export function levelGroup(level: GameLevel): 0 | 1 | 2 {
+  return level === 1 ? 0 : level === 2 ? 1 : 2;
+}
+
+/**
+ * Les variantes d'un gabarit qui n'en a que quelques-unes, réparties par palier : le premier tiers au premier palier, le deuxième
+ * au deuxième, le dernier tiers ensuite. Deux paliers d'une même thématique ne tirent ainsi jamais la même variante (le CP a trois
+ * paliers, joués aux niveaux 1, 2 et 4) : sans cela, un enfant revoyait « Deux ___ font un kilogramme » aux trois paliers. Il faut
+ * au moins trois variantes ; en dessous, toutes restent permises. `shift` décale le groupe de 0, 1 ou 2 crans.
+ */
+export function variantsForLevel<T>(items: readonly T[], level: GameLevel, shift = 0): T[] {
+  const group = (levelGroup(level) + shift) % 3;
+  const from = Math.floor((items.length * group) / 3);
+  const to = Math.floor((items.length * (group + 1)) / 3);
+  return to > from ? items.slice(from, to) : [...items];
+}
+
 /** Ce qu'un jeu sait de l'exercice à fabriquer. */
 export type GameContext = {
   klass: VisibleClassName;
@@ -84,6 +105,13 @@ export type GameContext = {
   used: Set<string>;
   /** Le vocabulaire d'un gabarit de mots (« mots-2 » : les mots vus jusqu'au deuxième palier de lecture). */
   vocabulary?: string;
+  /**
+   * Présent quand la thématique partage ses variantes entre ses paliers (`ProgrammeTopic.byLevel`) : le décalage de groupe de ce jeu
+   * (0, 1 ou 2, selon sa place dans la thématique). `pickFresh` et `takeFresh` préfèrent alors le tiers de la liste qui revient à ce
+   * palier, décalé de ce nombre de crans : les genres qui puisent dans les mêmes faits préfèrent des tiers différents dans un même
+   * palier. Absent, ils tirent dans toute la liste.
+   */
+  window?: 0 | 1 | 2;
 };
 
 export function makeContext(
@@ -92,8 +120,9 @@ export function makeContext(
   seed: string,
   used: Set<string> = new Set(),
   vocabulary?: string,
+  window?: 0 | 1 | 2,
 ): GameContext {
-  return { klass, band: ageBand(klass), level, rng: seededRandom(seed), used, vocabulary };
+  return { klass, band: ageBand(klass), level, rng: seededRandom(seed), used, vocabulary, window };
 }
 
 /** L'origine à poser dans le payload : de quoi refaire le même gabarit avec une autre graine. */
@@ -161,9 +190,16 @@ export function pickFresh<T>(
   ctx: GameContext,
   items: readonly T[],
   keyOf: (item: T) => string,
+  universe: readonly T[] = items,
 ): T {
   const fresh = items.filter((item) => !ctx.used.has(keyOf(item)));
-  const chosen = pick(ctx.rng, fresh.length > 0 ? fresh : items);
+  // Une thématique qui partage ses variantes entre ses paliers (`ctx.window`) tire d'abord, parmi les variantes pas encore prises, dans
+  // le tiers de la liste qui revient à son palier. `universe` est la liste entière quand `items` n'en garde qu'une partie à ce niveau
+  // (les six couleurs du premier palier, les deux premières directions) : les tiers se prennent sur la liste entière, pour que les paliers
+  // ne se chevauchent pas. Quand tout a servi, `fresh` est vide et le tiers ne compte plus : y rester ferait reposer le même exercice.
+  const own = ctx.window === undefined ? null : new Set(variantsForLevel(universe, ctx.level, ctx.window));
+  const inWindow = own === null ? [] : fresh.filter((item) => own.has(item));
+  const chosen = pick(ctx.rng, inWindow.length > 0 ? inWindow : fresh.length > 0 ? fresh : items);
   ctx.used.add(keyOf(chosen));
   return chosen;
 }
@@ -175,7 +211,14 @@ export function pickFresh<T>(
  * exercices du même palier.
  */
 export function takeFresh<T>(ctx: GameContext, items: readonly T[], count: number, keyOf: (item: T) => string): T[] {
-  const fresh = shuffle(ctx.rng, items.filter((item) => !ctx.used.has(keyOf(item))));
+  // Dans une thématique qui partage ses variantes entre ses paliers (`ctx.window`), le tiers du palier passe avant les autres variantes pas
+  // encore prises ; celles qui ont déjà servi se tirent au hasard, sans tiers, sinon le même exercice reviendrait.
+  const own = ctx.window === undefined ? null : new Set(variantsForLevel(items, ctx.level, ctx.window));
+  const unused = items.filter((item) => !ctx.used.has(keyOf(item)));
+  const fresh =
+    own === null
+      ? shuffle(ctx.rng, unused)
+      : [...shuffle(ctx.rng, unused.filter((item) => own.has(item))), ...shuffle(ctx.rng, unused.filter((item) => !own.has(item)))];
   const stale = shuffle(ctx.rng, items.filter((item) => ctx.used.has(keyOf(item))));
   const chosen = [...fresh, ...stale].slice(0, count);
   for (const item of chosen) ctx.used.add(keyOf(item));

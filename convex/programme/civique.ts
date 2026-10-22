@@ -41,6 +41,7 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
           { kind: "civ-relier", count: 1, vocabulary: "politesse" },
           { kind: "civ-ordre", count: 1, vocabulary: "politesse" },
         ],
+        byLevel: true,
       },
       {
         key: "ci-ci-ecole",
@@ -55,6 +56,7 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
           { kind: "civ-ordre", count: 1, vocabulary: "ecole" },
           { kind: "civ-trou", count: 2, vocabulary: "ecole" },
         ],
+        byLevel: true,
       },
       {
         key: "ci-ci-entraide",
@@ -69,6 +71,7 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
           { kind: "civ-ordre", count: 2, vocabulary: "entraide" },
           { kind: "civ-trou", count: 1, vocabulary: "entraide" },
         ],
+        byLevel: true,
       },
       {
         key: "ci-ci-route",
@@ -83,6 +86,7 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
           { kind: "civ-ordre", count: 1, vocabulary: "route" },
           { kind: "civ-trou", count: 1, vocabulary: "route" },
         ],
+        byLevel: true,
       },
     ],
     CP: [

@@ -98,9 +98,9 @@ const HYGIENE_GAP_ROWS: GapRow[] = [
 ];
 const TOOL_GAP_ROWS: GapRow[] = [
   { text: "Je coupe le papier avec ___.", answer: "les ciseaux", wrong: ["le marteau", "le balai"] },
+  { text: "J'enfonce un clou avec ___.", answer: "le marteau", wrong: ["le balai", "les ciseaux"] },
   { text: "Pour balayer la cour, je prends ___.", answer: "le balai", wrong: ["les ciseaux", "l'arrosoir"] },
   { text: "J'arrose les plantes avec ___.", answer: "l'arrosoir", wrong: ["le balai", "le marteau"] },
-  { text: "J'enfonce un clou avec ___.", answer: "le marteau", wrong: ["le balai", "les ciseaux"] },
   { text: "Je pile le mil avec ___.", answer: "le pilon", wrong: ["les ciseaux", "le balai"] },
   { text: "Je porte de l'eau dans ___.", answer: "le seau", wrong: ["le balai", "les ciseaux"] },
 ];
@@ -169,10 +169,10 @@ const SEQ_ROWS: SeqRow[] = [
   { bank: "hygiene", prompt: "Mets les gestes dans l'ordre pour te brosser les dents.", steps: ["Je prends ma brosse à dents", "Je brosse bien mes dents", "Je rince ma bouche à l'eau"] },
   { bank: "hygiene", prompt: "Mets les gestes dans l'ordre pour te laver le corps.", steps: ["Je mouille tout mon corps", "Je me savonne partout", "Je me rince bien à l'eau"] },
   { bank: "hygiene", prompt: "Mets les gestes dans l'ordre du repas.", steps: ["Je me lave les mains d'abord", "Je m'assois à table", "Je mange mon repas"] },
-  { bank: "outil", prompt: "Mets les gestes dans l'ordre pour utiliser le balai.", steps: ["Je prends le balai", "Je balaie la cour", "Je range le balai"] },
-  { bank: "outil", prompt: "Mets les gestes dans l'ordre pour arroser les plantes.", steps: ["Je remplis l'arrosoir d'eau", "J'arrose les plantes", "Je range l'arrosoir"] },
   { bank: "outil", prompt: "Mets les gestes dans l'ordre pour couper du papier.", steps: ["Je prends les ciseaux", "Je coupe le papier", "Je range les ciseaux"] },
   { bank: "outil", prompt: "Mets les gestes dans l'ordre pour enfoncer un clou.", steps: ["Je pose le clou sur le bois", "Je frappe sur le clou", "Je range le marteau"] },
+  { bank: "outil", prompt: "Mets les gestes dans l'ordre pour utiliser le balai.", steps: ["Je prends le balai", "Je balaie la cour", "Je range le balai"] },
+  { bank: "outil", prompt: "Mets les gestes dans l'ordre pour arroser les plantes.", steps: ["Je remplis l'arrosoir d'eau", "J'arrose les plantes", "Je range l'arrosoir"] },
   { bank: "outil", prompt: "Mets les gestes dans l'ordre pour piler le mil.", steps: ["Je mets le mil dans le mortier", "Je pile le mil avec le pilon", "Je lave le mortier et le pilon"] },
 ];
 

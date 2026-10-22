@@ -50,8 +50,9 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { fresh, originOf, pick, pickFresh, randomInt, shuffle, sortedOptions, type GameContext, type GeneratedGame } from "./shared";
+import { fresh, originOf, pick, randomInt, shuffle, sortedOptions, type GameContext, type GeneratedGame } from "./shared";
 import { linkKey, pairsCount } from "./anglais";
+import { pickForLevel } from "./tableaux";
 
 export type Topic = "politesse" | "ecole" | "entraide" | "route";
 
@@ -736,7 +737,7 @@ const spread = (acts: readonly Act[]) => Math.max(...acts.map((act) => act[1].le
 export function makeSceneChoice(ctx: GameContext): GeneratedGame {
   const topic = topicOf(ctx);
   return fresh(ctx, "civ-situation", () => {
-    const scene = pickFresh(ctx, scenesOf(topic), (candidate) => `civ-scene:${candidate.id}`);
+    const scene = pickForLevel(ctx, scenesOf(topic), (candidate) => `civ-scene:${candidate.id}`);
     const [first, second, third] = scene.wrong;
     const pairs: [Act, Act][] = [
       [first, second],
@@ -1058,8 +1059,9 @@ export function makeSequence(ctx: GameContext): GeneratedGame {
     "civ-ordre",
     () => {
       const all = SEQUENCES.filter((sequence) => sequence.topic === topic);
-      const short = all.filter((sequence) => sequence.steps.length <= 3);
-      const sequence = pickFresh(ctx, ctx.level === 1 && short.length > 0 ? short : all, (candidate) => `civ-seq:${candidate.id}`);
+      // Les suites courtes d'abord : le premier palier, qui prend le premier tiers, garde ainsi une suite de trois étapes.
+      const ordered = [...all.filter((sequence) => sequence.steps.length <= 3), ...all.filter((sequence) => sequence.steps.length > 3)];
+      const sequence = pickForLevel(ctx, ordered, (candidate) => `civ-seq:${candidate.id}`);
       const tiles = sequence.steps.map(actTile);
       return {
         type: "order",
@@ -1114,7 +1116,7 @@ export const GAPS: readonly Gap[] = [
 export function makeRuleGap(ctx: GameContext): GeneratedGame {
   const topic = topicOf(ctx);
   return fresh(ctx, "civ-trou", () => {
-    const gap = pickFresh(
+    const gap = pickForLevel(
       ctx,
       GAPS.filter((candidate) => candidate.topic === topic),
       (candidate) => `civ-gap:${candidate.id}`,
