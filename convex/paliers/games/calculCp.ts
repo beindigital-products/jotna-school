@@ -32,33 +32,50 @@ const tensOf = (n: number) => Math.floor(n / 10);
 // DES OPÉRATIONS QUI ONT TOUJOURS UNE RETENUE OU UN EMPRUNT
 // ===========================================================================
 
-/** Une addition dont les unités passent dix : a + b ne dépasse pas `top`. */
-export function carryPair(ctx: GameContext, top: number): [number, number] {
+/**
+ * Le premier nombre d'un calcul de ce palier : `a % 3` est le groupe du palier (0 au premier palier, 1 au deuxième, 2 ensuite). Deux paliers ne tirent donc
+ * jamais le même premier nombre, ni la même opération : sans cela, « Combien font 62 − 38 ? » pouvait revenir d'un palier à l'autre, les plages des paliers
+ * se recouvrant. Rien ne se voit pour l'enfant : la dizaine et l'unité de `a` restent libres.
+ */
+const ownFirst = (ctx: GameContext, a: number): boolean => a % 3 === levelGroup(ctx.level);
+
+/** Les paires de secours, une par groupe (`a % 3` vaut 0, 1 puis 2) : elles ne servent que si 300 tirages échouent. */
+const CARRY_FALLBACK: readonly [number, number][] = [[27, 18], [28, 17], [29, 16]];
+const BORROW_FALLBACK: readonly [number, number][] = [[51, 28], [52, 28], [53, 28]];
+
+/**
+ * Une addition dont les unités passent dix : a + b ne dépasse pas `top`. Avec `own`, le premier nombre est de la famille du palier (voir `ownFirst`) ;
+ * sans, tout nombre convient (`problemesCp.ts` s'en sert ainsi).
+ */
+export function carryPair(ctx: GameContext, top: number, own = false): [number, number] {
   for (let attempt = 0; attempt < 300; attempt++) {
     const a = randomInt(ctx.rng, 11, top - 6);
     const b = randomInt(ctx.rng, 6, top - a);
-    if (b >= 6 && a + b <= top && unitsOf(a) + unitsOf(b) >= 10) return [a, b];
+    if (b >= 6 && a + b <= top && unitsOf(a) + unitsOf(b) >= 10 && (!own || ownFirst(ctx, a))) return [a, b];
   }
-  return [27, 18];
+  return own ? [...CARRY_FALLBACK[levelGroup(ctx.level)]] : [27, 18];
 }
 
-/** Une soustraction dont le chiffre des unités de a est plus petit que celui de b : a − b est positif, a ne dépasse pas `top`. */
-export function borrowPair(ctx: GameContext, top: number): [number, number] {
+/**
+ * Une soustraction dont le chiffre des unités de a est plus petit que celui de b : a − b est positif, a ne dépasse pas `top`. Avec `own`, le premier
+ * nombre est de la famille du palier (voir `ownFirst`).
+ */
+export function borrowPair(ctx: GameContext, top: number, own = false): [number, number] {
   for (let attempt = 0; attempt < 300; attempt++) {
     const a = randomInt(ctx.rng, 21, top);
     const b = randomInt(ctx.rng, 6, a - 1);
-    if (b < a && unitsOf(a) < unitsOf(b)) return [a, b];
+    if (b < a && unitsOf(a) < unitsOf(b) && (!own || ownFirst(ctx, a))) return [a, b];
   }
-  return [52, 28];
+  return own ? [...BORROW_FALLBACK[levelGroup(ctx.level)]] : [52, 28];
 }
 
 /** Une opération au hasard : addition avec retenue ou soustraction avec emprunt. */
 function randomOperation(ctx: GameContext): { text: string; result: number } {
   if (ctx.rng() < 0.5) {
-    const [a, b] = carryPair(ctx, ADD_TOP[ctx.level]);
+    const [a, b] = carryPair(ctx, ADD_TOP[ctx.level], true);
     return { text: `${a} + ${b}`, result: a + b };
   }
-  const [a, b] = borrowPair(ctx, SUB_TOP[ctx.level]);
+  const [a, b] = borrowPair(ctx, SUB_TOP[ctx.level], true);
   return { text: `${a} − ${b}`, result: a - b };
 }
 
@@ -69,7 +86,7 @@ function randomOperation(ctx: GameContext): { text: string; result: number } {
 /** « Combien font 47 + 38 ? » : les unités passent dix. */
 export function makeCarryAdd(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "calc-ajouter", "additionner avec une retenue", () => {
-    const [a, b] = carryPair(ctx, ADD_TOP[ctx.level]);
+    const [a, b] = carryPair(ctx, ADD_TOP[ctx.level], true);
     const sum = a + b;
     return {
       prompt: `Combien font ${a} + ${b} ?`,
@@ -88,7 +105,7 @@ export function makeCarryAdd(ctx: GameContext): GeneratedGame {
 /** « Combien font 62 − 38 ? » : on ne peut pas enlever les unités sans emprunter. */
 export function makeBorrowSub(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "calc-enlever", "soustraire avec un emprunt", () => {
-    const [a, b] = borrowPair(ctx, SUB_TOP[ctx.level]);
+    const [a, b] = borrowPair(ctx, SUB_TOP[ctx.level], true);
     const result = a - b;
     // L'erreur classique : enlever le petit chiffre du grand sans emprunter (62 − 38 donne alors 36).
     const noBorrow = 10 * (tensOf(a) - tensOf(b)) + (unitsOf(b) - unitsOf(a));
@@ -110,7 +127,7 @@ export function makeCarryAsk(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "calc-retenue", "la retenue et l'emprunt", () => {
     const form = randomInt(ctx.rng, 0, 2);
     if (form < 2) {
-      const [a, b] = carryPair(ctx, ADD_TOP[ctx.level]);
+      const [a, b] = carryPair(ctx, ADD_TOP[ctx.level], true);
       const sum = unitsOf(a) + unitsOf(b);
       if (form === 0) {
         return {
@@ -127,7 +144,7 @@ export function makeCarryAsk(ctx: GameContext): GeneratedGame {
         hints: ["Une dizaine a été retenue.", "On écrit seulement ce qui reste après la dizaine.", "Enlève dix aux unités."],
       };
     }
-    const [a, b] = borrowPair(ctx, SUB_TOP[ctx.level]);
+    const [a, b] = borrowPair(ctx, SUB_TOP[ctx.level], true);
     const ua = unitsOf(a);
     const ub = unitsOf(b);
     return {
@@ -143,7 +160,7 @@ export function makeCarryAsk(ctx: GameContext): GeneratedGame {
 export function makeCalcGap(ctx: GameContext): GeneratedGame {
   return gapGame(ctx, "calc-trou", "trouver le nombre qui manque dans un calcul", () => {
     if (ctx.rng() < 0.5) {
-      const [a, b] = carryPair(ctx, ADD_TOP[ctx.level]);
+      const [a, b] = carryPair(ctx, ADD_TOP[ctx.level], true);
       return {
         prompt: "Complète avec le bon nombre.",
         text: `${a} + ___ = ${a + b}`,
@@ -152,7 +169,7 @@ export function makeCalcGap(ctx: GameContext): GeneratedGame {
         hints: ["Cherche ce qu'il faut ajouter pour arriver au total.", "Retire le premier nombre du total, unités d'abord.", "Vérifie en refaisant l'addition."],
       };
     }
-    const [a, b] = borrowPair(ctx, SUB_TOP[ctx.level]);
+    const [a, b] = borrowPair(ctx, SUB_TOP[ctx.level], true);
     return {
       prompt: "Complète avec le bon nombre.",
       text: `${a} − ___ = ${a - b}`,
@@ -259,24 +276,46 @@ const GOODS: readonly string[] = ["une mangue", "un pain", "un cahier", "une ban
 
 const coinPhrase = (value: number, count: number) => `${count} ${count > 1 ? "pièces" : "pièce"} de ${value} F`;
 
+/** La tranche d'une somme de pièces : jusqu'à 35 F, de 40 à 60 F, 65 F et plus (celle de `moneyBand`, dans `heureCp.ts`). */
+const sumBand = (total: number): 0 | 1 | 2 => (total <= 35 ? 0 : total <= 60 ? 1 : 2);
+
+/** Les sous-ensembles de `size` valeurs, dans l'ordre de la liste. */
+const subsetsOf = (values: readonly number[], size: number): number[][] =>
+  size === 0 ? [[]] : values.flatMap((value, index) => subsetsOf(values.slice(index + 1), size - 1).map((rest) => [value, ...rest]));
+
+/** Toutes les façons de compter des pièces à un niveau : deux sortes (trois aussi après le premier palier), une à trois pièces de chaque, de 15 F au plafond du niveau. */
+function coinCombos(level: GameLevel): { value: number; count: number }[][] {
+  const combos: { value: number; count: number }[][] = [];
+  for (const size of level === 1 ? [2] : [2, 3]) {
+    for (const values of subsetsOf(COIN_VALUES, size)) {
+      let lists: { value: number; count: number }[][] = [[]];
+      for (const value of values) lists = lists.flatMap((list) => [1, 2, 3].map((count) => [...list, { value, count }]));
+      for (const list of lists) {
+        const total = list.reduce((sum, part) => sum + part.value * part.count, 0);
+        if (total >= 15 && total <= MONEY_TOP[level]) combos.push(list);
+      }
+    }
+  }
+  return combos;
+}
+
 /** « Awa a 2 pièces de 25 F et 1 pièce de 10 F. Combien a-t-elle en tout ? » */
 export function makeCoinsTotal(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "monnaie-somme", "additionner des pièces", () => {
     const child = pickFresh(ctx, CHILDREN, (candidate) => `monnaie-somme:${candidate.name}`);
-    const top = MONEY_TOP[ctx.level];
     const totalOf = (list: { value: number; count: number }[]) => list.reduce((sum, part) => sum + part.value * part.count, 0);
-    let parts: { value: number; count: number }[] = [
-      { value: 25, count: 1 },
-      { value: 10, count: 1 },
-    ];
-    for (let attempt = 0; attempt < 200; attempt++) {
-      const kinds = shuffle(ctx.rng, COIN_VALUES).slice(0, ctx.level === 1 ? 2 : randomInt(ctx.rng, 2, 3));
-      const candidate = kinds.map((value) => ({ value, count: randomInt(ctx.rng, 1, 3) }));
-      if (totalOf(candidate) <= top && totalOf(candidate) >= 15) {
-        parts = candidate;
-        break;
-      }
-    }
+    // Deux sortes de pièces au premier palier, deux ou trois ensuite. La combinaison vient de la TRANCHE du palier (`sumBand` : jusqu'à 35 F, de 40 à 60 F,
+    // 65 F et plus) : deux paliers ne comptent donc jamais la même somme. Sans cela, « 2 pièces de 25 F et 1 pièce de 10 F » pouvait revenir d'un palier à l'autre.
+    const size = ctx.level === 1 ? 2 : randomInt(ctx.rng, 2, 3);
+    const combos = coinCombos(ctx.level).filter((combo) => combo.length === size);
+    const picked = pickPreferred(
+      ctx,
+      combos,
+      combos.filter((combo) => sumBand(totalOf(combo)) === levelGroup(ctx.level)),
+      (combo) => `somme:${combo.map((part) => `${part.value}x${part.count}`).join("+")}`,
+    );
+    // Les pièces se disent dans un ordre au hasard : la somme, elle, est celle du palier.
+    const parts = shuffle(ctx.rng, picked);
     const total = totalOf(parts);
     const listed = parts.map((part) => coinPhrase(part.value, part.count));
     const sentence = listed.length === 1 ? listed[0] : `${listed.slice(0, -1).join(", ")} et ${listed[listed.length - 1]}`;
