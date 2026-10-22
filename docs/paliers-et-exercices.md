@@ -2274,7 +2274,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 - **Le français du CE1, première moitié** (`paliers/games/ce1Francais.ts`, avec les aides de `ce1SciencesOutils.ts`) : trente-sept gabarits
   pour les cinq thématiques `fr-ce1-phrase` (la phrase, le verbe et le sujet), `fr-ce1-nom-adjectif`, `fr-ce1-present-passe`,
   `fr-ce1-imperatif-futur` et `fr-ce1-dictionnaire`, que le modèle n'écrit plus. Les homophones (`fr-ce1-homophones`) et la lecture
-  (`fr-ce1-lecture`) restent au modèle : ils demandent des textes à fabriquer et font un lot à part. Sur l'échantillon de CE1 lu le
+  (`fr-ce1-lecture`), qui demandent des textes à fabriquer, font le lot suivant (« Les homophones et la lecture du CE1 »). Sur l'échantillon de CE1 lu le
   21 octobre 2026, 17 exercices de français sur 42 étaient faux : « Fatou a mangé au yassa » (une phrase qui n'est pas du français), un mot
   « avant » donné à l'envers, « je irai », des ordres sans critère, des trous qui acceptent deux mots. Ici chaque exercice lit une ligne d'un
   tableau fermé, écrit à la main. Les noms des gabarits commencent par `ce1-fr-` ; les fonctions sont des `makeCe1Fr…`. Ces cinq fiches ont
@@ -2304,6 +2304,40 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     fabriqués (40 000 exercices), sans doublon dans un palier ; 0,0 % de questions revues d'un palier à l'autre.
   - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un glissé sur le nom et l'adjectif,
     un appariement sur le présent et le passé composé, un ordre sur le dictionnaire, une réponse courte sur l'impératif et le futur.
+- **Les homophones et la lecture du CE1** (`paliers/games/ce1Homophones.ts` et `ce1Lecture.ts`) : vingt gabarits pour les deux dernières
+  thématiques de français du CE1, `fr-ce1-homophones` (a/à, et/est, on/ont) et `fr-ce1-lecture` (Lire et comprendre), que le modèle n'écrit plus. Avec
+  les cinq du lot précédent, les sept thématiques de français du CE1 sont des gabarits. Les noms commencent par `ce1-fr-homo-` et `ce1-fr-lec-` ; les
+  fonctions sont des `makeCe1FrHomo…` et des `makeCe1FrRead…`. Ces fiches ont quatre paliers, `quarter` partage chaque tableau en quatre parts.
+  - **Les homophones : un seul des mots proposés va.** Chaque phrase est écrite à la main, avec un trou et trois choix : « a » quand « avait » va,
+    « à » quand il ne va pas ; « est » quand « était » va, « et » sinon ; « ont » quand « avaient » va, « on » quand « il » va. Le troisième choix est un mot
+    qui ne va jamais avec ce sujet (« as », « es », « en »). L'astuce de la fiche a son gabarit (« Quel mot peut remplacer a ? »), l'accord du verbe aussi
+    (un sujet, « tu », plusieurs sujets : trois formes écrites une à une), et le signe de fin se choisit sur ce que la phrase FAIT, dit dans l'énoncé
+    (« qui pose une question »). Les choix du signe sont les NOMS « point », « point d'interrogation » et « point d'exclamation » : le contrôleur efface la
+    ponctuation, il ne verrait aucun rapport entre la réponse « ? » et ses options.
+  - **Les pièges des homophones.** (1) Une réponse à écrire ne porte jamais sur a ou à : le contrôle d'une réponse efface l'accent, « a » et « à » y
+    seraient la même réponse. (2) Un appariement ne réunit jamais « a » et « à » (le contrôleur y voit un côté droit répété) ; seize trios sur vingt. (3) Une
+    phrase d'appariement n'admet qu'UN des six mots, même absurde : « Awa est un cahier » est juste en français. (4) Un indice n'écrit pas « à la place du
+    trou » si une phrase contient « place » : tous les indices disent « Remplace le trou par … ».
+  - **La lecture : le texte est dans l'énoncé, et la réponse s'y lit.** L'énoncé est le texte (trois à quatre phrases), un retour à la ligne, la question. Le
+    plafond du contrôleur au CE1 est de quatre-vingts mots, une apostrophe droite au plus reste la règle (les textes n'en ont presque pas). Seize histoires sont
+    ÉCRITES à partir de sept champs (le prénom, son genre, le moment, le verbe d'aller, le lieu, l'action, la fin) : « Le matin, Awa va au marché. Elle achète des
+    mangues. Puis, elle rentre à la maison. » Les quatre questions (qui, quoi, où, quand) se lisent dans le même enregistrement, et un palier les pose sur
+    quatre histoires différentes (une clé partagée). Les mauvais choix sont pris dans les autres histoires, MOINS ce que le texte écrit déjà, puis les
+    plus proches de la bonne réponse en longueur : une bonne réponse deux fois plus longue que les autres se devine.
+  - **Les autres textes.** Onze animaux au catalogue d'images, chacun avec trois indices qui ne vont qu'à lui (« Il a des plumes » irait à la poule et à l'oiseau :
+    l'oiseau n'y est pas) ; douze textes à ranger sous Vrai ou Faux, dont chaque phrase fausse CONTREDIT le texte ; six recettes dont l'ordre est écrit
+    par « D'abord, Ensuite, Enfin » et six règles de jeu dont chaque réponse est écrite dans le texte ; douze histoires à remettre dans l'ordre avec leurs mots d'ordre (« Le matin, À midi, L'après-midi, Le soir ») ; trios de
+    prénoms et d'actions à relier. Les choix d'une règle de jeu ne sont jamais « article + nom » (« des cases », « le loup ») : `templatePictures.test.ts` y verrait
+    au CI une tuile sans image ; ils commencent par un verbe ou un pronom (« on dessine des cases »).
+  - **HORS FICHE, À FAIRE RELIRE** : les phrases de la vie courante (les prénoms, le marché, la pêche, le puits, le champ), les phrases sur la vie des
+    onze animaux, les recettes (riz, jus de bissap, omelette) et les jeux (ballon, corde, cache-cache, marelle, loup, statues), et la façon de dire le signe de
+    fin (« une phrase qui crie la joie »).
+  - **Mesuré** : 79 tests (`ce1HomophonesTemplates.test.ts` 38, `ce1LectureTemplates.test.ts` 41), dont une vérification par gabarit contre des tables et des règles
+    écrites à part (les phrases justes et leur mot, les trois formes de chaque verbe, les prénoms de fille, les indices exclusifs de chaque animal, les étapes de
+    chaque recette) ; 47 pannes provoquées dans le code toutes vues ; le contrôleur ne signale aucun défaut sur 4 000 paliers fabriqués (40 000 exercices), sans
+    doublon dans un palier ; 0,0 % de questions revues d'un palier à l'autre.
+  - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un trou, un QCM, un appariement, un glissé et une
+    réponse courte sur les homophones ; un QCM, un ordre, un appariement et un glissé sur la lecture.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
