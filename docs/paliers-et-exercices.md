@@ -1852,8 +1852,16 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     au dernier), si bien que deux paliers ne relient jamais les mêmes paires. `adjectif-ordre` prend un nom du palier (`spreadForLevel` : ballon, livre et poule, puis cartable, chat et
     vache, puis robe, chien et mouton) : chaque nom n'a qu'un palier, donc la même phrase ne revient jamais. Mesuré sur 200 graines : `calc-ordre` reprenait sa suite à chaque graine,
     `adjectif-ordre` 3 fois, `contraire-relier` 2 fois et `heure-relier` 1 fois ; plus aucune reprise. Les tuiles du premier palier de `calc-ordre` ne reprennent aucun mot des
-    indices (« Pense à ce qu'on fait en premier » interdisait « J'écris le premier nombre »). Il reste de petites reprises dues au hasard dans `ma-cp-retenue`, qui tire ses
-    nombres dans des plages qui se recouvrent d'un palier à l'autre : sur 1 000 graines, `calc-enlever` 8, `calc-ajouter` 2, `calc-trou` 2, `monnaie-somme` 2 et `calc-retenue` 1.
+    indices (« Pense à ce qu'on fait en premier » interdisait « J'écris le premier nombre »). Il restait de petites reprises dues au hasard dans `ma-cp-retenue` : voir la puce
+    suivante.
+  - **Les calculs et les sommes tirés au hasard de `ma-cp-retenue` répartis par palier** (`calculCp.ts`), derniers restes de la mesure après la PR #125. `calc-ajouter`, `calc-enlever`,
+    `calc-retenue`, `calc-trou` et `calc-relier` tirent leurs nombres dans des plages qui se recouvrent d'un palier à l'autre : sur 1 000 graines, `calc-enlever` reprenait la même
+    question 8 fois, `calc-ajouter` 2, `calc-trou` 2 et `calc-retenue` 1. `carryPair` et `borrowPair` ont maintenant un paramètre `own` : avec lui, le premier nombre `a` vérifie
+    `a % 3 = groupe du palier` (`ownFirst` : 0, 1 puis 2 aux niveaux 1, 2 et 4), si bien que deux paliers ne tirent jamais le même premier nombre, donc jamais la même opération. Rien
+    ne se voit pour l'enfant. Les appels de `problemesCp.ts` ne passent pas `own` et ne changent pas. `monnaie-somme` choisit sa combinaison de pièces parmi toutes celles du niveau
+    (`coinCombos`), de préférence dans la tranche de somme du palier (`sumBand` : de 15 à 35 F, de 40 à 60 F, de 65 à 100 F, la même que `moneyBand` dans `heureCp.ts`), et dit les
+    pièces dans un ordre au hasard : deux paliers ne comptent jamais la même somme. Mesuré sur 1 000 graines : `ma-cp-retenue`, `ma-cp-problemes` et `ma-cp-heure-monnaie` ne
+    reprennent plus aucune question (15 reprises dans `ma-cp-retenue` avant).
   - **Aucun nombre n'est écrit au-delà de cent**, ni dans l'énoncé ni dans un choix. Une étiquette qui se glisse ou se relie est un mot seul ou un
     groupe de mots, jamais « article + nom » (au CI, il demanderait une image du catalogue). Aucun indice n'écrit un chiffre.
   - `convex/__tests__/cpMathsMeasuresTemplates.test.ts` RECALCULE chaque réponse depuis l'énoncé avec ses propres tables (les unités par mot-clé, les
