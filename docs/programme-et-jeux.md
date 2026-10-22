@@ -330,7 +330,7 @@ arrivent plus tard.
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
 🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
-`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie, les sciences, l'instruction civique et l'éducation artistique (vingt-trois thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie, les sciences, l'instruction civique, l'éducation artistique et l'anglais (vingt-neuf thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle ; la liste de celles du CI est dans
 `docs/paliers-et-exercices.md`.
 
 ### Français
@@ -432,7 +432,7 @@ arrivent plus tard.
 | --- | --- |
 | CI | Hello! Goodbye! · Les couleurs en anglais · Compter jusqu'à 10 en anglais · Les animaux en anglais · Les fruits en anglais |
 | CP | Ma famille en anglais 🧩 · Mon corps en anglais 🧩 · Dans ma classe en anglais 🧩 · Les nombres de 11 à 20 en anglais 🧩 · Manger et boire en anglais 🧩 |
-| CE1 | Se présenter en anglais · Les jours de la semaine · A ou an ? · Les vêtements en anglais · J'aime, je n'aime pas · Les ordres de la classe |
+| CE1 | Se présenter en anglais 🧩 · Les jours de la semaine 🧩 · A ou an ? 🧩 · Les vêtements en anglais 🧩 · J'aime, je n'aime pas 🧩 · Les ordres de la classe 🧩 |
 | CE2 | Être en anglais : am, is, are · J'ai : have got, has got · Je peux, je sais : can · La maison et où c'est · Les mois de l'année · Le temps qu'il fait · L'heure en anglais |
 | CM1 | Ce que je fais : le présent · He, she, it : le s du verbe · Ma journée en anglais · En ce moment : le -ing · Les métiers en anglais · Au marché en anglais · Décrire une personne ou un objet |
 | CM2 | Hier : was et were · Raconter hier : verbes en -ed · Raconter hier : verbes irréguliers · Demain : être going to · Comparer : plus grand, le plus grand · Demander son chemin · Poser des questions · Lire un petit texte |
