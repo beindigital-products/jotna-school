@@ -211,24 +211,63 @@ export const GEOGRAPHIE: ProgrammeSubject = {
         name: "Lire une carte",
         description:
           "Géographie, étape 2, paliers 3-4 : le plan et la carte, la légende, l'orientation (le nord en haut de la carte), l'échelle expliquée simplement.",
+        games: [
+          { kind: "ce2-orientation", count: 2 },
+          { kind: "ce2-carte-direction", count: 1 },
+          { kind: "ce2-carte-voisin", count: 1 },
+          { kind: "ce2-carte-legende", count: 1 },
+          { kind: "ce2-echelle", count: 2 },
+          { kind: "ce2-carte-trou", count: 1 },
+          { kind: "ce2-plan-carte-glisser", count: 1 },
+          { kind: "ce2-boussole-ordre", count: 1 },
+        ],
       },
       {
         key: "ge-ce2-regions",
         name: "Ma région et les régions du Sénégal",
         description:
           "Géographie, étape 2, paliers 3-4 : la monographie régionale. Les 14 régions du Sénégal et leurs chefs-lieux, qui portent le même nom (Dakar, Thiès, Diourbel, Fatick, Kaolack, Kaffrine, Kolda, Kédougou, Louga, Matam, Saint-Louis, Sédhiou, Tambacounda, Ziguinchor) ; les caractéristiques physiques et humaines de sa région.",
+        games: [
+          { kind: "ce2-chef-lieu", count: 1 },
+          { kind: "ce2-region-compte", count: 1 },
+          { kind: "ce2-region-plus", count: 3 },
+          { kind: "ce2-region-ordre", count: 1 },
+          { kind: "ce2-region-glisser", count: 1 },
+          { kind: "ce2-region-relier", count: 1 },
+          { kind: "ce2-region-trou", count: 1 },
+          { kind: "ce2-region-ecrire", count: 1 },
+        ],
       },
       {
         key: "ge-ce2-activites",
         name: "Les activités des hommes",
         description:
           "Géographie, étape 2, paliers 3-4 : l'agriculture (arachide, mil, riz, maraîchage dans les Niayes), l'élevage (bœufs, moutons, chèvres), la pêche (les pirogues de Kayar, Joal, Mbour), le tourisme (Saly, le Cap Skirring, Saint-Louis).",
+        games: [
+          { kind: "ce2-activite-qcm", count: 2 },
+          { kind: "ce2-produit-qcm", count: 1 },
+          { kind: "ce2-lieu-relier", count: 1 },
+          { kind: "ce2-activite-glisser", count: 2 },
+          { kind: "ce2-activite-trou", count: 2 },
+          { kind: "ce2-etapes-ordre", count: 1 },
+          { kind: "ce2-activite-ecrire", count: 1 },
+        ],
       },
       {
         key: "ge-ce2-habitat",
         name: "L'habitat et les déplacements",
         description:
           "Géographie, étape 2, paliers 3-4 : l'habitat rural et urbain, ses matériaux ; les voies et moyens de communication (routes, chemin de fer, ports, aéroports) ; les mouvements de population (exode rural, départs pendant la saison sèche).",
+        games: [
+          { kind: "ce2-habitat-glisser", count: 1 },
+          { kind: "ce2-habitat-qcm", count: 1 },
+          { kind: "ce2-voie-relier", count: 1 },
+          { kind: "ce2-moyen-glisser", count: 1 },
+          { kind: "ce2-exode-qcm", count: 2 },
+          { kind: "ce2-materiau-trou", count: 2 },
+          { kind: "ce2-vitesse-ordre", count: 1 },
+          { kind: "ce2-moyen-ecrire", count: 1 },
+        ],
       },
     ],
     CM1: [
