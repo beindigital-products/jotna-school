@@ -330,7 +330,7 @@ arrivent plus tard.
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
 🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
-`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie et les sciences (quatorze thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie, les sciences, l'instruction civique et l'éducation artistique (vingt-trois thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle ; la liste de celles du CI est dans
 `docs/paliers-et-exercices.md`.
 
 ### Français
@@ -406,7 +406,7 @@ arrivent plus tard.
 | --- | --- |
 | CI | Bonjour, merci, pardon · À l'école chaque jour · On s'entraide · Traverser la rue |
 | CP | Le règlement de la classe 🧩 · Mes responsabilités en classe 🧩 · Filles et garçons, tous égaux 🧩 · La sécurité sur la route 🧩 · Régler un conflit sans se battre 🧩 |
-| CE1 | Les symboles de la Nation · Le civisme · Respecter les autorités · Nos différences, notre richesse |
+| CE1 | Les symboles de la Nation 🧩 · Le civisme 🧩 · Respecter les autorités 🧩 · Nos différences, notre richesse 🧩 |
 | CE2 | Mes droits et mes devoirs · Vivre en paix · Les bonnes valeurs · La vie en communauté |
 | CM1 | Prévenir les conflits par le dialogue · La coopérative et le gouvernement scolaire · La commune et l'État · Les organisations de mon quartier |
 | CM2 | La République du Sénégal · Les institutions de la République · Les organisations africaines · Les organisations internationales |
@@ -419,7 +419,7 @@ arrivent plus tard.
 | --- | --- |
 | CI | Les couleurs 🎮 (4 × reconnaître une couleur, 2 × frise de couleurs) · Les formes 🎮 (3 × frise de formes, 3 × reproduire un dessin) · Frises et guirlandes 🎮 (3 × frise de couleurs, 3 × frise d'images, 2 × reproduire un dessin) · Grave ou aigu ? 🎮 (7 × grave ou aigu, 3 × la mélodie monte ou descend) · Long ou court, fort ou doux 🎮 (5 × long ou court, 5 × fort ou doux) · Mimes et émotions |
 | CP | Mélanger les couleurs 🎮 🧩 (3 × mélanger deux couleurs, 3 × retrouver un mélange, 1 × reconnaître une couleur, 2 × le matériel du peintre, 1 × relier un outil à son travail) · Les traits et les lignes 🎮 🧩 (4 × reproduire un dessin, 2 × frise de formes, 4 × lignes et traits) · Décorer avec des motifs 🎮 🧩 (2 × frise d'images, 2 × frise de formes, 2 × dessin de mémoire, 1 × reproduire un dessin, 3 × modeler, peindre, dessiner) · Comptines et rythmes 🎮 🧩 (1 × compter les coups, 3 × rythme écrit à compléter, 1 × grave ou aigu, 5 × la voix) · Jouer un rôle 🧩 |
-| CE1 | Dessiner et reproduire 🎮 (4 × reproduire un dessin, 2 × dessin de mémoire) · Plier, découper, coller 🎮 (4 × symétrie) · Les instruments du Sénégal · Écouter et comparer les sons 🎮 (3 × grave ou aigu, 3 × long ou court, 2 × fort ou doux) · Mimer les sentiments |
+| CE1 | Dessiner et reproduire 🎮🧩 (4 × reproduire un dessin, 2 × dessin de mémoire, 4 gabarits) · Plier, découper, coller 🎮🧩 (4 × symétrie, 6 gabarits) · Les instruments du Sénégal 🧩 · Écouter et comparer les sons 🎮🧩 (3 × grave ou aigu, 3 × long ou court, 2 × fort ou doux, 2 gabarits) · Mimer les sentiments 🧩 |
 | CE2 | Le coloriage magique 🎮 (5 × coloriage magique, 3 × couleurs chaudes et froides) · Reproduire un modèle 🎮 (3 × reproduire un dessin, 2 × dessin de mémoire, 2 × symétrie) · Les mélodies 🎮 (4 × la mélodie monte ou descend, 4 × pareil ou différent) · L'hymne national et les chants 🎮 (2 × reconnaître un rythme) · Jouer une scène |
 | CM1 | Le dessin de mémoire 🎮 (6 × dessin de mémoire, 1 × reproduire un dessin) · Frises et motifs 🎮 (2 × frise de formes, 2 × frise de couleurs, 1 × frise d'images, 2 × reproduire un dessin) · Percussions et cordes 🎮 (2 × compter les coups, 2 × reconnaître un rythme) · Les rythmes 🎮 (4 × reconnaître un rythme, 3 × rythme écrit à compléter, 1 × compter les coups) · Jouer la joie et la tristesse |
 | CM2 | Rosaces et symétries 🎮 (5 × symétrie, 2 × coloriage magique) · Observer et illustrer 🎮 (2 × dessin de mémoire, 2 × reproduire un dessin) · Les instruments à vent 🎮 (2 × la mélodie monte ou descend, 2 × pareil ou différent) · Chanter et accompagner 🎮 (2 × fort ou doux, 2 × reconnaître un rythme, 2 × la mélodie monte ou descend) · La mise en scène |

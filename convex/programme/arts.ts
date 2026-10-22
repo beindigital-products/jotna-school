@@ -195,6 +195,11 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "pixel-copie", count: 4 },
           { kind: "pixel-memoire", count: 2 },
+          // Quatre gabarits (`ce1Arts.ts`) : le matériel du dessin, relier, ranger les gestes, une phrase à trou.
+          { kind: "ce1-dessin-materiel", count: 1 },
+          { kind: "ce1-dessin-relier", count: 1 },
+          { kind: "ce1-dessin-ordre", count: 1 },
+          { kind: "ce1-dessin-trou", count: 1 },
         ],
       },
       {
@@ -202,13 +207,30 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         name: "Plier, découper, coller",
         description:
           "Arts plastiques, étape 2, paliers 1-2 : découpage, collage, pliage, modelage d'objets de la vie courante, tableaux et maquettes ; les étapes dans l'ordre, le matériel (ciseaux, colle, papier, argile) ; un pliage en deux fait apparaître une symétrie.",
-        games: [{ kind: "pixel-symetrie", count: 4 }],
+        games: [
+          { kind: "pixel-symetrie", count: 4 },
+          // Six gabarits (`ce1Arts.ts`) : le matériel, relier, ranger les gestes (deux fois), une phrase à trou, la symétrie d'un pliage.
+          { kind: "ce1-pli-materiel", count: 1 },
+          { kind: "ce1-pli-relier", count: 1 },
+          { kind: "ce1-pli-ordre", count: 2 },
+          { kind: "ce1-pli-trou", count: 1 },
+          { kind: "ce1-pli-symetrie", count: 1 },
+        ],
       },
       {
         key: "ar-ce1-instruments",
         name: "Les instruments du Sénégal",
         description:
           "Éducation musicale, étape 2, paliers 1-2 : les instruments locaux et la façon d'en jouer : la kora (on pince ses cordes), le balafon (on frappe ses lames de bois), le tama (petit tambour qu'on serre sous le bras), le sabar et le djembé (tambours qu'on frappe), le riti (vièle à une corde jouée avec un archet), les maracas (on les secoue), la flûte (on souffle). Les chants du folklore local.",
+        // Dix gabarits (`ce1Arts.ts`) : comment on joue d'un instrument et quel instrument se joue comment (deux fois chacun), ranger ce qu'on frappe, relier, une phrase à trou (deux fois), un mot à écrire (deux fois).
+        games: [
+          { kind: "ce1-instru-geste", count: 2 },
+          { kind: "ce1-instru-quel", count: 2 },
+          { kind: "ce1-instru-glisser", count: 1 },
+          { kind: "ce1-instru-relier", count: 1 },
+          { kind: "ce1-instru-trou", count: 2 },
+          { kind: "ce1-instru-ecrire", count: 2 },
+        ],
       },
       {
         key: "ar-ce1-sons",
@@ -219,6 +241,9 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "ecoute-hauteur", count: 3 },
           { kind: "ecoute-duree", count: 3 },
           { kind: "ecoute-intensite", count: 2 },
+          // Deux gabarits (`ce1Arts.ts`) : relier un son à ce qui le décrit, ranger des sons forts et faibles.
+          { kind: "ce1-son-relier", count: 1 },
+          { kind: "ce1-son-glisser", count: 1 },
         ],
       },
       {
@@ -226,6 +251,15 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         name: "Mimer les sentiments",
         description:
           "Arts scéniques, étape 2, paliers 1-2 : mimes d'attitudes et de sentiments (la joie, la peur, la colère, la fatigue, la honte), jeux de rôles, déguisements ; ce que disent le visage, les mains, la façon de marcher.",
+        // Dix gabarits (`ce1Arts.ts`) : le sentiment d'une posture (trois fois), le geste d'un sentiment (deux fois), ranger les gestes de deux sentiments, relier, une phrase à trou (deux fois), un mot à écrire.
+        games: [
+          { kind: "ce1-mime-sentiment", count: 3 },
+          { kind: "ce1-mime-geste", count: 2 },
+          { kind: "ce1-mime-glisser", count: 1 },
+          { kind: "ce1-mime-relier", count: 1 },
+          { kind: "ce1-mime-trou", count: 2 },
+          { kind: "ce1-mime-ecrire", count: 1 },
+        ],
       },
     ],
     CE2: [

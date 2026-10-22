@@ -2140,6 +2140,52 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     quatre paliers, contre le contrôleur. Vingt-six pannes provoquées dans le code (une somme au lieu d'une différence, un sens de tour inversé,
     juillet posé en saison des pluies, gauche et droite échangées sur le plan…) sont toutes attrapées. Sur 8 000 paliers fabriqués, le
     contrôleur ne signale aucun défaut.
+- **L'instruction civique et les arts du CE1** (`paliers/games/ce1Civique.ts` et `ce1Arts.ts`, avec les aides de `ce1SciencesOutils.ts`) :
+  cinquante et un gabarits pour neuf thématiques. Civique (28) : `ci-ce1-nation`, `ci-ce1-civisme`, `ci-ce1-autorites`, `ci-ce1-diversite`,
+  tout en gabarits. Arts (23) : `ar-ce1-dessin`, `ar-ce1-pliage`, `ar-ce1-sons`, `ar-ce1-instruments`, `ar-ce1-mimes`. Sur l'échantillon de CE1
+  lu le 21 octobre 2026, 20 exercices sur 54 étaient faux dans ces matières : un ordre « d'importance » du drapeau, de la devise et de l'hymne,
+  « Wolof : langue » et « Peul : ethnie » dans une même question (le wolof est les deux), un visage triste donné pour la peur, un triangle
+  moins aigu qu'une flûte, des questions ouvertes sans réponse unique. Chaque exercice lit maintenant une ligne d'un tableau fermé, écrit à la
+  main, dont la bonne réponse est dans la ligne. Les noms de gabarits commencent par `ce1-` (`ce1-symbole-*`, `ce1-civisme-*`,
+  `ce1-autorite-*`, `ce1-diff-*`, `ce1-dessin-*`, `ce1-pli-*`, `ce1-son-*`, `ce1-instru-*`, `ce1-mime-*`) ; les fonctions sont des `makeCe1…`.
+  - **Les arts gardent leurs jeux.** Le dessin garde ses 4 `pixel-copie` et ses 2 `pixel-memoire`, le pliage ses 4 `pixel-symetrie`, les sons
+    leurs 8 écoutes (`ecoute-hauteur` 3, `ecoute-duree` 3, `ecoute-intensite` 2) : les gabarits prennent les places restantes du palier
+    (4 sur 10 au dessin, 6 au pliage, 2 aux sons). Les trois autres arts et le civique sont entièrement faits par le code. Les sons n'ont donc
+    que trois sortes d'exercices par palier, pas quatre.
+  - **Ce que les tables écrivent, et rien d'autre.** Nation : le drapeau vert, or et rouge avec l'étoile verte à cinq branches, la devise « Un
+    Peuple – Un But – Une Foi », l'hymne « Le Lion rouge » de Léopold Sédar Senghor, le lion et le baobab des armoiries. Aucune parole de l'hymne
+    que son titre n'est écrite. La devise se range dans les deux sens (de la première à la dernière, en partant de la fin) ; les couleurs du
+    drapeau ne se rangent jamais « de gauche à droite », puisque l'enfant ne voit pas le drapeau (le contrôleur refuse cet ordre sans scène).
+    Civisme : garder propres l'école, la rue et les arbres, ne pas gaspiller l'eau ni l'électricité. Autorités : maire, chef de village,
+    directeur, policier, gendarme, sapeur-pompier. La fiche ne dit pas ce qui distingue le policier du gendarme : aucun gabarit ne le demande, et
+    chacun n'est jamais un mauvais choix de l'autre. Diversité : des gestes de respect et de moquerie, et le cousinage à plaisanterie. Aucune
+    langue, ethnie ni religion n'est rangée dans un groupe, parce que ces classements se discutent. Instruments : la kora se pince, le balafon et
+    les tambours se frappent, la flûte se souffle, les maracas se secouent, le riti a une corde et un archet ; le tama se serre sous le bras et
+    n'est jamais rangé parmi ce qu'on frappe, la fiche ne le disant pas. Mimes : quinze postures et des gestes pour cinq sentiments
+    (joie, peur, colère, fatigue, honte) ; la honte n'a jamais la peur ni la fatigue pour mauvais choix, et la peur, la colère et la fatigue
+    n'ont jamais la honte, parce qu'un enfant peut les confondre.
+  - **HORS FICHE, À FAIRE RELIRE** : que Senghor est un poète et le premier président (un indice), que le drapeau se hisse sur un mât, « le
+    maire travaille à la mairie », « le directeur est responsable de tous les élèves », les suites de gestes en cas de feu, de blessé ou
+    d'enfant perdu, les mots du matériel de dessin et de pliage (crayon, gomme, règle, ciseaux, colle, argile), les sons forts et faibles
+    (sirène, tonnerre, klaxon, murmure, goutte d'eau…), « trembler » rangé avec la peur, et les quinze postures des mimes.
+  - **Quatre parts qui couvrent tout le tableau**, comme pour les sciences (`quarter` et `partOf`). Les tableaux lus plusieurs fois par palier
+    sont rangés pour que chaque part de niveau ait des réponses différentes : `ce1-autorite-qui` (12 lignes, 3 par niveau) et `ce1-instru-geste`
+    (8 lignes, 2 par niveau) ont été réordonnés après qu'un test eut montré « Maire » posé deux fois dans un palier. Mesuré sur 250 graines par
+    thématique : 0,0 % de questions revues d'un palier à l'autre pour tous les gabarits neufs.
+  - **Pièges rencontrés.** (1) La devise se range avec des noms seuls (« Peuple », « But », « Foi ») : « Un Peuple » est refusé par
+    `templatePictures.test.ts`, qui lit « article + nom » comme une chose sans image. Pour la même raison, la symétrie d'un pliage est
+    « Symétrie », pas « Une symétrie ». (2) Un indice ne répète aucun mot de quatre lettres ou plus de la réponse acceptée : « Son nom le dit :
+    vièle à une corde » écrivait « corde » pour le nombre de cordes du riti. (3) « Je tape sur l'interrupteur » pouvait se lire comme un moyen
+    d'éteindre : devenu « Je joue avec l'interrupteur ». (4) Les jeux déjà là se répètent : `pixel-symetrie`, `pixel-copie` et les trois
+    écoutes reposent la même question à l'intérieur d'un palier et d'un palier à l'autre (jusqu'à 50 % pour `pixel-symetrie` et `ecoute-duree`).
+    Ce défaut ne vient pas du lot et n'est pas corrigé ici. `pixel-copie` écrit aussi « Le dessin de le palmier ».
+  - **Mesuré** : 126 tests (`convex/__tests__/ce1CiviqueArtsTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à
+    part, 4 niveaux et 60 graines ; 30 pannes provoquées dans le code sur 31 sont vues (le milieu du drapeau bleu, le gendarme dirigeant un lieu,
+    le tama rangé avec ce qu'on frappe, la peur parmi les mauvais choix de la honte, le chuchotement fort…). La 31e retire le garde « préférer une
+    réponse pas encore servie » de `pickLine` : elle passe parce que les tableaux sont déjà rangés ainsi, le garde reste une seconde défense.
+    Le contrôleur ne signale aucun défaut sur 9 000 paliers fabriqués (90 000 exercices) ; les paliers des neuf thématiques ont été lus à la
+    main.
+  - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices ; les neuf thématiques les ont.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
