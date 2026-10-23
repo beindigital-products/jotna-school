@@ -327,7 +327,7 @@ const PAIRS: [string, string][] = [
   ["Blaise Diagne", "Premier député africain"], ["Léopold Sédar Senghor", "Premier président du Sénégal"], ["Lamine Guèye", "Loi de 1946 sur la citoyenneté"],
   ["1914", "Diagne devient député"], ["1959", "Naissance de la Fédération du Mali"], ["1960", "Indépendance du Sénégal"],
   ["Fédération du Mali", "Union avec le Soudan français"], ["4 avril", "Fête de l'indépendance"], ["Assemblée française", "Lieu où siège Diagne"],
-  ["Blaise Diagne", "Député en 1914"], ["Lamine Guèye", "Député de la loi de 1946"], ["Léopold Sédar Senghor", "Président en 1960"],
+  ["Blaise Diagne", "Député en 1914"], ["Lamine Guèye", "Auteur de la loi de 1946"], ["Léopold Sédar Senghor", "Président en 1960"],
   ["1914", "Élection de Blaise Diagne"], ["1946", "Loi Lamine Guèye"], ["1959", "Naissance de la Fédération du Mali"], ["1960", "Fête de l'indépendance"],
   ["Fédération du Mali", "Union de deux territoires"], ["Loi de 1946", "Citoyenneté pour les habitants des colonies"], ["4 avril", "Fête nationale"],
   // Les progrès des sciences et des techniques
@@ -353,7 +353,7 @@ const PAIRS: [string, string][] = [
   // La population du Sénégal
   ["Recensement", "Compter les habitants"], ["Densité", "Habitants par kilomètre carré"], ["Pyramide des âges", "Habitants de chaque âge"],
   ["Dakar", "Région la plus peuplée"], ["Ferlo", "Zone peu peuplée"], ["Wolof", "Langue la plus parlée"],
-  ["Français", "Langue officielle"], ["Diola", "Langue nationale de Casamance"],
+  ["Français", "Langue officielle"], ["Diola", "Langue parlée en Casamance"],
   ["Population jeune", "Beaucoup d'enfants"], ["Répartition inégale", "Des lieux très peuplés et d'autres presque vides"], ["Diversité", "Plusieurs groupes et langues"],
   ["Diola", "Casamance"], ["Pulaar", "Fleuve"], ["Sérère", "Sine et Saloum"],
   ["18 millions", "Habitants du Sénégal"], ["2023", "Année du recensement"], ["Dakar", "Région la plus dense"],
