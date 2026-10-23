@@ -74,6 +74,8 @@ export const SCENARIOS_BY_LEVEL: Record<GameLevel, readonly ScenarioKey[]> = {
   4: ["achat", "paquets", "partage", "rangement", "route", "billes3", "roues"],
 };
 
+/** « Combien de billes », « Combien d'images » : « de » s'élide devant une voyelle ou un h muet (aucun nom des tableaux n'a de h aspiré). */
+const combienDe = (noun: string): string => (/^[aeiouyàâéèêëîïôûùœh]/iu.test(noun) ? `Combien d'${noun}` : `Combien de ${noun}`);
 const pickChild = (ctx: GameContext): Child => pickFresh(ctx, CHILDREN, (candidate) => `ce2-pb:enfant:${candidate.name}`);
 
 const ageExtra = (ctx: GameContext, child: Child) => {
@@ -157,7 +159,7 @@ function drawBundles(ctx: GameContext): Problem {
   const n = rnd(ctx, BUNDLE_COUNT[ctx.level]);
   const m = rnd(ctx, BUNDLE_SIZE[ctx.level]);
   const x = rnd(ctx, BUNDLE_LOOSE[ctx.level]);
-  const question = `Combien de ${thing} en tout ?`;
+  const question = `${combienDe(thing)} en tout ?`;
   const value = n * m + x;
   return {
     scenario: "paquets",
@@ -173,7 +175,7 @@ function drawBundles(ctx: GameContext): Problem {
       [`${n} × ${m} × ${x}`, n * m * x],
     ]),
     steps: [
-      { question: `Combien de ${thing} y a-t-il dans les ${container.many} ?`, text: `Calcule les ${thing} des ${container.many}`, value: n * m },
+      { question: `${combienDe(thing)} y a-t-il dans les ${container.many} ?`, text: `Calcule les ${thing} des ${container.many}`, value: n * m },
       { question, text: `Ajoute les ${thing} à côté`, value },
     ],
     useful: [`${n} ${container.many}`, `${m} ${thing} par ${container.one}`, `${x} ${thing} à côté`],
@@ -207,7 +209,7 @@ function drawMarbles(ctx: GameContext): Problem {
       [`${a} + ${b} − ${c}`, a + b - c],
     ]),
     steps: [
-      { question: `Combien de ${thing} reste-t-il après la perte ?`, text: "Calcule ce qui reste après la perte", value: a - b },
+      { question: `${combienDe(thing)} reste-t-il après la perte ?`, text: "Calcule ce qui reste après la perte", value: a - b },
       { question, text: "Ajoute ce qui est gagné", value },
     ],
     useful: [`${a} ${thing} au début`, `${b} ${thing} en moins`, `${c} ${thing} en plus`],
@@ -241,8 +243,8 @@ function drawMarblesThree(ctx: GameContext): Problem {
       [`${a} − ${b} + ${c} + ${d}`, a - b + c + d],
     ]),
     steps: [
-      { question: `Combien de ${thing} reste-t-il après la perte ?`, text: "Calcule ce qui reste après la perte", value: a - b },
-      { question: `Combien de ${thing} y a-t-il après le gain ?`, text: "Ajoute ce qui est gagné", value: a - b + c },
+      { question: `${combienDe(thing)} reste-t-il après la perte ?`, text: "Calcule ce qui reste après la perte", value: a - b },
+      { question: `${combienDe(thing)} y a-t-il après le gain ?`, text: "Ajoute ce qui est gagné", value: a - b + c },
       { question, text: "Retire ce qui est donné", value },
     ],
     useful: [`${a} ${thing} au début`, `${b} ${thing} en moins`, `${c} ${thing} en plus`, `${d} ${thing} donnés`],
@@ -276,7 +278,7 @@ function drawShare(ctx: GameContext): Problem {
       [`${total} × ${k} − ${e}`, total * k - e],
     ]),
     steps: [
-      { question: `Combien de ${thing} chacun reçoit-il ?`, text: `Partage les ${thing} entre les enfants`, value: q },
+      { question: `${combienDe(thing)} chacun reçoit-il ?`, text: `Partage les ${thing} entre les enfants`, value: q },
       { question, text: "Retire ce que chacun mange", value },
     ],
     useful: [`${total} ${thing}`, `${k} enfants`, `${e} ${thing} mangés`],
@@ -295,7 +297,7 @@ function drawStock(ctx: GameContext): Problem {
   const total = z * k;
   const a = randomInt(ctx.rng, Math.floor(total / 3), Math.floor((2 * total) / 3));
   const b = total - a;
-  const question = `Combien de ${stock.many} remplit-il ?`;
+  const question = `${combienDe(stock.many)} remplit-il ?`;
   return {
     scenario: "rangement",
     story: `Un vendeur a ${a} ${stock.thing}, puis en reçoit ${b}. Il les range par ${stock.many} de ${k}.`,
@@ -310,7 +312,7 @@ function drawStock(ctx: GameContext): Problem {
       [`(${a} + ${b}) × ${k}`, total * k],
     ]),
     steps: [
-      { question: `Combien de ${stock.thing} le vendeur a-t-il en tout ?`, text: `Additionne tous les ${stock.thing}`, value: total },
+      { question: `${combienDe(stock.thing)} le vendeur a-t-il en tout ?`, text: `Additionne tous les ${stock.thing}`, value: total },
       { question, text: `Partage le total en ${stock.many}`, value: z },
     ],
     useful: [`${a} ${stock.thing} au début`, `${b} ${stock.thing} en plus`, `${k} ${stock.thing} par ${stock.one}`],

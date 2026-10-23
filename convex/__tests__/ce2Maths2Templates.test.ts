@@ -42,6 +42,8 @@ const same = (a: readonly string[], b: readonly string[]) => JSON.stringify([...
 type Check = (exo: Exo) => string | null;
 const ok = (condition: boolean, message: string) => (condition ? null : message);
 const all = (...results: (string | null)[]) => results.find((result) => result !== null) ?? null;
+/** « de » s'élide devant une voyelle ou un h muet : « Combien de billes », « Combien d'images », « Combien d'oranges ». Écrit à part du gabarit. */
+const combienDe = (noun: string) => (/^[aeiouyàâéèêëîïôûùœh]/iu.test(noun) ? `Combien d'${noun}` : `Combien de ${noun}`);
 
 /** Un nombre écrit à l'école : les milliers séparés par une espace. */
 const fmt = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -985,9 +987,9 @@ function parseStory(prompt: string, level: GameLevel): Story | null {
       text: m[0],
       value: n * size + x,
       unit: m[4],
-      question: `Combien de ${m[4]} en tout ?`,
+      question: `${combienDe(m[4])} en tout ?`,
       goal: "le total",
-      first: `Combien de ${m[4]} y a-t-il dans les ${m[2]} ?`,
+      first: `${combienDe(m[4])} y a-t-il dans les ${m[2]} ?`,
       steps: [`Calcule les ${m[4]} des ${m[2]}`, `Ajoute les ${m[4]} à côté`],
       calcNumbers: [n, size, x],
       tiles: [`${n} ${m[2]}`, `${size} ${m[4]} par ${ONE_OF[m[2]]}`, `${x} ${m[4]} à côté`],
@@ -1007,7 +1009,7 @@ function parseStory(prompt: string, level: GameLevel): Story | null {
       unit: m[3],
       question: `Combien en a-t-${m[4].toLowerCase()} maintenant ?`,
       goal: "le nombre final",
-      first: `Combien de ${m[3]} reste-t-il après la perte ?`,
+      first: `${combienDe(m[3])} reste-t-il après la perte ?`,
       steps: [stepsLost, "Ajoute ce qui est gagné"],
       calcNumbers: [a, b, c],
       tiles: [`${a} ${m[3]} au début`, `${b} ${m[3]} en moins`, `${c} ${m[3]} en plus`],
@@ -1029,7 +1031,7 @@ function parseStory(prompt: string, level: GameLevel): Story | null {
       unit: m[3],
       question: `Combien en a-t-${m[4].toLowerCase()} maintenant ?`,
       goal: "le nombre final",
-      first: `Combien de ${m[3]} reste-t-il après la perte ?`,
+      first: `${combienDe(m[3])} reste-t-il après la perte ?`,
       steps: [stepsLost, "Ajoute ce qui est gagné", "Retire ce qui est donné"],
       calcNumbers: [a, b, c, d],
       tiles: [`${a} ${m[3]} au début`, `${b} ${m[3]} en moins`, `${c} ${m[3]} en plus`, `${d} ${m[3]} donnés`],
@@ -1051,7 +1053,7 @@ function parseStory(prompt: string, level: GameLevel): Story | null {
       unit: m[2],
       question: "Combien en reste-t-il à chacun ?",
       goal: "ce qui reste",
-      first: `Combien de ${m[2]} chacun reçoit-il ?`,
+      first: `${combienDe(m[2])} chacun reçoit-il ?`,
       steps: [`Partage les ${m[2]} entre les enfants`, "Retire ce que chacun mange"],
       calcNumbers: [total, k, e],
       tiles: [`${total} ${m[2]}`, `${k} enfants`, `${e} ${m[2]} mangés`],
@@ -1071,9 +1073,9 @@ function parseStory(prompt: string, level: GameLevel): Story | null {
       text: m[0],
       value: total / k,
       unit: m[4],
-      question: `Combien de ${m[4]} remplit-il ?`,
+      question: `${combienDe(m[4])} remplit-il ?`,
       goal: `les ${m[4]}`,
-      first: `Combien de ${m[2]} le vendeur a-t-il en tout ?`,
+      first: `${combienDe(m[2])} le vendeur a-t-il en tout ?`,
       steps: [`Additionne tous les ${m[2]}`, `Partage le total en ${m[4]}`],
       calcNumbers: [a, b, k],
       tiles: [`${a} ${m[2]} au début`, `${b} ${m[2]} en plus`, `${k} ${m[2]} par ${stock.one}`],
