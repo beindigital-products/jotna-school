@@ -2457,6 +2457,39 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     doublon dans un palier ; 0,0 % de questions revues d'un palier à l'autre.
   - **La vitrine** veut, sur une thématique tout en gabarits, un gabarit du type de chacun de ses exercices : un trou, un QCM, un appariement, un glissé et une
     réponse courte sur les homophones ; un QCM, un ordre, un appariement et un glissé sur la lecture.
+- **Les mathématiques du CE1, première moitié** (`paliers/games/nombresCe1.ts`, `calculCe1.ts` et `tablesCe1.ts`) : trente et un gabarits pour les
+  quatre thématiques `ma-ce1-nombres-1000`, `ma-ce1-nombres-10000`, `ma-ce1-add-sous` et `ma-ce1-multiplication`, que le modèle n'écrit plus. Les noms
+  commencent par `ce1-nb-`, `ce1-calc-` et `ce1-mult-` ; les fonctions sont des `makeCe1Nb…`, `makeCe1Calc…` et `makeCe1Mult…` (le préfixe `Nb` évite
+  la collision avec `makeCe1WordLinks`, déjà exporté : deux exports de même nom cassent `index.ts` sans conflit Git). La géométrie, les mesures, la monnaie
+  et les durées, et les problèmes (`ma-ce1-geometrie`, `-mesures`, `-monnaie-durees`, `-problemes`) restent au modèle : ils font le lot suivant. Ces fiches
+  ont quatre paliers.
+  - **Le calcul est FAIT par le code, jamais écrit.** Une seule option juste par construction, et les mauvais choix sont les erreurs d'enfant : une retenue
+    oubliée ou comptée deux fois, le petit chiffre enlevé du grand sans emprunter (523 − 168 donne alors 465), le chiffre qui a prêté qu'on ne réduit pas, un
+    facteur de trop dans une table, tout le produit des unités écrit sous les unités (14 × 4 donne alors 416), un zéro glissé au milieu (34 × 10 donne 304).
+  - **Les nombres** : `vocabulary` (« nombres-1000 » ou « nombres-10000 ») donne le plafond de la fiche, jamais dépassé : 300, 500, 800, 1 000 d'un palier à
+    l'autre, ou 3 000, 5 000, 8 000, 10 000. Les milliers s'écrivent avec une espace (« 2 345 », `formatNumber`) et une réponse à écrire en chiffres accepte
+    « 2345 » comme « 2 345 ». L'écriture en lettres (`wordsOf`, de 0 à 10 000) suit l'école : « deux cents » et « quatre-vingts » prennent un s quand rien ne suit,
+    « mille » jamais, aucun trait d'union au-delà de cent (« trois cent quarante-cinq »). Le test la compare, pour les 10 001 nombres, à une table écrite autrement,
+    et à quarante nombres difficiles. La suite de nombres du site (`suite-nombres`) plafonne à 1 000 au CE1 : les deux fiches ont leur propre suite, `ce1-nb-suite`,
+    et la vitrine du site n'annonce plus de « suite de nombres » pour les maths du CE1.
+  - **Le calcul** : une addition a TOUJOURS une retenue des unités, qui passe aussi aux dizaines au troisième palier (parfois) et au dernier (toujours) ; une
+    soustraction a TOUJOURS un emprunt aux unités, aux dizaines aussi au dernier palier, et jamais de zéro aux dizaines du premier nombre (l'emprunt se
+    propagerait). Le résultat ne dépasse jamais mille. Les prix sont des multiples de vingt-cinq FCFA, un total jamais au-dessus de mille FCFA. Le calcul mental
+    ajoute ou retranche dix ou cent, avec un nombre « au bord » (395 + 10) aux deux derniers paliers.
+  - **La multiplication** : les tables de 2 à 5, facteur de 2 à 10, vont avec les paliers (2 et 5, puis 3, puis 4, puis les quatre, où l'on écrit aussi « 7 × 4 »
+    pour « 4 × 7 ») ; un produit n'est posé qu'une fois dans un palier (une clé partagée par tous les gabarits du fichier). La multiplication posée est un nombre de
+    deux chiffres par 2, 3, 4 ou 5 : sans retenue, puis la retenue des unités, puis deux retenues. Un faux choix de l'addition répétée n'est jamais la multiplication
+    renversée (« 5 × 3 » vaut « 3 × 5 »). La moitié n'est demandée que d'un nombre pair.
+  - **Pièges rencontrés.** (1) Un nombre multiple du rang décalé pour s'encadrer dépassait le plafond du palier (500 devenait 509) : le test de plage l'a trouvé. (2) `choiceGame`
+    ne garde que les deux premiers mauvais choix : un troisième, ajouté pour écarter la multiplication renversée, ne servait jamais (code mort, vu par une panne
+    provoquée qui survivait). (3) Le glissé des tables met dans « table de 2 » un nombre qui n'est pas dans la table (44 : au-delà de 2 × 10) : les nombres d'une table
+    vont de deux à dix fois la table. (4) « Chacun coûte » ne va pas avec « mangues » : « Chaque mangue coûte ». (5) Trois tests existants citaient `ma-ce1-add-sous`
+    comme thématique écrite par le modèle : l'exemple est `ma-ce1-mesures`, jusqu'au lot suivant. (6) Vu sur l'iPhone, pas par un test : un nettoyage de « × 1 »
+    mangeait aussi celui de « × 1 000 » et laissait « 2 000 + 3 × 100 + … » (juste en valeur, incohérent) ; les termes s'écrivent maintenant un à un, et le test compte les « × ».
+  - **Mesuré** : 83 tests (`convex/__tests__/ce1MathsTemplates.test.ts`), dont une vérification par gabarit contre une arithmétique et des règles écrites à part, aux deux
+    plafonds et à quatre niveaux ; 50 pannes provoquées dans le code toutes vues ; le contrôleur ne signale aucun défaut sur 8 000 paliers fabriqués (80 000 exercices), sans
+    doublon dans un palier ; 0,0 à 0,3 % de questions revues d'un palier à l'autre.
+  - **La vitrine** veut, sur une thématique tout en gabarits, un QCM et une réponse courte au moins dans chacune.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

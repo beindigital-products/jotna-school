@@ -299,26 +299,76 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Les nombres jusqu'à 1 000",
         description:
           "Activités numériques de l'étape 2 (répartition proposée pour le CE1) : lire, écrire et décomposer les nombres jusqu'à 1 000 (centaines, dizaines, unités), comparer et ranger.",
-        games: [{ kind: "suite-nombres", count: 2 }],
+        // Dix gabarits (`nombresCe1.ts`) : `vocabulary` donne le plafond de la fiche (1 000), jamais dépassé.
+        games: [
+          { kind: "ce1-nb-voisin", count: 1, vocabulary: "nombres-1000" },
+          { kind: "ce1-nb-comparer", count: 1, vocabulary: "nombres-1000" },
+          { kind: "ce1-nb-ordre", count: 1, vocabulary: "nombres-1000" },
+          { kind: "ce1-nb-chiffres", count: 1, vocabulary: "nombres-1000" },
+          { kind: "ce1-nb-decomposer", count: 1, vocabulary: "nombres-1000" },
+          { kind: "ce1-nb-encadrer", count: 1, vocabulary: "nombres-1000" },
+          { kind: "ce1-nb-suite", count: 1, vocabulary: "nombres-1000" },
+          { kind: "ce1-nb-lettres", count: 1, vocabulary: "nombres-1000" },
+          { kind: "ce1-nb-relier", count: 1, vocabulary: "nombres-1000" },
+          { kind: "ce1-nb-ecrire", count: 1, vocabulary: "nombres-1000" },
+        ],
       },
       {
         key: "ma-ce1-nombres-10000",
         name: "Les nombres jusqu'à 10 000",
         description:
           "Activités numériques du CE1 (le cahier officiel de CE1 travaille jusqu'à 10 000) : le millier ; lire, écrire, décomposer, comparer, ranger et encadrer les nombres jusqu'à 10 000 ; écrire un nombre en lettres.",
-        games: [{ kind: "suite-nombres", count: 1 }],
+        // Dix gabarits (`nombresCe1.ts`) : `vocabulary` donne le plafond de la fiche (10 000), jamais dépassé.
+        games: [
+          { kind: "ce1-nb-voisin", count: 1, vocabulary: "nombres-10000" },
+          { kind: "ce1-nb-comparer", count: 1, vocabulary: "nombres-10000" },
+          { kind: "ce1-nb-ordre", count: 1, vocabulary: "nombres-10000" },
+          { kind: "ce1-nb-chiffres", count: 1, vocabulary: "nombres-10000" },
+          { kind: "ce1-nb-decomposer", count: 1, vocabulary: "nombres-10000" },
+          { kind: "ce1-nb-encadrer", count: 1, vocabulary: "nombres-10000" },
+          { kind: "ce1-nb-glisser", count: 1, vocabulary: "nombres-10000" },
+          { kind: "ce1-nb-suite", count: 1, vocabulary: "nombres-10000" },
+          { kind: "ce1-nb-lettres", count: 1, vocabulary: "nombres-10000" },
+          { kind: "ce1-nb-ecrire", count: 1, vocabulary: "nombres-10000" },
+        ],
       },
       {
         key: "ma-ce1-add-sous",
         name: "Additions et soustractions",
         description:
           "Opérations de l'étape 2 (répartition proposée pour le CE1) : additions et soustractions posées avec retenue, calcul mental (ajouter ou retrancher 10, 100), problèmes en FCFA.",
+        // Dix gabarits (`calculCe1.ts`) : le calcul est fait par le code, les nombres ne dépassent jamais 1 000.
+        games: [
+          { kind: "ce1-calc-ajouter", count: 1 },
+          { kind: "ce1-calc-enlever", count: 1 },
+          { kind: "ce1-calc-retenue", count: 1 },
+          { kind: "ce1-calc-trou", count: 1 },
+          { kind: "ce1-calc-mental", count: 1 },
+          { kind: "ce1-calc-ordre", count: 1 },
+          { kind: "ce1-calc-relier", count: 1 },
+          { kind: "ce1-calc-glisser", count: 1 },
+          { kind: "ce1-calc-ecrire", count: 1 },
+          { kind: "ce1-calc-fcfa", count: 1 },
+        ],
       },
       {
         key: "ma-ce1-multiplication",
         name: "La multiplication et ses tables",
         description:
           "Opérations de l'étape 2 (répartition proposée pour le CE1) : tables de multiplication de 2 à 5, multiplication posée par un nombre à un chiffre, calcul mental (double, moitié, multiplier par 10).",
+        // Dix gabarits (`tablesCe1.ts`) : les tables de 2 à 5, jamais plus (la 2 et la 5 d'abord, puis la 3, la 4, puis toutes).
+        games: [
+          { kind: "ce1-mult-table", count: 1 },
+          { kind: "ce1-mult-trou", count: 1 },
+          { kind: "ce1-mult-addition", count: 1 },
+          { kind: "ce1-mult-poser", count: 1 },
+          { kind: "ce1-mult-ecrire", count: 1 },
+          { kind: "ce1-mult-double", count: 1 },
+          { kind: "ce1-mult-dix", count: 1 },
+          { kind: "ce1-mult-relier", count: 1 },
+          { kind: "ce1-mult-glisser", count: 1 },
+          { kind: "ce1-mult-probleme", count: 1 },
+        ],
       },
       {
         key: "ma-ce1-geometrie",

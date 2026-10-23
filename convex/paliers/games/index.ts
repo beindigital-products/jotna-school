@@ -588,6 +588,46 @@ import {
   makeCe1FrReadWhere,
   makeCe1FrReadWho,
 } from "./ce1Lecture";
+// Les nombres du CE1 (`nombresCe1.ts`) : jusqu'à 1 000, jusqu'à 10 000.
+import {
+  makeCe1NbBracket,
+  makeCe1NbCompare,
+  makeCe1NbDecompose,
+  makeCe1NbDigits,
+  makeCe1NbNeighbour,
+  makeCe1NbOrder,
+  makeCe1NbSortThreshold,
+  makeCe1NbSuite,
+  makeCe1NbWordLinks,
+  makeCe1NbWords,
+  makeCe1NbWriteNumber,
+} from "./nombresCe1";
+// Le calcul du CE1 (`calculCe1.ts`) : additions et soustractions posées, calcul mental, FCFA.
+import {
+  makeCe1CalcAdd,
+  makeCe1CalcCarryAsk,
+  makeCe1CalcGap,
+  makeCe1CalcLinks,
+  makeCe1CalcMental,
+  makeCe1CalcMoney,
+  makeCe1CalcSort,
+  makeCe1CalcSteps,
+  makeCe1CalcSub,
+  makeCe1CalcWrite,
+} from "./calculCe1";
+// La multiplication du CE1 (`tablesCe1.ts`) : les tables de 2 à 5, la multiplication posée, le double, la moitié, par 10.
+import {
+  makeCe1MultAddition,
+  makeCe1MultDouble,
+  makeCe1MultGap,
+  makeCe1MultLinks,
+  makeCe1MultPosed,
+  makeCe1MultProblem,
+  makeCe1MultSort,
+  makeCe1MultTable,
+  makeCe1MultTen,
+  makeCe1MultWrite,
+} from "./tablesCe1";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
 import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
 import {
@@ -1772,6 +1812,40 @@ export const GAME_KINDS = {
   "ce2-env-ordre": { label: "Ranger des gestes ou des événements dans l'ordre du temps", type: "order", make: makeCe2EnvironmentOrder },
   "ce2-env-trou": { label: "Compléter une phrase sur l'environnement et la population", type: "fill-blank", make: makeCe2EnvironmentGap },
   "ce2-env-ecrire": { label: "Écrire un mot sur l'environnement et la population", type: "short-answer", make: makeCe2EnvironmentWrite },
+  // Les nombres du CE1 (`nombresCe1.ts`).
+  "ce1-nb-voisin": { label: "Le nombre juste avant ou juste après", type: "qcm", make: makeCe1NbNeighbour },
+  "ce1-nb-comparer": { label: "Le plus grand ou le plus petit de trois nombres", type: "qcm", make: makeCe1NbCompare },
+  "ce1-nb-ordre": { label: "Ranger des nombres", type: "order", make: makeCe1NbOrder },
+  "ce1-nb-chiffres": { label: "Le chiffre et la valeur d'un rang", type: "qcm", make: makeCe1NbDigits },
+  "ce1-nb-decomposer": { label: "Décomposer un nombre", type: "fill-blank", make: makeCe1NbDecompose },
+  "ce1-nb-encadrer": { label: "Encadrer un nombre", type: "qcm", make: makeCe1NbBracket },
+  "ce1-nb-glisser": { label: "Placer des nombres par rapport à un seuil", type: "drag-drop", make: makeCe1NbSortThreshold },
+  "ce1-nb-suite": { label: "Compléter une suite de nombres", type: "fill-blank", make: makeCe1NbSuite },
+  "ce1-nb-lettres": { label: "Lire un nombre écrit en lettres", type: "qcm", make: makeCe1NbWords },
+  "ce1-nb-relier": { label: "Relier un nombre et son écriture en lettres", type: "match", make: makeCe1NbWordLinks },
+  "ce1-nb-ecrire": { label: "Écrire en chiffres un nombre dit en lettres", type: "short-answer", make: makeCe1NbWriteNumber },
+  // Le calcul du CE1 (`calculCe1.ts`).
+  "ce1-calc-ajouter": { label: "Additionner avec une retenue", type: "qcm", make: makeCe1CalcAdd },
+  "ce1-calc-enlever": { label: "Soustraire avec un emprunt", type: "qcm", make: makeCe1CalcSub },
+  "ce1-calc-retenue": { label: "La retenue et l'emprunt", type: "qcm", make: makeCe1CalcCarryAsk },
+  "ce1-calc-trou": { label: "Le nombre qui manque dans un calcul", type: "fill-blank", make: makeCe1CalcGap },
+  "ce1-calc-mental": { label: "Ajouter ou retrancher dix ou cent de tête", type: "qcm", make: makeCe1CalcMental },
+  "ce1-calc-ordre": { label: "Les étapes d'un calcul posé", type: "order", make: makeCe1CalcSteps },
+  "ce1-calc-relier": { label: "Relier un calcul et son résultat", type: "match", make: makeCe1CalcLinks },
+  "ce1-calc-glisser": { label: "Additions avec ou sans retenue", type: "drag-drop", make: makeCe1CalcSort },
+  "ce1-calc-ecrire": { label: "Poser un calcul et écrire le résultat", type: "short-answer", make: makeCe1CalcWrite },
+  "ce1-calc-fcfa": { label: "Un petit problème d'argent en FCFA", type: "qcm", make: makeCe1CalcMoney },
+  // La multiplication du CE1 (`tablesCe1.ts`).
+  "ce1-mult-table": { label: "Une multiplication des tables de 2 à 5", type: "qcm", make: makeCe1MultTable },
+  "ce1-mult-trou": { label: "Le facteur qui manque", type: "fill-blank", make: makeCe1MultGap },
+  "ce1-mult-addition": { label: "Une addition répétée écrite en multiplication", type: "qcm", make: makeCe1MultAddition },
+  "ce1-mult-poser": { label: "Multiplier un nombre à deux chiffres", type: "qcm", make: makeCe1MultPosed },
+  "ce1-mult-ecrire": { label: "Écrire le résultat d'une multiplication", type: "short-answer", make: makeCe1MultWrite },
+  "ce1-mult-double": { label: "Le double et la moitié", type: "qcm", make: makeCe1MultDouble },
+  "ce1-mult-dix": { label: "Multiplier par dix", type: "qcm", make: makeCe1MultTen },
+  "ce1-mult-relier": { label: "Relier une multiplication et son résultat", type: "match", make: makeCe1MultLinks },
+  "ce1-mult-glisser": { label: "Ranger des nombres dans deux tables", type: "drag-drop", make: makeCe1MultSort },
+  "ce1-mult-probleme": { label: "Un problème de combien en tout", type: "qcm", make: makeCe1MultProblem },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
