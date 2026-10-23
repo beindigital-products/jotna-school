@@ -344,24 +344,56 @@ export const GEOGRAPHIE: ProgrammeSubject = {
     CM2: [
       {
         key: "ge-cm2-milieu-activites",
+        games: [
+          { kind: "cm2-mil-qcm", count: 3 },
+          { kind: "cm2-mil-trou", count: 2 },
+          { kind: "cm2-mil-ecrire", count: 1 },
+          { kind: "cm2-mil-ordre", count: 1 },
+          { kind: "cm2-mil-relier", count: 1 },
+          { kind: "cm2-mil-glisser", count: 2 },
+        ],
         name: "Le milieu et les activités",
         description:
           "Géographie, étape 3, paliers 3-4 : les liens entre le milieu, ses ressources et les activités : la vallée du fleuve Sénégal et le riz, le bassin arachidier (Kaolack, Kaffrine, Diourbel, Fatick), la côte et la pêche, le Ferlo et l'élevage, la Casamance et les fruits.",
       },
       {
         key: "ge-cm2-degradation",
+        games: [
+          { kind: "cm2-deg-qcm", count: 3 },
+          { kind: "cm2-deg-trou", count: 2 },
+          { kind: "cm2-deg-ecrire", count: 1 },
+          { kind: "cm2-deg-ordre", count: 1 },
+          { kind: "cm2-deg-relier", count: 1 },
+          { kind: "cm2-deg-glisser", count: 2 },
+        ],
         name: "Protéger nos ressources",
         description:
           "Géographie, étape 3, paliers 3-4 : la dégradation des ressources (déforestation, feux de brousse, surpêche, érosion côtière, avancée du désert) et les réponses (reboisement, Grande Muraille verte, aires marines protégées).",
       },
       {
         key: "ge-cm2-population",
+        games: [
+          { kind: "cm2-pop-qcm", count: 3 },
+          { kind: "cm2-pop-trou", count: 2 },
+          { kind: "cm2-pop-ecrire", count: 1 },
+          { kind: "cm2-pop-ordre", count: 1 },
+          { kind: "cm2-pop-relier", count: 1 },
+          { kind: "cm2-pop-glisser", count: 2 },
+        ],
         name: "La population du Sénégal",
         description:
           "Géographie, étape 3, paliers 3-4 : environ 18 millions d'habitants (recensement de 2023) ; une population jeune (pyramide des âges large à la base) ; une répartition inégale (forte densité à Dakar et sur la côte) ; la diversité des groupes et des langues nationales (wolof, pulaar, sérère, diola, mandingue, soninké…).",
       },
       {
         key: "ge-cm2-villes",
+        games: [
+          { kind: "cm2-vil-qcm", count: 3 },
+          { kind: "cm2-vil-trou", count: 2 },
+          { kind: "cm2-vil-ecrire", count: 1 },
+          { kind: "cm2-vil-ordre", count: 1 },
+          { kind: "cm2-vil-relier", count: 1 },
+          { kind: "cm2-vil-glisser", count: 2 },
+        ],
         name: "Villes et campagnes",
         description:
           "Géographie, étape 3, paliers 3-4 : les types d'habitat, la croissance des villes, l'exode rural et ses conséquences, la vie à la ville et à la campagne.",
