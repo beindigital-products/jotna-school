@@ -1076,7 +1076,7 @@ function parseStory(prompt: string, level: GameLevel): Story | null {
       question: `${combienDe(m[4])} remplit-il ?`,
       goal: `les ${m[4]}`,
       first: `${combienDe(m[2])} le vendeur a-t-il en tout ?`,
-      steps: [`Additionne tous les ${m[2]}`, `Partage le total en ${m[4]}`],
+      steps: [`Additionne les ${m[2]}`, `Partage le total en ${m[4]}`],
       calcNumbers: [a, b, k],
       tiles: [`${a} ${m[2]} au début`, `${b} ${m[2]} en plus`, `${k} ${m[2]} par ${stock.one}`],
       problem: all(ok(stock.many === m[4], `« ${m[4]} » pour ${m[2]}`), ok(total % k === 0 && [4, 5, 6, 8, 10].includes(k) && inRange(total / k, BOX_COUNT[level]), `${total} par ${k}`), ok(a >= Math.floor(total / 3) && a <= Math.floor((2 * total) / 3) && b >= 1, `${a} et ${b}`)),
