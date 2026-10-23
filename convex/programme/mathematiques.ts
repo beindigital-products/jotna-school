@@ -510,25 +510,75 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "La symétrie et les solides",
         description:
           "Activités géométriques de l'étape 2 : l'axe de symétrie d'une figure, compléter une figure par symétrie sur quadrillage ; le cube, le pavé droit et le cylindre (faces, arêtes, sommets).",
-        games: [{ kind: "pixel-symetrie", count: 3 }],
+        // Huit gabarits (`symetrieCe2.ts`) et deux dessins à compléter par symétrie (`pixel-symetrie`) : le cube, le pavé droit et le cylindre, les axes de symétrie des figures simples.
+        games: [
+          { kind: "pixel-symetrie", count: 2 },
+          { kind: "ce2-sym-axe", count: 1 },
+          { kind: "ce2-sym-miroir", count: 1 },
+          { kind: "ce2-sym-solide", count: 1 },
+          { kind: "ce2-sym-trou", count: 1 },
+          { kind: "ce2-sym-relier", count: 1 },
+          { kind: "ce2-sym-glisser", count: 1 },
+          { kind: "ce2-sym-etapes", count: 1 },
+          { kind: "ce2-sym-ecrire", count: 1 },
+        ],
       },
       {
         key: "ma-ce2-perimetre-aire",
         name: "Périmètres et aires",
         description:
           "Activités de mesure de l'étape 2 : le périmètre du carré et du rectangle, l'aire mesurée en carreaux, comparer des aires.",
+        // Dix gabarits (`perimetreAireCe2.ts`) : le périmètre du carré et du rectangle, un côté qui manque, l'aire comptée en carreaux (jamais en cm²), comparer des aires.
+        games: [
+          { kind: "ce2-per-carre", count: 1 },
+          { kind: "ce2-per-rectangle", count: 1 },
+          { kind: "ce2-per-cote", count: 1 },
+          { kind: "ce2-per-aire", count: 1 },
+          { kind: "ce2-per-comparer", count: 1 },
+          { kind: "ce2-per-trou", count: 1 },
+          { kind: "ce2-per-ecrire", count: 1 },
+          { kind: "ce2-per-relier", count: 1 },
+          { kind: "ce2-per-glisser", count: 1 },
+          { kind: "ce2-per-probleme", count: 1 },
+        ],
       },
       {
         key: "ma-ce2-mesures",
         name: "Mesures et conversions",
         description:
           "Activités de mesure de l'étape 2 (répartition proposée pour le CE2) : longueurs (km, m, dm, cm, mm), masses (kg, g), contenances (L, dL, cL), durées (h, min, s) ; conversions.",
+        // Dix gabarits (`mesuresCe2.ts`) : neuf couples d'unités voisines (m-cm, kg-g, km-m, puis m-dm, dm-cm, cm-mm, puis L-dL, L-cL, dL-cL), les durées en heures, minutes et secondes.
+        games: [
+          { kind: "ce2-mes-convertir", count: 1 },
+          { kind: "ce2-mes-ecrire", count: 1 },
+          { kind: "ce2-mes-trou", count: 1 },
+          { kind: "ce2-mes-comparer", count: 1 },
+          { kind: "ce2-mes-ranger", count: 1 },
+          { kind: "ce2-mes-unite", count: 1 },
+          { kind: "ce2-mes-relier", count: 1 },
+          { kind: "ce2-mes-glisser", count: 1 },
+          { kind: "ce2-mes-duree", count: 1 },
+          { kind: "ce2-mes-probleme", count: 1 },
+        ],
       },
       {
         key: "ma-ce2-problemes",
         name: "Problèmes en plusieurs étapes",
         description:
           "Résolution de problèmes de l'étape 2 : problèmes à deux ou trois opérations, questions intermédiaires, vérifier sa réponse.",
+        // Dix gabarits (`problemesCe2.ts`) : huit scénarios fermés à deux ou trois opérations, la question intermédiaire, le calcul qui résout, la donnée inutile, vérifier.
+        games: [
+          { kind: "ce2-pb-deux", count: 1 },
+          { kind: "ce2-pb-trois", count: 1 },
+          { kind: "ce2-pb-ecrire", count: 1 },
+          { kind: "ce2-pb-question", count: 1 },
+          { kind: "ce2-pb-operation", count: 1 },
+          { kind: "ce2-pb-utile", count: 1 },
+          { kind: "ce2-pb-ordre", count: 1 },
+          { kind: "ce2-pb-relier", count: 1 },
+          { kind: "ce2-pb-glisser", count: 1 },
+          { kind: "ce2-pb-verifier", count: 1 },
+        ],
       },
     ],
     CM1: [

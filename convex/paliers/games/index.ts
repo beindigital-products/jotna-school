@@ -713,6 +713,54 @@ import {
   makeCe2DivTable,
   makeCe2DivWrite,
 } from "./divisionCe2";
+// Les mathématiques du CE2, seconde moitié (`symetrieCe2.ts`, `perimetreAireCe2.ts`, `mesuresCe2.ts`, `problemesCe2.ts`) : la symétrie et les solides, les périmètres et
+// les aires, les mesures, les problèmes à plusieurs étapes.
+import {
+  makeCe2SymAxis,
+  makeCe2SymGap,
+  makeCe2SymLinks,
+  makeCe2SymMirror,
+  makeCe2SymSolid,
+  makeCe2SymSort,
+  makeCe2SymSteps,
+  makeCe2SymWrite,
+} from "./symetrieCe2";
+import {
+  makeCe2PerArea,
+  makeCe2PerCompare,
+  makeCe2PerGap,
+  makeCe2PerLinks,
+  makeCe2PerProblem,
+  makeCe2PerRectangle,
+  makeCe2PerSide,
+  makeCe2PerSort,
+  makeCe2PerSquare,
+  makeCe2PerWrite,
+} from "./perimetreAireCe2";
+import {
+  makeCe2MesCompare,
+  makeCe2MesConvert,
+  makeCe2MesDuration,
+  makeCe2MesGap,
+  makeCe2MesLinks,
+  makeCe2MesOrder,
+  makeCe2MesProblem,
+  makeCe2MesSort,
+  makeCe2MesUnit,
+  makeCe2MesWrite,
+} from "./mesuresCe2";
+import {
+  makeCe2PbCalc,
+  makeCe2PbCheck,
+  makeCe2PbFirst,
+  makeCe2PbLinks,
+  makeCe2PbOrder,
+  makeCe2PbSort,
+  makeCe2PbThree,
+  makeCe2PbTwo,
+  makeCe2PbUseless,
+  makeCe2PbWrite,
+} from "./problemesCe2";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
 import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
 import {
@@ -2008,6 +2056,48 @@ export const GAME_KINDS = {
   "ce2-div-relier": { label: "Relier une division et son résultat", type: "match", make: makeCe2DivLinks },
   "ce2-div-glisser": { label: "Une division qui tombe juste ou non", type: "drag-drop", make: makeCe2DivSort },
   "ce2-div-probleme": { label: "Un petit problème de division", type: "qcm", make: makeCe2DivProblem },
+  // La symétrie et les solides du CE2 (`symetrieCe2.ts`).
+  "ce2-sym-axe": { label: "Les axes de symétrie d'une figure", type: "qcm", make: makeCe2SymAxis },
+  "ce2-sym-miroir": { label: "Le symétrique d'un point", type: "qcm", make: makeCe2SymMirror },
+  "ce2-sym-solide": { label: "Reconnaître et compter un solide", type: "qcm", make: makeCe2SymSolid },
+  "ce2-sym-trou": { label: "Compléter une phrase sur la symétrie", type: "fill-blank", make: makeCe2SymGap },
+  "ce2-sym-relier": { label: "Relier un objet à son solide", type: "match", make: makeCe2SymLinks },
+  "ce2-sym-glisser": { label: "Classer des figures et des solides", type: "drag-drop", make: makeCe2SymSort },
+  "ce2-sym-etapes": { label: "Les gestes d'une construction par symétrie", type: "order", make: makeCe2SymSteps },
+  "ce2-sym-ecrire": { label: "Compter faces, arêtes, sommets et axes", type: "short-answer", make: makeCe2SymWrite },
+  // Les périmètres et les aires du CE2 (`perimetreAireCe2.ts`).
+  "ce2-per-carre": { label: "Le périmètre d'un carré", type: "qcm", make: makeCe2PerSquare },
+  "ce2-per-rectangle": { label: "Le périmètre d'un rectangle", type: "qcm", make: makeCe2PerRectangle },
+  "ce2-per-cote": { label: "Retrouver un côté avec le périmètre", type: "qcm", make: makeCe2PerSide },
+  "ce2-per-aire": { label: "L'aire en carreaux", type: "qcm", make: makeCe2PerArea },
+  "ce2-per-comparer": { label: "Comparer des aires et des périmètres", type: "qcm", make: makeCe2PerCompare },
+  "ce2-per-trou": { label: "Compléter une phrase sur le périmètre et l'aire", type: "fill-blank", make: makeCe2PerGap },
+  "ce2-per-ecrire": { label: "Écrire un périmètre ou une aire", type: "short-answer", make: makeCe2PerWrite },
+  "ce2-per-relier": { label: "Relier une figure et sa mesure", type: "match", make: makeCe2PerLinks },
+  "ce2-per-glisser": { label: "Un tour ou une surface", type: "drag-drop", make: makeCe2PerSort },
+  "ce2-per-probleme": { label: "Un problème de périmètre ou d'aire", type: "qcm", make: makeCe2PerProblem },
+  // Les mesures du CE2 (`mesuresCe2.ts`).
+  "ce2-mes-convertir": { label: "Convertir une mesure", type: "qcm", make: makeCe2MesConvert },
+  "ce2-mes-ecrire": { label: "Écrire le résultat d'une conversion", type: "short-answer", make: makeCe2MesWrite },
+  "ce2-mes-trou": { label: "Compléter une égalité de mesures", type: "fill-blank", make: makeCe2MesGap },
+  "ce2-mes-comparer": { label: "Comparer des mesures", type: "qcm", make: makeCe2MesCompare },
+  "ce2-mes-ranger": { label: "Ranger des mesures", type: "order", make: makeCe2MesOrder },
+  "ce2-mes-unite": { label: "Choisir l'unité qui convient", type: "qcm", make: makeCe2MesUnit },
+  "ce2-mes-relier": { label: "Relier deux écritures d'une mesure", type: "match", make: makeCe2MesLinks },
+  "ce2-mes-glisser": { label: "Classer des mesures", type: "drag-drop", make: makeCe2MesSort },
+  "ce2-mes-duree": { label: "Calculer avec des durées", type: "qcm", make: makeCe2MesDuration },
+  "ce2-mes-probleme": { label: "Un problème de mesures", type: "qcm", make: makeCe2MesProblem },
+  // Les problèmes en plusieurs étapes du CE2 (`problemesCe2.ts`).
+  "ce2-pb-deux": { label: "Un problème à deux opérations", type: "qcm", make: makeCe2PbTwo },
+  "ce2-pb-trois": { label: "Un problème à trois opérations", type: "qcm", make: makeCe2PbThree },
+  "ce2-pb-ecrire": { label: "Écrire le résultat d'un problème", type: "short-answer", make: makeCe2PbWrite },
+  "ce2-pb-question": { label: "La question intermédiaire", type: "qcm", make: makeCe2PbFirst },
+  "ce2-pb-operation": { label: "Le calcul qui résout le problème", type: "qcm", make: makeCe2PbCalc },
+  "ce2-pb-utile": { label: "La donnée inutile", type: "qcm", make: makeCe2PbUseless },
+  "ce2-pb-ordre": { label: "Les étapes d'un problème", type: "order", make: makeCe2PbOrder },
+  "ce2-pb-relier": { label: "Relier un problème et son calcul", type: "match", make: makeCe2PbLinks },
+  "ce2-pb-glisser": { label: "Une ou deux opérations", type: "drag-drop", make: makeCe2PbSort },
+  "ce2-pb-verifier": { label: "Vérifier son résultat", type: "qcm", make: makeCe2PbCheck },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
