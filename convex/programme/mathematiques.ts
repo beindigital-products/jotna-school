@@ -375,25 +375,76 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Droites, angles et figures",
         description:
           "Activités géométriques de l'étape 2 : lignes, droites parallèles et perpendiculaires, l'angle droit et l'équerre, le carré, le rectangle, le triangle et le cercle ; construire avec les instruments.",
-        games: [{ kind: "pixel-copie", count: 1 }],
+        // Dix exercices (`geometrieCe1.ts`) : le dessin à reproduire sur quadrillage, puis neuf gabarits de faits de géométrie (le carré, le rectangle, le triangle, le cercle).
+        games: [
+          { kind: "pixel-copie", count: 1 },
+          { kind: "ce1-geo-figure", count: 1 },
+          { kind: "ce1-geo-droites", count: 1 },
+          { kind: "ce1-geo-outil", count: 1 },
+          { kind: "ce1-geo-compter", count: 1 },
+          { kind: "ce1-geo-trou", count: 1 },
+          { kind: "ce1-geo-relier", count: 1 },
+          { kind: "ce1-geo-glisser", count: 1 },
+          { kind: "ce1-geo-etapes", count: 1 },
+          { kind: "ce1-geo-ecrire", count: 1 },
+        ],
       },
       {
         key: "ma-ce1-mesures",
         name: "Longueurs, masses, contenances",
         description:
           "Activités de mesure de l'étape 2 (répartition proposée pour le CE1) : le mètre, le centimètre, le kilomètre ; le kilogramme et le gramme ; le litre ; conversions simples entre unités voisines.",
+        // Dix gabarits (`mesuresCe1.ts`) : le mètre et le centimètre, le kilogramme et le gramme, le kilomètre et le mètre, le litre ; les conversions sont faites par le code.
+        games: [
+          { kind: "ce1-mes-unite", count: 1 },
+          { kind: "ce1-mes-convertir", count: 1 },
+          { kind: "ce1-mes-trou", count: 1 },
+          { kind: "ce1-mes-comparer", count: 1 },
+          { kind: "ce1-mes-ranger", count: 1 },
+          { kind: "ce1-mes-glisser", count: 1 },
+          { kind: "ce1-mes-relier", count: 1 },
+          { kind: "ce1-mes-ecrire", count: 1 },
+          { kind: "ce1-mes-probleme", count: 1 },
+          { kind: "ce1-mes-grandeur", count: 1 },
+        ],
       },
       {
         key: "ma-ce1-monnaie-durees",
         name: "La monnaie et les durées",
         description:
           "Activités de mesure de l'étape 2 : la monnaie (pièces et billets jusqu'à 10 000 F), rendre la monnaie ; lire l'heure, durées en heures et minutes, le calendrier.",
+        // Dix gabarits (`monnaieDureesCe1.ts`) : cinq de monnaie (les pièces et les billets jusqu'à 10 000 F) et cinq de durées (l'heure, la durée, le calendrier).
+        games: [
+          { kind: "ce1-mon-somme", count: 1 },
+          { kind: "ce1-mon-pieces", count: 1 },
+          { kind: "ce1-mon-rendre", count: 1 },
+          { kind: "ce1-mon-relier", count: 1 },
+          { kind: "ce1-mon-ecrire", count: 1 },
+          { kind: "ce1-dur-lire", count: 1 },
+          { kind: "ce1-dur-duree", count: 1 },
+          { kind: "ce1-dur-trou", count: 1 },
+          { kind: "ce1-dur-calendrier", count: 1 },
+          { kind: "ce1-dur-ordre", count: 1 },
+        ],
       },
       {
         key: "ma-ce1-problemes",
         name: "Résoudre des problèmes",
         description:
           "Résolution de problèmes de l'étape 2 : analyser un énoncé, données utiles, inutiles et manquantes, question intermédiaire, problèmes à une ou deux opérations.",
+        // Dix gabarits (`problemesCe1.ts`) : l'histoire est tirée d'un lexique fermé, l'opération choisie puis la réponse calculée par le code.
+        games: [
+          { kind: "ce1-pb-resoudre", count: 1 },
+          { kind: "ce1-pb-deux", count: 1 },
+          { kind: "ce1-pb-operation", count: 1 },
+          { kind: "ce1-pb-utile", count: 1 },
+          { kind: "ce1-pb-manquante", count: 1 },
+          { kind: "ce1-pb-question", count: 1 },
+          { kind: "ce1-pb-ordre", count: 1 },
+          { kind: "ce1-pb-relier", count: 1 },
+          { kind: "ce1-pb-glisser", count: 1 },
+          { kind: "ce1-pb-ecrire", count: 1 },
+        ],
       },
     ],
     CE2: [
