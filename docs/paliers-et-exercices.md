@@ -2423,6 +2423,49 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     par thématique, aucune question ne revient d'un palier à l'autre. Vu sur l'iPhone 17 (Safari du simulateur, galerie `/dev/exercices/` avec des spécimens
     détournés provisoirement, fichier restauré) : un glissé dont une étiquette fait deux lignes, un appariement dont la colonne de droite fait cinq lignes,
     un ordre de phrases. PAS vu : les autres gabarits à l'écran, un vrai iPhone, la production.
+- **L'instruction civique et les arts du CE2** (`paliers/games/ce2Civique.ts` et `ce2Arts.ts`, avec les aides de `ce2Outils.ts`) : quarante-neuf
+  gabarits pour `ci-ce2-droits`, `ci-ce2-paix`, `ci-ce2-valeurs`, `ci-ce2-communaute`, `ar-ce2-coloriage`, `ar-ce2-reproduire`, `ar-ce2-melodies`,
+  `ar-ce2-hymne` et `ar-ce2-theatre`, les neuf thématiques que le modèle n'écrit plus (lot 3 sur six). Sur l'échantillon de CE2 lu le 22 octobre 2026
+  (51 exercices d'instruction civique et d'arts), 7 étaient faux ou creux : « Comment peut-on améliorer la vie dans notre quartier ? » (une question
+  d'opinion), « Donne un exemple de dialogue » (une réponse libre que rien ne juge), « Quelle mélodie monte ? » quatre fois, « Nomme un aliment que
+  l'on pourrait vendre au marché » (hors sujet), un piano, un couteau et une chaise pour accompagner l'hymne. Les noms commencent par `ce2-` ; les
+  fonctions sont des `makeCe2…`.
+  - **Les jeux déjà là gardent leurs places** : le coloriage (5 coloriages magiques, 3 couleurs chaudes et froides), reproduire un modèle (3 copies, 2 dessins de
+    mémoire, 2 symétries), les mélodies (4 écoutes « monte ou descend », 4 « pareil ou différent ») et l'hymne (2 rythmes) ; les gabarits prennent les places
+    qui restent (2, 3, 2 et 8 sur dix). « Jouer une scène » n'avait aucun jeu : dix gabarits. **Les mélodies n'ont donc que trois sortes d'exercices par
+    palier** (huit écoutes et deux gabarits), et les thématiques de coloriage, de reproduction et de mélodies ne contiennent pas toutes les sortes que la
+    banque de la vitrine attend : le test de la démo ne les demande qu'aux autres.
+  - **L'instruction civique** : une situation et son bon comportement, jamais deux. Droits de l'enfant (avoir un nom, aller à l'école, être soigné, être protégé,
+    jouer) et devoirs (respecter les autres, travailler à l'école, aider à la maison), la paix (le dialogue, la tolérance, la médiation, refuser la violence et
+    les moqueries), les valeurs (l'honnêteté, la solidarité, le courage, le respect de la parole donnée, la teranga), le quartier (le puits, le marché, le
+    terrain de sport, s'entraider entre voisins). Les mauvais choix sont des comportements que l'enfant reconnaît comme mauvais, jamais une autre bonne
+    réponse ; aucune langue, ethnie ni religion n'est rangée dans un groupe.
+  - **Les mélodies se calculent** : les notes vont de do à si, une mélodie monte quand chaque note est plus loin de do que la précédente, et la bonne option est la
+    seule qui monte (ou qui descend, ou dont les deux moitiés sont pareilles). Trois notes aux niveaux 1 et 2, quatre aux niveaux 3 et 4. Le test lit les notes et
+    recalcule la direction, il n'a pas de table de mélodies.
+  - **L'hymne** ne cite aucune parole : le titre « Le Lion rouge », les paroles de Léopold Sédar Senghor, le lever des couleurs, la tenue, accompagner un chant de
+    gestes et d'instruments, composer un petit chant. Un test vérifie qu'aucun gabarit n'écrit « Marseillaise », « liberté » ni « patrie ».
+  - **Le théâtre** : les trois scènes de la fiche (le marché, l'atelier du tailleur, le dispensaire) et le personnage de chacune, les scènes imaginaires, la parodie,
+    la saynète, répéter, dramatiser, et les étapes pour préparer une saynète.
+  - **Une tuile est un nom nu quand elle nomme une chose** (« Puits », « Rouge », « Marché », « Vendeur », « Tama ») ; une tuile de plusieurs mots (« Un circuit
+    fermé », « Mon cahier », « Le Lion rouge ») n'est pas jugée par `templatePictures.test.ts`. Les listes ont quatre, huit, douze, seize ou vingt lignes.
+  - **HORS FICHE, À FAIRE RELIRE** : les situations de chaque thématique civique (la scène et son comportement), les définitions des mots de la paix et des valeurs,
+    les exemples de droits, les règles du quartier, les gestes pour aider un voisin ; la tenue pendant l'hymne (debout, droit, en silence) ; les couleurs d'une
+    ambiance (un feu rouge, un coucher de soleil orange, un lac bleu, une forêt verte) ; les cinq techniques (quadrillage, calque, pochoir, pliage, collage) et
+    ce qu'on fait avec chacune ; les trois lieux du théâtre et leurs personnages ; l'instrument « tama » qui accompagne un chant.
+  - **Pièges rencontrés.** (1) Un énoncé a une apostrophe droite au plus, et une phrase à trou aussi : « Qu'est-ce qu'une saynète ? », « Quel est l'organe de l'ouïe ? »,
+    « Tenir sa ___, c'est faire ce qu'on a promis » en avaient deux. (2) Un indice n'écrit aucun mot de quatre lettres ou plus d'une tuile ou d'une réponse :
+    « autres », « chacun », « faire », « avec », « chant », « public », « client » ont été écrits par un premier jet (quarante indices à reprendre).
+    (3) Le contrôleur voit une bonne option deux fois plus longue que les autres (« Du respect pour notre pays » contre « De l'ennui »), une réponse écrite
+    dans l'énoncé (« tailleur » dans « chez le tailleur ») et un indice qui donne la réponse (« accord »). (4) Les jeux déjà là répètent leurs énoncés dans un
+    palier : `couleurs-chaudes-froides` pose deux fois « Touche la couleur froide » (1 691 paliers sur 9 000). Défaut ancien, non corrigé ici.
+  - **Mesuré** : 124 tests (`convex/__tests__/ce2CiviqueArtsTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part et, pour les
+    mélodies, un recalcul à partir des notes, à 4 niveaux et 60 graines ; 46 pannes provoquées dans le code (un droit rangé parmi les devoirs, une couleur chaude
+    donnée froide, une mélodie qui descend prise pour une qui monte, une paire « Titre ~ Le lever des couleurs »…) toutes vues ; le contrôleur ne signale aucun défaut
+    sur 9 000 paliers fabriqués (90 000 exercices), tous de dix exercices ; aucune question des gabarits ne revient d'un palier à l'autre (0,8 % aux mélodies, dont les
+    notes sont tirées au hasard) ; 0 à 1,4 fait repris par palier. Vu sur l'iPhone 17 (Safari du simulateur, galerie `/dev/exercices/` avec des spécimens détournés
+    provisoirement, fichier restauré) : une question de mélodie à trois paires de mélodies, un glissé à étiquettes de plusieurs mots. PAS vu : les autres
+    gabarits à l'écran, un vrai iPhone, la production.
 - **Les homophones et la lecture du CE1** (`paliers/games/ce1Homophones.ts` et `ce1Lecture.ts`) : vingt gabarits pour les deux dernières
   thématiques de français du CE1, `fr-ce1-homophones` (a/à, et/est, on/ont) et `fr-ce1-lecture` (Lire et comprendre), que le modèle n'écrit plus. Avec
   les cinq du lot précédent, les sept thématiques de français du CE1 sont des gabarits. Les noms commencent par `ce1-fr-homo-` et `ce1-fr-lec-` ; les

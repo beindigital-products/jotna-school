@@ -237,24 +237,64 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
         name: "Mes droits et mes devoirs",
         description:
           "Vivre ensemble, étape 2, paliers 3-4 : les droits de l'enfant (avoir un nom, aller à l'école, être soigné, être protégé, jouer) et ses devoirs (respecter les autres, travailler à l'école, aider à la maison).",
+        // Gabarits de `ce2Civique.ts`.
+        games: [
+          { kind: "ce2-droit-qcm", count: 2 },
+          { kind: "ce2-devoir-qcm", count: 2 },
+          { kind: "ce2-droit-glisser", count: 1 },
+          { kind: "ce2-droit-relier", count: 1 },
+          { kind: "ce2-droit-trou", count: 2 },
+          { kind: "ce2-droit-ecrire", count: 2 },
+        ],
       },
       {
         key: "ci-ce2-paix",
         name: "Vivre en paix",
         description:
           "Vivre ensemble, étape 2, paliers 3-4 : les idéaux de paix : dialogue, tolérance, médiation ; refuser la violence et les moqueries.",
+        // Gabarits de `ce2Civique.ts`.
+        games: [
+          { kind: "ce2-paix-situation", count: 2 },
+          { kind: "ce2-paix-mot", count: 1 },
+          { kind: "ce2-paix-glisser", count: 1 },
+          { kind: "ce2-paix-relier", count: 1 },
+          { kind: "ce2-paix-ordre", count: 1 },
+          { kind: "ce2-paix-trou", count: 2 },
+          { kind: "ce2-paix-ecrire", count: 2 },
+        ],
       },
       {
         key: "ci-ce2-valeurs",
         name: "Les bonnes valeurs",
         description:
           "Vivre ensemble, étape 2, paliers 3-4 : valeurs et comportements positifs : l'honnêteté, la solidarité, le courage, le respect de la parole donnée, l'hospitalité (la teranga), à l'école et à la maison.",
+        // Gabarits de `ce2Civique.ts`.
+        games: [
+          { kind: "ce2-valeur-situation", count: 2 },
+          { kind: "ce2-valeur-definition", count: 1 },
+          { kind: "ce2-valeur-glisser", count: 1 },
+          { kind: "ce2-valeur-relier", count: 1 },
+          { kind: "ce2-valeur-ordre", count: 1 },
+          { kind: "ce2-valeur-trou", count: 2 },
+          { kind: "ce2-valeur-ecrire", count: 2 },
+        ],
       },
       {
         key: "ci-ce2-communaute",
         name: "La vie en communauté",
         description:
           "Vivre ensemble, étape 2, paliers 3-4 : devoirs et droits dans la vie en commun : les règles du quartier, les biens communs (le puits, le marché, le terrain de sport), s'entraider entre voisins.",
+        // Gabarits de `ce2Civique.ts`.
+        games: [
+          { kind: "ce2-commun-bien", count: 1 },
+          { kind: "ce2-commun-regle", count: 1 },
+          { kind: "ce2-commun-voisin", count: 1 },
+          { kind: "ce2-commun-glisser", count: 1 },
+          { kind: "ce2-commun-relier", count: 1 },
+          { kind: "ce2-commun-ordre", count: 1 },
+          { kind: "ce2-commun-trou", count: 2 },
+          { kind: "ce2-commun-ecrire", count: 2 },
+        ],
       },
     ],
     CM1: [
