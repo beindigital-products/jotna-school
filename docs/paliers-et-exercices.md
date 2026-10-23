@@ -2581,6 +2581,30 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   - **Mesuré** : 92 tests (`convex/__tests__/ce2Maths2Templates.test.ts`), dont une vérification par gabarit contre des tables et une arithmétique écrites à part, à quatre niveaux ; 109
     pannes provoquées sur 110 vues (la dernière est équivalente : `choiceGame` retire lui-même un mauvais choix égal à la bonne réponse) ; le contrôleur ne signale aucun défaut sur 4 800
     paliers fabriqués (48 000 exercices) ; 0,0 à 0,2 % de questions revues d'un palier à l'autre, hors `pixel-symetrie`.
+- **L'anglais du CE2** (`paliers/games/ce2Anglais.ts` pour la grammaire, `ce2AnglaisVocab.ts` pour le vocabulaire, avec les aides exportées de `ce1Anglais.ts`) : cinquante-sept
+  gabarits pour les sept thématiques `an-ce2-be`, `an-ce2-have-got`, `an-ce2-can`, `an-ce2-home`, `an-ce2-months`, `an-ce2-weather` et `an-ce2-clock`, que le modèle n'écrit plus.
+  Les noms commencent par `ce2-en-` ; les fonctions sont des `makeCe2En…`. Les phrases ne sont pas écrites une à une : chacune se calcule à partir d'un sujet et d'un complément pris dans
+  un tableau, et la bonne forme (am, is, are ; has got, have got ; can) se déduit du sujet. Les mauvais choix sont des erreurs d'enfant connues (« I is », « She have got »,
+  « He cans swim », « He can to swim »).
+  - **Deux, trois ou quatre parts de tableau.** `an-ce2-home` a quatre paliers, un par part ; `-be`, `-have-got`, `-can` et `-clock` en ont trois (niveaux 1, 2 et 4) ; `-months` et
+    `-weather` n'en ont que deux (niveaux 1 et 4). `bandPart` du CE1, désormais exporté, coupe en moitiés, en tiers ou en quarts, et `bandOf` donne la part du niveau. Pour la grammaire,
+    la part est celle du sujet : des pronoms (I, you, he, she, we, they), puis des prénoms, puis des groupes nominaux. L'heure monte de l'heure 1 à 4, puis 5 à 8, puis 9 à 12.
+  - **Une consigne en français, de l'anglais seulement dans ce que l'enfant apprend.** Aucune écoute ni prononciation. Un indice n'écrit aucun mot de quatre lettres ou plus (accents
+    ôtés) d'une réponse, d'une tuile, d'une case ou d'une réponse acceptée, et ne porte aucun chiffre. Une réponse courte n'accepte que la forme avec majuscule, et l'indice dit « majuscule ».
+  - **Ce que les tableaux écrivent.** Être : six sujets par part, affirmer, nier, demander, répondre court. Avoir : « has got » et « have got » avec des choses comptables, les phrases
+    anglaises à relier à leur sens français. Pouvoir : « can » et « cannot », dix verbes. La maison : huit scènes par part (un objet, une préposition, un lieu), dites dans les deux langues
+    et relues par le test ; la réponse écrite est une préposition d'un seul mot. Les mois : voisins, anniversaires, la suite « in ___ » du mois qui manque, les mois par semestre, les mois de
+    trente et de trente et un jours (février n'est jamais classé). Le temps : juillet à septembre sont pluvieux, décembre à avril sont secs, les mois de passage ne sont jamais posés.
+    L'heure : l'heure pile et la demie seulement (« It is half past three. »), jamais « quarter past » ; l'énoncé écrit « 3 h 30 » (jamais « : » dans une consigne), les tuiles « 3:30 ».
+  - **HORS FICHE, À FAIRE RELIRE PAR UN PROFESSEUR D'ANGLAIS** : les prénoms et les groupes nominaux des sujets, le français de chaque phrase de « have got » et de « can », les scènes de
+    la maison, les anniversaires, les saisons du temps (saison des pluies et saison sèche) et les consignes variées de « What time is it? ».
+  - **Pièges rencontrés.** (1) Les types « question » du temps et de l'heure étaient inscrits comme ordre : le contrôleur les voulait en QCM. (2) `match_pair_identical` est bloquant : le
+    mot « table » est exclu du relier de la maison (même mot en français et en anglais). (3) Un indice ne répète aucun mot d'une réponse ou d'une tuile : « they », « pièce », « jours » et
+    « time » ont dû être reformulés. (4) Une consigne d'heure avec « : » : elle dit « 3 h 30 ». (5) La même question à deux paliers de l'heure (6,7 %) : chaque palier a ses consignes.
+    (6) `programme.test.ts` réservait les gabarits d'anglais au CI, au CP et au CE1 ; le CE2 y est ajouté, la règle sur l'écoute et l'oral reste.
+  - **Mesuré** : 131 tests (`convex/__tests__/ce2AnglaisTemplates.test.ts`), dont une vérification par gabarit contre des tableaux écrits à part ; 84 pannes provoquées sur 84 vues
+    (`scratchpad/mutations-ce2en.py`) ; le contrôleur ne signale aucun défaut sur 6 000 paliers fabriqués (60 000 exercices), sans doublon dans un palier ; 0,0 % de questions revues
+    d'un palier à l'autre.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
