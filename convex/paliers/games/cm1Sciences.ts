@@ -894,8 +894,8 @@ const HYG_KIND: Pool = {
       hint: "Tous les habitants y participent ensemble.",
     },
   ],
-  extras: ["Hygiène animale", "Hygiène des objets"],
-  gextras: ["animale", "des objets"],
+  extras: ["Hygiène animale", "Hygiène alimentaire"],
+  gextras: ["animale", "alimentaire"],
 };
 
 const HYG_SKIN: Pool = {

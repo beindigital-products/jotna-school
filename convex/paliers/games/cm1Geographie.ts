@@ -737,7 +737,7 @@ const COM_MEDIA: Pool = {
       q: ["Quel réseau mondial permet de chercher des informations et d'envoyer des messages ?", "Quel réseau relie les ordinateurs du monde entier ?"],
       a: "Internet",
       also: ["internet"],
-      ga: "Internet",
+      ga: "le réseau Internet",
       s: ["Pour chercher une information dans le monde entier, on utilise ___.", "Pour envoyer un message dans le monde entier, on utilise ___."],
       hint: "C'est une toile mondiale qui relie les machines.",
     },

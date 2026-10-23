@@ -318,6 +318,18 @@ describe(`tous les gabarits ${cfg.label}`, () => {
     }
   });
 
+  it("écrivent les options d'une phrase à trou toutes de la même façon : toutes avec un article ou aucune, toutes avec une majuscule ou aucune", () => {
+    const startsWithArticle = (option: string) => /^(le |la |les |l'|un |une |des |du |de l'|de la )/i.test(option);
+    // Un sigle (TER, ASC) s'écrit en capitales par nature : il ne compte pas comme un nom propre.
+    const startsWithCapital = (option: string) => /^\p{Lu}/u.test(option) && !/^[\p{Lu}]{2,}$/u.test(option);
+    for (const { kind, exo } of exos) {
+      if (GAME_KINDS[kind as GameKind].type !== "fill-blank") continue;
+      const options = blankOf(exo).options;
+      expect(new Set(options.map(startsWithArticle)).size, `${kind} : articles mêlés (${options.join(" / ")}) dans ${textOf(exo)}`).toBe(1);
+      expect(new Set(options.map(startsWithCapital)).size, `${kind} : majuscules mêlées (${options.join(" / ")}) dans ${textOf(exo)}`).toBe(1);
+    }
+  });
+
   it("n'écrivent aucun émoji, ni sur une tuile, ni dans un indice, ni dans un énoncé", () => {
     for (const { kind, exo } of exos) {
       expect(/\p{Extended_Pictographic}/u.test(exo.prompt), `${kind} : ${exo.prompt}`).toBe(false);

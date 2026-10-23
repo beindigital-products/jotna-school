@@ -132,6 +132,8 @@ const ASSOC: Record<string, string[]> = {
   imiter: ["reproduit les gestes et la voix", "reproduire les gestes et la voix"],
   spectateur: [],
   decor: [],
+  chanter: [],
+  applaudir: [],
 };
 
 /** Les réponses aussi justes l'une que l'autre à une même question : jamais proposées ensemble. */

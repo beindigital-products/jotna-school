@@ -62,6 +62,7 @@ const DIA_MOTS: Pool = {
       id: "appartenance",
       q: ["Comment appelle-t-on le sentiment de faire partie d'un groupe, comme un quartier ou une équipe ?"],
       a: "Appartenance",
+      ga: "l'appartenance",
       hint: "On le ressent avec sa famille, son équipe ou son quartier.",
     },
   ],
