@@ -69,7 +69,7 @@ export const GAMES_BY_SUBJECT: Record<DemoSubject, Partial<Record<DemoClass, Gam
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Lignes, frises et figures" }] },
     ],
     CE1: [
-      { type: "pattern", options: [{ kind: "suite-nombres", topic: "Les nombres jusqu'à 1 000" }] },
+      // Les fiches de nombres du CE1 fabriquent leurs propres suites (`nombresCe1.ts`, type « fill-blank ») : plus de « pattern ».
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Droites, angles et figures" }] },
     ],
     CE2: [
