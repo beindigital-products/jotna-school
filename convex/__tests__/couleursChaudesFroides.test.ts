@@ -53,6 +53,15 @@ describe("couleurs-chaudes-froides : un palier, quatre paliers", () => {
     }
   });
 
+  it("aucun énoncé ne nomme un objet d'une seule couleur, qui contredirait une autre bonne réponse de la même température", () => {
+    // « celle des feuilles du manguier » (vert) avec « bleu » ou « violet » pour réponse, « celle d'une mangue mûre » avec « jaune » : l'énoncé
+    // décrit la température, jamais une couleur en particulier.
+    const oneColourObjects = /feuille|manguier|mangue|herbe|ciel|banane|tomate|aubergine/iu;
+    for (const seed of SEEDS.slice(0, 40)) {
+      for (let p = 1; p <= 4; p++) for (const q of palier(seed, p)) expect(q.prompt, `${seed} palier ${p}`).not.toMatch(oneColourObjects);
+    }
+  });
+
   it("aucune question (énoncé et réponse) ne revient d'un palier à l'autre", () => {
     for (const seed of SEEDS) {
       const seen = new Map<string, number>();
