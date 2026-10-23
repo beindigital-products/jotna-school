@@ -2775,6 +2775,29 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     déjà en ligne (les âges de la préhistoire, les découvertes, le pouvoir du roi, la caravane, l'exil au Gabon) : corrigé dans cette PR, ces paliers sont à régénérer.
   - **Mesuré** : 94 tests (`convex/__tests__/cm1SciencesTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part ; 101 pannes provoquées sur 102 vues (`scratchpad/mutations-cm1sci.py` : une réponse changée pour chacun des soixante-quatre faits, des suites, des paires et des glissés abîmés, un indice qui écrit la réponse, la fenêtre qui suit le niveau) ; la dernière écarte un mauvais choix que la rotation des lignes ne propose de toute façon jamais (le `not` de « bien mâcher » pour « se brosser les dents ») ; le contrôleur ne
     signale aucun défaut sur 15 000 paliers fabriqués (150 000 exercices), sans doublon dans un palier ; 0,0 à 0,1 % de questions revues d'un palier à l'autre. `sortRows` ne répète plus une ligne quand on en demande plus qu'il n'y a de combinaisons, et les glissés servent jusqu'à huit combinaisons : un étiquetage faux ne se cache plus dans une combinaison jamais tirée.
+- **Le civique et la comédie du CM1** (`paliers/games/cm1Civique.ts` et `cm1Comedie.ts`, avec `cm1Faits.ts`) : trente gabarits pour les cinq thématiques `ci-cm1-dialogue`,
+  `ci-cm1-ecole`, `ci-cm1-commune`, `ci-cm1-associations` et `ar-cm1-comedie`, que le modèle n'écrit plus. Les noms commencent par `cm1-dia-`, `cm1-sco-`, `cm1-mun-`, `cm1-aso-` et
+  `cm1-cmd-` (`cm1-com-` était déjà pris par les voies de communication de la géographie). Même construction que les sciences : six gabarits par thématique, un QCM (3 par palier),
+  une phrase à trou (2), une réponse à écrire (1), un ordre (1), un appariement (1) et un glissé (2).
+  - **Ce que les tableaux disent.** Le dialogue : le conflit, le dialogue, le médiateur, le compromis, l'appartenance ; écouter l'autre, garder son calme, respecter les différences,
+    chercher une solution commune, faire appel à un médiateur, et les étapes pour régler un conflit. L'école : la coopérative, le gouvernement et le parlement scolaires, le comité de
+    gestion ; le président, le secrétaire et le trésorier ; l'élection, le bulletin de vote, l'ordre du jour, le compte rendu. La commune : la commune, le maire, le conseil municipal, le
+    conseil départemental ; le gouverneur, le préfet et le sous-préfet, qui représentent l'État dans une région, un département, un arrondissement ; élus par les habitants ou nommés par
+    l'État. Le quartier : l'association sportive et culturelle (ASC), le groupement de femmes, le comité de quartier, l'association de parents d'élèves (APE) et leur but. La comédie : ce que
+    le visage, la voix et le corps montrent de la joie et de la tristesse, comédien, rôle, jeu de rôle, imiter, et les étapes d'un jeu de rôle. Aucun chiffre (nombre de communes, de
+    régions, de conseillers), aucune loi, aucun nom de personne.
+  - **HORS FICHE, À FAIRE RELIRE PAR LE PROPRIÉTAIRE** : le « parlement scolaire » (assemblée de délégués qui discutent et votent) et le « gouvernement scolaire » (élèves élus qui se partagent
+    les tâches), les rôles du président, du secrétaire et du trésorier d'une coopérative, le comité de gestion fait de parents et de maîtres, le gouverneur, le préfet et le sous-préfet
+    « nommés par l'État » (la fiche dit seulement « déconcentrés »), l'ordre pays, région, département, arrondissement, les activités des groupements de femmes (jardin, savon, teinture) et des
+    comités de quartier (nettoyer, surveiller, boucher les flaques), les signes de la joie et de la tristesse (voix claire et vive, voix basse et lente, épaules basses, sauts), les étapes d'un
+    jeu de rôle.
+  - **Pièges rencontrés.** (1) Les énoncés ont une apostrophe au plus : « l'école » dans une question qui en a déjà deux oblige à dire « la vie scolaire ». (2) Une tuile d'un mot n'a pas
+    d'article (« Joie », pas « La joie ») : en CI le test des images la prendrait pour une chose à illustrer ; l'article est dans l'option du trou (`ga`). (3) Une même question n'a pas deux
+    bonnes réponses : les cinq attitudes qui préviennent un conflit, les trois signes de la joie, les trois signes de la tristesse, le maire et le conseil municipal pour « qui dirige la commune »
+    sont liés par `not` ; les tables du test les listent en paires pour que les deux ne se proposent jamais ensemble. (4) Un indice commun écrit un mot d'une tuile (« avant » dans
+    « Entraînement avant de jouer ») : la tuile est reformulée, pas l'indice. (5) Un lot de quatorze lignes ne tient pas dans cinq fenêtres de trois : il en faut quinze, d'où une troisième
+    façon de poser chaque but d'organisation.
+  - **Mesuré** : 82 tests (`convex/__tests__/cm1CiviqueArtsTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part ; 97 pannes provoquées sur 98 vues (`scratchpad/mutations-cm1civ.py` : une réponse changée pour chaque fait, des suites, des paires et des glissés abîmés, des réponses aussi justes proposées, un indice qui écrit la réponse ; la dernière retire le `not` d'un signe de la tristesse que la rotation ne propose jamais) ; le contrôleur ne signale aucun défaut sur 15 000 paliers fabriqués (150 000 exercices), sans doublon dans un palier ; 0,0 à 0,1 % de questions revues d'un palier à l'autre.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

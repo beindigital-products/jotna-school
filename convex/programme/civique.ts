@@ -300,24 +300,56 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
     CM1: [
       {
         key: "ci-cm1-dialogue",
+        games: [
+          { kind: "cm1-dia-qcm", count: 3 },
+          { kind: "cm1-dia-trou", count: 2 },
+          { kind: "cm1-dia-ecrire", count: 1 },
+          { kind: "cm1-dia-ordre", count: 1 },
+          { kind: "cm1-dia-relier", count: 1 },
+          { kind: "cm1-dia-glisser", count: 2 },
+        ],
         name: "Prévenir les conflits par le dialogue",
         description:
           "Vivre ensemble, étape 3, paliers 1-2 : les différences et les problèmes d'appartenance (quartier, groupe, équipe), la prévention des conflits par le dialogue, la médiation et le compromis.",
       },
       {
         key: "ci-cm1-ecole",
+        games: [
+          { kind: "cm1-sco-qcm", count: 3 },
+          { kind: "cm1-sco-trou", count: 2 },
+          { kind: "cm1-sco-ecrire", count: 1 },
+          { kind: "cm1-sco-ordre", count: 1 },
+          { kind: "cm1-sco-relier", count: 1 },
+          { kind: "cm1-sco-glisser", count: 2 },
+        ],
         name: "La coopérative et le gouvernement scolaire",
         description:
           "Vivre ensemble, étape 3, paliers 1-2 : les organisations scolaires et parascolaires : la coopérative scolaire, le parlement et le gouvernement scolaire, le comité de gestion de l'école ; leurs rôles, les élections, les réunions.",
       },
       {
         key: "ci-cm1-commune",
+        games: [
+          { kind: "cm1-mun-qcm", count: 3 },
+          { kind: "cm1-mun-trou", count: 2 },
+          { kind: "cm1-mun-ecrire", count: 1 },
+          { kind: "cm1-mun-ordre", count: 1 },
+          { kind: "cm1-mun-relier", count: 1 },
+          { kind: "cm1-mun-glisser", count: 2 },
+        ],
         name: "La commune et l'État",
         description:
           "Vivre ensemble, étape 3, paliers 1-2 : les institutions décentralisées (la commune et le département, le maire, le conseil municipal, le conseil départemental) et déconcentrées (le gouverneur de région, le préfet de département, le sous-préfet d'arrondissement).",
       },
       {
         key: "ci-cm1-associations",
+        games: [
+          { kind: "cm1-aso-qcm", count: 3 },
+          { kind: "cm1-aso-trou", count: 2 },
+          { kind: "cm1-aso-ecrire", count: 1 },
+          { kind: "cm1-aso-ordre", count: 1 },
+          { kind: "cm1-aso-relier", count: 1 },
+          { kind: "cm1-aso-glisser", count: 2 },
+        ],
         name: "Les organisations de mon quartier",
         description:
           "Vivre ensemble, étape 3, paliers 1-2 : les organisations locales : associations sportives et culturelles (ASC), groupements de femmes, comités de quartier, associations de parents d'élèves ; à quoi elles servent.",
