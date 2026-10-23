@@ -117,10 +117,10 @@ export function ce2Question(
   });
 }
 
-export function ce2Gap(ctx: GameContext, kind: string, concept: string, rows: readonly GapRow[], uses = 1, shift = 0): GeneratedGame {
+export function ce2Gap(ctx: GameContext, kind: string, concept: string, rows: readonly GapRow[], uses = 1, shift = 0, prompt = "Complète la phrase."): GeneratedGame {
   return gapGame(ctx, kind, concept, () => {
     const row = pickRow(ctx, kind, rows, uses, (candidate) => candidate.text, shift);
-    return { prompt: "Complète la phrase.", text: row.text, answer: row.answer, wrong: row.wrong, hints: row.hints };
+    return { prompt, text: row.text, answer: row.answer, wrong: row.wrong, hints: row.hints };
   });
 }
 
