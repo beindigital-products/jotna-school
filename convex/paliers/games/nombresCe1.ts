@@ -297,12 +297,14 @@ export function makeCe1NbDecompose(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Entre quelles centaines se trouve 345 ? » : les dizaines sous 1 000 au premier palier, les centaines ensuite ; les centaines, puis les milliers sous 10 000. */
+/** « Entre quelles centaines se trouve 345 ? » (« Entre quels milliers… » au masculin) : les dizaines sous 1 000 au premier palier, les centaines ensuite ; les centaines, puis les milliers sous 10 000. */
 export function makeCe1NbBracket(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "ce1-nb-encadrer", "encadrer un nombre", () => {
     const { cap, lo, top } = rangeOfCe1(ctx);
     const unit = cap === 1000 ? (ctx.level === 1 ? 10 : 100) : ctx.level <= 2 ? 100 : 1000;
     const name = unit === 10 ? "dizaines" : unit === 100 ? "centaines" : "milliers";
+    // « milliers » est masculin : « quels milliers », mais « quelles dizaines » et « quelles centaines ».
+    const which = unit === 1000 ? "quels" : "quelles";
     // Un nombre qui n'est pas un multiple du rang, dans la plage du palier : le décaler d'un multiple dépasserait parfois le plafond du palier.
     let n = randomInt(ctx.rng, lo, Math.min(top, cap - 1));
     for (let attempt = 0; attempt < 50 && n % unit === 0; attempt++) n = randomInt(ctx.rng, lo, Math.min(top, cap - 1));
@@ -312,7 +314,7 @@ export function makeCe1NbBracket(ctx: GameContext): GeneratedGame {
     const wrong = [below - unit, below + unit].filter((low) => low >= 0 && low + unit <= cap);
     if (wrong.length < 2) wrong.push(below + 2 * unit <= cap - unit ? below + 2 * unit : below - 2 * unit);
     return {
-      prompt: `Entre quelles ${name} se trouve ${show(n)} ?`,
+      prompt: `Entre ${which} ${name} se trouve ${show(n)} ?`,
       answer: label(below),
       wrong: wrong.slice(0, 2).map(label),
       hints: [
