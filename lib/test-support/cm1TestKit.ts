@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { auditExercise } from "../paliers/exerciseAudit";
-import { GAME_KINDS, generateGames, regenerateGame, type GameKind } from "../paliers/games";
-import { SHORT_OF_CHOICES } from "../paliers/games/cm1Faits";
-import { gameLevel, makeContext, type GameLevel } from "../paliers/games/shared";
-import { topicUsesModel } from "../paliers/pregen";
-import { allProgrammeEntries } from "../programme";
-import { PALIER_SIZE } from "../paliers/scoring";
+import { auditExercise } from "@/convex/paliers/exerciseAudit";
+import { GAME_KINDS, generateGames, regenerateGame, type GameKind } from "@/convex/paliers/games";
+import { SHORT_OF_CHOICES } from "@/convex/paliers/games/cm1Faits";
+import { gameLevel, makeContext, type GameLevel } from "@/convex/paliers/games/shared";
+import { topicUsesModel } from "@/convex/paliers/pregen";
+import { allProgrammeEntries } from "@/convex/programme";
+import { PALIER_SIZE } from "@/convex/paliers/scoring";
 
 // Ces tests jouent des milliers de tirages : sur le serveur de CI, chargé, l'un d'eux dépasse les 5 secondes par défaut.
 vi.setConfig({ testTimeout: 120_000 });
