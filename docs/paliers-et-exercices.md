@@ -2501,6 +2501,39 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     -erai, un « vas » à l'impératif, un « marché » dans les mots de la phrase nominale…) toutes vues ; le contrôleur ne signale aucun défaut sur 5 000 paliers fabriqués
     (50 000 exercices), tous de dix exercices et d'au moins cinq types ; sur 200 graines par thématique, aucune question ne revient d'un palier à l'autre. PAS vu :
     les gabarits à l'écran (les types sont ceux des lots déjà vus sur l'iPhone 17), un vrai iPhone, la production.
+- **Le français du CE2, orthographe, vocabulaire et lecture** (`paliers/games/ce2Orthographe.ts`, `ce2Vocabulaire.ts` et `ce2Lecture.ts`, avec les aides de `ce2Outils.ts`) :
+  vingt-cinq gabarits pour `fr-ce2-orthographe`, `fr-ce2-vocabulaire` et `fr-ce2-lecture`, les trois dernières thématiques de français du CE2 (lot 5, avec le lot 4
+  du français). **Avec ce lot, les quarante-cinq thématiques du CE2 sont fabriquées par le code.** Sur l'échantillon de CE2 lu le 22 octobre 2026 (30 exercices),
+  20 étaient faux ou creux : « Combien de strophes a ce poème ? » sans aucun poème à l'écran, « Quel est le synonyme de rapide ? » avec « vite » (un adverbe pour un
+  adjectif), « ___ (ils/ils sont) là » (un trou dont le choix répète l'énoncé), « Place ces mots dans la bonne catégorie : mère, mer, maire » (une seule catégorie), des
+  clés qui disaient « Les mots sont bien classés ». Les noms commencent par `ce2-` ; les fonctions sont des `makeCe2…`.
+  - **Le texte est dans l'énoncé** pour la lecture : une lettre (le lieu et la date, « Cher … », le message, la formule de politesse, la signature), une affiche (le titre,
+    l'endroit, le jour et l'heure, le prix), un poème (des couples de vers qui riment, séparés par un blanc). La réponse se lit dans le texte, et un mauvais choix est une
+    chose que le texte ne dit pas. Un énoncé de lecture n'a ni deux-points, ni plus d'une apostrophe, et au plus cent dix mots (le plafond du CE2 du contrôleur). Les
+    lieux, les moments et les titres des douze affiches ont des longueurs voisines, pour que le contrôleur ne voie pas une bonne option deux fois plus longue.
+  - **Deux couples de vers d'un poème ne finissent jamais par le même son** : le mot qui rime avec un mot est unique (« toit » rime avec « moi », « jour » avec « tour »).
+    Le trou d'un vers a son propre énoncé, « Complète le vers avec le mot qui rime » (`ce2Gap` prend maintenant l'énoncé en dernier paramètre, la valeur par défaut est celle
+    de tous les autres gabarits).
+  - **L'orthographe** : le féminin (lion / lionne, boulanger / boulangère, maître / maîtresse…) et le pluriel (-s, -x, -al devient -aux) sont des règles ; jamais d'exception
+    (un bal, un pneu, un bijou). Un mauvais choix est une forme qui n'existe pas (« lione », « gâteaus ») ou le singulier. « ou / où » et « son / sont » : « au » et « ont »
+    ne vont jamais dans la phrase. Un nom est écrit seul (« lionne »), jamais avec son article : `templatePictures.test.ts` refuse « article + un seul nom ».
+  - **Le vocabulaire** : un synonyme est de même nature et de même force (heureux / content, pas grand / énorme) ; un mauvais choix est un contraire ou un mot sans
+    rapport. Les couples « heureux / content » et « joyeux / gai » seraient mêlés dans un même appariement : le second a été remplacé par « voiture / auto ». Les
+    faux amis d'une famille (« tarte » pour « terre », « danse » pour « dent ») ne sont jamais de la famille. Une formule de lettre est du groupe qui commence
+    (« Cher Moussa, ») ou du groupe qui termine (« À bientôt, »), jamais des deux.
+  - **HORS FICHE, À FAIRE RELIRE** : les neuf féminins au-delà des trois de la fiche, les seize pluriels (feu, jeu, cheveu, canal, hôpital…), les phrases de ou / où et de son / sont ;
+    les douze couples de synonymes, les douze familles de mots et leurs faux amis, les douze phrases des homonymes, les douze listes alphabétiques ; les douze lettres, les douze
+    affiches (les fêtes, les lieux, les prix en francs CFA), les six poèmes (quatorze couples de vers écrits pour l'exercice).
+  - **Pièges rencontrés.** (1) Un énoncé a une apostrophe droite au plus : « Quel livre explique les mots dans l'ordre de l'alphabet ? » en avait deux. (2) Un indice n'écrit
+    aucun mot de quatre lettres ou plus d'une réponse ni d'une case : « pluriel » (le nom de la case), « mots » (dans « famille de mots »). (3) Le contrôleur voit une bonne option
+    deux fois plus longue que les autres : un lieu de 12 lettres à côté d'un lieu de 26. (4) Dans un test de mutation, une panne qui ne change pas le texte n'en est pas une : changer
+    « malin » pour « fâché » parmi les mauvais choix de « triste » laisse l'exercice juste.
+  - **Mesuré** : 72 tests (`convex/__tests__/ce2FrancaisSuiteTemplates.test.ts`), dont une vérification par gabarit qui RECALCULE la réponse (règles du féminin et du pluriel, règle de
+    « son / sont » et de « ou / où », classes de synonymes, familles, tri alphabétique français, relecture d'une lettre, d'une affiche et d'un poème avec une table des sons de rime),
+    à 4 niveaux et 60 graines ; 70 pannes provoquées dans le code (un féminin sans accent, un pluriel en -s, un « ou » pour un « où », un synonyme pris pour un contraire, une
+    signature prise pour le destinataire, un mot qui ne rime pas, deux strophes comptées pour trois…) toutes vues ; le contrôleur ne signale aucun défaut sur 3 000 paliers
+    fabriqués (30 000 exercices), tous de dix exercices et d'au moins cinq types ; sur 200 graines par thématique, aucune question ne revient d'un palier à l'autre. PAS vu : les
+    gabarits à l'écran (les retours à la ligne d'un énoncé sont gardés par `ExercisePrompt`, `whitespace-pre-line`), un vrai iPhone, la production.
 - **Les homophones et la lecture du CE1** (`paliers/games/ce1Homophones.ts` et `ce1Lecture.ts`) : vingt gabarits pour les deux dernières
   thématiques de français du CE1, `fr-ce1-homophones` (a/à, et/est, on/ont) et `fr-ce1-lecture` (Lire et comprendre), que le modèle n'écrit plus. Avec
   les cinq du lot précédent, les sept thématiques de français du CE1 sont des gabarits. Les noms commencent par `ce1-fr-homo-` et `ce1-fr-lec-` ; les

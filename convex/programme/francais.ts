@@ -430,18 +430,49 @@ export const FRANCAIS: ProgrammeSubject = {
       {
         key: "fr-ce2-orthographe",
         name: "Féminin, pluriel, ou/où, son/sont",
+        games: [
+          { kind: "ce2-ortho-feminin", count: 1 },
+          { kind: "ce2-ortho-feminin-trou", count: 1 },
+          { kind: "ce2-ortho-feminin-relier", count: 1 },
+          { kind: "ce2-ortho-pluriel", count: 1 },
+          { kind: "ce2-ortho-pluriel-trou", count: 1 },
+          { kind: "ce2-ortho-pluriel-glisser", count: 1 },
+          { kind: "ce2-ortho-ou", count: 1 },
+          { kind: "ce2-ortho-son", count: 1 },
+          { kind: "ce2-ortho-homophone", count: 1 },
+          { kind: "ce2-ortho-ecrire", count: 1 },
+        ],
         description:
           "Orthographe, paliers 4 à 6 du CE2 : le féminin des noms (un lion / une lionne, un boulanger / une boulangère, un maître / une maîtresse), le pluriel des noms (-s, -x, -al/-aux), les homophones ou/où et son/sont.",
       },
       {
         key: "fr-ce2-vocabulaire",
         name: "Synonymes, familles, homonymes",
+        games: [
+          { kind: "ce2-vocab-synonyme", count: 2 },
+          { kind: "ce2-vocab-synonyme-relier", count: 1 },
+          { kind: "ce2-vocab-famille", count: 1 },
+          { kind: "ce2-vocab-famille-glisser", count: 1 },
+          { kind: "ce2-vocab-homonyme", count: 2 },
+          { kind: "ce2-vocab-lettre", count: 1 },
+          { kind: "ce2-vocab-ordre", count: 1 },
+          { kind: "ce2-vocab-ecrire", count: 1 },
+        ],
         description:
           "Vocabulaire du CE2 : synonymes, familles de mots (terre, terrain, enterrer), homonymes (vers, verre, vert ; mer, mère, maire), jeux de mots, formules pour commencer et pour terminer une lettre, l'usage du dictionnaire.",
       },
       {
         key: "fr-ce2-lecture",
         name: "Lire une lettre, une affiche, un poème",
+        games: [
+          { kind: "ce2-lecture-lettre", count: 2 },
+          { kind: "ce2-lecture-affiche", count: 2 },
+          { kind: "ce2-lecture-affiche-glisser", count: 1 },
+          { kind: "ce2-lecture-poeme", count: 2 },
+          { kind: "ce2-lecture-poeme-trou", count: 1 },
+          { kind: "ce2-lecture-lettre-ordre", count: 1 },
+          { kind: "ce2-lecture-ecrire", count: 1 },
+        ],
         description:
           "Lecture, paliers 4 à 6 du CE2 : retrouver dans une lettre l'expéditeur, le destinataire, la date et la formule de politesse ; lire une affiche (quoi, où, quand, combien) ; reconnaître un poème (vers, strophes, rimes). Textes écrits pour l'exercice.",
       },
