@@ -2798,6 +2798,36 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     « Entraînement avant de jouer ») : la tuile est reformulée, pas l'indice. (5) Un lot de quatorze lignes ne tient pas dans cinq fenêtres de trois : il en faut quinze, d'où une troisième
     façon de poser chaque but d'organisation. (6) Les options d'une phrase à trou s'écrivent toutes de la même façon : toutes avec un article ou aucune, toutes avec une majuscule ou aucune (un sigle comme TER ne compte pas). Une option seule d'une autre forme (« Appartenance » parmi « un conflit », « un compromis » ; « imiter » parmi des noms ; « delta du Saloum » parmi « Wanar », « Touba » ; « Internet » parmi « la radio », « la télévision » ; « des objets » parmi des adjectifs) se devine ou s'élimine à sa forme. Aucun test du lot ne le voyait : la relecture des exercices en production l'a trouvé. Le moteur `cm1TestKit.ts` le vérifie maintenant pour toutes les thématiques du CM1.
   - **Mesuré** : 82 tests (`convex/__tests__/cm1CiviqueArtsTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part ; 97 pannes provoquées sur 98 vues (`scratchpad/mutations-cm1civ.py` : une réponse changée pour chaque fait, des suites, des paires et des glissés abîmés, des réponses aussi justes proposées, un indice qui écrit la réponse ; la dernière retire le `not` d'un signe de la tristesse que la rotation ne propose jamais) ; le contrôleur ne signale aucun défaut sur 15 000 paliers fabriqués (150 000 exercices), sans doublon dans un palier ; 0,0 à 0,1 % de questions revues d'un palier à l'autre.
+- **Les mathématiques du CM1, les nombres** (`paliers/games/nombresCm1.ts`, `divisibiliteCm1.ts`, `divisionCm1.ts`, `fractionsCm1.ts`, `decimauxCm1.ts`, avec `cm1MathsOutils.ts`) :
+  cinquante gabarits pour les cinq thématiques `ma-cm1-grands-nombres`, `-divisibilite`, `-division`, `-fractions` et `-decimaux`, que le modèle n'écrit plus. Les noms commencent
+  par `cm1-gn-`, `cm1-dbl-`, `cm1-div-`, `cm1-frc-` et `cm1-dcm-` (`cm1-dec-` était déjà pris par le découpage administratif de la géographie). Pas de tableau de faits ici : la
+  réponse est CALCULÉE (un reste de division, un produit en croix, un nombre de centièmes), comme les mathématiques du CE2. Dix gabarits par thématique, un de chaque, cinq à six types
+  par palier. Restent au CM1 : figures, périmètres et aires, mesures (maths), le français (7), l'anglais (7, une autre branche).
+  - **Cinq paliers, pas quatre.** `stepOf` (`cm1MathsOutils.ts`) lit la place du palier (1 à 5) dans `GameContext.palier` ; sans lui (`regenerateGame`), elle se déduit du niveau (1, 2, 4, 5).
+    Le niveau 2 joue donc les paliers 2 et 3, et les vérifications des tests en acceptent les deux plages.
+  - **Ce que chaque thématique pose.** Les grands nombres : jusqu'à 9 999 999 (le milliard est au CM2), voisin et ajouter un nombre rond (retenues qui traversent plusieurs rangs), comparer et
+    ranger (deux nombres du même millier, ou les mêmes chiffres échangés), chiffre, valeur et nombre d'un rang, décomposer, arrondir (de cinq à neuf on monte), seuil, suite, lire et écrire en lettres
+    (`wordsOfCm1` : « quatre-vingt mille », « deux cent mille », « deux cents », « un million » mais « deux millions »). La divisibilité : critères de 2, 5, 10, 3 et 9 (le dernier chiffre, la
+    somme des chiffres), un seul nombre répond, pièges (3 mais pas 9, 5 mais pas 10), multiples, tables, multiplier par dix, cent, mille, double et moitié. La division : un diviseur à un ou deux chiffres,
+    un dividende de 99 999 au plus, quotient, reste toujours plus petit que le diviseur, vérifier, partage, boîtes pleines, voyages. Les fractions : lire (« trois huitièmes », « deux tiers »,
+    « un demi »), écrire, part d'un tout, comparer à 1, comparer et ranger par produit en croix, fractions égales, unités, dixièmes et centièmes. Les décimaux : jusqu'aux centièmes, partie entière
+    et partie décimale, chiffre et valeur d'un rang, écrire, fraction décimale, comparer (4,5 contre 4,25), seuil, suite, additionner et soustraire, complément à 1, 10, 100. Un décimal est un
+    entier de centièmes, écrit par `dec` (virgule française, jamais de zéro inutile à droite).
+  - **HORS FICHE, À FAIRE RELIRE PAR LE PROPRIÉTAIRE** : la divisibilité par 10 (la fiche dit 2, 5, 3 et 9) ; les multiples de 11, 12, 15 et 25 ; multiplier par 1 000 et deux nombres ronds
+    (40 × 30, 600 × 90) ; arrondir à la dizaine de mille, à la centaine de mille et au million (la fiche dit seulement « arrondir ») ; les fractions de dénominateur jusqu'à 12 et 100 ;
+    comparer et ranger des fractions entre elles, et les fractions égales (la fiche dit « comparer à 1 ») ; la « partie décimale » comprise comme les chiffres après la virgule (« 67 » pour 45,67) ;
+    le complément d'un décimal à 1, 10 et 100 ; les décimaux jusqu'à 499,99 ; un dividende jusqu'à 99 999. Aucun dessin : « représenter » une fraction est dit par une phrase (un gâteau coupé en 8
+    parts, on en mange 3), pas montré.
+  - **Pièges rencontrés.** (1) Le test attrapait ce que le contrôleur ne voit pas : « ajoutant 1 000 000 à 9 077 392 » donnait 10 077 392, au-delà du plafond de la fiche. (2) Un choix « vrai en
+    chiffres » (« 651 reste 10 » pour 4 567 ÷ 7) est une seconde bonne réponse : le test exige qu'un seul choix de division le soit, même avec un reste trop grand. (3) « 04 » et « 4 » valent le même
+    nombre : le contrôleur refuse ces deux choix ensemble (partie décimale de 85,04). (4) En CI, le test des images refuse « un quart » comme tuile : l'énoncé de lecture commence par « Lis la fraction… ».
+    (5) Les cases d'un glissé (« Divisible par 3 », « Plus petite que 1 ») interdisent leurs mots dans les indices. (6) Un mauvais choix déjà écrit dans la suite ou la somme affichée est écarté (`wrongNumbers`
+    avec `avoid`). (7) Un nombre de plus de trois chiffres s'écrit avec ses espaces, même en réponse (« 1 400 »).
+  - **Mesuré** : 203 tests (`convex/__tests__/cm1MathsNombresTemplates.test.ts`, `Divisibilite`, `Division`, `Fractions`, `Decimaux`, avec le moteur `lib/test-support/cm1MathsKit.ts`), dont une
+    vérification par gabarit qui recalcule la réponse avec sa propre arithmétique (les nombres en lettres sont comparés à un second algorithme pour chacun des 9 999 999 nombres, par pas de 13 au-delà d'un million) ;
+    76 pannes provoquées vues sur 77 (`scratchpad/mutations-cm1m1.py` ; la survivante, « deux demis » proposé comme mauvais choix, est du français valable) ; le contrôleur ne trouve aucun défaut, avertissement
+    compris, sur 15 000 exercices par thématique ; moins de 5 % de questions revues d'un palier à l'autre ; recherche sur les 26 thématiques du CM1 fabriquées par le code (390 000 exercices) : aucun défaut
+    de français dans les maths. PAS vu : l'écran, l'iPhone, l'application native, la production.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

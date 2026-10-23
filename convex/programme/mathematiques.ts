@@ -587,30 +587,95 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Les grands nombres",
         description:
           "Activités numériques de l'étape 3, paliers 1 à 3 (répartition proposée pour le CM1) : les nombres jusqu'aux millions ; lire, écrire, décomposer, comparer, ranger et arrondir.",
+        // Dix gabarits (`nombresCm1.ts`) : jamais au-delà de 9 999 999 (le milliard est au CM2).
+        games: [
+          { kind: "cm1-gn-voisin", count: 1 },
+          { kind: "cm1-gn-comparer", count: 1 },
+          { kind: "cm1-gn-ordre", count: 1 },
+          { kind: "cm1-gn-chiffres", count: 1 },
+          { kind: "cm1-gn-decomposer", count: 1 },
+          { kind: "cm1-gn-arrondir", count: 1 },
+          { kind: "cm1-gn-glisser", count: 1 },
+          { kind: "cm1-gn-suite", count: 1 },
+          { kind: "cm1-gn-lettres", count: 1 },
+          { kind: "cm1-gn-ecrire", count: 1 },
+        ],
       },
       {
         key: "ma-cm1-divisibilite",
         name: "Divisibilité et calcul mental",
         description:
           "Étape 3, paliers 1 à 3 : les critères de divisibilité par 2, 5, 3 et 9, les multiples, les tables de multiplication et le calcul mental.",
+        // Dix gabarits (`divisibiliteCm1.ts`) : critères de 2, 5, 10, 3 et 9, multiples, tables, multiplier par dix, cent, mille, double et moitié.
+        games: [
+          { kind: "cm1-dbl-critere", count: 1 },
+          { kind: "cm1-dbl-glisser", count: 1 },
+          { kind: "cm1-dbl-chiffre", count: 1 },
+          { kind: "cm1-dbl-multiple", count: 1 },
+          { kind: "cm1-dbl-suite", count: 1 },
+          { kind: "cm1-dbl-fois", count: 1 },
+          { kind: "cm1-dbl-dix", count: 1 },
+          { kind: "cm1-dbl-ecrire", count: 1 },
+          { kind: "cm1-dbl-relier", count: 1 },
+          { kind: "cm1-dbl-ordre", count: 1 },
+        ],
       },
       {
         key: "ma-cm1-division",
         name: "La division posée",
         description:
           "Étape 3, paliers 1 à 3 : la division posée par un nombre à un ou deux chiffres, le quotient et le reste, problèmes de partage.",
+        // Dix gabarits (`divisionCm1.ts`) : un diviseur à un ou deux chiffres, un dividende de 99 999 au plus.
+        games: [
+          { kind: "cm1-div-poser", count: 1 },
+          { kind: "cm1-div-reste", count: 1 },
+          { kind: "cm1-div-verifier", count: 1 },
+          { kind: "cm1-div-ecrire", count: 1 },
+          { kind: "cm1-div-chiffres", count: 1 },
+          { kind: "cm1-div-relier", count: 1 },
+          { kind: "cm1-div-glisser", count: 1 },
+          { kind: "cm1-div-ordre", count: 1 },
+          { kind: "cm1-div-partage", count: 1 },
+          { kind: "cm1-div-groupement", count: 1 },
+        ],
       },
       {
         key: "ma-cm1-fractions",
         name: "Les fractions",
         description:
           "Étape 3, paliers 1 à 3 : les fractions ordinaires (lire, écrire, représenter, comparer à 1) et les fractions décimales (dixièmes, centièmes).",
+        // Dix gabarits (`fractionsCm1.ts`) : lecture, écriture, part d'un tout, comparaison à 1, fractions égales, dixièmes et centièmes. Aucun dessin : les fractions s'écrivent « 3/8 ».
+        games: [
+          { kind: "cm1-frc-lire", count: 1 },
+          { kind: "cm1-frc-ecrire", count: 1 },
+          { kind: "cm1-frc-relier", count: 1 },
+          { kind: "cm1-frc-part", count: 1 },
+          { kind: "cm1-frc-comparer", count: 1 },
+          { kind: "cm1-frc-ordre", count: 1 },
+          { kind: "cm1-frc-un", count: 1 },
+          { kind: "cm1-frc-glisser", count: 1 },
+          { kind: "cm1-frc-egale", count: 1 },
+          { kind: "cm1-frc-unites", count: 1 },
+        ],
       },
       {
         key: "ma-cm1-decimaux",
         name: "Les nombres décimaux",
         description:
           "Étape 3, paliers 1 à 3 : découverte des nombres décimaux (partie entière, partie décimale), lire, écrire, comparer et ranger, additionner et soustraire des décimaux.",
+        // Dix gabarits (`decimauxCm1.ts`) : jusqu'aux centièmes, jamais au-delà (les millièmes sont au CM2).
+        games: [
+          { kind: "cm1-dcm-parties", count: 1 },
+          { kind: "cm1-dcm-chiffres", count: 1 },
+          { kind: "cm1-dcm-ecrire", count: 1 },
+          { kind: "cm1-dcm-relier", count: 1 },
+          { kind: "cm1-dcm-comparer", count: 1 },
+          { kind: "cm1-dcm-ordre", count: 1 },
+          { kind: "cm1-dcm-glisser", count: 1 },
+          { kind: "cm1-dcm-suite", count: 1 },
+          { kind: "cm1-dcm-calcul", count: 1 },
+          { kind: "cm1-dcm-complement", count: 1 },
+        ],
       },
       {
         key: "ma-cm1-figures",
