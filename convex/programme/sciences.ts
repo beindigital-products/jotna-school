@@ -303,36 +303,101 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
         name: "Le corps humain",
         description:
           "IST, étape 2, paliers 3-4 : aspects biologiques de l'homme. Le squelette (crâne, colonne vertébrale, côtes), les muscles, les cinq sens et leurs organes.",
+        // Neuf gabarits (`ce2Vivant.ts`) : quel sens une scène fait travailler, l'organe de chaque sens, relier organe et sens, le rôle du crâne, des côtes, de la colonne et des muscles, ranger os et organes, ranger des scènes par sens, une phrase à trou, un mot à écrire.
+        games: [
+          { kind: "ce2-sens-situation", count: 1 },
+          { kind: "ce2-organe-qcm", count: 1 },
+          { kind: "ce2-sens-relier", count: 1 },
+          { kind: "ce2-os-qcm", count: 1 },
+          { kind: "ce2-os-relier", count: 1 },
+          { kind: "ce2-squelette-glisser", count: 1 },
+          { kind: "ce2-scene-glisser", count: 1 },
+          { kind: "ce2-corps-trou", count: 2 },
+          { kind: "ce2-corps-ecrire", count: 1 },
+        ],
       },
       {
         key: "sc-ce2-plantes",
         name: "La vie des plantes",
         description:
           "IST, étape 2, paliers 3-4 : la germination de la graine (eau, chaleur, air), la croissance, la fleur qui devient fruit, le fruit qui porte les graines (mangue, arachide, mil).",
+        // Six gabarits (`ce2Vivant.ts`) : la germination (eau, chaleur, air), la fleur et le fruit, le noyau, la gousse et les grains, les étapes de la vie d'une plante, relier une partie à ce qu'elle fait, une phrase à trou, un mot à écrire.
+        games: [
+          { kind: "ce2-plante-qcm", count: 3 },
+          { kind: "ce2-plante-trou", count: 2 },
+          { kind: "ce2-plante-ecrire", count: 2 },
+          { kind: "ce2-besoin-glisser", count: 1 },
+          { kind: "ce2-plante-ordre", count: 1 },
+          { kind: "ce2-plante-relier", count: 1 },
+        ],
       },
       {
         key: "sc-ce2-animaux",
         name: "La vie des animaux",
         description:
           "IST, étape 2, paliers 3-4 : la reproduction des animaux, ovipares (poule, tortue, poisson) et vivipares (chèvre, chat, homme) ; le cycle de vie de la grenouille et du papillon.",
+        // Huit gabarits (`ce2Vivant.ts`) : ovipares et vivipares, la définition et la naissance, ranger les animaux, relier un animal à son petit, la vie du papillon, de la grenouille, de la poule et du canard, une phrase à trou, un mot à écrire.
+        games: [
+          { kind: "ce2-ovipare-qcm", count: 1 },
+          { kind: "ce2-animal-definition", count: 1 },
+          { kind: "ce2-animal-glisser", count: 1 },
+          { kind: "ce2-petit-relier", count: 1 },
+          { kind: "ce2-cycle-ordre", count: 1 },
+          { kind: "ce2-cycle-qcm", count: 1 },
+          { kind: "ce2-animal-trou", count: 2 },
+          { kind: "ce2-animal-ecrire", count: 2 },
+        ],
       },
       {
         key: "sc-ce2-electricite",
         name: "Le circuit électrique",
         description:
           "IST, étape 2, paliers 3-4 : le circuit électrique simple (pile, ampoule, fils, interrupteur) ; circuit ouvert et fermé ; conducteurs (métaux) et isolants (plastique, bois) ; les dangers de l'électricité.",
+        // Neuf gabarits (`ce2Milieu.ts`) : le rôle de chaque pièce du circuit, circuit ouvert et fermé, conducteurs et isolants, les dangers, l'ordre de ce qui se passe quand on ferme l'interrupteur, une phrase à trou, un mot à écrire.
+        games: [
+          { kind: "ce2-circuit-piece-qcm", count: 1 },
+          { kind: "ce2-circuit-piece-relier", count: 1 },
+          { kind: "ce2-circuit-etat-qcm", count: 1 },
+          { kind: "ce2-conducteur-glisser", count: 1 },
+          { kind: "ce2-matiere-qcm", count: 1 },
+          { kind: "ce2-danger-glisser", count: 1 },
+          { kind: "ce2-circuit-ordre", count: 1 },
+          { kind: "ce2-circuit-trou", count: 2 },
+          { kind: "ce2-circuit-ecrire", count: 1 },
+        ],
       },
       {
         key: "sc-ce2-sante",
         name: "Se protéger des maladies",
         description:
           "Vivre dans son milieu, étape 2, paliers 3-4 : se protéger du paludisme ; le VIH/SIDA expliqué simplement à un enfant de 8 ans : ne pas toucher le sang d'une autre personne, ne pas partager une lame ou une seringue ; on ne l'attrape pas en jouant, en mangeant ou en se donnant la main.",
+        // Sept gabarits (`ce2Milieu.ts`) : se protéger du paludisme, ce qui transmet le VIH et ce qui ne le transmet pas (jouer, manger, se donner la main), ranger les gestes, relier un geste à ce qu'il apporte, une phrase à trou, un mot à écrire.
+        games: [
+          { kind: "ce2-palu-qcm", count: 1 },
+          { kind: "ce2-vih-qcm", count: 2 },
+          { kind: "ce2-geste-glisser", count: 1 },
+          { kind: "ce2-vih-glisser", count: 1 },
+          { kind: "ce2-palu-relier", count: 1 },
+          { kind: "ce2-sante-trou", count: 2 },
+          { kind: "ce2-sante-ecrire", count: 2 },
+        ],
       },
       {
         key: "sc-ce2-environnement",
         name: "L'environnement et la population",
         description:
           "Vivre dans son milieu, étape 2, paliers 3-4 : les problèmes d'environnement du milieu (déchets, sachets plastiques, coupe des arbres, feux de brousse) et ceux liés à la population (quartiers trop peuplés, manque d'eau) ; les solutions.",
+        // Huit gabarits (`ce2Milieu.ts`) : ce que provoque un problème, la solution, relier problème et solution, ranger problèmes de l'environnement et de la population, bons et mauvais gestes, l'ordre des gestes, une phrase à trou, un mot à écrire.
+        games: [
+          { kind: "ce2-env-cause-qcm", count: 1 },
+          { kind: "ce2-env-solution-qcm", count: 1 },
+          { kind: "ce2-env-relier", count: 1 },
+          { kind: "ce2-env-probleme-glisser", count: 1 },
+          { kind: "ce2-env-geste-glisser", count: 1 },
+          { kind: "ce2-env-ordre", count: 1 },
+          { kind: "ce2-env-trou", count: 2 },
+          { kind: "ce2-env-ecrire", count: 2 },
+        ],
       },
     ],
     CM1: [

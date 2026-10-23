@@ -74,8 +74,15 @@ function windowAt<T>(items: readonly T[], quarter: number, uses: number): T[] {
  * gabarits d'avant n'ont pas posé.
  */
 function pickRow<T extends Fact>(ctx: GameContext, kind: string, rows: readonly T[], uses: number, keyOf: (row: T) => string, shift: number): T {
-  const key = (row: T) => (row.fact !== undefined ? `fait|${row.fact}` : `ligne|${kind}|${keyOf(row)}`);
-  return pickFresh(ctx, windowAt(rows, (ctx.level - 1 + shift) % 4, uses), key);
+  const own = (row: T) => `ligne|${kind}|${keyOf(row)}`;
+  const key = (row: T) => (row.fact !== undefined ? `fait|${row.fact}` : own(row));
+  const window = windowAt(rows, (ctx.level - 1 + shift) % 4, uses);
+  // Un gabarit posé plusieurs fois dans un palier ne reprend jamais sa propre ligne tant que sa fenêtre en a une autre : quand les faits de la
+  // fenêtre ont tous servi à d'autres gabarits, `pickFresh` tire au hasard dans la fenêtre et `fresh` n'a que huit essais pour éviter le doublon.
+  const notYetHere = window.filter((row) => !ctx.used.has(own(row)));
+  const chosen = pickFresh(ctx, notYetHere.length > 0 ? notYetHere : window, key);
+  ctx.used.add(own(chosen));
+  return chosen;
 }
 
 /**
@@ -145,4 +152,43 @@ export function combinations<T>(items: readonly T[], size: number): T[][] {
   if (items.length < size) return [];
   const [head, ...rest] = items;
   return [...combinations(rest, size - 1).map((tail) => [head, ...tail]), ...combinations(rest, size)];
+}
+
+// ---------------------------------------------------------------------------
+// Des constructeurs de lignes, pour écrire les tableaux sans répéter la forme d'une ligne.
+// ---------------------------------------------------------------------------
+
+export const hints = (first: string, second: string, third: string): Hints => [first, second, third];
+const withFact = (fact: string | undefined) => (fact === undefined ? {} : { fact });
+export const qr = (prompt: string, answer: string, wrong: readonly [string, string], h: Hints, fact?: string): QuestionRow => ({ prompt, answer, wrong, hints: h, ...withFact(fact) });
+export const gr = (text: string, answer: string, wrong: readonly [string, string], h: Hints, fact?: string): GapRow => ({ text, answer, wrong, hints: h, ...withFact(fact) });
+export const wr = (prompt: string, accepted: readonly string[], h: Hints, fact?: string): WriteRow => ({ prompt, accepted, hints: h, ...withFact(fact) });
+export const ordr = (prompt: string, sequence: readonly string[], h: Hints, fact?: string): OrderRow => ({ prompt, sequence, hints: h, ...withFact(fact) });
+
+/** Des glissés en deux cases bâtis sur deux listes : deux étiquettes de chaque, `count` tirages répartis sur toutes les combinaisons. */
+export function sortRows(prompt: string, zones: readonly [string, string], first: readonly string[], second: readonly string[], h: Hints, count: number): SortRow[] {
+  const all = combinations(first, 2).flatMap((a) => combinations(second, 2).map((b) => ({ a, b })));
+  const step = all.length / count;
+  return Array.from({ length: count }, (_, i) => all[Math.floor(i * step)]).map(({ a, b }) => ({
+    prompt,
+    zones,
+    items: [...a.map((text) => ({ text, zone: zones[0] })), ...b.map((text) => ({ text, zone: zones[1] }))],
+    hints: h,
+  }));
+}
+
+/**
+ * Range les lignes d'un tableau selon l'ordre des faits d'une thématique, en commençant par la première ligne de chaque fait : les lignes
+ * qui reposent le même fait (deux façons de le demander) viennent après, loin de la première, donc dans un autre quart de la liste.
+ * Les lignes sans fait, ou d'un fait inconnu, ferment la liste.
+ */
+export function inFactOrder<T extends Fact>(rows: readonly T[], order: readonly string[]): readonly T[] {
+  const seen = new Map<string, number>();
+  const keyed = rows.map((row, index) => {
+    const known = row.fact !== undefined && order.includes(row.fact);
+    const occurrence = row.fact === undefined ? 0 : (seen.get(row.fact) ?? 0);
+    if (row.fact !== undefined) seen.set(row.fact, occurrence + 1);
+    return { row, index, occurrence, rank: known ? order.indexOf(row.fact as string) : order.length };
+  });
+  return keyed.sort((a, b) => a.occurrence - b.occurrence || a.rank - b.rank || a.index - b.index).map(({ row }) => row);
 }
