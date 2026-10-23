@@ -203,6 +203,8 @@ function parsePoster(prompt: string): PosterParts {
   if (lines.length !== 4) throw new Error(`affiche mal formée : ${text}`);
   return { title: lines[0], place: lines[1], when: lines[2], price: lines[3], question };
 }
+/** Les noms féminins des tableaux du pluriel : tous les autres sont masculins. */
+const FEMININE_NOUNS = new Set(["fille", "mangue"]);
 const posterKind = (tile: string): "Où" | "Quand" | "Combien" => (/fcfa|gratuit/iu.test(tile) ? "Combien" : /heure|matin|soir/iu.test(tile) ? "Quand" : "Où");
 
 // ===========================================================================
@@ -233,9 +235,12 @@ const CHECKS: Record<string, Check> = {
     return all(ok(/^Quel est le pluriel de « .+ » \?$/u.test(exo.prompt), `énoncé inconnu : ${exo.prompt}`), ok(rightOption(exo) === expected, `le pluriel de « ${singular} » est « ${expected} », pas « ${rightOption(exo)} »`), ok(wrongOf(exo).length === 2 && wrongOf(exo).every((option) => option !== expected), `mauvais choix ${wrongOf(exo).join(" | ")}`));
   },
   "ce2-ortho-pluriel-trou": (exo) => {
-    const singular = /^Un (.+), des ___\.$/u.exec(textOf(exo))?.[1] ?? "";
+    const match = /^(Un|Une) (.+), des ___\.$/u.exec(textOf(exo));
+    const singular = match?.[2] ?? "";
     const expected = pluralByRule(singular);
-    return all(ok(blankOf(exo).answer === expected, `le pluriel de « ${singular} » est « ${expected} », le trou dit « ${blankOf(exo).answer} »`), ok(blankWrongs(exo).length === 2 && blankWrongs(exo).every((option) => option !== expected), `mauvais choix ${blankOf(exo).options.join(" | ")}`));
+    // Le genre du nom vient de la liste du test, pas du gabarit : « Une mangue », « Une fille », « Un cahier ».
+    const article = FEMININE_NOUNS.has(singular) ? "Une" : "Un";
+    return all(ok(match?.[1] === article, `« ${singular} » prend « ${article} », l'énoncé dit « ${match?.[1]} »`), ok(blankOf(exo).answer === expected, `le pluriel de « ${singular} » est « ${expected} », le trou dit « ${blankOf(exo).answer} »`), ok(blankWrongs(exo).length === 2 && blankWrongs(exo).every((option) => option !== expected), `mauvais choix ${blankOf(exo).options.join(" | ")}`));
   },
   "ce2-ortho-pluriel-glisser": (exo) =>
     all(
@@ -349,7 +354,13 @@ const CHECKS: Record<string, Check> = {
     else if (/quel ordre|selon quel ordre/u.test(prompt)) expected = ["ordre alphabétique", "l'ordre alphabétique", "alphabétique"];
     else if (/homonyme de « mer »/u.test(exo.prompt)) expected = ["mère"];
     else if (/homonyme de « verre »/u.test(exo.prompt)) expected = ["vert"];
-    return all(ok(expected !== null && sameSeq(acceptedOf(exo), expected), `écritures ${acceptedOf(exo).join(" | ")} pour « ${exo.prompt} »`), ok(exo.answerKey === acceptedOf(exo)[0], "clé = première écriture"));
+    // Un indice qui donne la première lettre doit donner celle de la réponse : « commence par h » pour « vert » mène à « homonymes ».
+    const initials = exo.hints.map((hint) => /commence par (\p{L})\.$/u.exec(hint)?.[1]).filter((letter): letter is string => letter !== undefined);
+    return all(
+      ok(expected !== null && sameSeq(acceptedOf(exo), expected), `écritures ${acceptedOf(exo).join(" | ")} pour « ${exo.prompt} »`),
+      ok(exo.answerKey === acceptedOf(exo)[0], "clé = première écriture"),
+      ok(initials.every((letter) => fold(exo.answerKey).startsWith(letter)), `un indice donne la lettre ${initials.join(", ")}, la réponse est « ${exo.answerKey} »`),
+    );
   },
 
   // ----- La lecture -----

@@ -203,6 +203,7 @@ export const ALPHABET_ROWS: readonly OrderRow[] = ALPHABETICAL.map((words) => or
 
 const DICTIONARY_HINTS = hints("C'est un gros livre qui explique les mots.", "On y cherche le sens d'un mot que l'on ne connaît pas.", "Le mot commence par d.");
 const HOMONYM_WRITE_HINTS = hints("Ces mots se disent pareil mais ne s'écrivent pas pareil.", "Le nom de ces mots commence par h.", "Écris seulement le mot.");
+const COLOUR_WRITE_HINTS = hints("Ce mot se dit comme « verre » mais s'écrit autrement.", "C'est la couleur de l'herbe.", "Écris seulement le mot.");
 const SYNONYM_WRITE_HINTS = hints("Ces mots veulent dire presque la même chose.", "Le nom de ces mots commence par s.", "Écris seulement le mot.");
 const FAMILY_WRITE_HINTS = hints("Ces termes viennent du même terme de départ.", "Ils se ressemblent par leur début.", "Écris les trois termes de la réponse.");
 const ORDER_WRITE_HINTS = hints("Les mots du dictionnaire sont rangés comme les lettres de l'alphabet.", "A est la première lettre, z la dernière.", "Écris les deux mots.");
@@ -219,7 +220,7 @@ export const VOCAB_WRITE_ROWS: readonly WriteRow[] = [
   wr("Dans quel ordre les mots du dictionnaire sont-ils rangés ? Écris les deux mots.", ["ordre alphabétique", "l'ordre alphabétique", "alphabétique"], ORDER_WRITE_HINTS),
   wr("Les mots d'un dictionnaire se suivent selon quel ordre ? Écris les deux mots.", ["ordre alphabétique", "l'ordre alphabétique", "alphabétique"], ORDER_WRITE_HINTS),
   wr("Quel homonyme de « mer » désigne la maman ? Écris le mot.", ["mère"], SPELLING_WRITE_HINTS),
-  wr("Quel homonyme de « verre » est une couleur ? Écris le mot.", ["vert"], HOMONYM_WRITE_HINTS),
+  wr("Quel homonyme de « verre » est une couleur ? Écris le mot.", ["vert"], COLOUR_WRITE_HINTS),
 ];
 
 export function makeCe2VocabSynonym(ctx: GameContext): GeneratedGame {
