@@ -73,7 +73,6 @@ export const GAMES_BY_SUBJECT: Record<DemoSubject, Partial<Record<DemoClass, Gam
       { type: "pixel-art", options: [{ kind: "pixel-copie", topic: "Droites, angles et figures" }] },
     ],
     CE2: [
-      { type: "pattern", options: [{ kind: "suite-nombres", topic: "Les nombres jusqu'à 100 000" }] },
       { type: "pixel-art", options: [{ kind: "pixel-symetrie", topic: "La symétrie et les solides" }] },
     ],
     CM1: [

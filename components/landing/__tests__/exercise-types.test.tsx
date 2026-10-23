@@ -140,12 +140,17 @@ describe("la section « Exercices » : une matière, une classe, des exercices �
     expect(cardTitles()).toEqual(ALL_SIX);
   });
 
-  it("change de jeux avec la classe : les mathématiques ont deux jeux au CE2, un seul au CM2", async () => {
+  it("change de jeux avec la classe : les mathématiques ont deux jeux au CP, un seul au CE2 et au CM2", async () => {
     render(<ExerciseTypes />);
     await chooseSubject("Mathématiques");
-    expect(cardTitles()).toEqual([...MATHS_CLASSIC, "Continuer la suite", "Dessiner sur quadrillage"]);
-    expect(countPill()).toBe("En CE2 : 5 types d'exercices · 2 types de jeux");
+    expect(cardTitles()).toEqual([...MATHS_CLASSIC, "Dessiner sur quadrillage"]);
+    expect(countPill()).toBe("En CE2 : 5 types d'exercices · 1 type de jeu");
     expect(cardTitles()).not.toContain(TYPE_TITLES.fillBlank);
+
+    await chooseClass("CP");
+    expect(cardTitles()).toContain("Continuer la suite");
+    expect(cardTitles()).toContain("Dessiner sur quadrillage");
+    expect(countPill()).toMatch(/^En CP : \d types d'exercices · 2 types de jeux$/);
 
     await chooseClass("CM2");
     expect(cardTitles()).toContain("Dessiner sur quadrillage");

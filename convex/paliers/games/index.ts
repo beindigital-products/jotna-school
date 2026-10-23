@@ -676,6 +676,43 @@ import {
   makeCe1PbUseless,
   makeCe1PbWrite,
 } from "./problemesCe1";
+// Les mathématiques du CE2, première moitié (`nombresCe2.ts`, `tablesCe2.ts`, `divisionCe2.ts`) : les nombres jusqu'à 100 000, la multiplication, la division.
+import {
+  makeCe2NbBracket,
+  makeCe2NbCompare,
+  makeCe2NbDecompose,
+  makeCe2NbDigits,
+  makeCe2NbNeighbour,
+  makeCe2NbOrder,
+  makeCe2NbSortThreshold,
+  makeCe2NbSuite,
+  makeCe2NbWords,
+  makeCe2NbWriteNumber,
+} from "./nombresCe2";
+import {
+  makeCe2MultDecompose,
+  makeCe2MultGap,
+  makeCe2MultLinks,
+  makeCe2MultMental,
+  makeCe2MultPosed,
+  makeCe2MultProblem,
+  makeCe2MultSort,
+  makeCe2MultTable,
+  makeCe2MultTen,
+  makeCe2MultWrite,
+} from "./tablesCe2";
+import {
+  makeCe2DivGap,
+  makeCe2DivGroup,
+  makeCe2DivLinks,
+  makeCe2DivPosed,
+  makeCe2DivProblem,
+  makeCe2DivRest,
+  makeCe2DivShare,
+  makeCe2DivSort,
+  makeCe2DivTable,
+  makeCe2DivWrite,
+} from "./divisionCe2";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
 import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
 import {
@@ -1840,6 +1877,39 @@ export const GAME_KINDS = {
   "ce1-pb-relier": { label: "Relier une histoire et son calcul", type: "match", make: makeCe1PbLinks },
   "ce1-pb-glisser": { label: "Additionner ou soustraire", type: "drag-drop", make: makeCe1PbSort },
   "ce1-pb-ecrire": { label: "Un problème à résoudre et à écrire", type: "short-answer", make: makeCe1PbWrite },
+  // Les nombres du CE2 (`nombresCe2.ts`).
+  "ce2-nb-voisin": { label: "Le voisin d'un grand nombre", type: "qcm", make: makeCe2NbNeighbour },
+  "ce2-nb-comparer": { label: "Comparer des grands nombres", type: "qcm", make: makeCe2NbCompare },
+  "ce2-nb-ordre": { label: "Ranger des grands nombres", type: "order", make: makeCe2NbOrder },
+  "ce2-nb-chiffres": { label: "Le chiffre et la valeur d'un rang", type: "qcm", make: makeCe2NbDigits },
+  "ce2-nb-decomposer": { label: "Décomposer un grand nombre", type: "fill-blank", make: makeCe2NbDecompose },
+  "ce2-nb-encadrer": { label: "Encadrer un grand nombre", type: "qcm", make: makeCe2NbBracket },
+  "ce2-nb-glisser": { label: "Placer des nombres par rapport à un seuil", type: "drag-drop", make: makeCe2NbSortThreshold },
+  "ce2-nb-suite": { label: "Compléter une suite de grands nombres", type: "fill-blank", make: makeCe2NbSuite },
+  "ce2-nb-lettres": { label: "Lire un nombre écrit en lettres", type: "qcm", make: makeCe2NbWords },
+  "ce2-nb-ecrire": { label: "Écrire en chiffres un nombre dit en lettres", type: "short-answer", make: makeCe2NbWriteNumber },
+  // La multiplication du CE2 (`tablesCe2.ts`).
+  "ce2-mult-table": { label: "Une multiplication des tables de 2 à 9", type: "qcm", make: makeCe2MultTable },
+  "ce2-mult-trou": { label: "Le facteur qui manque", type: "fill-blank", make: makeCe2MultGap },
+  "ce2-mult-poser": { label: "Poser une multiplication", type: "qcm", make: makeCe2MultPosed },
+  "ce2-mult-ecrire": { label: "Écrire le résultat d'une multiplication", type: "short-answer", make: makeCe2MultWrite },
+  "ce2-mult-dix": { label: "Multiplier par 10 et par 100", type: "qcm", make: makeCe2MultTen },
+  "ce2-mult-double": { label: "Le double, la moitié et le triple", type: "qcm", make: makeCe2MultMental },
+  "ce2-mult-decomposer": { label: "Décomposer pour multiplier de tête", type: "fill-blank", make: makeCe2MultDecompose },
+  "ce2-mult-relier": { label: "Relier une multiplication et son résultat", type: "match", make: makeCe2MultLinks },
+  "ce2-mult-glisser": { label: "Ranger des nombres dans deux tables", type: "drag-drop", make: makeCe2MultSort },
+  "ce2-mult-probleme": { label: "Un problème de combien en tout", type: "qcm", make: makeCe2MultProblem },
+  // La division du CE2 (`divisionCe2.ts`).
+  "ce2-div-table": { label: "Une division avec les tables", type: "qcm", make: makeCe2DivTable },
+  "ce2-div-partage": { label: "Partager en parts égales", type: "qcm", make: makeCe2DivShare },
+  "ce2-div-groupement": { label: "Grouper par paquets égaux", type: "qcm", make: makeCe2DivGroup },
+  "ce2-div-reste": { label: "Le reste d'une division", type: "qcm", make: makeCe2DivRest },
+  "ce2-div-poser": { label: "Poser une division", type: "qcm", make: makeCe2DivPosed },
+  "ce2-div-trou": { label: "Compléter une division", type: "fill-blank", make: makeCe2DivGap },
+  "ce2-div-ecrire": { label: "Écrire le résultat d'une division", type: "short-answer", make: makeCe2DivWrite },
+  "ce2-div-relier": { label: "Relier une division et son résultat", type: "match", make: makeCe2DivLinks },
+  "ce2-div-glisser": { label: "Une division qui tombe juste ou non", type: "drag-drop", make: makeCe2DivSort },
+  "ce2-div-probleme": { label: "Un petit problème de division", type: "qcm", make: makeCe2DivProblem },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
