@@ -386,6 +386,14 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
       },
       {
         key: "ar-cm1-comedie",
+        games: [
+          { kind: "cm1-cmd-qcm", count: 3 },
+          { kind: "cm1-cmd-trou", count: 2 },
+          { kind: "cm1-cmd-ecrire", count: 1 },
+          { kind: "cm1-cmd-ordre", count: 1 },
+          { kind: "cm1-cmd-relier", count: 1 },
+          { kind: "cm1-cmd-glisser", count: 2 },
+        ],
         name: "Jouer la joie et la tristesse",
         description:
           "Arts scéniques, étape 3, paliers 1-2 : l'imitation de comédiens, les jeux de rôles gais ou tristes ; ce qu'expriment le visage, la voix et le corps.",
