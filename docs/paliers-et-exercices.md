@@ -2535,7 +2535,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   - **Les 44 thématiques du CE1 sont des gabarits** ; le test `ce1Maths2Templates.test.ts` le vérifie (aucune ne demande le modèle).
 - **Les mathématiques du CE2, première moitié** (`paliers/games/nombresCe2.ts`, `tablesCe2.ts` et `divisionCe2.ts`) : trente gabarits pour `ma-ce2-grands-nombres`,
   `ma-ce2-multiplication` et `ma-ce2-division`, que le modèle n'écrit plus. Les noms commencent par `ce2-nb-`, `ce2-mult-` et `ce2-div-` ; les fonctions sont des `makeCe2Nb…`,
-  `makeCe2Mult…` et `makeCe2Div…`. Le reste des mathématiques du CE2 (`ma-ce2-symetrie`, `-perimetre-aire`, `-mesures`, `-problemes`) est le lot suivant. Ces fiches ont quatre paliers.
+  `makeCe2Mult…` et `makeCe2Div…`. Le reste des mathématiques du CE2 est la seconde moitié, juste en dessous. Ces fiches ont quatre paliers.
   - **Les nombres** : jusqu'à 100 000, jamais au-delà (`CAP_CE2`). Le plus grand nombre d'un palier monte : 20 000, 40 000, 70 000, 100 000 ; le plus petit est 1 000 puis 10 000.
     100 000 n'est servi que comme voisin d'un nombre ou fin de suite (six chiffres, un rang de plus). L'écriture en lettres (`wordsOfCe2`) suit l'école : « quatre-vingt mille » et « deux cent
     mille » sans s (mille est un mot de nombre derrière), « deux cents » avec un s quand rien ne suit, « vingt et un mille ». Le test la compare, pour les 100 001 nombres, à un autre
@@ -2554,6 +2554,33 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   - **Pièges rencontrés.** (1) Le test de couverture du lot 1 du CE2 (`ce2HistoryGeographyTemplates.test.ts`) exigeait que tout gabarit commençant par `ce2-` soit à lui : il ne regarde plus
     que les gabarits demandés par les thématiques d'histoire et de géographie du CE2. (2) La vitrine (`demo-matrix.ts`) annonçait une « suite de nombres » pour les maths du CE2. (3) Un mauvais
     choix numériquement vrai (« 14 reste 5 » pour 47 ÷ 3 : 3 × 14 + 5 = 47) est une seconde bonne réponse : le test exige qu'un seul choix écrive la division.
+- **Les mathématiques du CE2, seconde moitié** (`paliers/games/symetrieCe2.ts`, `perimetreAireCe2.ts`, `mesuresCe2.ts` et `problemesCe2.ts`) : trente-huit gabarits pour
+  `ma-ce2-symetrie`, `ma-ce2-perimetre-aire`, `ma-ce2-mesures` et `ma-ce2-problemes`, que le modèle n'écrit plus. Les noms commencent par `ce2-sym-`, `ce2-per-`, `ce2-mes-` et `ce2-pb-` ;
+  les fonctions sont des `makeCe2Sym…`, `makeCe2Per…`, `makeCe2Mes…` et `makeCe2Pb…`. Avec elles, les sept thématiques de mathématiques du CE2 sont des gabarits. `ma-ce2-symetrie`
+  garde deux dessins à compléter par symétrie (`pixel-symetrie`) et ajoute huit gabarits ; les trois autres fiches ont dix gabarits chacune.
+  - **La symétrie et les solides** : les axes de symétrie de figures simples (carré, rectangle de 6 cm sur 4 cm, triangle équilatéral, losange sans angle droit, parallélogramme sans angle
+    droit, triangle aux côtés inégaux) et de lettres capitales (H, X, A, T, M, F, R, Z, N), jamais le cercle (une infinité). Le rectangle est toujours donné avec ses mesures : un carré est un
+    rectangle, et il a quatre axes. Le symétrique d'un point se compte en carreaux, en colonnes ou en lignes, de l'autre côté de la ligne de symétrie ; le symétrique s'appelle B (une apostrophe
+    de plus dépasserait la limite de l'énoncé). Trois solides : le cube, le pavé droit, le cylindre (la boule et la pyramide ne sont que de mauvais choix). Le cube et le pavé droit ont les
+    mêmes nombres (6, 12, 8) : aucune question ne demande lequel des deux, et quand la bonne réponse est l'un, l'autre n'est pas proposé. Le cylindre n'est compté que par ses sommets (aucun).
+  - **Les périmètres et les aires** : le périmètre du carré et du rectangle (la longueur est toujours plus grande que la largeur), un côté qui manque, l'aire COMPTÉE EN CARREAUX (jamais
+    « cm² »), comparer des aires et des périmètres. Deux rectangles de même aire n'ont pas le même périmètre : le dernier palier pose ce piège. Les erreurs d'enfant : la moitié du tour, l'aire
+    à la place du périmètre, trois côtés au lieu de quatre.
+  - **Les mesures** : neuf couples d'unités voisines (m-cm, kg-g, km-m au premier palier ; m-dm, dm-cm, cm-mm au deuxième ; L-dL, L-cL, dL-cL au troisième ; tous au dernier), des nombres
+    entiers, jamais de virgule ni de tonne. Les durées valent soixante : l'heure de fin d'une séance reste dans la journée, et un mauvais choix est toujours une heure valide. Au dernier palier,
+    un nombre composé (2 m 50 cm). Les comparaisons sont dans deux unités : il faut convertir.
+  - **Les problèmes** : huit scénarios fermés (l'achat et la monnaie, des paquets, des billes en deux ou trois étapes, un partage, un rangement par paniers, un trajet en car, les roues d'un
+    garage). Le code garde les étapes et le calcul écrit ; un petit évaluateur du test relit chaque calcul. La question intermédiaire et l'ordre des étapes ne se demandent pas pour les roues
+    (les voitures et les motos se comptent dans n'importe quel ordre). Une donnée inutile est un âge ou le temps qu'il fait. Un calcul de vérification retrouve un des deux nombres du calcul de
+    départ (« 134 + 98 » ne vérifie rien, il redit l'égalité). Un scénario ne se pose pas plus de deux ou trois fois dans un palier, et une histoire (scénario et nombres) une seule fois.
+  - **Pièges rencontrés.** (1) Le test des images du CI joue aussi les gabarits du CE2 : une tuile « article + nom » absente du catalogue est refusée (« Un dé », « La pyramide » en mauvais
+    choix du QCM, « Le losange », « Une opération ») ; on écrit un mot seul ou une étiquette du catalogue. (2) Un énoncé n'a qu'une apostrophe : « Mets dans l'ordre les gestes pour trouver le
+    symétrique d'un point » en a deux. (3) Une option juste de vingt-quatre caractères ou plus, et deux fois plus longue que les autres, se devine : la tuile « Il fait chaud ce jour-là » a dû
+    être raccourcie. (4) Un énoncé plus long que vingt-huit mots : les histoires ont été resserrées (« Il roule 39 km, puis 18 km. »). (5) Le jeu `pixel-symetrie` a le même énoncé à chaque
+    tirage : un comptage de doublons qui ne lit que l'énoncé le signale à tort.
+  - **Mesuré** : 92 tests (`convex/__tests__/ce2Maths2Templates.test.ts`), dont une vérification par gabarit contre des tables et une arithmétique écrites à part, à quatre niveaux ; 109
+    pannes provoquées sur 110 vues (la dernière est équivalente : `choiceGame` retire lui-même un mauvais choix égal à la bonne réponse) ; le contrôleur ne signale aucun défaut sur 4 800
+    paliers fabriqués (48 000 exercices) ; 0,0 à 0,2 % de questions revues d'un palier à l'autre, hors `pixel-symetrie`.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
