@@ -347,30 +347,70 @@ export const HISTOIRE: ProgrammeSubject = {
     CM2: [
       {
         key: "hi-cm2-empires",
+        games: [
+          { kind: "cm2-emp-qcm", count: 3 },
+          { kind: "cm2-emp-trou", count: 2 },
+          { kind: "cm2-emp-ecrire", count: 1 },
+          { kind: "cm2-emp-ordre", count: 1 },
+          { kind: "cm2-emp-relier", count: 1 },
+          { kind: "cm2-emp-glisser", count: 2 },
+        ],
         name: "Les grands empires",
         description:
           "Histoire, étape 3, paliers 3-4 : l'empire du Ghana (l'or, Koumbi Saleh), l'empire du Mali (Soundiata Keïta, la charte du Kouroukan Fouga, Mansa Moussa et son pèlerinage à La Mecque en 1324), l'empire songhaï de Gao (Sonni Ali Ber, Askia Mohammed).",
       },
       {
         key: "hi-cm2-traite",
+        games: [
+          { kind: "cm2-tra-qcm", count: 3 },
+          { kind: "cm2-tra-trou", count: 2 },
+          { kind: "cm2-tra-ecrire", count: 1 },
+          { kind: "cm2-tra-ordre", count: 1 },
+          { kind: "cm2-tra-relier", count: 1 },
+          { kind: "cm2-tra-glisser", count: 2 },
+        ],
         name: "Grandes découvertes et traite négrière",
         description:
           "Histoire, étape 3, paliers 3-4 : les inventions du XVe siècle (la boussole, la caravelle, l'imprimerie), l'expansion européenne, la traite des Noirs et le commerce triangulaire, l'île de Gorée et la Maison des Esclaves, l'abolition de l'esclavage dans les colonies françaises en 1848.",
       },
       {
         key: "hi-cm2-colonisation",
+        games: [
+          { kind: "cm2-col-qcm", count: 3 },
+          { kind: "cm2-col-trou", count: 2 },
+          { kind: "cm2-col-ecrire", count: 1 },
+          { kind: "cm2-col-ordre", count: 1 },
+          { kind: "cm2-col-relier", count: 1 },
+          { kind: "cm2-col-glisser", count: 2 },
+        ],
         name: "La conquête coloniale",
         description:
           "Histoire, étape 3, paliers 3-4 : la conquête coloniale (Faidherbe, gouverneur du Sénégal), l'Afrique-Occidentale française (AOF) créée en 1895, avec Saint-Louis puis Dakar (1902) pour capitale, les résistances armées et pacifiques.",
       },
       {
         key: "hi-cm2-independance",
+        games: [
+          { kind: "cm2-ind-qcm", count: 3 },
+          { kind: "cm2-ind-trou", count: 2 },
+          { kind: "cm2-ind-ecrire", count: 1 },
+          { kind: "cm2-ind-ordre", count: 1 },
+          { kind: "cm2-ind-relier", count: 1 },
+          { kind: "cm2-ind-glisser", count: 2 },
+        ],
         name: "La marche vers l'indépendance",
         description:
           "Histoire, étape 3, paliers 3-4 : Blaise Diagne, premier député africain élu à l'Assemblée française (1914), Lamine Guèye, Léopold Sédar Senghor ; la Fédération du Mali (1959-1960) ; le 4 avril 1960, date de la fête de l'indépendance du Sénégal.",
       },
       {
         key: "hi-cm2-progres",
+        games: [
+          { kind: "cm2-pro-qcm", count: 3 },
+          { kind: "cm2-pro-trou", count: 2 },
+          { kind: "cm2-pro-ecrire", count: 1 },
+          { kind: "cm2-pro-ordre", count: 1 },
+          { kind: "cm2-pro-relier", count: 1 },
+          { kind: "cm2-pro-glisser", count: 2 },
+        ],
         name: "Les progrès des sciences et des techniques",
         description:
           "Histoire, étape 3, paliers 3-4 : les progrès des XIXe et XXe siècles : la machine à vapeur, l'électricité, le téléphone, l'automobile, l'avion, la radio, les vaccins, l'ordinateur ; ce qu'ils ont changé dans la vie des gens.",

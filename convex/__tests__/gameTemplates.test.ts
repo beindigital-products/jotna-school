@@ -1450,7 +1450,7 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     // Tout le CI, tout le CP et tout le CE1 sont faits par le code : l'exemple d'une thématique écrite par le modèle vient du CM2.
     expect(topicUsesModel("ma-ce1-mesures")).toBe(false);
     expect(topicUsesModel("ar-ci-mimes")).toBe(false);
-    expect(topicUsesModel("hi-cm2-empires")).toBe(true);
+    expect(topicUsesModel("fr-cm2-cfee")).toBe(true);
     // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.
     expect(topicUsesModel(null)).toBe(true);
     expect(topicUsesModel(undefined)).toBe(true);

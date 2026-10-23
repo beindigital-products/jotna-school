@@ -274,8 +274,8 @@ describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) =>
 
 describe("le faux modèle ne laisse rien passer", () => {
   // Tout le CI, tout le CP et tout le CE1 sont faits par le code : l'exemple d'une thématique écrite par le modèle vient du CM2.
-  it("fait échouer un palier qui a besoin du modèle (hi-cm2-empires : des exercices à écrire)", async () => {
-    const { ctx, modelCalls, upserts, entry } = fakeConvex("hi-cm2-empires");
+  it("fait échouer un palier qui a besoin du modèle (fr-cm2-cfee : des exercices à écrire)", async () => {
+    const { ctx, modelCalls, upserts, entry } = fakeConvex("fr-cm2-cfee");
     await expect(generateBucketCore(ctx, bucket(1, entry.klass as "CI" | "CP"))).rejects.toThrow(MODEL_CALLED);
     expect(modelCalls).toEqual(["aiGateway/index:generate"]);
     // Rien n'est écrit : le palier reste « generating », sans exercice.
