@@ -277,6 +277,8 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "coloriage-magique", count: 5 },
           { kind: "couleurs-chaudes-froides", count: 3 },
+          { kind: "ce2-couleur-qcm", count: 1 },
+          { kind: "ce2-couleur-glisser", count: 1 },
         ],
       },
       {
@@ -288,6 +290,9 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "pixel-copie", count: 3 },
           { kind: "pixel-memoire", count: 2 },
           { kind: "pixel-symetrie", count: 2 },
+          { kind: "ce2-technique-qcm", count: 1 },
+          { kind: "ce2-technique-relier", count: 1 },
+          { kind: "ce2-technique-trou", count: 1 },
         ],
       },
       {
@@ -298,6 +303,8 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "ecoute-melodie", count: 4 },
           { kind: "ecoute-pareil", count: 4 },
+          { kind: "ce2-melodie-choisir", count: 1 },
+          { kind: "ce2-melodie-trou", count: 1 },
         ],
       },
       {
@@ -305,13 +312,32 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         name: "L'hymne national et les chants",
         description:
           "Éducation musicale, étape 2, paliers 3-4 : l'hymne national, « Le Lion rouge », paroles de Léopold Sédar Senghor ; quand on le chante (le lever des couleurs) et comment se tenir ; accompagner un chant de gestes et d'instruments ; composer un petit chant. Ne citer aucune parole de l'hymne.",
-        games: [{ kind: "ecoute-motif-rythmique", count: 2 }],
+        games: [
+          { kind: "ecoute-motif-rythmique", count: 2 },
+          { kind: "ce2-hymne-qcm", count: 2 },
+          { kind: "ce2-hymne-glisser", count: 1 },
+          { kind: "ce2-hymne-relier", count: 1 },
+          { kind: "ce2-hymne-ordre", count: 1 },
+          { kind: "ce2-hymne-trou", count: 2 },
+          { kind: "ce2-hymne-ecrire", count: 1 },
+        ],
       },
       {
         key: "ar-ce2-theatre",
         name: "Jouer une scène",
         description:
           "Arts scéniques, étape 2, paliers 3-4 : la dramatisation de scènes de la vie courante (au marché, chez le tailleur, au dispensaire) et de scènes imaginaires, la parodie, l'interprétation d'un rôle ; les étapes pour préparer une saynète.",
+        // Gabarits de `ce2Arts.ts`.
+        games: [
+          { kind: "ce2-theatre-lieu", count: 1 },
+          { kind: "ce2-theatre-role", count: 1 },
+          { kind: "ce2-theatre-parodie", count: 1 },
+          { kind: "ce2-theatre-glisser", count: 1 },
+          { kind: "ce2-theatre-relier", count: 1 },
+          { kind: "ce2-theatre-ordre", count: 1 },
+          { kind: "ce2-theatre-trou", count: 2 },
+          { kind: "ce2-theatre-ecrire", count: 2 },
+        ],
       },
     ],
     CM1: [
