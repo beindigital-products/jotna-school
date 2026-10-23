@@ -273,30 +273,69 @@ export const GEOGRAPHIE: ProgrammeSubject = {
     CM1: [
       {
         key: "ge-cm1-situation",
+        games: [
+          { kind: "cm1-sit-qcm", count: 3 },
+          { kind: "cm1-sit-trou", count: 2 },
+          { kind: "cm1-sit-ecrire", count: 2 },
+          { kind: "cm1-sit-relier", count: 1 },
+          { kind: "cm1-sit-glisser", count: 2 },
+        ],
         name: "Le Sénégal en Afrique de l'Ouest",
         description:
           "Géographie, étape 3, paliers 1-2 : la situation du Sénégal, à l'ouest de l'Afrique, au bord de l'océan Atlantique ; ses voisins (Mauritanie, Mali, Guinée, Guinée-Bissau, et la Gambie enclavée dans le pays) ; la presqu'île du Cap-Vert, où se trouve Dakar ; un relief surtout plat.",
       },
       {
         key: "ge-cm1-climats",
+        games: [
+          { kind: "cm1-cli-qcm", count: 3 },
+          { kind: "cm1-cli-trou", count: 2 },
+          { kind: "cm1-cli-ecrire", count: 1 },
+          { kind: "cm1-cli-ordre", count: 1 },
+          { kind: "cm1-cli-relier", count: 1 },
+          { kind: "cm1-cli-glisser", count: 2 },
+        ],
         name: "Climats et végétation",
         description:
           "Géographie, étape 3, paliers 1-2 : les caractéristiques physiques du milieu. Climat sahélien au nord, soudanien au centre, guinéen au sud ; steppe, savane et forêt ; les pluies plus abondantes au sud.",
       },
       {
         key: "ge-cm1-decoupage",
+        games: [
+          { kind: "cm1-dec-qcm", count: 3 },
+          { kind: "cm1-dec-trou", count: 2 },
+          { kind: "cm1-dec-ecrire", count: 2 },
+          { kind: "cm1-dec-ordre", count: 1 },
+          { kind: "cm1-dec-relier", count: 1 },
+          { kind: "cm1-dec-glisser", count: 1 },
+        ],
         name: "Le découpage administratif",
         description:
           "Géographie, étape 3, paliers 1-2 : régions, départements, arrondissements et communes ; Dakar, la capitale ; qui dirige quoi (gouverneur de région, préfet de département, sous-préfet d'arrondissement, maire de commune).",
       },
       {
         key: "ge-cm1-economie",
+        games: [
+          { kind: "cm1-eco-qcm", count: 3 },
+          { kind: "cm1-eco-trou", count: 2 },
+          { kind: "cm1-eco-ecrire", count: 1 },
+          { kind: "cm1-eco-ordre", count: 1 },
+          { kind: "cm1-eco-relier", count: 1 },
+          { kind: "cm1-eco-glisser", count: 2 },
+        ],
         name: "Ressources et activités économiques",
         description:
           "Géographie, étape 3, paliers 1-2 : les ressources du milieu et les activités économiques : agriculture, élevage, pêche, mines (phosphates, or), industrie, commerce, artisanat.",
       },
       {
         key: "ge-cm1-communication",
+        games: [
+          { kind: "cm1-com-qcm", count: 3 },
+          { kind: "cm1-com-trou", count: 2 },
+          { kind: "cm1-com-ecrire", count: 1 },
+          { kind: "cm1-com-ordre", count: 1 },
+          { kind: "cm1-com-relier", count: 1 },
+          { kind: "cm1-com-glisser", count: 2 },
+        ],
         name: "Les voies de communication",
         description:
           "Géographie, étape 3, paliers 1-2 : routes et autoroutes, chemin de fer et TER, le port de Dakar, l'aéroport international Blaise-Diagne ; les moyens de communication (radio, télévision, téléphone, Internet).",
