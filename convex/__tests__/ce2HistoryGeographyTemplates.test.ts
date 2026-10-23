@@ -534,8 +534,11 @@ const CHECKS: Record<string, Check> = {
       const title = KINGDOM_FACTS[m[1]]?.title;
       return all(ok(blankOf(exo).answer === title, `le titre est « ${title} », le trou dit « ${blankOf(exo).answer} »`), ok(blankOf(exo).options.length === 3 && blankOf(exo).options.filter((o) => o !== title).every((o) => TITLES_T.includes(o)), `choix ${blankOf(exo).options.join(" | ")}`));
     }
-    m = /^Le titre de (\p{L}+) était celui du roi du ___\.$/u.exec(filled);
+    m = /^Le titre (de |d')(\p{L}+) était celui du roi du ___\.$/u.exec(filled);
     if (m) {
+      // « de » s'élide devant une voyelle : « d'Almamy », « de Damel ».
+      if (m[1] !== (/^[aeiouyàâéèêëîïôûùh]/iu.test(m[2]) ? "d'" : "de ")) return `« de » mal élidé : ${filled}`;
+      m = [m[0], m[2]] as unknown as RegExpExecArray;
       const holders = holdersOf(m[1]);
       return all(ok(holders.length === 1 && blankOf(exo).answer === holders[0], `le titre ${m[1]} est celui du ${holders[0]}, le trou dit « ${blankOf(exo).answer} »`), ok(blankOf(exo).options.filter((o) => o !== blankOf(exo).answer).every((o) => KN.includes(o) && KINGDOM_FACTS[o].title !== m![1]), `choix ${blankOf(exo).options.join(" | ")}`));
     }

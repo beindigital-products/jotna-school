@@ -540,7 +540,8 @@ const TITLE_GAP_ROWS: readonly GapRow[] = TITLED.flatMap((kingdom, i): GapRow[] 
     ? []
     : [
         {
-          text: `Le titre de ${kingdom.title} était celui du roi du ___.`,
+          // « de » s'élide devant une voyelle : « Le titre d'Almamy », « Le titre de Damel ».
+          text: `Le titre ${/^[aeiouyàâéèêëîïôûùh]/iu.test(kingdom.title as string) ? "d'" : "de "}${kingdom.title} était celui du roi du ___.`,
           fact: `royaume:${kingdom.name}`,
           answer: kingdom.name,
           wrong: otherKingdoms(kingdom.title as string, i),
