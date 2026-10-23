@@ -89,8 +89,8 @@ describe("les exercices fabriqués pour le CI", () => {
     }
     expect(checked).toBeGreaterThan(1000);
     expect([...new Set(failures)], HOW).toEqual([]);
-    // Près de mille gabarits, quatre niveaux, cinq vocabulaires, cinq graines : sur le serveur d'intégration, partagé entre
+    // Plus de neuf cents gabarits, quatre niveaux, cinq vocabulaires, cinq graines : sur le serveur d'intégration, partagé entre
     // tous les fichiers de test, le délai de cinq secondes ne suffit plus (la CI l'a dépassé avec les gabarits du CP), ni celui de
-    // trente secondes avec ceux du CE2 (9 secondes seul sur un poste, plus de 30 sur la CI en parallèle).
+    // trente secondes avec les mathématiques du CE2 (33 secondes mesurées). Chaque lot de gabarits allonge ce test : le délai a de la marge.
   }, 120_000);
 });
