@@ -2466,6 +2466,41 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     notes sont tirées au hasard) ; 0 à 1,4 fait repris par palier. Vu sur l'iPhone 17 (Safari du simulateur, galerie `/dev/exercices/` avec des spécimens détournés
     provisoirement, fichier restauré) : une question de mélodie à trois paires de mélodies, un glissé à étiquettes de plusieurs mots. PAS vu : les autres
     gabarits à l'écran, un vrai iPhone, la production.
+- **Le français du CE2, grammaire et conjugaison** (`paliers/games/ce2Grammaire.ts` et `ce2Conjugaison.ts`, avec les aides de `ce2Outils.ts`) : quarante et un
+  gabarits pour `fr-ce2-cod-coi`, `fr-ce2-cc`, `fr-ce2-determinants`, `fr-ce2-imparfait` et `fr-ce2-imperatif-futur`, cinq des huit thématiques de français du CE2
+  (lot 4 sur six ; l'orthographe, le vocabulaire et la lecture viennent ensuite, et l'anglais du CE2 est construit par une autre session). Sur l'échantillon de CE2
+  lu le 22 octobre 2026 (36 exercices de français), 22 étaient faux ou creux : « Aminata va à le marché », « Place les verbes : fais, Prendre, voir » (un infinitif
+  rangé avec des impératifs), « Les arbres dansent dans le vent », « Hier, je. » comme début d'un récit, des glissés dont la clé ne dit que « Les mots sont bien
+  placés ». Les noms commencent par `ce2-` ; les fonctions sont des `makeCe2…`.
+  - **Chaque exercice lit une ligne d'un tableau fermé**, écrit à la main : la phrase est du français, la réponse est dans la ligne, un mauvais choix n'est jamais
+    une deuxième bonne réponse. Les verbes sont donnés dans l'énoncé ou entre parenthèses ; un mauvais choix de conjugaison est une forme d'une autre personne, un
+    présent ou un futur (jamais un passé composé pour une phrase qui dit « autrefois », ni l'imparfait pour une phrase qui dit « soudain »).
+  - **Le COD et le COI** : un COD n'est jamais écrit avec « du » (« du pain » est un partitif), un COI n'est jamais introduit par « des » ; les verbes sont sans
+    ambiguïté (manger, laver, parler à, répondre à, téléphoner à, sourire à) ; les pronoms des exercices (le, la, les, lui, leur) remplacent des noms qui commencent
+    par une consonne, pour qu'aucune élision ne cache le genre. Les compléments circonstanciels : « à » ne suffit pas à dire le lieu ou le temps, un complément
+    de temps porte un mot de temps. Chaque phrase d'une question sur l'article n'a qu'un article du type demandé.
+  - **La conjugaison** : l'imparfait des verbes usuels des trois groupes, le passé composé de faire, courir, voir et prendre (avec avoir seulement : le participe de
+    « être » s'accorde, la fiche n'en parle pas), l'impératif de finir, prendre, faire, venir et aller (« va » sans s), le futur de faire, partir, voir, venir, avoir,
+    être, aller et finir (radicaux irréguliers : verrai, viendrai, irai, serai, aurai).
+  - **Un énoncé qui parle d'une phrase commence par « Lis la phrase »** (le COD, le COI, le complément) et les étiquettes de type sont des noms nus (« Lieu », « Temps »,
+    « Manière ») : `templatePictures.test.ts` rejoue chaque gabarit en CI et refuse une option « article + un seul nom » (« la maîtresse », « Le papa », « un cadeau »,
+    « Le lieu ») ; il laisse passer les énoncés qui demandent de lire.
+  - **HORS FICHE, À FAIRE RELIRE** : les phrases de la vie courante (les prénoms, le marché, le puits, la cour, le cartable), les quinze verbes de COD et de COI (prêter,
+    cueillir, poursuivre, ressembler à, rêver de, obéir à…), les douze phrases nominales (« Bon voyage aux pêcheurs ! », « Joyeux anniversaire à Awa ! »), les verbes de
+    l'imparfait au-delà de la fiche (jouer, nager, raconter, boire, vendre, marcher, finir, courir), les douze histoires à remettre dans l'ordre, les douze recettes en
+    ordres (« D'abord, prends une feuille. »).
+  - **Pièges rencontrés.** (1) Un test de grammaire qui prend « marché » (participe de marcher) pour un verbe conjugué : une forme n'est conjuguée que si elle est un
+    présent, un imparfait, un futur ou un impératif ; « fête » est à la fois un nom et un verbe, la phrase qui devait montrer un verbe écrit « célèbre ». (2) Deux articles
+    du même type dans une phrase (« Les enfants jouent dans la cour » : « Les » et « la ») donnent deux réponses à « Quel est l'article défini ? ». (3) Un énoncé a une
+    apostrophe droite au plus : « Mariama attend à l'école » dans une question qui cite le groupe et la phrase en avait deux. (4) Un indice n'écrit aucun mot de quatre
+    lettres ou plus d'une réponse ou d'une tuile : « avec », « chaque », « petit », « commence », « futur », « quoi », « avoir » ont été écrits par un premier jet (treize
+    indices à reprendre).
+  - **Mesuré** : 105 tests (`convex/__tests__/ce2FrancaisTemplates.test.ts`), dont une vérification par gabarit qui RECALCULE la réponse depuis l'énoncé avec sa propre
+    grammaire (sujet, verbe, COD, COI, pronom ; lexique des compléments ; genre et nombre des noms ; table de conjugaison de trente-sept verbes), à 4 niveaux et 60 graines ;
+    72 pannes provoquées dans le code (un COD pris pour le sujet, un pronom d'un autre genre, un lieu rangé dans le temps, un « cet » devant un nom féminin, un futur en
+    -erai, un « vas » à l'impératif, un « marché » dans les mots de la phrase nominale…) toutes vues ; le contrôleur ne signale aucun défaut sur 5 000 paliers fabriqués
+    (50 000 exercices), tous de dix exercices et d'au moins cinq types ; sur 200 graines par thématique, aucune question ne revient d'un palier à l'autre. PAS vu :
+    les gabarits à l'écran (les types sont ceux des lots déjà vus sur l'iPhone 17), un vrai iPhone, la production.
 - **Les homophones et la lecture du CE1** (`paliers/games/ce1Homophones.ts` et `ce1Lecture.ts`) : vingt gabarits pour les deux dernières
   thématiques de français du CE1, `fr-ce1-homophones` (a/à, et/est, on/ont) et `fr-ce1-lecture` (Lire et comprendre), que le modèle n'écrit plus. Avec
   les cinq du lot précédent, les sept thématiques de français du CE1 sont des gabarits. Les noms commencent par `ce1-fr-homo-` et `ce1-fr-lec-` ; les
