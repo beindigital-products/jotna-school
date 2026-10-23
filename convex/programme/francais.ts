@@ -349,30 +349,81 @@ export const FRANCAIS: ProgrammeSubject = {
       {
         key: "fr-ce2-cod-coi",
         name: "COD, COI et pronoms",
+        games: [
+          { kind: "ce2-cod-trouver", count: 2 },
+          { kind: "ce2-coi-trouver", count: 1 },
+          { kind: "ce2-cod-question", count: 1 },
+          { kind: "ce2-cod-glisser", count: 1 },
+          { kind: "ce2-cod-relier", count: 1 },
+          { kind: "ce2-cod-pronom", count: 2 },
+          { kind: "ce2-cod-sujet", count: 1 },
+          { kind: "ce2-cod-ecrire", count: 1 },
+        ],
         description:
           "Grammaire, palier 4 du CE2 : le complément d'objet direct et le complément d'objet indirect ; les pronoms personnels sujets et compléments (le, la, les, lui, leur) qui remplacent un nom pour éviter une répétition.",
       },
       {
         key: "fr-ce2-cc",
         name: "Les compléments circonstanciels",
+        games: [
+          { kind: "ce2-cc-type", count: 2 },
+          { kind: "ce2-cc-question", count: 1 },
+          { kind: "ce2-cc-trouver", count: 1 },
+          { kind: "ce2-cc-glisser", count: 1 },
+          { kind: "ce2-cc-relier", count: 1 },
+          { kind: "ce2-cc-nominale", count: 1 },
+          { kind: "ce2-cc-article", count: 1 },
+          { kind: "ce2-cc-mot", count: 1 },
+          { kind: "ce2-cc-ecrire", count: 1 },
+        ],
         description:
           "Grammaire, palier 5 du CE2 : les compléments circonstanciels de lieu, de temps et de manière ; la phrase nominale (« Défense de fumer. », « Grande fête au village. ») ; articles définis et indéfinis.",
       },
       {
         key: "fr-ce2-determinants",
         name: "Possessifs et démonstratifs",
+        games: [
+          { kind: "ce2-poss-trou", count: 2 },
+          { kind: "ce2-poss-choisir", count: 1 },
+          { kind: "ce2-dem-trou", count: 2 },
+          { kind: "ce2-dem-choisir", count: 1 },
+          { kind: "ce2-det-glisser", count: 1 },
+          { kind: "ce2-det-relier", count: 1 },
+          { kind: "ce2-det-ordre", count: 1 },
+          { kind: "ce2-det-ecrire", count: 1 },
+        ],
         description:
           "Grammaire, palier 6 du CE2 : les adjectifs possessifs (mon, ton, son, notre, votre, leur, mes, tes, ses, nos, vos, leurs) et démonstratifs (ce, cet, cette, ces) ; choisir le bon selon le genre et le nombre du nom.",
       },
       {
         key: "fr-ce2-imparfait",
         name: "L'imparfait et le passé composé",
+        games: [
+          { kind: "ce2-imparfait-forme", count: 2 },
+          { kind: "ce2-imparfait-choisir", count: 1 },
+          { kind: "ce2-imparfait-recit", count: 1 },
+          { kind: "ce2-compose-forme", count: 2 },
+          { kind: "ce2-compose-relier", count: 1 },
+          { kind: "ce2-imparfait-glisser", count: 1 },
+          { kind: "ce2-imparfait-ordre", count: 1 },
+          { kind: "ce2-imparfait-ecrire", count: 1 },
+        ],
         description:
           "Conjugaison, palier 4 du CE2 : l'imparfait des verbes usuels des trois groupes ; le passé composé de faire, courir, voir et prendre ; choisir entre imparfait et passé composé dans un petit récit.",
       },
       {
         key: "fr-ce2-imperatif-futur",
         name: "L'impératif et le futur simple",
+        games: [
+          { kind: "ce2-imperatif-forme", count: 2 },
+          { kind: "ce2-futur-forme", count: 2 },
+          { kind: "ce2-imperatif-choisir", count: 1 },
+          { kind: "ce2-futur-choisir", count: 1 },
+          { kind: "ce2-imperatif-glisser", count: 1 },
+          { kind: "ce2-imperatif-relier", count: 1 },
+          { kind: "ce2-imperatif-ordre", count: 1 },
+          { kind: "ce2-imperatif-ecrire", count: 1 },
+        ],
         description:
           "Conjugaison, paliers 5 et 6 du CE2 : l'impératif des verbes des 2e et 3e groupes (finis, prends, fais, viens, va) ; le futur simple de faire, partir, voir, venir, avoir, être, aller et finir.",
       },
