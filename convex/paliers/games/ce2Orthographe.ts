@@ -105,11 +105,12 @@ export const FEMININE_LINK_ROWS: readonly LinkRow[] = feminineLinkRows();
 // LE PLURIEL DES NOMS
 // ===========================================================================
 
-type Plural = { singular: string; plural: string; wrong: readonly [string, string] };
+/** `article` : « Une » pour un nom féminin (« Une mangue, des mangues »), « Un » sinon. */
+type Plural = { singular: string; plural: string; wrong: readonly [string, string]; article?: "Une" };
 export const PLURALS: readonly Plural[] = [
-  { singular: "fille", plural: "filles", wrong: ["fille", "fillex"] },
+  { singular: "fille", plural: "filles", wrong: ["fille", "fillex"], article: "Une" },
   { singular: "cahier", plural: "cahiers", wrong: ["cahier", "cahierx"] },
-  { singular: "mangue", plural: "mangues", wrong: ["mangue", "manguex"] },
+  { singular: "mangue", plural: "mangues", wrong: ["mangue", "manguex"], article: "Une" },
   { singular: "chat", plural: "chats", wrong: ["chat", "chatx"] },
   { singular: "gâteau", plural: "gâteaux", wrong: ["gâteaus", "gâteau"] },
   { singular: "oiseau", plural: "oiseaux", wrong: ["oiseaus", "oiseau"] },
@@ -136,7 +137,7 @@ const pluralFact = (row: Plural) => `pluriel:${row.singular}`;
 export const PLURAL_CHOICE_ROWS: readonly QuestionRow[] = rotate(PLURALS, 4).map((row) =>
   qr(`Quel est le pluriel de « ${row.singular} » ?`, row.plural, row.wrong, PLURAL_HINTS, pluralFact(row)),
 );
-export const PLURAL_GAP_ROWS: readonly GapRow[] = rotate(PLURALS, 8).map((row) => gr(`Un ${row.singular}, des ___.`, row.plural, row.wrong, PLURAL_HINTS, pluralFact(row)));
+export const PLURAL_GAP_ROWS: readonly GapRow[] = rotate(PLURALS, 8).map((row) => gr(`${row.article ?? "Un"} ${row.singular}, des ___.`, row.plural, row.wrong, PLURAL_HINTS, pluralFact(row)));
 
 const SINGULAR_TILES = ["cheval", "gâteau", "animal", "oiseau", "journal", "cahier", "feu", "canal"] as const;
 const PLURAL_TILES = ["chevaux", "gâteaux", "animaux", "oiseaux", "journaux", "cahiers", "feux", "filles"] as const;
