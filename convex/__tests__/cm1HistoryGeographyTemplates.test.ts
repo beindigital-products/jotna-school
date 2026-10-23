@@ -220,6 +220,7 @@ const ASSOC: Record<string, string[]> = {
   television: ["images et des sons", "regarder un journal", "voir un journal", "images animees"],
   telephone: ["parler a quelqu un qui est loin", "telephoner", "appeler un ami"],
   internet: ["reseau", "chercher une information", "message* dans le monde"],
+  "reseau internet": ["reseau", "chercher une information", "message* dans le monde"],
 };
 
 

@@ -139,20 +139,28 @@ const CMD_MOTS: Pool = {
       ga: "un jeu de rôle",
       hint: "On se met dans la peau de quelqu'un d'autre.",
     },
-    {
-      id: "imiter",
-      q: ["Que fait un comédien qui reproduit les gestes et la voix d'une autre personne ?"],
-      a: "Imiter",
-      s: ["Reproduire les gestes et la voix d'une autre personne, voilà ___."],
-      ga: "imiter",
-      hint: "Il copie ce qu'il a bien observé.",
-    },
   ],
   extras: ["Spectateur", "Décor"],
   gextras: ["le spectateur", "un décor"],
 };
 
-const CMD_POOLS = [CMD_SIGNES, CMD_EMOTIONS, CMD_MOTS] as const;
+/** Un verbe ne se mêle pas à des noms dans une phrase à trou : « imiter » a son lot, avec des verbes pour intrus. */
+const CMD_IMITER: Pool = {
+  items: [
+    {
+      id: "imiter",
+      q: ["Que fait un comédien qui reproduit les gestes et la voix d'une autre personne ?"],
+      a: "Imiter",
+      s: ["Reproduire les gestes et la voix des autres, c'est ___."],
+      ga: "imiter",
+      hint: "Il copie ce qu'il a bien observé.",
+    },
+  ],
+  extras: ["Chanter", "Applaudir"],
+  gextras: ["chanter", "applaudir"],
+};
+
+const CMD_POOLS = [CMD_SIGNES, CMD_EMOTIONS, CMD_MOTS, CMD_IMITER] as const;
 const CMD_QCM = questionRows("ar-cm1-comedie", CMD_POOLS);
 const CMD_TROU = gapRows("ar-cm1-comedie", CMD_POOLS);
 const CMD_ECRIRE = writeRows("ar-cm1-comedie", CMD_POOLS);
