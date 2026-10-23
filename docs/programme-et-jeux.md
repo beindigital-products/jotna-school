@@ -337,7 +337,7 @@ arrivent plus tard.
 🎮 : la thématique mêle des jeux à ses paliers (nombre par palier).
 
 🧩 : la thématique est fabriquée tout entière par le code, sans appel au modèle (les gabarits de
-`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie, les sciences, l'instruction civique, l'éducation artistique, l'anglais et les sept thématiques de français (trente-six thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle. Au CE2, l'histoire et la géographie (huit thématiques sur quarante-cinq, lot 1 sur six) le sont depuis le 22 octobre 2026 ; le reste du CE2 est écrit par le modèle, sauf les jeux de six thématiques mixtes ; la liste de celles du CI est dans
+`docs/paliers-et-exercices.md`). Au CP, l'histoire, la géographie, l'anglais, la lecture, l'écriture, les consignes, décrire, raconter, inviter, les arts, l'instruction civique, les sciences et toutes les mathématiques (les nombres, le calcul, les tables, les mesures, l'heure et la monnaie, les problèmes, les figures) le sont, c'est-à-dire les quarante-deux thématiques. Au CE1, l'histoire, la géographie, les sciences, l'instruction civique, l'éducation artistique, l'anglais et les sept thématiques de français (trente-six thématiques sur quarante-quatre) le sont depuis le 22 octobre 2026 ; les autres matières du CE1 sont encore écrites par le modèle. Au CE2, l'histoire et la géographie (huit thématiques sur quarante-cinq, lot 1 sur six) et les sciences (six thématiques, lot 2) le sont depuis le 22 octobre 2026, soit quatorze thématiques sur quarante-cinq ; le reste du CE2 est écrit par le modèle, sauf les jeux de six thématiques mixtes ; la liste de celles du CI est dans
 `docs/paliers-et-exercices.md`.
 
 ### Français
@@ -375,7 +375,7 @@ arrivent plus tard.
 | CI | Naturel ou fabriqué ? · Les animaux autour de moi · Les plantes autour de moi · Mon corps et la propreté · Les outils de la maison et de l'école |
 | CP | Solide, liquide ou gaz ? 🧩 · Les êtres vivants grandissent 🧩 · Bien manger 🧩 · Les maladies du milieu 🧩 · Protéger la nature 🧩 |
 | CE1 | Comment se nourrissent les êtres vivants 🧩 · La respiration 🧩 · Les substances autour de nous 🧩 · L'eau potable 🧩 · Les parasites et le paludisme 🧩 · Les objets techniques simples 🧩 |
-| CE2 | Le corps humain · La vie des plantes · La vie des animaux · Le circuit électrique · Se protéger des maladies · L'environnement et la population |
+| CE2 | Le corps humain 🧩 · La vie des plantes 🧩 · La vie des animaux 🧩 · Le circuit électrique 🧩 · Se protéger des maladies 🧩 · L'environnement et la population 🧩 |
 | CM1 | La digestion · La respiration et ses maladies · Le cœur et le sang · Phénomènes physiques et chimiques · Démonter et assembler un objet · L'hygiène du milieu |
 | CM2 | Vivre dans l'eau, vivre sur terre · Les appareils de la maison · Bien se nourrir pour bien grandir · Gérer et restaurer les ressources · La santé de la mère et de l'enfant |
 
