@@ -2750,6 +2750,31 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     « sous-préfet »), `*` à la fin d'un fragment laisse le dernier mot finir.
   - **Mesuré** : 134 tests (`convex/__tests__/cm1HistoryGeographyTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part (ce qu'un énoncé doit
     contenir pour appeler chaque réponse, les suites, les paires, le contenu de chaque case) ; 95 pannes provoquées sur 99 vues (`scratchpad/mutations-cm1hg2.py` : un fait changé de réponse, deux paires ou deux suites échangées, un glissé faux, le palier non transmis, la fenêtre décalée) ; les quatre autres écartent un mauvais choix que la rotation des lignes ne propose de toute façon jamais (`not` du bour et du Saloum, de la Guinée et de la Guinée-Bissau, d'Internet pour la télévision) ; le contrôleur ne signale aucun défaut sur 15 000 paliers fabriqués (150 000 exercices), sans doublon dans un palier ; 0,0 à 0,3 % de questions revues d'un palier à l'autre. Les fenêtres sont testées à part : de deux à six paliers et de 1 à 40 lignes, chaque ligne sert à un palier au moins.
+- **Les sciences du CM1** (`paliers/games/cm1Sciences.ts`, avec `cm1Faits.ts`) : trente-six gabarits pour les six thématiques `sc-cm1-digestion`, `-respiration`,
+  `-circulation`, `-phenomenes`, `-objets` et `-hygiene`, que le modèle n'écrit plus. Les noms commencent par `cm1-dig-`, `cm1-rsp-`, `cm1-cir-`, `cm1-phe-`, `cm1-obj-` et
+  `cm1-hyg-`, les fonctions sont des `makeCm1…`. Même construction que l'histoire et la géographie du CM1 (cinq paliers, tableaux de faits) : six gabarits par thématique, un
+  QCM (3 par palier), une phrase à trou (2), une réponse à écrire (1), un ordre (1), un appariement (1) et un glissé (2).
+  - **Ce que les tableaux disent.** La digestion : la bouche, l'œsophage, l'estomac et les intestins dans l'ordre du trajet, les dents, la langue et la salive, bien mâcher et se
+    brosser les dents. La respiration : le nez, la trachée, les bronches et les poumons, l'inspiration et l'expiration, le rhume, la toux, l'asthme et la tuberculose, aérer la
+    maison et éviter la fumée. Le cœur et le sang : le cœur, les artères (qui emportent le sang) et les veines (qui le ramènent), le pouls au poignet, l'oxygène pris dans les
+    poumons et les aliments pris dans les intestins. Les phénomènes : l'évaporation, la condensation, la fusion, la solidification, la combustion (le feu a besoin d'air) et la
+    rouille (le fer a besoin d'eau et d'air). Les objets : les pièces du vélo, de la lampe torche et du robinet, leur rôle, et l'entretien (huiler la chaîne, changer la pile ou le
+    joint, gonfler un pneu). L'hygiène : l'insalubrité, la promiscuité, l'hygiène individuelle et collective, la gale et la teigne, se laver les mains, jeter à la poubelle,
+    évacuer les eaux usées. Aucun chiffre : ni nombre de battements, ni litres, ni degrés.
+  - **HORS FICHE, À FAIRE RELIRE PAR LE PROPRIÉTAIRE** : ce que chaque indice et chaque question disent des organes (l'œsophage « tube étroit », l'estomac « poche musclée », les
+    intestins « longs tubes enroulés »), les maladies (la tuberculose « due à un microbe », l'asthme « crises où l'on manque d'air », la gale qui passe par contact, la teigne qui laisse
+    des plaques sans cheveux, la fumée du tabac et des feux), le pouls pris au poignet, les étapes des gestes d'entretien (changer une pile, un joint, réparer une crevaison, gonfler un
+    pneu), le lien entre les moustiques et l'eau qui stagne.
+  - **Pièges rencontrés.** (1) Les questions que le constructeur écrit sur le modèle « Comment s'appelle l'… » ont deux apostrophes : « Quel nom porte… ». (2) `not` (une réponse
+    aussi juste, jamais proposée) ne comparait que la forme de tuile : dans une phrase à trou, « bien mâcher » restait proposé pour « se brosser les dents ». `wrongChoices` compare
+    maintenant les deux formes. (3) Les options d'une phrase à trou doivent toutes se glisser dans la même phrase : un lot qui mêle des noms (insalubrité) et des adjectifs
+    (individuelle) donne la réponse par la grammaire ; ils sont dans deux lots, et l'article fait partie de l'option (`ga`). (4) Deux réponses qui partagent un fragment d'énoncé (« tube
+    de la gorge » pour la trachée et pour l'estomac) cachent un mauvais choix qui serait juste : les fragments du test sont précis (« entre le tube de la gorge »). (5) Les indices
+    communs ne doivent écrire aucun mot d'une tuile : « deux » et « vont » ont dû être reformulés. (6) Le moteur des vérifications est partagé : `convex/__tests__/cm1TestKit.ts`. (7) L'article ou l'accord du verbe placé AVANT le trou donne le genre de la réponse (« Le ___ pompe le sang » ne va
+    qu'au cœur, « l'___ » écarte la pile) : la phrase est neutre (« par ___ », « est ___ ») et l'article fait partie de l'option. La relecture a trouvé le même défaut dans l'histoire du CM1
+    déjà en ligne (les âges de la préhistoire, les découvertes, le pouvoir du roi, la caravane, l'exil au Gabon) : corrigé dans cette PR, ces paliers sont à régénérer.
+  - **Mesuré** : 94 tests (`convex/__tests__/cm1SciencesTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part ; 101 pannes provoquées sur 102 vues (`scratchpad/mutations-cm1sci.py` : une réponse changée pour chacun des soixante-quatre faits, des suites, des paires et des glissés abîmés, un indice qui écrit la réponse, la fenêtre qui suit le niveau) ; la dernière écarte un mauvais choix que la rotation des lignes ne propose de toute façon jamais (le `not` de « bien mâcher » pour « se brosser les dents ») ; le contrôleur ne
+    signale aucun défaut sur 15 000 paliers fabriqués (150 000 exercices), sans doublon dans un palier ; 0,0 à 0,1 % de questions revues d'un palier à l'autre. `sortRows` ne répète plus une ligne quand on en demande plus qu'il n'y a de combinaisons, et les glissés servent jusqu'à huit combinaisons : un étiquetage faux ne se cache plus dans une combinaison jamais tirée.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

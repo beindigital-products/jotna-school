@@ -59,19 +59,27 @@ function letterHint(answer: string, fallback: string): string {
   return /[A-Z]/.test(first) ? `La réponse commence par la lettre ${first}.` : fallback;
 }
 
-/** Les mauvais choix d'un fait : les réponses des autres faits du lot, à partir du `offset`, sans une réponse juste ni un mot de l'indice. */
+/** Un choix possible, écrit comme une tuile et comme la phrase à trou le veut. */
+type Choice = { tile: string; gap: string };
+
+/**
+ * Les mauvais choix d'un fait : les réponses des autres faits du lot et ses intrus, à partir du `offset`, sans la bonne réponse, sans
+ * une réponse que `not` écarte (sous sa forme de tuile ou de phrase) et sans un mot de l'indice.
+ */
 function wrongChoices(pool: Pool, item: Item, index: number, offset: number, gap: boolean): [string, string] {
   const clue = new Set(words(item.hint));
-  const answerOf = (other: Item) => (gap ? (other.ga ?? other.a) : other.a);
+  const used = (choice: Choice) => (gap ? choice.gap : choice.tile);
   const own = gap ? (item.ga ?? item.a) : item.a;
-  const intruders = gap ? (pool.gextras ?? pool.extras ?? []) : (pool.extras ?? []);
-  const candidates = [
-    ...new Set(
-      [...(pool.onlyExtras ? [] : pool.items.map(answerOf)), ...intruders].filter(
-        (choice) => choice !== own && !(item.not ?? []).includes(choice) && !words(choice).some((word) => clue.has(word)),
-      ),
-    ),
-  ];
+  const extras = pool.extras ?? [];
+  const gapExtras = pool.gextras ?? extras;
+  const fromItems: Choice[] = pool.onlyExtras ? [] : pool.items.map((other) => ({ tile: other.a, gap: other.ga ?? other.a }));
+  const fromExtras: Choice[] = extras.map((extra, i) => ({ tile: extra, gap: gapExtras[i] ?? extra }));
+  const excluded = new Set(item.not ?? []);
+  const seen = new Set<string>();
+  const candidates = [...fromItems, ...fromExtras]
+    .filter((choice) => used(choice) !== own && !excluded.has(choice.tile) && !excluded.has(choice.gap) && !words(used(choice)).some((word) => clue.has(word)))
+    .map(used)
+    .filter((choice) => !seen.has(choice) && !!seen.add(choice));
   if (candidates.length < 2) {
     SHORT_OF_CHOICES.push(`fait « ${item.id} » : moins de deux mauvais choix possibles`);
     return [candidates[0] ?? "?", candidates[1] ?? "??"];
@@ -141,8 +149,8 @@ export { fold, words };
 // Les lignes qui ne se tirent pas d'un fait : l'ordre, l'appariement, le glissé.
 // ---------------------------------------------------------------------------
 
-export const SORT_HINTS = hints("Lis chaque étiquette, une par une.", "Demande-toi quelle case lui convient, puis pose-la.", "Les étiquettes d'une même case vont ensemble.");
-export const LINK_HINTS = hints("Lis les deux colonnes avant de relier.", "Commence par la paire dont tu es certain.", "À la fin, il ne reste qu'une seule paire possible.");
+export const SORT_HINTS = hints("Lis chaque étiquette, une par une.", "Demande-toi quelle case lui convient, puis pose-la.", "Les étiquettes d'une même case se ressemblent.");
+export const LINK_HINTS = hints("Lis les colonnes en entier avant de relier.", "Commence par la paire dont tu es certain.", "À la fin, il ne reste qu'une seule paire possible.");
 export const ORDER_HINTS = hints("Lis toutes les étapes avant de les ranger.", "Cherche d'abord ce qui est arrivé le plus tôt.", "Ce qui est le plus récent se range en dernier.");
 export const RANK_HINTS = hints("Lis tous les mots avant de les ranger.", "Cherche d'abord celui qui commence la suite, selon la consigne.", "Celui qui termine la suite se range à la fin.");
 

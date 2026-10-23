@@ -403,36 +403,84 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
     CM1: [
       {
         key: "sc-cm1-digestion",
+        games: [
+          { kind: "cm1-dig-qcm", count: 3 },
+          { kind: "cm1-dig-trou", count: 2 },
+          { kind: "cm1-dig-ecrire", count: 1 },
+          { kind: "cm1-dig-ordre", count: 1 },
+          { kind: "cm1-dig-relier", count: 1 },
+          { kind: "cm1-dig-glisser", count: 2 },
+        ],
         name: "La digestion",
         description:
           "IST, étape 3, paliers 1-2 : l'appareil digestif (bouche, œsophage, estomac, intestins), le trajet des aliments, bien mâcher, l'hygiène de la bouche.",
       },
       {
         key: "sc-cm1-respiration",
+        games: [
+          { kind: "cm1-rsp-qcm", count: 3 },
+          { kind: "cm1-rsp-trou", count: 2 },
+          { kind: "cm1-rsp-ecrire", count: 1 },
+          { kind: "cm1-rsp-ordre", count: 1 },
+          { kind: "cm1-rsp-relier", count: 1 },
+          { kind: "cm1-rsp-glisser", count: 2 },
+        ],
         name: "La respiration et ses maladies",
         description:
           "IST, étape 3, paliers 1-2 : le trajet de l'air (nez, trachée, bronches, poumons), l'inspiration et l'expiration ; les maladies respiratoires (rhume, toux, asthme, tuberculose) et leur prévention (fumée, poussière, aérer la maison).",
       },
       {
         key: "sc-cm1-circulation",
+        games: [
+          { kind: "cm1-cir-qcm", count: 3 },
+          { kind: "cm1-cir-trou", count: 2 },
+          { kind: "cm1-cir-ecrire", count: 1 },
+          { kind: "cm1-cir-ordre", count: 1 },
+          { kind: "cm1-cir-relier", count: 1 },
+          { kind: "cm1-cir-glisser", count: 2 },
+        ],
         name: "Le cœur et le sang",
         description:
           "IST, étape 3, paliers 1-2 : la circulation sanguine. Le cœur pompe le sang, les artères et les veines, le pouls ; le sang transporte l'oxygène et les aliments dans tout le corps.",
       },
       {
         key: "sc-cm1-phenomenes",
+        games: [
+          { kind: "cm1-phe-qcm", count: 3 },
+          { kind: "cm1-phe-trou", count: 2 },
+          { kind: "cm1-phe-ecrire", count: 1 },
+          { kind: "cm1-phe-ordre", count: 1 },
+          { kind: "cm1-phe-relier", count: 1 },
+          { kind: "cm1-phe-glisser", count: 2 },
+        ],
         name: "Phénomènes physiques et chimiques",
         description:
           "IST, étape 3, paliers 1-2 : l'évaporation, la condensation, la fusion et la solidification ; la combustion (le feu a besoin d'air) ; la rouille.",
       },
       {
         key: "sc-cm1-objets",
+        games: [
+          { kind: "cm1-obj-qcm", count: 3 },
+          { kind: "cm1-obj-trou", count: 2 },
+          { kind: "cm1-obj-ecrire", count: 1 },
+          { kind: "cm1-obj-ordre", count: 1 },
+          { kind: "cm1-obj-relier", count: 1 },
+          { kind: "cm1-obj-glisser", count: 2 },
+        ],
         name: "Démonter et assembler un objet",
         description:
           "IST, étape 3, paliers 1-2 : objets techniques (vélo, lampe torche, robinet) : leurs pièces, le rôle de chacune, l'ordre du démontage et du montage, l'entretien.",
       },
       {
         key: "sc-cm1-hygiene",
+        games: [
+          { kind: "cm1-hyg-qcm", count: 3 },
+          { kind: "cm1-hyg-trou", count: 2 },
+          { kind: "cm1-hyg-ecrire", count: 1 },
+          { kind: "cm1-hyg-ordre", count: 1 },
+          { kind: "cm1-hyg-relier", count: 1 },
+          { kind: "cm1-hyg-glisser", count: 2 },
+        ],
         name: "L'hygiène du milieu",
         description:
           "Vivre dans son milieu, étape 3, paliers 1-2 : l'insalubrité (ordures, eaux usées) et la promiscuité ; les maladies de la peau (gale, teigne) et des voies respiratoires ; l'hygiène individuelle et collective.",
