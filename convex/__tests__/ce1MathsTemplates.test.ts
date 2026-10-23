@@ -276,15 +276,17 @@ const checkDecompose: Check = (exo) => {
 
 const checkBracket: Check = (exo) => {
   const { level, cap } = metaOf(exo);
-  const match = /^Entre quelles (dizaines|centaines|milliers) se trouve (.+) \?$/u.exec(exo.prompt);
+  const match = /^Entre (quelles|quels) (dizaines|centaines|milliers) se trouve (.+) \?$/u.exec(exo.prompt);
   if (!match) return `énoncé inconnu : ${exo.prompt}`;
-  const unit = { dizaines: 10, centaines: 100, milliers: 1000 }[match[1] as "dizaines" | "centaines" | "milliers"];
-  const n = num(match[2]);
+  // « millier » est masculin : « quels milliers », « quelles dizaines », « quelles centaines ».
+  if (match[1] !== (match[2] === "milliers" ? "quels" : "quelles")) return `« ${match[1]} ${match[2]} » : mauvais accord`;
+  const unit = { dizaines: 10, centaines: 100, milliers: 1000 }[match[2] as "dizaines" | "centaines" | "milliers"];
+  const n = num(match[3]);
   const low = Math.floor(n / unit) * unit;
   const expectedUnit = cap === 1000 ? (level === 1 ? 10 : 100) : level <= 2 ? 100 : 1000;
   const pairs = optionsOf(exo).map((option) => option.split(" et ").map(num));
   return all(
-    ok(unit === expectedUnit, `le rang ${match[1]} n'est pas celui du palier ${level}`),
+    ok(unit === expectedUnit, `le rang ${match[2]} n'est pas celui du palier ${level}`),
     ok(n % unit !== 0, `${n} est déjà un multiple`),
     ok(rightOption(exo) === `${fmt(low)} et ${fmt(low + unit)}`, `${n} est entre ${low} et ${low + unit}, pas ${rightOption(exo)}`),
     ok(pairs.every(([a, b]) => b - a === unit && a % unit === 0 && b <= cap && a >= 0), `des bornes qui ne se suivent pas : ${optionsOf(exo).join(" | ")}`),
@@ -973,6 +975,33 @@ describe("les vérifications voient une bonne réponse abîmée", () => {
     expect(CHECKS["ce1-mult-double"](qcm("Quelle est la moitié de 35 ?", ["17", "18", "16"], 1, { level: 2 }))).not.toBeNull();
     expect(CHECKS["ce1-mult-poser"](qcm("Combien font 14 × 4 ?", ["56", "416", "46"], 0, { level: 2 }))).not.toBeNull();
     expect(CHECKS["ce1-mult-poser"](qcm("Combien font 14 × 4 ?", ["56", "416", "46"], 0, { level: 3 }))).toBeNull();
+  });
+
+  it("voient un mauvais accord de « quel » : « quels milliers », mais « quelles dizaines » et « quelles centaines »", () => {
+    const bracket = (prompt: string, options: string[], meta: { level: number; vocabulary?: string }) =>
+      ({ type: "qcm", prompt, answerKey: options[0], hints: [], payload: { options, correctIndex: 0, game: { kind: "ce1-nb-encadrer", ...meta } } }) as Exo;
+    const thousands = (prompt: string) => bracket(prompt, ["2 000 et 3 000", "1 000 et 2 000", "3 000 et 4 000"], { level: 3, vocabulary: "nombres-10000" });
+    expect(CHECKS["ce1-nb-encadrer"](thousands("Entre quels milliers se trouve 2 209 ?"))).toBeNull();
+    expect(CHECKS["ce1-nb-encadrer"](thousands("Entre quelles milliers se trouve 2 209 ?"))).not.toBeNull();
+    const hundreds = (prompt: string) => bracket(prompt, ["300 et 400", "200 et 300", "400 et 500"], { level: 2, vocabulary: "nombres-1000" });
+    expect(CHECKS["ce1-nb-encadrer"](hundreds("Entre quelles centaines se trouve 345 ?"))).toBeNull();
+    expect(CHECKS["ce1-nb-encadrer"](hundreds("Entre quels centaines se trouve 345 ?"))).not.toBeNull();
+    const tens = bracket("Entre quels dizaines se trouve 345 ?", ["340 et 350", "330 et 340", "350 et 360"], { level: 1, vocabulary: "nombres-1000" });
+    expect(CHECKS["ce1-nb-encadrer"](tens)).not.toBeNull();
+  });
+
+  it("écrivent « quels milliers » et « quelles » devant les dizaines et les centaines, aux deux plafonds et à quatre niveaux", () => {
+    const seen = new Set<string>();
+    for (const { vocabulary } of variants("ce1-nb-encadrer")) {
+      for (const d of draws) {
+        const prompt = (make("ce1-nb-encadrer", d, vocabulary) as unknown as Exo).prompt;
+        const match = /^Entre (quelles|quels) (dizaines|centaines|milliers) /u.exec(prompt);
+        expect(match, prompt).not.toBeNull();
+        seen.add(`${match![1]} ${match![2]}`);
+        expect(prompt, prompt).not.toMatch(/quelles milliers|quels (dizaines|centaines)/u);
+      }
+    }
+    expect([...seen].sort()).toEqual(["quelles centaines", "quelles dizaines", "quels milliers"]);
   });
 });
 

@@ -2428,9 +2428,13 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     provoquée qui survivait). (3) Le glissé des tables met dans « table de 2 » un nombre qui n'est pas dans la table (44 : au-delà de 2 × 10) : les nombres d'une table
     vont de deux à dix fois la table. (4) « Chacun coûte » ne va pas avec « mangues » : « Chaque mangue coûte ». (5) Trois tests existants citaient `ma-ce1-add-sous`
     comme thématique écrite par le modèle : l'exemple est devenu `ma-ce1-mesures` pour un temps, puis un sujet du CM2 (`hi-cm2-empires`) quand tout le CE1 est passé en code. (6) Vu sur l'iPhone, pas par un test : un nettoyage de « × 1 »
-    mangeait aussi celui de « × 1 000 » et laissait « 2 000 + 3 × 100 + … » (juste en valeur, incohérent) ; les termes s'écrivent maintenant un à un, et le test compte les « × ».
-  - **Mesuré** : 83 tests (`convex/__tests__/ce1MathsTemplates.test.ts`), dont une vérification par gabarit contre une arithmétique et des règles écrites à part, aux deux
-    plafonds et à quatre niveaux ; 50 pannes provoquées dans le code toutes vues ; le contrôleur ne signale aucun défaut sur 8 000 paliers fabriqués (80 000 exercices), sans
+    mangeait aussi celui de « × 1 000 » et laissait « 2 000 + 3 × 100 + … » (juste en valeur, incohérent) ; les termes s'écrivent maintenant un à un, et le test compte les « × ». (7) Vu dans l'export de production, pas par un test : « Entre quelles milliers se trouve 2 209 ? ».
+    `ce1-nb-encadrer` écrivait « quelles » devant les trois rangs, or « millier » est masculin : « Entre quels milliers… », mais « quelles dizaines » et « quelles centaines ».
+    Le gabarit accorde maintenant (`which`), et `checkBracket` exige « quels » pour le millier et « quelles » pour les deux autres (il acceptait « quelles milliers » :
+    la faute était dans la règle écrite à part comme dans le code). Une panne provoquée (« quelles » remis partout) est vue par quatre tests. Les exercices déjà fabriqués
+    gardent la faute : après un `convex deploy`, il faut invalider `ma-ce1-nombres-10000` (les paliers ne sont pas refaits tout seuls) puis relancer `pregen:run`.
+  - **Mesuré** : 85 tests (`convex/__tests__/ce1MathsTemplates.test.ts`), dont une vérification par gabarit contre une arithmétique et des règles écrites à part, aux deux
+    plafonds et à quatre niveaux ; 51 pannes provoquées dans le code toutes vues ; le contrôleur ne signale aucun défaut sur 8 000 paliers fabriqués (80 000 exercices), sans
     doublon dans un palier ; 0,0 à 0,3 % de questions revues d'un palier à l'autre.
   - **La vitrine** veut, sur une thématique tout en gabarits, un QCM et une réponse courte au moins dans chacune.
 - **Les mathématiques du CE1, seconde moitié** (`paliers/games/geometrieCe1.ts`, `mesuresCe1.ts`, `monnaieDureesCe1.ts` et `problemesCe1.ts`) : trente-neuf
