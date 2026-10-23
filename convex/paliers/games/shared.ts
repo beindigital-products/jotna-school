@@ -112,6 +112,12 @@ export type GameContext = {
    * palier. Absent, ils tirent dans toute la liste.
    */
   window?: 0 | 1 | 2;
+  /**
+   * La place du palier dans sa thématique (le premier est 1) et le nombre de paliers. Le CM1 et le CM2 ont cinq paliers, joués aux
+   * niveaux 1, 2, 2, 3 et 4 : le niveau seul donnerait la même fenêtre de lignes aux paliers 2 et 3. Absent (une variation refaite
+   * sans son palier, un test qui ne joue qu'un niveau), les aides retombent sur le niveau.
+   */
+  palier?: { index: number; count: number };
 };
 
 export function makeContext(
@@ -121,8 +127,9 @@ export function makeContext(
   used: Set<string> = new Set(),
   vocabulary?: string,
   window?: 0 | 1 | 2,
+  palier?: { index: number; count: number },
 ): GameContext {
-  return { klass, band: ageBand(klass), level, rng: seededRandom(seed), used, vocabulary, window };
+  return { klass, band: ageBand(klass), level, rng: seededRandom(seed), used, vocabulary, window, palier };
 }
 
 /** L'origine à poser dans le payload : de quoi refaire le même gabarit avec une autre graine. */

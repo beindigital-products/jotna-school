@@ -52,14 +52,25 @@ export function tag<T extends Fact>(rows: readonly T[], factOf: (row: T, index: 
 }
 
 /**
- * La fenêtre de lignes d'un quart de la liste : `uses` lignes au moins (le palier pose le gabarit `uses` fois), un quart de la liste
- * quand elle est assez longue. Les quatre quarts se suivent du début à la fin de la liste ; `quarter` va de 0 à 3.
+ * La fenêtre de lignes d'un palier : la liste est coupée en autant de parts que de paliers (un quart pour quatre paliers, un cinquième
+ * pour cinq), `slot` va de 0 à `slots - 1`, et les parts se suivent sans trou ni chevauchement : chaque ligne sert à un palier. Une part
+ * de moins de `uses` lignes (le palier pose le gabarit `uses` fois) est allongée jusqu'à `uses` lignes.
  */
-function windowAt<T>(items: readonly T[], quarter: number, uses: number): T[] {
-  const size = Math.max(uses, Math.floor(items.length / 4));
-  if (items.length <= size) return [...items];
-  const start = Math.floor(((items.length - size) * quarter) / 3);
-  return items.slice(start, start + size);
+export function windowAt<T>(items: readonly T[], slot: number, slots: number, uses: number): T[] {
+  const total = items.length;
+  const parts = Math.max(1, slots);
+  const from = Math.floor((total * slot) / parts);
+  const to = Math.floor((total * (slot + 1)) / parts);
+  if (to - from >= uses) return items.slice(from, to);
+  const end = Math.min(total, from + uses);
+  return items.slice(Math.max(0, end - uses), end);
+}
+
+/** La place du palier dans la liste : sa position parmi les paliers (cinq au CM1), ou, sans elle, son niveau parmi quatre. */
+function slotOf(ctx: GameContext, shift: number): { slot: number; slots: number } {
+  const slots = ctx.palier ? Math.max(1, ctx.palier.count) : 4;
+  const index = ctx.palier ? ctx.palier.index - 1 : ctx.level - 1;
+  return { slot: (index + shift) % slots, slots };
 }
 
 /**
@@ -76,7 +87,8 @@ function windowAt<T>(items: readonly T[], quarter: number, uses: number): T[] {
 function pickRow<T extends Fact>(ctx: GameContext, kind: string, rows: readonly T[], uses: number, keyOf: (row: T) => string, shift: number): T {
   const own = (row: T) => `ligne|${kind}|${keyOf(row)}`;
   const key = (row: T) => (row.fact !== undefined ? `fait|${row.fact}` : own(row));
-  const window = windowAt(rows, (ctx.level - 1 + shift) % 4, uses);
+  const { slot, slots } = slotOf(ctx, shift);
+  const window = windowAt(rows, slot, slots, uses);
   // Un gabarit posé plusieurs fois dans un palier ne reprend jamais sa propre ligne tant que sa fenêtre en a une autre : quand les faits de la
   // fenêtre ont tous servi à d'autres gabarits, `pickFresh` tire au hasard dans la fenêtre et `fresh` n'a que huit essais pour éviter le doublon.
   const notYetHere = window.filter((row) => !ctx.used.has(own(row)));

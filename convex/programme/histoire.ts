@@ -277,30 +277,68 @@ export const HISTOIRE: ProgrammeSubject = {
     CM1: [
       {
         key: "hi-cm1-prehistoire",
+        games: [
+          { kind: "cm1-pre-qcm", count: 3 },
+          { kind: "cm1-pre-trou", count: 2 },
+          { kind: "cm1-pre-ecrire", count: 1 },
+          { kind: "cm1-pre-ordre", count: 1 },
+          { kind: "cm1-pre-relier", count: 1 },
+          { kind: "cm1-pre-glisser", count: 2 },
+        ],
         name: "La préhistoire",
         description:
           "Histoire, étape 3, paliers 1-2 : l'âge de la pierre taillée et de la pierre polie, les premiers outils, la découverte du feu, les débuts de l'agriculture ; au Sénégal, les cercles de pierres de Sénégambie (Sine Ngayène, Wanar) et les amas de coquillages du delta du Saloum.",
       },
       {
         key: "hi-cm1-royaumes",
+        games: [
+          { kind: "cm1-roy-qcm", count: 3 },
+          { kind: "cm1-roy-trou", count: 2 },
+          { kind: "cm1-roy-ecrire", count: 2 },
+          { kind: "cm1-roy-relier", count: 1 },
+          { kind: "cm1-roy-glisser", count: 2 },
+        ],
         name: "Les royaumes avant les Européens",
         description:
           "Histoire, étape 3, paliers 1-2 : les royaumes du Sénégal avant l'arrivée des Européens (Djolof, Cayor, Baol, Walo, Sine, Saloum, Tékrour, Fouta, Gabou) : leur organisation (le roi, les notables, l'armée) et leurs activités (agriculture, élevage, commerce).",
       },
       {
         key: "hi-cm1-contacts",
+        games: [
+          { kind: "cm1-con-qcm", count: 3 },
+          { kind: "cm1-con-trou", count: 2 },
+          { kind: "cm1-con-ecrire", count: 1 },
+          { kind: "cm1-con-ordre", count: 1 },
+          { kind: "cm1-con-relier", count: 1 },
+          { kind: "cm1-con-glisser", count: 2 },
+        ],
         name: "Les premiers contacts",
         description:
           "Histoire, étape 3, paliers 1-2 : les premiers contacts avec les Arabes (le commerce à travers le Sahara, l'islam, les Almoravides au XIe siècle) puis avec les Européens (les Portugais au XVe siècle, les comptoirs de Gorée et de Saint-Louis).",
       },
       {
         key: "hi-cm1-resistants",
+        games: [
+          { kind: "cm1-res-qcm", count: 3 },
+          { kind: "cm1-res-trou", count: 2 },
+          { kind: "cm1-res-ecrire", count: 2 },
+          { kind: "cm1-res-relier", count: 1 },
+          { kind: "cm1-res-glisser", count: 2 },
+        ],
         name: "Les résistants",
         description:
           "Histoire, étape 3, paliers 1-2 : la résistance à la conquête coloniale : El Hadji Oumar Tall, Maba Diakhou Bâ, Lat Dior Diop (mort à Dékheulé en 1886), Alboury Ndiaye, Ahmadou Cheikhou, Fodé Kaba Doumbouya.",
       },
       {
         key: "hi-cm1-paix",
+        games: [
+          { kind: "cm1-pai-qcm", count: 3 },
+          { kind: "cm1-pai-trou", count: 2 },
+          { kind: "cm1-pai-ecrire", count: 1 },
+          { kind: "cm1-pai-ordre", count: 1 },
+          { kind: "cm1-pai-relier", count: 1 },
+          { kind: "cm1-pai-glisser", count: 2 },
+        ],
         name: "Résister sans les armes",
         description:
           "Histoire, étape 3, paliers 1-2 : la marche pacifique vers l'indépendance, avec Cheikh Ahmadou Bamba (exilé au Gabon en 1895) et Aline Sitoé Diatta (résistante de Casamance, arrêtée en 1943) ; l'indépendance du Sénégal, fêtée le 4 avril, et Léopold Sédar Senghor, premier président.",

@@ -2716,6 +2716,40 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   - **Mesuré** : 131 tests (`convex/__tests__/ce2AnglaisTemplates.test.ts`), dont une vérification par gabarit contre des tableaux écrits à part ; 84 pannes provoquées sur 84 vues
     (`scratchpad/mutations-ce2en.py`) ; le contrôleur ne signale aucun défaut sur 6 000 paliers fabriqués (60 000 exercices), sans doublon dans un palier ; 0,0 % de questions revues
     d'un palier à l'autre.
+- **L'histoire et la géographie du CM1** (`paliers/games/cm1Histoire.ts`, `cm1Geographie.ts` et `cm1Faits.ts`) : cinquante-sept gabarits pour les dix thématiques
+  `hi-cm1-prehistoire`, `-royaumes`, `-contacts`, `-resistants`, `-paix` et `ge-cm1-situation`, `-climats`, `-decoupage`, `-economie`, `-communication`, que le modèle
+  n'écrit plus. Les noms commencent par `cm1-` (`cm1-pre-qcm`, `cm1-sit-glisser`…), les fonctions sont des `makeCm1…`. Premier lot du CM1 : le reste du CM1 et tout le CM2
+  sont encore écrits par le modèle.
+  - **Cinq paliers, pas quatre.** Le CM1 et le CM2 ont cinq paliers par défaut (`palierRules.ts`), que `gameLevel` joue aux niveaux 1, 2, 2, 3 et 4 : une fenêtre de lignes
+    choisie par le niveau donnerait les mêmes lignes aux paliers 2 et 3. `GameContext.palier` (`{ index, count }`, posé par `generateGames`) donne donc à chaque palier sa
+    part de la liste : `ce2Outils.windowAt` coupe en autant de parts que de paliers (un quart pour quatre, un cinquième pour cinq) et retombe sur le niveau quand le palier
+    est absent (une reprise par `regenerateGame`, un test qui ne joue qu'un niveau). Les gabarits du CE1 et du CE2, qui ont quatre paliers, tirent les mêmes lignes qu'avant.
+  - **Un tableau de faits, pas des lignes écrites une à une.** `cm1Faits.ts` : un fait (`Item`) a sa question posée de plusieurs façons, sa bonne réponse, ses phrases à trou,
+    un indice sur le sujet. Un lot (`Pool`) réunit des réponses de même sorte (des royaumes, des dates, des chefs) : les mauvais choix ne s'écrivent pas, ce sont les réponses
+    des autres faits du lot et ses intrus. Le QCM, la phrase à trou et la réponse à écrire sortent du même fait, qui porte la même clé dans les trois gabarits : un palier ne le
+    pose qu'une fois. Une réponse aussi juste pour la même question (`not` : Sine Ngayène et Wanar, le Sine et le Saloum pour le titre de bour, la Guinée et la
+    Guinée-Bissau) n'est jamais proposée en mauvais choix et s'admet à l'écrit. `onlyExtras` sert à « lequel est un résistant ? » : les autres résistants seraient justes.
+    L'ordre, l'appariement et le glissé sont des lignes écrites à la main.
+  - **Ce que les tableaux disent.** L'histoire : les âges et les découvertes de la préhistoire, les cercles de pierres (Sine Ngayène, Wanar) et les amas de coquillages du delta
+    du Saloum ; le roi, les notables et l'armée, l'agriculture, l'élevage et le commerce, les titres des rois (damel, bourba, teigne, brak, bour) ; les caravanes du Sahara,
+    l'islam, les Almoravides (XIe siècle), les Portugais (XVe siècle), les comptoirs de Gorée et de Saint-Louis ; Lat Dior (mort à Dékheulé en 1886), Alboury Ndiaye, El Hadji
+    Oumar Tall, Maba Diakhou Bâ, et les noms d'Ahmadou Cheikhou et de Fodé Kaba Doumbouya sans autre fait ; Cheikh Ahmadou Bamba (exilé au Gabon en 1895), Aline Sitoé Diatta
+    (arrêtée en 1943), le 4 avril et Léopold Sédar Senghor. La géographie : l'océan Atlantique, les cinq voisins avec leur point cardinal, Dakar sur la presqu'île du Cap-Vert, un
+    relief surtout plat ; les climats sahélien, soudanien et guinéen avec la steppe, la savane et la forêt ; la région, le département, l'arrondissement et la commune avec
+    leur chef ; les sept activités avec les phosphates, l'or et leurs régions ; l'autoroute, le chemin de fer, le TER, le port, l'aéroport et les quatre moyens de communication.
+  - **HORS FICHE, À FAIRE RELIRE PAR LE PROPRIÉTAIRE** : les titres des rois (damel, bourba, teigne, brak, bour) ; ce qui est dit d'Alboury Ndiaye (dernier bourba du Djolof),
+    d'El Hadji Oumar Tall (chef religieux toucouleur opposé à Faidherbe) et de Maba Diakhou Bâ (chef musulman du Rip) ; Cheikh Ahmadou Bamba fondateur du mouridisme et de
+    Touba, la grande mosquée des mourides ; 1943 et 1960 ; l'âge des métaux, qui n'est qu'une tuile de suite ; Taïba (région de Thiès) pour les phosphates, Sabodala (région de
+    Kédougou) pour l'or, les quatorze régions ; le TER entre Dakar et Diamniadio, l'aéroport Blaise-Diagne à Diass ; la Guinée « au sud-est » et la Guinée-Bissau « au sud » ;
+    « environ mille ans » pour les Almoravides et « six cents ans » pour les Portugais.
+  - **Pièges rencontrés.** (1) Cinq paliers : voir plus haut. (2) Un indice qui répète un mot de tous les mauvais choix (« océan » pour l'océan Atlantique) ne laisse plus deux
+    mauvais choix au fait : `cm1Faits` le note dans `SHORT_OF_CHOICES`, le test exige la liste vide. (3) Les indices communs aux jeux d'appariement et de glissé ne doivent
+    écrire aucun mot d'une case : « dans », « plus », « avant », « après », « premier » ont dû être reformulés. (4) Un énoncé n'a qu'une apostrophe : « Comment s'appelle l'aéroport »
+    en a deux, « Quel est le nom de l'aéroport » une. (5) L'article d'une phrase à trou donne le genre de la réponse : « est la ___ » laissait un seul pays masculin ; la phrase
+    est neutre (« se nomme ___ ») ou l'article fait partie de la tuile (`ga`). (6) Le test cherche des mots entiers dans l'énoncé (« bour » n'est pas « bourba », « préfet » n'est pas
+    « sous-préfet »), `*` à la fin d'un fragment laisse le dernier mot finir.
+  - **Mesuré** : 134 tests (`convex/__tests__/cm1HistoryGeographyTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part (ce qu'un énoncé doit
+    contenir pour appeler chaque réponse, les suites, les paires, le contenu de chaque case) ; 95 pannes provoquées sur 99 vues (`scratchpad/mutations-cm1hg2.py` : un fait changé de réponse, deux paires ou deux suites échangées, un glissé faux, le palier non transmis, la fenêtre décalée) ; les quatre autres écartent un mauvais choix que la rotation des lignes ne propose de toute façon jamais (`not` du bour et du Saloum, de la Guinée et de la Guinée-Bissau, d'Internet pour la télévision) ; le contrôleur ne signale aucun défaut sur 15 000 paliers fabriqués (150 000 exercices), sans doublon dans un palier ; 0,0 à 0,3 % de questions revues d'un palier à l'autre. Les fenêtres sont testées à part : de deux à six paliers et de 1 à 40 lignes, chaque ligne sert à un palier au moins.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
