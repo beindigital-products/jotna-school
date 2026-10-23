@@ -224,13 +224,15 @@ export const HOMOPHONE_ROWS: readonly QuestionRow[] = [
 const FEMININE_WRITE_HINTS = hints("Pense à la fin du mot : elle change au féminin.", "Dis « une » devant le mot pour entendre le féminin.", "Écris seulement le mot.");
 const PLURAL_WRITE_HINTS = hints("Pense à la fin du mot : elle change au pluriel.", "Dis « des » devant le mot pour entendre le pluriel.", "Écris seulement le mot.");
 const HOMOPHONE_WRITE_HINTS = hints("Lis la phrase en entier pour comprendre le sens du petit mot.", "Essaie de le remplacer par un autre petit mot.", "Écris seulement le petit mot.");
+/** « de » devant un mot, élidé devant une voyelle ou un h muet : « de cahier », « d'animal », « d'oiseau ». Aucun nom des tableaux ne commence par un h aspiré. */
+const deWord = (word: string): string => (/^[aeiouyàâéèêëîïôûùh]/iu.test(word) ? `d'${word}` : `de ${word}`);
 const feminineWrite = (masculine: string): WriteRow => {
   const row = feminineOf(masculine);
-  return wr(`Écris le féminin de ${row.masculine}.`, [row.feminine], FEMININE_WRITE_HINTS, feminineFact(row));
+  return wr(`Écris le féminin ${deWord(row.masculine)}.`, [row.feminine], FEMININE_WRITE_HINTS, feminineFact(row));
 };
 const pluralWrite = (singular: string): WriteRow => {
   const row = pluralOf(singular);
-  return wr(`Écris le pluriel de ${row.singular}.`, [row.plural], PLURAL_WRITE_HINTS, pluralFact(row));
+  return wr(`Écris le pluriel ${deWord(row.singular)}.`, [row.plural], PLURAL_WRITE_HINTS, pluralFact(row));
 };
 export const ORTHO_WRITE_ROWS: readonly WriteRow[] = [
   feminineWrite("boulanger"),
