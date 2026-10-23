@@ -453,19 +453,57 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Les nombres jusqu'à 100 000",
         description:
           "Activités numériques de l'étape 2 (répartition proposée pour le CE2, prolongement des nombres jusqu'à 10 000 du CE1) : lire, écrire, décomposer, comparer, ranger et encadrer les nombres jusqu'à 100 000 ; écrire un nombre en lettres.",
-        games: [{ kind: "suite-nombres", count: 1 }],
+        // Dix gabarits (`nombresCe2.ts`) : les nombres jusqu'à 100 000, jamais au-delà ; la suite de nombres du site (`suite-nombres`) n'y va pas.
+        games: [
+          { kind: "ce2-nb-voisin", count: 1 },
+          { kind: "ce2-nb-comparer", count: 1 },
+          { kind: "ce2-nb-ordre", count: 1 },
+          { kind: "ce2-nb-chiffres", count: 1 },
+          { kind: "ce2-nb-decomposer", count: 1 },
+          { kind: "ce2-nb-encadrer", count: 1 },
+          { kind: "ce2-nb-glisser", count: 1 },
+          { kind: "ce2-nb-suite", count: 1 },
+          { kind: "ce2-nb-lettres", count: 1 },
+          { kind: "ce2-nb-ecrire", count: 1 },
+        ],
       },
       {
         key: "ma-ce2-multiplication",
         name: "Multiplication et calcul mental",
         description:
           "Opérations de l'étape 2 (répartition proposée pour le CE2) : tables de multiplication jusqu'à 9, multiplication posée par un nombre à deux chiffres, multiplier par 10 et par 100, calcul mental.",
+        // Dix gabarits (`tablesCe2.ts`) : les tables de 2 à 9 (2 à 5, puis 6 et 7, puis 8 et 9, puis toutes), la multiplication posée par un puis par deux chiffres.
+        games: [
+          { kind: "ce2-mult-table", count: 1 },
+          { kind: "ce2-mult-trou", count: 1 },
+          { kind: "ce2-mult-poser", count: 1 },
+          { kind: "ce2-mult-ecrire", count: 1 },
+          { kind: "ce2-mult-dix", count: 1 },
+          { kind: "ce2-mult-double", count: 1 },
+          { kind: "ce2-mult-decomposer", count: 1 },
+          { kind: "ce2-mult-relier", count: 1 },
+          { kind: "ce2-mult-glisser", count: 1 },
+          { kind: "ce2-mult-probleme", count: 1 },
+        ],
       },
       {
         key: "ma-ce2-division",
         name: "La division",
         description:
           "Opérations de l'étape 2 (répartition proposée pour le CE2) : le sens de la division (partage et groupement), la division posée par un nombre à un chiffre, le reste.",
+        // Dix gabarits (`divisionCe2.ts`) : sans reste d'abord, puis avec un reste, la division posée, trois chiffres ; le reste est toujours plus petit que le diviseur.
+        games: [
+          { kind: "ce2-div-table", count: 1 },
+          { kind: "ce2-div-partage", count: 1 },
+          { kind: "ce2-div-groupement", count: 1 },
+          { kind: "ce2-div-reste", count: 1 },
+          { kind: "ce2-div-poser", count: 1 },
+          { kind: "ce2-div-trou", count: 1 },
+          { kind: "ce2-div-ecrire", count: 1 },
+          { kind: "ce2-div-relier", count: 1 },
+          { kind: "ce2-div-glisser", count: 1 },
+          { kind: "ce2-div-probleme", count: 1 },
+        ],
       },
       {
         key: "ma-ce2-symetrie",

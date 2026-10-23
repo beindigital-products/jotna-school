@@ -830,10 +830,10 @@ describe("chaque gabarit de l'histoire et de la géographie du CE2 a sa vérific
     expect(KINDS).toHaveLength(61);
     expect(Object.values(TOPIC_KINDS).flat().sort()).toEqual([...KINDS].sort());
     for (const kind of KINDS) expect(Object.keys(GAME_KINDS), kind).toContain(kind);
-    // Aucun gabarit du CE2 de ce lot ne manque à la liste : tout ce qui commence par « ce2- » est vérifié ici.
-    // Les gabarits des sciences du CE2 ont leur propre fichier de test () : on les met de côté.
-    const sciences = new Set(allProgrammeEntries().filter((entry) => entry.topic.key.startsWith("sc-ce2-")).flatMap((entry) => (entry.topic.games ?? []).map((spec) => spec.kind as string)));
-    expect(Object.keys(GAME_KINDS).filter((kind) => kind.startsWith("ce2-") && !sciences.has(kind)).sort()).toEqual([...KINDS].sort());
+    // Aucun gabarit du CE2 de ce lot ne manque à la liste : tout ce que les thématiques d'histoire et de géographie du CE2 demandent est vérifié ici.
+    // Les autres matières du CE2 (les mathématiques, les sciences…) ont chacune leur fichier de test.
+    const lot = new Set(allProgrammeEntries().filter((entry) => /^(hi|ge)-ce2-/.test(entry.topic.key)).flatMap((entry) => (entry.topic.games ?? []).map((spec) => spec.kind as string)));
+    expect(Object.keys(GAME_KINDS).filter((kind) => kind.startsWith("ce2-") && lot.has(kind)).sort()).toEqual([...KINDS].sort());
   });
 });
 

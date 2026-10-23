@@ -72,7 +72,6 @@ describe("les cartes jouables d'une matière et d'une classe", () => {
       "Relier les paires",
       "Remettre en ordre",
       "Écrire la réponse",
-      "Continuer la suite",
       "Dessiner sur quadrillage",
     ]);
     // Deux rubriques : les exercices écrits, puis les jeux fabriqués par le code.
@@ -105,8 +104,9 @@ describe("les cartes jouables d'une matière et d'une classe", () => {
   });
 
   it("« Un autre exemple » change le jeu et monte la difficulté d'un cran", async () => {
-    const { container } = render(<DemoCards subject="mathematiques" klass="CE2" />);
-    await screen.findByText(byPrompt(mathematiques.CE2[0].prompt));
+    // Le CP a encore une suite de nombres (le CE2 a la sienne, fabriquée par le code, hors de la vitrine).
+    const { container } = render(<DemoCards subject="mathematiques" klass="CP" />);
+    await screen.findByText(byPrompt(mathematiques.CP[0].prompt));
     const card = () => screen.getByRole("group", { name: "Continuer la suite" });
     // Le premier exemple est de niveau « consolidation ».
     expect(within(card()).getByText("Consolidation")).toBeTruthy();
@@ -126,7 +126,7 @@ describe("les cartes jouables d'une matière et d'une classe", () => {
     });
     // On recommence par le début de l'échelle.
     expect(within(card()).getByText("Découverte")).toBeTruthy();
-    expect(titles(container)).toHaveLength(7);
+    expect(titles(container)).toHaveLength(classicTypesFor("mathematiques", "CP").length + gamesFor("mathematiques", "CP").length);
   });
 
   it("repart de zéro quand on change de classe : les cartes du CP, pas celles du CE2", async () => {

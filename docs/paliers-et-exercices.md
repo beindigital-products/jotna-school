@@ -2529,6 +2529,27 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     1 000 F pour deux piles) ; le contrôleur ne signale aucun défaut sur 8 000 paliers fabriqués (80 000 exercices), sans doublon dans un palier ; 0,0 à 0,5 % de questions revues d'un
     palier à l'autre (le dessin à reproduire en fait l'essentiel, et il existait déjà).
   - **Les 44 thématiques du CE1 sont des gabarits** ; le test `ce1Maths2Templates.test.ts` le vérifie (aucune ne demande le modèle).
+- **Les mathématiques du CE2, première moitié** (`paliers/games/nombresCe2.ts`, `tablesCe2.ts` et `divisionCe2.ts`) : trente gabarits pour `ma-ce2-grands-nombres`,
+  `ma-ce2-multiplication` et `ma-ce2-division`, que le modèle n'écrit plus. Les noms commencent par `ce2-nb-`, `ce2-mult-` et `ce2-div-` ; les fonctions sont des `makeCe2Nb…`,
+  `makeCe2Mult…` et `makeCe2Div…`. Le reste des mathématiques du CE2 (`ma-ce2-symetrie`, `-perimetre-aire`, `-mesures`, `-problemes`) est le lot suivant. Ces fiches ont quatre paliers.
+  - **Les nombres** : jusqu'à 100 000, jamais au-delà (`CAP_CE2`). Le plus grand nombre d'un palier monte : 20 000, 40 000, 70 000, 100 000 ; le plus petit est 1 000 puis 10 000.
+    100 000 n'est servi que comme voisin d'un nombre ou fin de suite (six chiffres, un rang de plus). L'écriture en lettres (`wordsOfCe2`) suit l'école : « quatre-vingt mille » et « deux cent
+    mille » sans s (mille est un mot de nombre derrière), « deux cents » avec un s quand rien ne suit, « vingt et un mille ». Le test la compare, pour les 100 001 nombres, à un autre
+    algorithme écrit à part, et à une vingtaine de nombres difficiles. La suite de nombres du site (`suite-nombres`) n'y va pas : la fiche a sa propre suite (`ce2-nb-suite`), et la vitrine
+    n'annonce plus de « suite de nombres » pour les maths du CE2. Une suite a un pas de 1 000 (puis 5 000, 2 000, 10 000, 250, 500, 2 500, 20 000 selon le palier) et ses termes sont des
+    multiples du pas.
+  - **La multiplication** : les tables de 2 à 9, facteur de 2 à 10, vont avec les paliers (2 à 5, puis 6 et 7, puis 8 et 9, puis toutes, où l'on écrit aussi « 7 × 4 » pour « 4 × 7 ») ;
+    un produit n'est posé qu'une fois dans un palier. La multiplication posée : deux chiffres par un chiffre sans retenue, avec la retenue des unités, puis trois chiffres par un chiffre,
+    puis deux chiffres par deux chiffres (23 × 14) ; aucun chiffre n'est zéro. Les erreurs d'enfant : une retenue oubliée ou comptée deux fois, le deuxième produit non décalé (23 × 14 donne
+    alors 115), un zéro de trop ou de moins en multipliant par 10 ou 100. La moitié n'est demandée que d'un nombre pair.
+  - **La division** : le dividende est le diviseur fois le quotient plus le reste, et le reste est TOUJOURS plus petit que le diviseur. Sans reste d'abord (diviseur de 2 à 5, quotient jusqu'à 10),
+    puis avec un reste (diviseur de 2 à 9), puis la division posée (quotient de 10 à 30), puis trois chiffres (quotient de 20 à 150). Aucun mauvais choix n'est vrai en chiffres : « 4 reste 2 »
+    pour 10 ÷ 2 vaut bien 10, mais n'est pas la réponse de l'école, et serait une seconde bonne réponse pour un enfant qui sait que 4 × 2 + 2 = 10 : il n'est jamais proposé. « Combien de boîtes
+    pleines ? » est le quotient ; « combien de voyages faut-il ? » est le quotient plus un quand il reste quelque chose (dernier palier). Un partage ou un groupement d'un problème tombe juste :
+    « combien chacun reçoit-il ? » n'a qu'une réponse.
+  - **Pièges rencontrés.** (1) Le test de couverture du lot 1 du CE2 (`ce2HistoryGeographyTemplates.test.ts`) exigeait que tout gabarit commençant par `ce2-` soit à lui : il ne regarde plus
+    que les gabarits demandés par les thématiques d'histoire et de géographie du CE2. (2) La vitrine (`demo-matrix.ts`) annonçait une « suite de nombres » pour les maths du CE2. (3) Un mauvais
+    choix numériquement vrai (« 14 reste 5 » pour 47 ÷ 3 : 3 × 14 + 5 = 47) est une seconde bonne réponse : le test exige qu'un seul choix écrive la division.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
