@@ -153,12 +153,12 @@ export function makeColorPair(ctx: GameContext): GeneratedGame {
 const WARM_PROMPTS = [
   "Touche la couleur CHAUDE, celle du soleil et du feu.",
   "Laquelle de ces couleurs est CHAUDE, comme la braise ? Touche-la.",
-  "Touche la couleur CHAUDE, celle d'une mangue mûre.",
+  "Touche la couleur CHAUDE, celle qui donne chaud quand on la regarde.",
 ];
 const COLD_PROMPTS = [
   "Touche la couleur FROIDE, celle de la mer et de la nuit.",
   "Laquelle de ces couleurs est FROIDE, comme l'eau du fleuve ? Touche-la.",
-  "Touche la couleur FROIDE, celle des feuilles du manguier.",
+  "Touche la couleur FROIDE, celle qui donne frais quand on la regarde.",
 ];
 
 /**
