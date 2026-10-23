@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { SHORT_OF_CHOICES, gapRows, questionRows, writeRows, type Pool } from "../paliers/games/cm1Faits";
 import { windowAt } from "../paliers/games/ce2Outils";
-import { defineTemplateTests } from "./cm1TestKit";
+import { defineTemplateTests } from "@/lib/test-support/cm1TestKit";
 
 /**
  * L'HISTOIRE ET LA GÉOGRAPHIE DU CM1 : dix thématiques, cinquante-sept gabarits (`cm1Histoire.ts`, `cm1Geographie.ts`).
  *
- * Le moteur des vérifications est dans `cm1TestKit.ts`. Ce fichier ne lit AUCUN tableau des sources : ses tables, écrites à part, disent
+ * Le moteur des vérifications est dans `lib/test-support/cm1TestKit.ts`. Ce fichier ne lit AUCUN tableau des sources : ses tables, écrites à part, disent
  * pour chaque réponse ce qu'un énoncé doit contenir pour l'appeler (`ASSOC`), dans quel ordre vont les suites (`CHAINS`), quelles paires sont
  * justes (`PAIRS`) et ce qui va dans chaque case (`MEMBERS`). Il garde aussi les tests du constructeur de faits et des fenêtres de lignes,
  * qui ne se jouent qu'une fois pour tous les lots du CM1 et du CM2.

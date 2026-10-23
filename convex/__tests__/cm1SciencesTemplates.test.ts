@@ -1,9 +1,9 @@
-import { defineTemplateTests } from "./cm1TestKit";
+import { defineTemplateTests } from "@/lib/test-support/cm1TestKit";
 
 /**
  * LES SCIENCES DU CM1 : six thématiques, trente-six gabarits (`cm1Sciences.ts`).
  *
- * Le moteur des vérifications est dans `cm1TestKit.ts`. Ce fichier ne lit AUCUN tableau de `cm1Sciences.ts` : ses tables, écrites à part, disent
+ * Le moteur des vérifications est dans `lib/test-support/cm1TestKit.ts`. Ce fichier ne lit AUCUN tableau de `cm1Sciences.ts` : ses tables, écrites à part, disent
  * pour chaque réponse ce qu'un énoncé doit contenir pour l'appeler (`ASSOC`), dans quel ordre vont les suites (`CHAINS`), quelles paires sont
  * justes (`PAIRS`) et ce qui va dans chaque case (`MEMBERS`).
  */
