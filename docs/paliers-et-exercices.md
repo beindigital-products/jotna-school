@@ -2833,7 +2833,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   cinquante gabarits pour les cinq thématiques `ma-cm1-grands-nombres`, `-divisibilite`, `-division`, `-fractions` et `-decimaux`, que le modèle n'écrit plus. Les noms commencent
   par `cm1-gn-`, `cm1-dbl-`, `cm1-div-`, `cm1-frc-` et `cm1-dcm-` (`cm1-dec-` était déjà pris par le découpage administratif de la géographie). Pas de tableau de faits ici : la
   réponse est CALCULÉE (un reste de division, un produit en croix, un nombre de centièmes), comme les mathématiques du CE2. Dix gabarits par thématique, un de chaque, cinq à six types
-  par palier. Restent au CM1 : figures, périmètres et aires, mesures (maths), le français (7), l'anglais (7, une autre branche).
+  par palier. Restent au CM1 : le français (7), l'anglais (7, une autre branche) ; les figures, périmètres et aires et mesures sont décrites plus bas.
   - **Cinq paliers, pas quatre.** `stepOf` (`cm1MathsOutils.ts`) lit la place du palier (1 à 5) dans `GameContext.palier` ; sans lui (`regenerateGame`), elle se déduit du niveau (1, 2, 4, 5).
     Le niveau 2 joue donc les paliers 2 et 3, et les vérifications des tests en acceptent les deux plages.
   - **Ce que chaque thématique pose.** Les grands nombres : jusqu'à 9 999 999 (le milliard est au CM2), voisin et ajouter un nombre rond (retenues qui traversent plusieurs rangs), comparer et
@@ -2859,6 +2859,26 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     76 pannes provoquées vues sur 77 (`scratchpad/mutations-cm1m1.py` ; la survivante, « deux demis » proposé comme mauvais choix, est du français valable) ; le contrôleur ne trouve aucun défaut, avertissement
     compris, sur 15 000 exercices par thématique ; moins de 5 % de questions revues d'un palier à l'autre ; recherche sur les 26 thématiques du CM1 fabriquées par le code (390 000 exercices) : aucun défaut
     de français dans les maths. PAS vu : l'écran, l'iPhone, l'application native, la production.
+- **Les mathématiques du CM1, les figures, les périmètres et aires, les mesures** (`paliers/games/figuresCm1.ts`, `perimetreAireCm1.ts`, `mesuresCm1.ts`) :
+  vingt-neuf gabarits pour `ma-cm1-figures` (neuf `cm1-fig-*` et le dessin à reproduire `pixel-copie`), `ma-cm1-perimetres-aires` (dix `cm1-per-*`) et `ma-cm1-mesures` (dix `cm1-mes-*`), avec le même
+  moteur de test (`lib/test-support/cm1MathsKit.ts`, qui accepte maintenant `extraKinds` pour un jeu hors du lot, ici `pixel-copie`). Les périmètres et les mesures sont CALCULÉS comme les nombres.
+  Les figures ont un tableau fermé : pour chaque figure, ce qui est vrai, ce qui est faux et ce qui est INCERTAIN (un triangle isocèle peut avoir un angle droit, un parallélogramme peut être un
+  rectangle). Une figure incertaine n'est jamais un mauvais choix, et une seule figure satisfait toutes les propriétés d'une question.
+  - **Ce que chaque thématique pose.** Les figures : reconnaître une figure d'après ses propriétés, droites (parallèles, perpendiculaires), instruments, compter côtés, sommets et angles droits,
+    rayon et diamètre (jusqu'à 90), classer, relier, écrire. Les périmètres et aires : périmètre et aire du carré et du rectangle en cm, dm et m, côté d'après le périmètre, comparer, unité
+    (cm² ou m²), conversions d'aires, problèmes en francs CFA. Les mesures : longueurs, masses, contenances, conversions dans les deux sens, décimales (0,25 kg), trou, comparer et ranger des
+    mesures écrites dans deux unités, choisir l'unité, durées (heures, minutes, durée écoulée, heure d'arrivée), problèmes.
+  - **HORS FICHE, À FAIRE RELIRE PAR LE PROPRIÉTAIRE** : le dm² ; les conversions d'aires entre m², dm² et cm² ; les unités t, mL et cL et les mesures décimales (0,25) ; les calculs de durées
+    (durée écoulée, heure d'arrivée, somme de durées) ; les propriétés du parallélogramme, du triangle équilatéral, isocèle et rectangle ; rayon et diamètre jusqu'à 90 ; le tableau des
+    vingt grandeurs à mesurer et leur unité ; les tâches du compas, de l'équerre et de la règle ; les prix en francs CFA des problèmes (250, 500, 750).
+  - **Pièges rencontrés.** (1) Une même question ne revient pas d'un palier à l'autre : les listes de questions, de comptages et de triplets de figures sont découpées en fenêtres (`windowAt`).
+    (2) Une phrase de propriétés n'a qu'une apostrophe : les négations sont groupées (« n'a aucun angle droit et … »). (3) Un cercle « n'a aucun angle droit » est vrai sans le dire : `r0` fait
+    partie du cercle. (4) Les mauvaises durées sont d'abord les erreurs d'enfant (oublier la retenue de 60), puis des complétions mélangées, sinon la bonne réponse se devine au milieu.
+    (5) Une réponse courte s'écrit sans espace de millier quand elle est tapée (`String`), mais avec dans une option. (6) Une borne aléatoire doit être entière (`Math.floor`).
+  - **Mesuré** : 116 tests (`convex/__tests__/cm1MathsPerimetresTemplates.test.ts` 39, `Mesures` 39, `Figures` 38, dont un tableau de géométrie écrit à part dans le test) ; 57 pannes provoquées tuées sur 60
+    (`scratchpad/mutations-cm1m2.py`) : deux survivantes tuées par deux tests ajoutés (le carré a quatre côtés égaux ; les comptages de deux paliers ne se recoupent pas), la troisième (le libellé d'une
+    mesure dans la mauvaise unité) retombe sur la liste de secours, qui est juste : sa sortie reste correcte ; le contrôleur ne trouve aucun défaut, avertissement compris, sur 120 000 exercices des huit
+    thématiques de maths du CM1 ; moins de 5 % de questions revues d'un palier à l'autre. PAS vu : l'écran, l'iPhone, l'application native, la production.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
