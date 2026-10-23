@@ -225,9 +225,9 @@ const MIL_ECRIRE = writeRows("ge-cm2-milieu-activites", MIL_POOLS);
 const MIL_ORDRE: readonly OrderRow[] = [
   order("Range ces régions naturelles du nord au sud.", ["Vallée du fleuve Sénégal", "Bassin arachidier", "Casamance"], "mil-ordre:nord-sud"),
   order("Range ces régions naturelles du nord au sud.", ["Ferlo", "Bassin arachidier", "Casamance"], "mil-ordre:ferlo"),
-  order("Range les étapes de la culture du riz.", ["Préparer la rizière", "Repiquer les plants", "Récolter le riz", "Vendre le riz"], "mil-ordre:riz"),
-  order("Range les gestes du paysan qui cultive l'arachide.", ["Semer les graines", "Arracher les plants", "Faire sécher les arachides", "Vendre les arachides"], "mil-ordre:arachide"),
-  order("Range les gestes du pêcheur.", ["Jeter le filet", "Remonter le filet", "Trier le poisson", "Vendre le poisson"], "mil-ordre:pecheur"),
+  order("Range les étapes de la culture du riz, de la première à la dernière.", ["Préparer la rizière", "Repiquer les plants", "Récolter le riz", "Vendre le riz"], "mil-ordre:riz"),
+  order("Range les gestes du paysan qui cultive l'arachide, du premier au dernier.", ["Semer les graines", "Arracher les plants", "Faire sécher les arachides", "Vendre les arachides"], "mil-ordre:arachide"),
+  order("Range les gestes du pêcheur, du premier au dernier.", ["Jeter le filet", "Remonter le filet", "Trier le poisson", "Vendre le poisson"], "mil-ordre:pecheur"),
 ];
 
 const MIL_RELIER: readonly LinkRow[] = [
@@ -438,11 +438,11 @@ const DEG_TROU = gapRows("ge-cm2-degradation", DEG_POOLS);
 const DEG_ECRIRE = writeRows("ge-cm2-degradation", [DEG_PROBLEME, DEG_SOLUTION]);
 
 const DEG_ORDRE: readonly OrderRow[] = [
-  order("Range les étapes pour replanter des arbres.", ["Préparer des plants en pépinière", "Creuser les trous", "Planter les jeunes arbres", "Arroser et protéger les arbres"], "deg-ordre:planter"),
-  order("Range les étapes de la protection d'un espace marin.", ["La zone de mer est choisie", "La pêche y est limitée", "Les poissons se reproduisent", "La pêche devient meilleure autour"], "deg-ordre:aire"),
-  order("Range les gestes pour planter un arbre.", ["Creuser le trou", "Poser le jeune plant", "Reboucher avec de la terre", "Arroser le plant"], "deg-ordre:arbre"),
-  order("Range les effets de la surpêche dans l'ordre.", ["Les pêcheurs prennent trop de poissons", "Il reste moins de poissons", "Les pêcheurs rapportent moins de poissons"], "deg-ordre:surpeche"),
-  order("Range les étapes du reboisement d'un village.", ["Les habitants choisissent un terrain", "Ils plantent de jeunes arbres", "Ils protègent les jeunes arbres", "Les arbres deviennent grands"], "deg-ordre:village"),
+  order("Range les étapes pour replanter des arbres, de la première à la dernière.", ["Préparer des plants en pépinière", "Creuser les trous", "Planter les jeunes arbres", "Arroser et protéger les arbres"], "deg-ordre:planter"),
+  order("Range les étapes de la protection d'un espace marin, de la première à la dernière.", ["La zone de mer est choisie", "La pêche y est limitée", "Les poissons se reproduisent", "La pêche devient meilleure autour"], "deg-ordre:aire"),
+  order("Range les gestes pour planter un arbre, du premier au dernier.", ["Creuser le trou", "Poser le jeune plant", "Reboucher avec de la terre", "Arroser le plant"], "deg-ordre:arbre"),
+  order("Range les effets de la surpêche, du premier au dernier.", ["Les pêcheurs prennent trop de poissons", "Il reste moins de poissons", "Les pêcheurs rapportent moins de poissons"], "deg-ordre:surpeche"),
+  order("Range les étapes du reboisement d'un village, de la première à la dernière.", ["Les habitants choisissent un terrain", "Ils plantent de jeunes arbres", "Ils protègent les jeunes arbres", "Les arbres deviennent grands"], "deg-ordre:village"),
 ];
 
 const DEG_RELIER: readonly LinkRow[] = [
@@ -725,7 +725,7 @@ const POP_ECRIRE = writeRows("ge-cm2-population", [POP_ANNEE, POP_TERME, POP_DEN
 
 const POP_ORDRE: readonly OrderRow[] = [
   order("Range ces régions de la plus dense à la moins dense.", ["Dakar", "Thiès", "Tambacounda"], "pop-ordre:densite"),
-  order("Range les étapes d'un recensement.", ["Préparer le questionnaire", "Visiter chaque maison", "Noter les habitants", "Compter le total"], "pop-ordre:recensement"),
+  order("Range les étapes d'un recensement, de la première à la dernière.", ["Préparer le questionnaire", "Visiter chaque maison", "Noter les habitants", "Compter le total"], "pop-ordre:recensement"),
   order("Range ces nombres d'habitants du plus petit au plus grand.", ["1 million", "8 millions", "18 millions"], "pop-ordre:nombres"),
   order("Range ces groupes d'âge du plus jeune au plus âgé.", ["Nourrisson", "Enfant", "Adulte", "Personne âgée"], "pop-ordre:ages"),
   order("Range ces lieux du moins peuplé au plus peuplé.", ["Désert", "Village", "Ville", "Capitale"], "pop-ordre:lieux"),
@@ -734,10 +734,10 @@ const POP_ORDRE: readonly OrderRow[] = [
 const POP_RELIER: readonly LinkRow[] = [
   link("Relie chaque mot à ce qu'il désigne.", [["Recensement", "Compter les habitants"], ["Densité", "Habitants par kilomètre carré"], ["Pyramide des âges", "Habitants de chaque âge"]]),
   link("Relie chaque nom à ce qu'il décrit.", [["Dakar", "Région la plus peuplée"], ["Ferlo", "Zone peu peuplée"], ["Wolof", "Langue la plus parlée"]]),
-  link("Relie chaque langue à son rôle.", [["Français", "Langue officielle"], ["Wolof", "Langue la plus parlée"], ["Diola", "Langue nationale de Casamance"]]),
+  link("Relie chaque langue à son rôle.", [["Français", "Langue officielle"], ["Wolof", "Langue la plus parlée"], ["Diola", "Langue parlée en Casamance"]]),
   link("Relie chaque mot à ce qu'il décrit.", [["Population jeune", "Beaucoup d'enfants"], ["Répartition inégale", "Des lieux très peuplés et d'autres presque vides"], ["Diversité", "Plusieurs groupes et langues"]]),
   link("Relie chaque langue nationale à un lieu.", [["Diola", "Casamance"], ["Pulaar", "Fleuve"], ["Sérère", "Sine et Saloum"]]),
-  link("Relie chaque chiffre à ce qu'il décrit.", [["18 millions", "Habitants du Sénégal"], ["2023", "Année du recensement"], ["Dakar", "Région la plus dense"]]),
+  link("Relie chaque donnée à ce qu'elle décrit.", [["18 millions", "Habitants du Sénégal"], ["2023", "Année du recensement"], ["Dakar", "Région la plus dense"]]),
 ];
 
 const POP_GLISSER = [
@@ -948,7 +948,7 @@ const VIL_ORDRE: readonly OrderRow[] = [
   order("Range ces lieux du plus petit au plus grand.", ["Maison", "Quartier", "Ville"], "vil-ordre:lieux"),
   order("Range ces lieux du plus petit au plus grand.", ["Quartier", "Ville", "Région"], "vil-ordre:region"),
   order("Range ces lieux du plus petit au plus grand.", ["Maison", "Quartier", "Ville", "Région"], "vil-ordre:quatre"),
-  order("Range les étapes du départ d'un jeune vers la ville.", ["Il quitte son village", "Il prend la route", "Il arrive en ville", "Il cherche du travail"], "vil-ordre:depart", DEPART_HINTS),
+  order("Range les étapes du départ d'un jeune vers la ville, de la première à la dernière.", ["Il quitte son village", "Il prend la route", "Il arrive en ville", "Il cherche du travail"], "vil-ordre:depart", DEPART_HINTS),
   order("Range ces habitations de la moins haute à la plus haute.", ["Case", "Maison en dur", "Immeuble"], "vil-ordre:habitations"),
 ];
 

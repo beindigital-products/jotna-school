@@ -450,12 +450,12 @@ const TRA_TROU = gapRows("hi-cm2-traite", TRA_POOLS);
 const TRA_ECRIRE = writeRows("hi-cm2-traite", TRA_POOLS);
 
 const TRA_ORDRE: readonly OrderRow[] = [
-  order("Range les étapes d'un voyage du commerce triangulaire.", ["Départ d'Europe avec des marchandises", "Achat de captifs en Afrique", "Traversée vers l'Amérique", "Retour en Europe avec le sucre et le coton"], "tra-ordre:voyage"),
+  order("Range les étapes d'un voyage du commerce triangulaire, du premier au dernier.", ["Départ d'Europe avec des marchandises", "Achat de captifs en Afrique", "Traversée vers l'Amérique", "Retour en Europe avec le sucre et le coton"], "tra-ordre:voyage"),
   order("Range les continents du voyage du commerce triangulaire, en partant de l'Europe.", ["Europe", "Afrique", "Amérique"], "tra-ordre:continents"),
   order("Range ces événements du plus ancien au plus récent.", ["Les caravelles explorent la côte africaine", "Le commerce triangulaire relie trois continents", "L'esclavage prend fin dans les colonies françaises"], "tra-ordre:evenements"),
   order("Range ces événements du plus ancien au plus récent.", ["Les caravelles explorent la côte africaine", "Les captifs traversent l'Atlantique", "L'esclavage prend fin dans les colonies françaises"], "tra-ordre:atlantique"),
-  order("Range les étapes d'une traversée en caravelle.", ["Charger les provisions", "Hisser les voiles", "Suivre la boussole", "Arriver au port"], "tra-ordre:caravelle"),
-  order("Range les étapes de la fabrication d'un livre imprimé.", ["Écrire le texte", "Composer les lettres de la page", "Imprimer la page", "Relier les feuilles"], "tra-ordre:livre"),
+  order("Range les étapes d'une traversée en caravelle, du premier au dernier.", ["Charger les provisions", "Hisser les voiles", "Suivre la boussole", "Arriver au port"], "tra-ordre:caravelle"),
+  order("Range les étapes de la fabrication d'un livre imprimé, du premier au dernier.", ["Écrire le texte", "Composer les lettres de la page", "Imprimer la page", "Relier les feuilles"], "tra-ordre:livre"),
 ];
 
 const TRA_RELIER: readonly LinkRow[] = [
@@ -677,7 +677,7 @@ const COL_RELIER: readonly LinkRow[] = [
   link("Relie chaque ville à son rôle.", [["Saint-Louis", "Première capitale de l'AOF"], ["Dakar", "Capitale de l'AOF depuis 1902"], ["Gorée", "Île en face de Dakar"]]),
   link("Relie chaque mot à son sens.", [["Colonie", "Pays dirigé de loin"], ["Conquête", "Prise par la force"], ["Résistance", "Lutte contre l'occupant"]]),
   link("Relie chaque sigle ou chaque date à ce qu'il désigne.", [["AOF", "Colonies françaises d'Afrique de l'Ouest"], ["1895", "Création de l'AOF"], ["1902", "Dakar devient capitale"]]),
-  link("Relie chaque forme de résistance à un exemple.", [["Résistance armée", "Lat Dior"], ["Résistance pacifique", "Cheikh Ahmadou Bamba"], ["Conquête", "Faidherbe"]]),
+  link("Relie chaque mot à un exemple.", [["Résistance armée", "Lat Dior"], ["Résistance pacifique", "Cheikh Ahmadou Bamba"], ["Conquête", "Faidherbe"]]),
   link("Relie chaque événement à son année.", [["Création de l'AOF", "1895"], ["Dakar devient capitale", "1902"], ["Indépendance du Sénégal", "1960"]]),
 ];
 
@@ -723,7 +723,7 @@ const IND_PEOPLE: Pool = {
     },
     {
       id: "gueye",
-      q: ["Quel député sénégalais a donné son nom à la loi de 1946 sur la citoyenneté ?", "Quelle loi de 1946, qui rend citoyens les habitants des colonies, porte le nom d'un député sénégalais ?", "Quel député est à l'origine de la loi de 1946 sur la citoyenneté française ?"],
+      q: ["Quel député sénégalais a donné son nom à la loi de 1946 sur la citoyenneté ?", "Quel député sénégalais a donné son nom à la loi de 1946 qui rend citoyens les habitants des colonies ?", "Quel député est à l'origine de la loi de 1946 sur la citoyenneté française ?"],
       a: "Lamine Guèye",
       also: ["Lamine Gueye", "Guèye", "Gueye"],
       s: ["La loi de 1946 sur la citoyenneté porte le nom de ___.", "___ est le député qui a donné son nom à la loi de 1946."],
@@ -838,7 +838,7 @@ const IND_RELIER: readonly LinkRow[] = [
   link("Relie chaque nom à son rôle.", [["Blaise Diagne", "Premier député africain"], ["Léopold Sédar Senghor", "Premier président du Sénégal"], ["Lamine Guèye", "Loi de 1946 sur la citoyenneté"]]),
   link("Relie chaque date à ce qu'elle rappelle.", [["1914", "Diagne devient député"], ["1959", "Naissance de la Fédération du Mali"], ["1960", "Indépendance du Sénégal"]]),
   link("Relie chaque mot à ce qu'il désigne.", [["Fédération du Mali", "Union avec le Soudan français"], ["4 avril", "Fête de l'indépendance"], ["Assemblée française", "Lieu où siège Diagne"]]),
-  link("Relie chaque homme politique à sa fonction.", [["Blaise Diagne", "Député en 1914"], ["Lamine Guèye", "Député de la loi de 1946"], ["Léopold Sédar Senghor", "Président en 1960"]]),
+  link("Relie chaque homme politique à sa fonction.", [["Blaise Diagne", "Député en 1914"], ["Lamine Guèye", "Auteur de la loi de 1946"], ["Léopold Sédar Senghor", "Président en 1960"]]),
   link("Relie chaque année à ce qui s'est passé.", [["1914", "Élection de Blaise Diagne"], ["1946", "Loi Lamine Guèye"], ["1959", "Naissance de la Fédération du Mali"], ["1960", "Fête de l'indépendance"]]),
   link("Relie chaque événement à son sens.", [["Fédération du Mali", "Union de deux territoires"], ["Loi de 1946", "Citoyenneté pour les habitants des colonies"], ["4 avril", "Fête nationale"]]),
 ];
