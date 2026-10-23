@@ -19,6 +19,7 @@ const THEMES: { klass: VisibleClassName; palierCount: number }[] = [
   { klass: "CI", palierCount: 3 },
   { klass: "CP", palierCount: 3 },
   { klass: "CE1", palierCount: 4 },
+  { klass: "CE2", palierCount: 4 },
   { klass: "CM1", palierCount: 5 },
 ];
 
@@ -84,6 +85,23 @@ describe("pickMotif : un dessin ne revient pas d'un palier à l'autre", () => {
         const paliers = themePaliers(theme, specs, seed);
         for (const p of paliers) expect(new Set(p.drawings).size, `${theme.klass} ${seed}`).toBe(4);
         expect(sharedAcrossGroups(paliers), `${theme.klass} ${seed}`).toEqual([]);
+      }
+    }
+  });
+
+  it("au CE1 et au CE2, le niveau 4 a ses propres dessins : il n'en reprend aucun du niveau 3 (quatre dessins), et au plus un (cinq)", () => {
+    for (const theme of THEMES.filter((t) => t.klass === "CE1" || t.klass === "CE2")) {
+      for (const seed of SEEDS) {
+        const four = themePaliers(theme, [{ kind: "coloriage-magique", count: 4 }], seed);
+        const [, , three, fourth] = four;
+        expect(three.level, seed).toBe(3);
+        expect(fourth.level, seed).toBe(4);
+        expect(three.drawings.filter((d) => fourth.drawings.includes(d)), `${theme.klass} ${seed} : niveaux 3 et 4, quatre dessins`).toEqual([]);
+        // Cinq dessins par palier (le coloriage magique du CE2) : le groupe du niveau 4 n'en compte que quatre, un seul peut venir d'ailleurs.
+        const five = themePaliers(theme, [{ kind: "coloriage-magique", count: 5 }], seed);
+        let shared = 0;
+        for (let i = 0; i < five.length; i++) for (let j = i + 1; j < five.length; j++) shared += five[i].drawings.filter((d) => five[j].drawings.includes(d)).length;
+        expect(shared, `${theme.klass} ${seed} : cinq dessins par palier, toutes paires de paliers`).toBeLessThanOrEqual(1);
       }
     }
   });

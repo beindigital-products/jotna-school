@@ -8,7 +8,7 @@
  * blanc qui éclaircit.
  */
 import type { ColorMixPayload, Paint } from "./types";
-import { pick, pickFresh, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { pickFresh, shuffle, type GameContext, type GeneratedGame } from "./shared";
 
 export const COLOR_PAINTS: Record<string, Paint> = {
   rouge: { name: "rouge", color: "#ef4444" },
@@ -149,9 +149,33 @@ export function makeColorPair(ctx: GameContext): GeneratedGame {
   };
 }
 
+/** Trois façons de poser la question pour chaque température : trois exercices du même palier ne se lisent plus comme un seul. */
+const WARM_PROMPTS = [
+  "Touche la couleur CHAUDE, celle du soleil et du feu.",
+  "Laquelle de ces couleurs est CHAUDE, comme la braise ? Touche-la.",
+  "Touche la couleur CHAUDE, celle d'une mangue mûre.",
+];
+const COLD_PROMPTS = [
+  "Touche la couleur FROIDE, celle de la mer et de la nuit.",
+  "Laquelle de ces couleurs est FROIDE, comme l'eau du fleuve ? Touche-la.",
+  "Touche la couleur FROIDE, celle des feuilles du manguier.",
+];
+
+/**
+ * Une couleur chaude ou froide à toucher. Il y a six couleurs et trois formulations par température, soit neuf questions chaudes et neuf
+ * froides. Les trois exercices d'un palier alternent chaude et froide (la température du premier dépend du niveau) et n'ont jamais la même
+ * couleur à trouver. D'un palier à l'autre, la place dans la liste suit le niveau, deux places par niveau : quatre paliers de trois
+ * exercices prennent douze questions différentes sur dix-huit, aucune ne revient (couleur et formulation vont ensemble).
+ */
 export function makeWarmCold(ctx: GameContext): GeneratedGame {
-  const askWarm = ctx.rng() < 0.5;
-  const target = pick(ctx.rng, askWarm ? WARM : COLD);
+  const asked = [...ctx.used].filter((key) => key.startsWith("chaud-froid:")).length;
+  const askWarm = (asked + ctx.level) % 2 === 0;
+  const names = askWarm ? WARM : COLD;
+  const prompts = askWarm ? WARM_PROMPTS : COLD_PROMPTS;
+  const sameTemperature = [...ctx.used].filter((key) => key.startsWith("chaud-froid:") && names.includes(key.slice("chaud-froid:".length))).length;
+  const place = (2 * (ctx.level - 1) + sameTemperature) % (names.length * prompts.length);
+  const target = names[place % names.length];
+  ctx.used.add(`chaud-froid:${target}`);
   const others = shuffle(ctx.rng, askWarm ? COLD : WARM).slice(0, 2);
   const payload: ColorMixPayload = {
     mode: "pick",
@@ -160,9 +184,8 @@ export function makeWarmCold(ctx: GameContext): GeneratedGame {
   };
   return {
     type: "color-mix",
-    prompt: askWarm
-      ? "Touche la couleur CHAUDE, celle du soleil et du feu."
-      : "Touche la couleur FROIDE, celle de la mer et de la nuit.",
+    // Les neuf places donnent les neuf couples (couleur, formulation), et deux places voisines diffèrent par la couleur et par la formulation.
+    prompt: prompts[(Math.floor(place / names.length) + place) % prompts.length],
     payload: { ...payload, concept: "couleurs chaudes et froides", game: { kind: "couleurs-chaudes-froides", level: ctx.level } },
     answerKey: target,
     hints: [

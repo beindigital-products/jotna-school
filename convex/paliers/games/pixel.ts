@@ -192,7 +192,14 @@ function pickMotif(ctx: GameContext, needMirror: boolean): Motif {
   const pool = motifsFor(ctx, needMirror);
   const keyOf = (m: Motif) => `motif:${m.key}`;
   const fresh = pool.filter((m) => !ctx.used.has(keyOf(m)));
-  const own = fresh.filter((m) => (MOTIF_RANK.get(m.key) ?? 0) % 3 === levelGroup(ctx.level));
+  // Au CE1 et au CE2 il y a quatre paliers, donc quatre niveaux, mais les niveaux 3 et 4 partagent le dernier groupe : leurs dessins
+  // (cinq par palier au CE2 pour `coloriage-magique`, tous ceux du groupe) étaient les mêmes aux deux paliers. Le niveau 4 prend donc le groupe du premier niveau,
+  // sauf ce que ce premier niveau tire lui-même (ses petits dessins et le djembé) : ces dessins-là ne sont qu'à lui.
+  const level1Keys = new Set(motifsFor({ ...ctx, level: 1 }, needMirror).map((m) => m.key));
+  const own =
+    ctx.band === 1 && ctx.level === 4
+      ? fresh.filter((m) => (MOTIF_RANK.get(m.key) ?? 0) % 3 === 0 && !level1Keys.has(m.key))
+      : fresh.filter((m) => (MOTIF_RANK.get(m.key) ?? 0) % 3 === levelGroup(ctx.level));
   const chosen = pick(ctx.rng, own.length > 0 ? own : fresh.length > 0 ? fresh : pool);
   ctx.used.add(keyOf(chosen));
   return chosen;
