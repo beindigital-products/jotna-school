@@ -180,8 +180,9 @@ export const ordr = (prompt: string, sequence: readonly string[], h: Hints, fact
 /** Des glissés en deux cases bâtis sur deux listes : deux étiquettes de chaque, `count` tirages répartis sur toutes les combinaisons. */
 export function sortRows(prompt: string, zones: readonly [string, string], first: readonly string[], second: readonly string[], h: Hints, count: number): SortRow[] {
   const all = combinations(first, 2).flatMap((a) => combinations(second, 2).map((b) => ({ a, b })));
-  const step = all.length / count;
-  return Array.from({ length: count }, (_, i) => all[Math.floor(i * step)]).map(({ a, b }) => ({
+  const served = Math.min(count, all.length);
+  const step = all.length / served;
+  return Array.from({ length: served }, (_, i) => all[Math.floor(i * step)]).map(({ a, b }) => ({
     prompt,
     zones,
     items: [...a.map((text) => ({ text, zone: zones[0] })), ...b.map((text) => ({ text, zone: zones[1] }))],
