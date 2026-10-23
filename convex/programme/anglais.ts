@@ -308,6 +308,15 @@ export const ANGLAIS: ProgrammeSubject = {
     CE2: [
       {
         key: "an-ce2-be",
+        games: [
+          { kind: "ce2-en-be-trou", count: 2 },
+          { kind: "ce2-en-be-phrase", count: 2 },
+          { kind: "ce2-en-be-neg", count: 1 },
+          { kind: "ce2-en-be-question", count: 1 },
+          { kind: "ce2-en-be-reponse", count: 2 },
+          { kind: "ce2-en-be-glisser", count: 1 },
+          { kind: "ce2-en-be-ecrire", count: 1 },
+        ],
         name: "Être en anglais : am, is, are",
         palierCount: 3,
         description:
@@ -315,6 +324,16 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-ce2-have-got",
+        games: [
+          { kind: "ce2-en-hg-trou", count: 2 },
+          { kind: "ce2-en-hg-phrase", count: 2 },
+          { kind: "ce2-en-hg-neg", count: 1 },
+          { kind: "ce2-en-hg-question", count: 1 },
+          { kind: "ce2-en-hg-reponse", count: 1 },
+          { kind: "ce2-en-hg-relier", count: 1 },
+          { kind: "ce2-en-hg-glisser", count: 1 },
+          { kind: "ce2-en-hg-ecrire", count: 1 },
+        ],
         name: "J'ai : have got, has got",
         palierCount: 3,
         description:
@@ -322,6 +341,17 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-ce2-can",
+        games: [
+          { kind: "ce2-en-can-fr", count: 1 },
+          { kind: "ce2-en-can-phrase", count: 1 },
+          { kind: "ce2-en-can-neg", count: 1 },
+          { kind: "ce2-en-can-trou", count: 2 },
+          { kind: "ce2-en-can-question", count: 1 },
+          { kind: "ce2-en-can-reponse", count: 1 },
+          { kind: "ce2-en-can-relier", count: 1 },
+          { kind: "ce2-en-can-glisser", count: 1 },
+          { kind: "ce2-en-can-ecrire", count: 1 },
+        ],
         name: "Je peux, je sais : can",
         palierCount: 3,
         description:
@@ -329,12 +359,32 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-ce2-home",
+        games: [
+          { kind: "ce2-en-home-mot", count: 1 },
+          { kind: "ce2-en-home-phrase", count: 2 },
+          { kind: "ce2-en-home-ou", count: 1 },
+          { kind: "ce2-en-home-trou", count: 2 },
+          { kind: "ce2-en-home-ordre", count: 1 },
+          { kind: "ce2-en-home-relier", count: 1 },
+          { kind: "ce2-en-home-glisser", count: 1 },
+          { kind: "ce2-en-home-ecrire", count: 1 },
+        ],
         name: "La maison et où c'est",
         description:
           "Anglais, niveau A1 : la maison et les prépositions de lieu. Vocabulaire fermé : house, kitchen, bedroom, bathroom, living room, bed, table, chair, TV, cat, bag. Prépositions : in, on, under, next to, behind, in front of. Structures : « The cat is under the table. », « Where is the bag? / It is on the chair. » (l'article « the » s'introduit ici). L'enfant place un objet d'après une phrase, choisit la préposition, répond à « Where is… ? ».",
       },
       {
         key: "an-ce2-months",
+        games: [
+          { kind: "ce2-en-months-mot", count: 1 },
+          { kind: "ce2-en-months-voisin", count: 2 },
+          { kind: "ce2-en-months-anniversaire", count: 1 },
+          { kind: "ce2-en-months-trou", count: 2 },
+          { kind: "ce2-en-months-ordre", count: 1 },
+          { kind: "ce2-en-months-relier", count: 1 },
+          { kind: "ce2-en-months-glisser", count: 1 },
+          { kind: "ce2-en-months-ecrire", count: 1 },
+        ],
         name: "Les mois de l'année",
         palierCount: 2,
         description:
@@ -342,6 +392,17 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-ce2-weather",
+        games: [
+          { kind: "ce2-en-weather-mot", count: 1 },
+          { kind: "ce2-en-weather-phrase", count: 1 },
+          { kind: "ce2-en-weather-question", count: 1 },
+          { kind: "ce2-en-weather-trou", count: 2 },
+          { kind: "ce2-en-weather-ordre", count: 1 },
+          { kind: "ce2-en-weather-relier", count: 1 },
+          { kind: "ce2-en-weather-saison", count: 1 },
+          { kind: "ce2-en-weather-glisser", count: 1 },
+          { kind: "ce2-en-weather-ecrire", count: 1 },
+        ],
         name: "Le temps qu'il fait",
         palierCount: 2,
         description:
@@ -349,6 +410,16 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-ce2-clock",
+        games: [
+          { kind: "ce2-en-clock-phrase", count: 2 },
+          { kind: "ce2-en-clock-heure", count: 1 },
+          { kind: "ce2-en-clock-trou", count: 2 },
+          { kind: "ce2-en-clock-question", count: 1 },
+          { kind: "ce2-en-clock-relier", count: 1 },
+          { kind: "ce2-en-clock-ordre", count: 1 },
+          { kind: "ce2-en-clock-glisser", count: 1 },
+          { kind: "ce2-en-clock-ecrire", count: 1 },
+        ],
         name: "L'heure en anglais",
         palierCount: 3,
         description:

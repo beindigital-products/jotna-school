@@ -42,10 +42,10 @@ import { partOf, pickLine, stepsOrder, triples, type Bin, type Fact, type Steps 
 // LES OUTILS : des tableaux coupés en moitiés ou en tiers
 // ===========================================================================
 
-/** 2 pour une thématique de deux paliers (niveaux 1 et 4), 3 pour une de trois (niveaux 1, 2 et 4). */
-type Bands = 2 | 3;
+/** 2 pour une thématique de deux paliers (niveaux 1 et 4), 3 pour une de trois (niveaux 1, 2 et 4), 4 pour une de quatre (un niveau par palier, CE2). */
+export type Bands = 2 | 3 | 4;
 
-const bandOf = (level: GameLevel, bands: Bands) => (bands === 3 ? levelGroup(level) : level <= 2 ? 0 : 1);
+const bandOf = (level: GameLevel, bands: Bands) => (bands === 4 ? level - 1 : bands === 3 ? levelGroup(level) : level <= 2 ? 0 : 1);
 
 /** La part du palier : la moitié ou le tiers de la liste, toute la liste si cette part est plus courte que `uses`. */
 export function bandPart<T>(items: readonly T[], level: GameLevel, bands: Bands, uses = 1): T[] {
@@ -54,10 +54,10 @@ export function bandPart<T>(items: readonly T[], level: GameLevel, bands: Bands,
 }
 
 /** Une phrase à trou : la phrase écrite avec `___`, le mot qui la complète, deux mots qui ne la complètent pas. */
-type EnGap = { prompt?: string; text: string; answer: string; wrong: readonly [string, string]; hints: Hints };
+export type EnGap = { prompt?: string; text: string; answer: string; wrong: readonly [string, string]; hints: Hints };
 
 /** Une phrase à trou : une ligne de la part du palier, de préférence dont le mot juste n'a pas déjà servi dans ce palier. */
-function gapLine(ctx: GameContext, kind: string, concept: string, rows: readonly EnGap[], bands: Bands, uses: number): GeneratedGame {
+export function gapLine(ctx: GameContext, kind: string, concept: string, rows: readonly EnGap[], bands: Bands, uses: number): GeneratedGame {
   return gapGame(ctx, kind, concept, () => {
     const fact = pickLine(ctx, kind, bandPart(rows, ctx.level, bands, uses), (row) => `${kind}:${row.text}:${row.prompt ?? ""}:${row.answer}`);
     return { prompt: fact.prompt ?? "Complète la phrase.", text: fact.text, answer: fact.answer, wrong: fact.wrong, hints: fact.hints };
@@ -65,7 +65,7 @@ function gapLine(ctx: GameContext, kind: string, concept: string, rows: readonly
 }
 
 /** Un QCM lu dans la part du palier. */
-function choiceLine(ctx: GameContext, kind: string, concept: string, rows: readonly Fact[], bands: Bands, uses: number): GeneratedGame {
+export function choiceLine(ctx: GameContext, kind: string, concept: string, rows: readonly Fact[], bands: Bands, uses: number): GeneratedGame {
   return choiceGame(ctx, kind, concept, () => {
     const fact = pickLine(ctx, kind, bandPart(rows, ctx.level, bands, uses), (row) => `${kind}:${row.question}:${row.answer}`);
     return { prompt: fact.question, answer: fact.answer, wrong: fact.wrong, hints: fact.hints };
@@ -73,7 +73,7 @@ function choiceLine(ctx: GameContext, kind: string, concept: string, rows: reado
 }
 
 /** Trois paires prises parmi tous les trios d'un tableau, chaque palier ayant ses trios. La droite de chaque paire est différente. */
-function pairsOf(
+export function pairsOf(
   ctx: GameContext,
   kind: string,
   concept: string,
@@ -89,7 +89,7 @@ function pairsOf(
 }
 
 /** Un glissé entre deux cases : quatre étiquettes aux deux premiers niveaux, cinq ensuite, les deux cases toujours servies. */
-function sortTiles(ctx: GameContext, kind: string, concept: string, prompt: string, first: Bin, second: Bin, hints: Hints): GeneratedGame {
+export function sortTiles(ctx: GameContext, kind: string, concept: string, prompt: string, first: Bin, second: Bin, hints: Hints): GeneratedGame {
   return sortGame(ctx, kind, concept, () => {
     const total = ctx.level <= 2 ? 4 : 5;
     const wanted = ctx.rng() < 0.5 ? Math.ceil(total / 2) : Math.floor(total / 2);
@@ -106,9 +106,9 @@ function sortTiles(ctx: GameContext, kind: string, concept: string, prompt: stri
 }
 
 /** Une réponse à écrire lue dans la part du palier : le mot juste est la première écriture admise. */
-type EnWrite = { prompt: string; accepted: readonly string[]; hints: Hints };
+export type EnWrite = { prompt: string; accepted: readonly string[]; hints: Hints };
 
-function writeLine(ctx: GameContext, kind: string, concept: string, rows: readonly EnWrite[], bands: Bands, uses: number): GeneratedGame {
+export function writeLine(ctx: GameContext, kind: string, concept: string, rows: readonly EnWrite[], bands: Bands, uses: number): GeneratedGame {
   const lines = bandPart(rows, ctx.level, bands, uses).map((row) => ({ row, answer: row.accepted[0] }));
   const chosen = pickLine(ctx, kind, lines, (line) => `${kind}:${line.row.prompt}`).row;
   return {
@@ -121,23 +121,23 @@ function writeLine(ctx: GameContext, kind: string, concept: string, rows: readon
 }
 
 /** Un ordre lu dans la part du palier. */
-const orderLine = (ctx: GameContext, kind: string, concept: string, rows: readonly Steps[], bands: Bands) =>
+export const orderLine = (ctx: GameContext, kind: string, concept: string, rows: readonly Steps[], bands: Bands) =>
   stepsOrder(ctx, kind, concept, bandPart(rows, ctx.level, bands));
 
-const SENTENCE_PROMPT = "Remets les mots dans l'ordre pour écrire une phrase.";
-const SENTENCE_HINTS: Hints = [
+export const SENTENCE_PROMPT = "Remets les mots dans l'ordre pour écrire une phrase.";
+export const SENTENCE_HINTS: Hints = [
   "Une phrase commence par une majuscule.",
   "Cherche le mot qui commence par une majuscule, c'est le premier.",
   "Le dernier mot finit la phrase.",
 ];
 
 /** Une phrase à remettre dans l'ordre : ses mots, le premier avec sa majuscule, le dernier avec son point ou son point d'interrogation. */
-const sentence = (text: string): Steps => ({ prompt: SENTENCE_PROMPT, sequence: text.split(" "), hints: SENTENCE_HINTS });
+export const sentence = (text: string): Steps => ({ prompt: SENTENCE_PROMPT, sequence: text.split(" "), hints: SENTENCE_HINTS });
 
-const GAP_READ = "Lis la phrase en entier, doucement.";
+export const GAP_READ = "Lis la phrase en entier, doucement.";
 
 /** Une phrase à trou, avec l'indice de sens écrit en français et la première lettre du mot juste. */
-const gap = (text: string, answer: string, wrong: readonly [string, string], clue: string, prompt?: string): EnGap => ({
+export const gap = (text: string, answer: string, wrong: readonly [string, string], clue: string, prompt?: string): EnGap => ({
   prompt,
   text,
   answer,
@@ -161,7 +161,7 @@ function drawingWord(kind: string, ctx: GameContext, answers: readonly Word[], p
 }
 
 /** « Comment dit-on « le chapeau » en anglais ? » : le mot français donne le sens. */
-function frenchWord(kind: string, ctx: GameContext, answers: readonly Word[], pool: readonly Word[], concept: string): GeneratedGame {
+export function frenchWord(kind: string, ctx: GameContext, answers: readonly Word[], pool: readonly Word[], concept: string): GeneratedGame {
   return fresh(ctx, kind, () => {
     const answer = freshWord(ctx, answers);
     const options = threeWords(ctx, answer, pool);
