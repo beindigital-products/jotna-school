@@ -281,11 +281,14 @@ const CHECKS: Record<string, Check> = {
     );
   },
   "ce2-ortho-ecrire": (exo) => {
-    const feminine = /^Écris le féminin de (.+)\.$/u.exec(exo.prompt);
-    const plural = /^Écris le pluriel de (.+)\.$/u.exec(exo.prompt);
+    const feminine = /^Écris le féminin (de |d')(.+)\.$/u.exec(exo.prompt);
+    const plural = /^Écris le pluriel (de |d')(.+)\.$/u.exec(exo.prompt);
     let expected: string | null = null;
-    if (feminine) expected = feminineByRule(feminine[1]);
-    else if (plural) expected = pluralByRule(plural[1]);
+    // « de » s'élide devant une voyelle ou un h muet : « d'animal », « d'oiseau », « de cahier ». Aucun nom du tableau n'a de h aspiré.
+    const elided = (match: RegExpExecArray | null) => match === null || match[1] === (/^[aeiouyàâéèêëîïôûùh]/iu.test(match[2]) ? "d'" : "de ");
+    if (!elided(feminine) || !elided(plural)) return `« de » mal élidé dans « ${exo.prompt} »`;
+    if (feminine) expected = feminineByRule(feminine[2]);
+    else if (plural) expected = pluralByRule(plural[2]);
     else if (/^Quel mot complète « ___ habites-tu \? » Écris le mot\.$/u.test(exo.prompt)) expected = "où";
     else if (/^Quel mot complète « Moussa range ___ sac\. » Écris le mot\.$/u.test(exo.prompt)) expected = "son";
     return ok(expected !== null && sameSeq(acceptedOf(exo), [expected]) && exo.answerKey === expected, `la réponse est « ${expected} », la clé dit « ${acceptedOf(exo).join(" | ")} » pour « ${exo.prompt} »`);
@@ -393,6 +396,8 @@ const CHECKS: Record<string, Check> = {
       ok(expected !== null, `question inconnue : ${poster.question}`),
       ok(rightOption(exo) === expected, `la réponse est « ${expected} », pas « ${rightOption(exo)} »`),
       ok(wrongOf(exo).length === 2 && wrongOf(exo).every((option) => !written.includes(option) && option !== expected), `un mauvais choix est écrit sur l'affiche : ${wrongOf(exo).join(" | ")}`),
+      // « Entrée gratuite » et « Participation gratuite » disent la même chose : une seule des trois propositions est gratuite quand la bonne l'est.
+      ok(!/gratuit/iu.test(expected ?? "") || optionsOf(exo).filter((option) => /gratuit/iu.test(option)).length === 1, `deux propositions gratuites : ${optionsOf(exo).join(" | ")}`),
     );
   },
   "ce2-lecture-affiche-glisser": (exo) =>
@@ -458,7 +463,7 @@ const CHECKS: Record<string, Check> = {
     else if (/groupe de vers|paragraphe de poème/u.test(prompt)) expected = ["strophe", "une strophe"];
     else if (/chaque ligne d'un poème|ligne de poème/u.test(prompt)) expected = ["vers", "un vers"];
     else if (/son identique|son qui revient/u.test(prompt)) expected = ["rime", "la rime"];
-    else if (/À bientôt|termine poliment/u.test(prompt)) expected = ["formule de politesse", "une formule de politesse"];
+    else if (/À bientôt|Amicalement/u.test(prompt)) expected = ["formule de politesse", "une formule de politesse"];
     return all(ok(expected !== null && sameSeq(acceptedOf(exo), expected), `écritures ${acceptedOf(exo).join(" | ")} pour « ${prompt} »`), ok(exo.answerKey === acceptedOf(exo)[0], "clé = première écriture"));
   },
 };

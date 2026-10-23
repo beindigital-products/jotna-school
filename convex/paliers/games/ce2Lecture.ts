@@ -142,6 +142,8 @@ export const POSTER_ROWS: readonly QuestionRow[] = POSTERS.map((poster, i) => {
   const text = posterText(poster);
   const prompt = (question: string) => `${text}\n\n${question}`;
   const mine = [poster.title, poster.place, poster.when, poster.price];
+  // Un prix gratuit ne se distingue pas d'un autre prix gratuit (« Entrée gratuite », « Participation gratuite ») : si la bonne réponse est gratuite, aucun mauvais choix ne l'est.
+  const notFree = (poster.price.includes("gratuit") ? PRICES.filter((price) => price.includes("gratuit")) : []).concat(mine);
   switch (i % 4) {
     case 0:
       return qr(prompt("De quoi parle cette affiche ?"), poster.title, others(TITLES, mine, i * 2, 2) as [string, string], TITLE_HINTS, `affiche:${i}`);
@@ -150,7 +152,7 @@ export const POSTER_ROWS: readonly QuestionRow[] = POSTERS.map((poster, i) => {
     case 2:
       return qr(prompt("Quand a lieu cet événement ?"), poster.when, others(WHENS, mine, i * 2, 2) as [string, string], WHEN_HINTS, `affiche:${i}`);
     default:
-      return qr(prompt("Combien faut-il payer ?"), poster.price, others(PRICES, mine, i * 2, 2) as [string, string], PRICE_HINTS, `affiche:${i}`);
+      return qr(prompt("Combien faut-il payer ?"), poster.price, others(PRICES, notFree, i * 2, 2) as [string, string], PRICE_HINTS, `affiche:${i}`);
   }
 });
 
@@ -260,7 +262,7 @@ export const LECTURE_WRITE_ROWS: readonly WriteRow[] = [
   wr("Quel mot désigne celui à qui une lettre est adressée ? Écris le mot.", ["destinataire", "le destinataire"], DEST_WRITE_HINTS),
   wr("Quel mot désigne une ligne de poème ? Écris le mot.", ["vers", "un vers"], VERSE_WRITE_HINTS),
   wr("Comment appelle-t-on le son qui revient à la fin de « jour » et de « tour » ? Écris le mot.", ["rime", "la rime"], RHYME_WRITE_HINTS),
-  wr("Quelle formule termine poliment une lettre ? Écris les trois mots.", ["formule de politesse", "une formule de politesse"], FORMULA_WRITE_HINTS),
+  wr("Comment appelle-t-on « Amicalement » à la fin d'une lettre ? Écris les trois mots.", ["formule de politesse", "une formule de politesse"], FORMULA_WRITE_HINTS),
 ];
 
 export function makeCe2LectureLetter(ctx: GameContext): GeneratedGame {
