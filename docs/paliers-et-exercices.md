@@ -2404,7 +2404,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   quatre thématiques `ma-ce1-nombres-1000`, `ma-ce1-nombres-10000`, `ma-ce1-add-sous` et `ma-ce1-multiplication`, que le modèle n'écrit plus. Les noms
   commencent par `ce1-nb-`, `ce1-calc-` et `ce1-mult-` ; les fonctions sont des `makeCe1Nb…`, `makeCe1Calc…` et `makeCe1Mult…` (le préfixe `Nb` évite
   la collision avec `makeCe1WordLinks`, déjà exporté : deux exports de même nom cassent `index.ts` sans conflit Git). La géométrie, les mesures, la monnaie
-  et les durées, et les problèmes (`ma-ce1-geometrie`, `-mesures`, `-monnaie-durees`, `-problemes`) restent au modèle : ils font le lot suivant. Ces fiches
+  et les durées, et les problèmes (`ma-ce1-geometrie`, `-mesures`, `-monnaie-durees`, `-problemes`) font la seconde moitié, juste en dessous. Ces fiches
   ont quatre paliers.
   - **Le calcul est FAIT par le code, jamais écrit.** Une seule option juste par construction, et les mauvais choix sont les erreurs d'enfant : une retenue
     oubliée ou comptée deux fois, le petit chiffre enlevé du grand sans emprunter (523 − 168 donne alors 465), le chiffre qui a prêté qu'on ne réduit pas, un
@@ -2427,12 +2427,51 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     ne garde que les deux premiers mauvais choix : un troisième, ajouté pour écarter la multiplication renversée, ne servait jamais (code mort, vu par une panne
     provoquée qui survivait). (3) Le glissé des tables met dans « table de 2 » un nombre qui n'est pas dans la table (44 : au-delà de 2 × 10) : les nombres d'une table
     vont de deux à dix fois la table. (4) « Chacun coûte » ne va pas avec « mangues » : « Chaque mangue coûte ». (5) Trois tests existants citaient `ma-ce1-add-sous`
-    comme thématique écrite par le modèle : l'exemple est `ma-ce1-mesures`, jusqu'au lot suivant. (6) Vu sur l'iPhone, pas par un test : un nettoyage de « × 1 »
+    comme thématique écrite par le modèle : l'exemple est devenu `ma-ce1-mesures` pour un temps, puis un sujet du CM2 (`hi-cm2-empires`) quand tout le CE1 est passé en code. (6) Vu sur l'iPhone, pas par un test : un nettoyage de « × 1 »
     mangeait aussi celui de « × 1 000 » et laissait « 2 000 + 3 × 100 + … » (juste en valeur, incohérent) ; les termes s'écrivent maintenant un à un, et le test compte les « × ».
   - **Mesuré** : 83 tests (`convex/__tests__/ce1MathsTemplates.test.ts`), dont une vérification par gabarit contre une arithmétique et des règles écrites à part, aux deux
     plafonds et à quatre niveaux ; 50 pannes provoquées dans le code toutes vues ; le contrôleur ne signale aucun défaut sur 8 000 paliers fabriqués (80 000 exercices), sans
     doublon dans un palier ; 0,0 à 0,3 % de questions revues d'un palier à l'autre.
   - **La vitrine** veut, sur une thématique tout en gabarits, un QCM et une réponse courte au moins dans chacune.
+- **Les mathématiques du CE1, seconde moitié** (`paliers/games/geometrieCe1.ts`, `mesuresCe1.ts`, `monnaieDureesCe1.ts` et `problemesCe1.ts`) : trente-neuf
+  gabarits pour `ma-ce1-geometrie`, `ma-ce1-mesures`, `ma-ce1-monnaie-durees` et `ma-ce1-problemes`, que le modèle n'écrit plus (la géométrie garde en plus son
+  dessin à reproduire, `pixel-copie`). Les noms commencent par `ce1-geo-`, `ce1-mes-`, `ce1-mon-` et `ce1-dur-`, `ce1-pb-` ; les fonctions sont des `makeCe1Geo…`,
+  `makeCe1Mes…`, `makeCe1Mon…` et `makeCe1Dur…`, `makeCe1Pb…`. Avec ce lot, les quarante-quatre thématiques du CE1 sont fabriquées par le code.
+  - **Géométrie** : quatre figures (le carré, le rectangle, le triangle, le cercle), des droites parallèles ou perpendiculaires, l'équerre, le compas, la règle. Tout
+    vient de tableaux fermés (`ce1SciencesOutils.ts`, `factChoice`, `factGap`, `pickPairs`, `binSort`, `stepsByLevel`). Quand la bonne réponse est le carré ou le
+    rectangle, l'autre ne se propose jamais (un carré est aussi un rectangle). Aucune question ne compte les angles droits d'un triangle (il peut en avoir un).
+    « Sécantes » n'est jamais un choix (les perpendiculaires le sont). Les choix d'instruments sont des mots seuls (« Règle », « Équerre », « Compas ») : « article
+    + objet » absent du catalogue des images du CI est refusé par `templatePictures.test.ts`, alors que « Le carré », « Le triangle », « Le rectangle » et « Le
+    cercle » y sont.
+  - **Mesures** : trois couples d'unités voisines, le mètre et le centimètre (1 m = 100 cm), le kilogramme et le gramme (1 kg = 1 000 g), le kilomètre et le mètre
+    (1 km = 1 000 m), plus le litre. Un palier lit un couple (le mètre d'abord, puis le kilogramme, puis le kilomètre, puis les trois). Les conversions, les
+    comparaisons et les rangements de mesures sont FAITS par le code (`drawConversion`, `drawMeasures`) : les nombres sont des demi-unités (150 cm, 2 500 g) pour qu'une
+    mesure s'écrive tantôt en grande, tantôt en petite unité et qu'il faille convertir. Les mauvais choix d'une conversion sont un zéro de trop ou de moins. Le dernier
+    palier compose (2 m 50 cm).
+  - **Monnaie** : les pièces valent 5, 10, 25, 50, 100, 200 et 500 F, les billets 1 000, 2 000, 5 000 et 10 000 F. Un porte-monnaie a deux piles (trois au dernier
+    palier), jamais plus de trois pièces ou billets chacune, et une somme de 1 000 F au plus au premier palier, 5 000 F au deuxième, 10 000 F ensuite. La monnaie rendue est un
+    multiple de 50 F au premier palier, de 250 F ensuite. Un billet de mille francs est un billet, jamais une pièce.
+  - **Durées** : l'horloge est un émoji (`heureCp.ts`, heures justes et demi-heures) ; les quatre paliers prennent un quart des vingt-quatre horloges chacun (les heures
+    justes de 1 à 6, de 7 à 12, puis les demi-heures de 1 à 6, de 7 à 12). Une durée s'écrit en heures entières, puis en demi-heures, puis en minutes dans une même heure, puis
+    en minutes d'une heure à l'autre ; l'heure d'arrivée ne passe jamais de 12 heures à 1 heure, et « 90 minutes » n'est jamais un choix à côté de « 1 heure et demie » (deux
+    écritures de la même durée). « Une demi-heure » est écrit « 30 minutes » : « article + nom » absent du catalogue des images du CI est refusé. Le calendrier se parcourt avec
+    des jours et des mois dans l'ordre, deux voisins pour mauvais choix ; un rangement de mois ne traverse jamais le 31 décembre ; février n'a 28 jours que dans la phrase qui
+    dit « d'une année ordinaire ».
+  - **Problèmes** : l'histoire est tirée du lexique fermé de `stories.ts`, l'opération est choisie par le code puis écrite, et la réponse est calculée. Une opération : une
+    addition avec retenue ou une soustraction avec emprunt comme à `calculCe1.ts` (`carryPairCe1`, `borrowPairCe1`), une multiplication des tables du palier
+    (`TABLES_BY_LEVEL`). Deux opérations : recevoir puis donner, des paquets plus ou moins quelques-uns, un achat de plusieurs choses à un même prix puis la monnaie rendue.
+    Une phrase inutile n'a aucun rapport avec le calcul (l'âge, la classe, le temps qu'il fait) et jamais en tête de l'énoncé ; une donnée manquante est un nombre que le calcul demande.
+    Dans « Que faut-il chercher d'abord ? », la question finale est un mauvais choix.
+  - **Pièges rencontrés.** (1) « Une demi-heure », en choix, est « article + nom » absent du catalogue : `templatePictures.test.ts` l'a refusé, « 30 minutes » le remplace. (2)
+    « Quelle unité convient le mieux pour mesurer l'eau d'un seau ? » avait deux apostrophes droites, que le test de la boucle de jeux (`games.test.ts`) refuse : un énoncé n'en
+    a qu'une. (3) Vu à la relecture : « commence à 1 heures » (le pluriel suivait le palier, pas le nombre) ; des mauvais choix absurdes comme « 49 500 g » pour 5 kg moins 500 g.
+    (4) Une regex de test avec `\b` après un « é » ne reconnaît pas la fin d'un mot : `carré\b` ne voit pas « un carré ? ». (5) Deux tests existants (`gameTemplates`, `templatesWithoutModel`) citaient `ma-ce1-mesures`
+    comme thématique écrite par le modèle : l'exemple vient maintenant du CM2.
+  - **Mesuré** : 94 tests (`convex/__tests__/ce1Maths2Templates.test.ts`), dont une vérification par gabarit contre des tables et une arithmétique écrites à part, à quatre
+    niveaux ; 63 pannes provoquées sur 64 vues (la dernière est équivalente : un billet de 1 000 F ne peut jamais entrer dans un porte-monnaie du premier palier, plafonné à
+    1 000 F pour deux piles) ; le contrôleur ne signale aucun défaut sur 8 000 paliers fabriqués (80 000 exercices), sans doublon dans un palier ; 0,0 à 0,5 % de questions revues d'un
+    palier à l'autre (le dessin à reproduire en fait l'essentiel, et il existait déjà).
+  - **Les 44 thématiques du CE1 sont des gabarits** ; le test `ce1Maths2Templates.test.ts` le vérifie (aucune ne demande le modèle).
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

@@ -628,6 +628,54 @@ import {
   makeCe1MultTen,
   makeCe1MultWrite,
 } from "./tablesCe1";
+// La géométrie, les mesures, la monnaie et les durées, les problèmes du CE1 (`geometrieCe1.ts`, `mesuresCe1.ts`, `monnaieDureesCe1.ts`, `problemesCe1.ts`).
+import {
+  makeCe1GeoCount,
+  makeCe1GeoFigure,
+  makeCe1GeoGap,
+  makeCe1GeoLines,
+  makeCe1GeoLinks,
+  makeCe1GeoSort,
+  makeCe1GeoSteps,
+  makeCe1GeoTool,
+  makeCe1GeoWrite,
+} from "./geometrieCe1";
+import {
+  makeCe1MesCompare,
+  makeCe1MesConvert,
+  makeCe1MesGap,
+  makeCe1MesLinks,
+  makeCe1MesOrder,
+  makeCe1MesProblem,
+  makeCe1MesSize,
+  makeCe1MesSort,
+  makeCe1MesUnit,
+  makeCe1MesWrite,
+} from "./mesuresCe1";
+import {
+  makeCe1DurCalendar,
+  makeCe1DurGap,
+  makeCe1DurOrder,
+  makeCe1DurRead,
+  makeCe1DurSpan,
+  makeCe1MonChange,
+  makeCe1MonCount,
+  makeCe1MonLinks,
+  makeCe1MonSum,
+  makeCe1MonWrite,
+} from "./monnaieDureesCe1";
+import {
+  makeCe1PbLinks,
+  makeCe1PbMissing,
+  makeCe1PbOperation,
+  makeCe1PbQuestion,
+  makeCe1PbSolve,
+  makeCe1PbSort,
+  makeCe1PbSteps,
+  makeCe1PbTwoSteps,
+  makeCe1PbUseless,
+  makeCe1PbWrite,
+} from "./problemesCe1";
 import { makeAddEmojis, makeCompareRows, makeCountEmojis, makeNumberGroups, makeTakeAwayEmojis } from "./counting";
 import { makeCorners, makeRowOrdinal, makeRowPosition, makeShapeName, makeSolidName, makeSortShapes } from "./geometry";
 import {
@@ -1748,6 +1796,50 @@ export const GAME_KINDS = {
   "ce1-mult-relier": { label: "Relier une multiplication et son résultat", type: "match", make: makeCe1MultLinks },
   "ce1-mult-glisser": { label: "Ranger des nombres dans deux tables", type: "drag-drop", make: makeCe1MultSort },
   "ce1-mult-probleme": { label: "Un problème de combien en tout", type: "qcm", make: makeCe1MultProblem },
+  // La géométrie du CE1 (`geometrieCe1.ts`).
+  "ce1-geo-figure": { label: "Reconnaître une figure par ses côtés et ses angles", type: "qcm", make: makeCe1GeoFigure },
+  "ce1-geo-droites": { label: "Droites parallèles ou perpendiculaires", type: "qcm", make: makeCe1GeoLines },
+  "ce1-geo-outil": { label: "L'instrument du géomètre", type: "qcm", make: makeCe1GeoTool },
+  "ce1-geo-compter": { label: "Compter les côtés, les sommets, les angles droits", type: "qcm", make: makeCe1GeoCount },
+  "ce1-geo-trou": { label: "Une phrase de géométrie à compléter", type: "fill-blank", make: makeCe1GeoGap },
+  "ce1-geo-relier": { label: "Relier une figure et sa description", type: "match", make: makeCe1GeoLinks },
+  "ce1-geo-glisser": { label: "Ranger des objets ou des droites", type: "drag-drop", make: makeCe1GeoSort },
+  "ce1-geo-etapes": { label: "Les étapes d'un tracé", type: "order", make: makeCe1GeoSteps },
+  "ce1-geo-ecrire": { label: "Écrire le nombre de côtés ou de sommets", type: "short-answer", make: makeCe1GeoWrite },
+  // Les mesures du CE1 (`mesuresCe1.ts`).
+  "ce1-mes-unite": { label: "Quelle unité pour quelle mesure", type: "qcm", make: makeCe1MesUnit },
+  "ce1-mes-convertir": { label: "Convertir une mesure", type: "qcm", make: makeCe1MesConvert },
+  "ce1-mes-trou": { label: "Une égalité ou une unité à compléter", type: "fill-blank", make: makeCe1MesGap },
+  "ce1-mes-comparer": { label: "Comparer des mesures en deux unités", type: "qcm", make: makeCe1MesCompare },
+  "ce1-mes-ranger": { label: "Ranger des mesures en deux unités", type: "order", make: makeCe1MesOrder },
+  "ce1-mes-glisser": { label: "Classer des mesures selon ce qu'on mesure", type: "drag-drop", make: makeCe1MesSort },
+  "ce1-mes-relier": { label: "Relier deux écritures d'une mesure", type: "match", make: makeCe1MesLinks },
+  "ce1-mes-ecrire": { label: "Convertir et écrire le nombre", type: "short-answer", make: makeCe1MesWrite },
+  "ce1-mes-probleme": { label: "Un petit problème de mesures", type: "qcm", make: makeCe1MesProblem },
+  "ce1-mes-grandeur": { label: "L'ordre de grandeur d'une mesure", type: "qcm", make: makeCe1MesSize },
+  // La monnaie du CE1 (`monnaieDureesCe1.ts`).
+  "ce1-mon-somme": { label: "La valeur de pièces et de billets", type: "qcm", make: makeCe1MonSum },
+  "ce1-mon-pieces": { label: "Payer avec des pièces ou des billets de même valeur", type: "qcm", make: makeCe1MonCount },
+  "ce1-mon-rendre": { label: "Rendre la monnaie", type: "qcm", make: makeCe1MonChange },
+  "ce1-mon-relier": { label: "Relier des pièces et des billets à leur somme", type: "match", make: makeCe1MonLinks },
+  "ce1-mon-ecrire": { label: "Écrire une somme ou une monnaie", type: "short-answer", make: makeCe1MonWrite },
+  // Les durées du CE1 (`monnaieDureesCe1.ts`).
+  "ce1-dur-lire": { label: "Lire l'heure sur une horloge", type: "qcm", make: makeCe1DurRead },
+  "ce1-dur-duree": { label: "Calculer une durée", type: "qcm", make: makeCe1DurSpan },
+  "ce1-dur-trou": { label: "Une égalité du temps à compléter", type: "fill-blank", make: makeCe1DurGap },
+  "ce1-dur-calendrier": { label: "Se repérer dans les jours et les mois", type: "qcm", make: makeCe1DurCalendar },
+  "ce1-dur-ordre": { label: "Ranger des jours ou des mois", type: "order", make: makeCe1DurOrder },
+  // Les problèmes du CE1 (`problemesCe1.ts`).
+  "ce1-pb-resoudre": { label: "Un problème à une opération", type: "qcm", make: makeCe1PbSolve },
+  "ce1-pb-deux": { label: "Un problème à deux opérations", type: "qcm", make: makeCe1PbTwoSteps },
+  "ce1-pb-operation": { label: "Choisir l'opération d'un problème", type: "qcm", make: makeCe1PbOperation },
+  "ce1-pb-utile": { label: "La phrase qui ne sert à rien", type: "qcm", make: makeCe1PbUseless },
+  "ce1-pb-manquante": { label: "La donnée qui manque", type: "qcm", make: makeCe1PbMissing },
+  "ce1-pb-question": { label: "La question intermédiaire", type: "qcm", make: makeCe1PbQuestion },
+  "ce1-pb-ordre": { label: "Les étapes pour résoudre un problème", type: "order", make: makeCe1PbSteps },
+  "ce1-pb-relier": { label: "Relier une histoire et son calcul", type: "match", make: makeCe1PbLinks },
+  "ce1-pb-glisser": { label: "Additionner ou soustraire", type: "drag-drop", make: makeCe1PbSort },
+  "ce1-pb-ecrire": { label: "Un problème à résoudre et à écrire", type: "short-answer", make: makeCe1PbWrite },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
