@@ -312,7 +312,7 @@ function drawStock(ctx: GameContext): Problem {
       [`(${a} + ${b}) × ${k}`, total * k],
     ]),
     steps: [
-      { question: `${combienDe(stock.thing)} le vendeur a-t-il en tout ?`, text: `Additionne tous les ${stock.thing}`, value: total },
+      { question: `${combienDe(stock.thing)} le vendeur a-t-il en tout ?`, text: `Additionne les ${stock.thing}`, value: total },
       { question, text: `Partage le total en ${stock.many}`, value: z },
     ],
     useful: [`${a} ${stock.thing} au début`, `${b} ${stock.thing} en plus`, `${k} ${stock.thing} par ${stock.one}`],
