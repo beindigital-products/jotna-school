@@ -2366,6 +2366,63 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     réponse (« le plus au sud » a toujours pour réponse le Gabou), 0,1 % en comptant les choix. Vu sur l'iPhone 17 (Safari du simulateur, galerie
     `/dev/exercices/` avec des spécimens détournés provisoirement, fichier restauré) : la carte, le glissé des régions et l'ordre des titres. PAS vu :
     les autres gabarits à l'écran, un vrai iPhone, la production.
+- **Les sciences du CE2** (`paliers/games/ce2Vivant.ts` et `ce2Milieu.ts`, avec les aides de `ce2Outils.ts`) : quarante-sept gabarits pour `sc-ce2-corps`,
+  `sc-ce2-plantes`, `sc-ce2-animaux`, `sc-ce2-electricite`, `sc-ce2-sante` et `sc-ce2-environnement`, les six thématiques de sciences du CE2 que le modèle
+  n'écrit plus (lot 2 sur six, voir `docs/programme-et-jeux.md`). Sur l'échantillon de CE2 lu le 22 octobre 2026 (36 exercices de sciences), 7 étaient
+  faux, et beaucoup d'autres creux : un squelette « composé de os et de côtes », une paire « mangue ~ mangue », une respiration en « échange de gaz » que
+  la fiche ne dit pas, des étapes d'un circuit à ranger dans l'ordre où le modèle les avait pensées, une paire « se laver les mains ~ hygiène » rangée sous
+  le VIH, des « effets de la pollution » à écrire en réponse libre. Les noms des gabarits commencent par `ce2-` ; les fonctions sont des `makeCe2…`.
+  - **Le corps** : les cinq sens et leur organe (la vue et les yeux, l'ouïe et les oreilles, l'odorat et le nez, le goût et la langue, le toucher et la
+    peau), une scène de la vie rangée sous le sens qu'elle fait travailler, le squelette (le crâne protège le cerveau, les côtes le cœur et les poumons, la
+    colonne vertébrale tient le corps droit) et les muscles qui font bouger les os. Les mauvais choix d'une scène ne sont jamais un sens qui travaille aussi
+    (le toucher quand on respire un parfum, la vue quand on goûte) : chaque scène a ses deux mauvais sens écrits à la main.
+  - **Les plantes** : la graine germe avec de l'eau, de l'air et de la chaleur, et rien d'autre (la lumière n'est pas dans la fiche : les mauvais choix sont
+    le sel, le sucre, le savon et l'huile) ; la racine sort la première ; la fleur devient un fruit, le fruit porte les graines (le noyau de la mangue, la
+    gousse de l'arachide, les grains de mil).
+  - **Les animaux** : ovipares (la poule, la tortue, le poisson de la fiche, et le canard, le pigeon, le crocodile, la grenouille, le papillon, la pintade)
+    et vivipares (la chèvre, le chat, l'homme, et la vache, le mouton, le chien, l'âne, le cheval, le lion, l'éléphant, le singe), le petit de chacun, la vie
+    du papillon (œuf, chenille, chrysalide, papillon), de la grenouille, de la poule, du canard et de la tortue. Le test a ses propres listes d'ovipares et
+    de vivipares : un animal dans les deux fait échouer.
+  - **Le circuit** : la pile, l'ampoule, les fils et l'interrupteur ; circuit ouvert, circuit fermé ; les conducteurs (cuivre, fer, aluminium, acier) et les
+    isolants (plastique, bois, caoutchouc, verre, tissu, carton) ; les gestes sûrs et dangereux. Les événements d'un circuit se rangent par cause
+    (« On ferme l'interrupteur » avant « L'ampoule brille »), jamais par pièce.
+  - **La santé** ne dit que ce que la fiche dit, sans mot qui fasse peur : le paludisme se prend par la piqûre d'un moustique, on dort sous une moustiquaire,
+    on porte des habits longs le soir, on vide l'eau qui ne bouge pas ; le VIH ne se prend ni en jouant, ni en mangeant, ni en se donnant la main, ni en
+    s'asseyant à côté d'un camarade, il faut éviter le sang d'une autre personne et ne partager ni lame ni seringue. Les phrases fausses des mauvais choix
+    (« Oui, toujours ») restent des mauvais choix, jamais une consigne.
+  - **L'environnement** : les sachets plastiques, les déchets, la coupe des arbres, les feux de brousse, les quartiers trop peuplés et le manque d'eau, avec
+    pour chacun sa cause et sa solution, et le tri entre les problèmes de l'environnement et ceux de la population.
+  - **Une tuile est un nom nu, sans article** (« Os », « Lame », « Noyau », « Eau », « Fer ») : `templatePictures.test.ts` joue chaque gabarit au CI et a
+    refusé « Des os », « De la peau », « Un noyau », « Une lame », « Une seringue », « Un short » et même « La boire ». Une tuile de plusieurs mots
+    (« Dans une gousse », « Les muscles des bras », « Un circuit fermé ») n'est pas jugée.
+  - **Une liste a un nombre de lignes multiple de quatre.** `windowAt` donne à chaque palier un quart de la liste : dix lignes font des fenêtres de deux,
+    et deux lignes (la quatrième et la septième) ne sont jamais posées. Les listes de ce lot ont quatre, huit, douze, seize ou vingt lignes ; une liste de
+    combinaisons (dix paires de sens, dix problèmes) est coupée à huit.
+  - **Un fait ne revient pas trois fois dans un palier**, et les faits se rangent dans le même ordre, mêlés (`inFactOrder` dans `ce2Outils.ts` : la première
+    ligne de chaque fait d'abord, les autres loin derrière). Les décalages de quarts (`shift`) ont été cherchés par un script qui essaie les quatre valeurs
+    de chaque gabarit et garde les meilleures : en moyenne 0,0 à 0,6 fait repris par palier (le lot 1 en reprenait 0,75 pour les royaumes et 2,5 pour les activités, les deux thématiques mesurées). `pickRow` ne reprend plus jamais
+    sa propre ligne tant que sa fenêtre en a une autre, ce qui a supprimé les doublons d'un palier (un gabarit posé deux fois dont tous les faits avaient
+    déjà servi tirait au hasard, et `fresh` n'avait que huit essais). Le lot 1 y gagne aussi : ses 6 400 paliers restent sans doublon.
+  - **HORS FICHE, À FAIRE RELIRE** : le rôle de chaque os en une phrase ; les animaux qui ne sont pas dans la fiche (canard, pigeon, crocodile, grenouille,
+    papillon, pintade ; vache, mouton, chien, âne, cheval, lion, éléphant, singe) et le nom du petit de chacun ; les conducteurs et les isolants au-delà
+    du métal, du plastique et du bois ; les gestes de sécurité avec l'électricité ; l'eau qui ne bouge pas où les moustiques pondent ; les habits longs
+    et le médecin pour la fièvre ; les gestes sans danger avec le VIH (jouer, manger, se donner la main, partager un jeu, rester à côté d'un camarade) ;
+    les causes et les solutions de l'environnement (le sol emporté quand on coupe les arbres, le sac en tissu, la poubelle).
+  - **Pièges rencontrés.** (1) Un énoncé a une apostrophe droite au plus, et une phrase à trou aussi : « Quel est l'organe de l'ouïe ? » et « une graine
+    germe avec de l'eau, de l'air et de la ___ » en avaient deux. (2) Un indice n'écrit aucun mot de quatre lettres ou plus d'une tuile ou d'une
+    réponse : « elle », « cette », « quand », « jeunes », « faire », « dans » et « trop » l'ont été par un premier jet, parce qu'une tuile est une phrase. (3) Le
+    contrôleur voit une bonne option au moins deux fois plus longue que les autres (« qcm_correct_option_stands_out ») et une réponse écrite dans l'énoncé
+    (« Vrai ou faux ? » pour la réponse « vrai », « un arbre » pour la réponse « arbre »). (4) `GAME_KINDS` a un nom par fonction : `makeCe2NeedSort`
+    existait déjà au lot 1. (5) Deux lignes qui partagent la même phrase à trou (« Sans ___, une graine ne germe pas ») se distinguent par leur
+    réponse ; le test cherche la phrase et la réponse ensemble.
+  - **Mesuré** : 119 tests (`convex/__tests__/ce2SciencesTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part (l'organe de
+    chaque sens, ce qu'il faut à une graine, les listes d'ovipares et de vivipares, la vie de chaque animal, les conducteurs et les isolants, les gestes
+    contre le paludisme et le VIH), à 4 niveaux et 60 graines ; 40 pannes provoquées dans le code (un organe changé, une graine qui a besoin de sel, un
+    animal dans les deux listes, un circuit ouvert pris pour fermé, un geste dangereux rangé parmi les sûrs…) toutes vues ; le contrôleur ne signale aucun
+    défaut sur 6 000 paliers fabriqués (60 000 exercices), tous de dix exercices et d'au moins quatre types, sans doublon dans un palier ; sur 200 graines
+    par thématique, aucune question ne revient d'un palier à l'autre. Vu sur l'iPhone 17 (Safari du simulateur, galerie `/dev/exercices/` avec des spécimens
+    détournés provisoirement, fichier restauré) : un glissé dont une étiquette fait deux lignes, un appariement dont la colonne de droite fait cinq lignes,
+    un ordre de phrases. PAS vu : les autres gabarits à l'écran, un vrai iPhone, la production.
 - **Les homophones et la lecture du CE1** (`paliers/games/ce1Homophones.ts` et `ce1Lecture.ts`) : vingt gabarits pour les deux dernières
   thématiques de français du CE1, `fr-ce1-homophones` (a/à, et/est, on/ont) et `fr-ce1-lecture` (Lire et comprendre), que le modèle n'écrit plus. Avec
   les cinq du lot précédent, les sept thématiques de français du CE1 sont des gabarits. Les noms commencent par `ce1-fr-homo-` et `ce1-fr-lec-` ; les
