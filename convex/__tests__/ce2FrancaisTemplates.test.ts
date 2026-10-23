@@ -514,6 +514,8 @@ const CHECKS: Record<string, Check> = {
     return all(
       ok(acceptedOf(exo)[0] === base && acceptedOf(exo).every((entry) => allowed.includes(entry)), `écritures ${acceptedOf(exo).join(" | ")} pour « ${exo.prompt} » (attendu ${base})`),
       ok(exo.answerKey === acceptedOf(exo)[0], "clé = première écriture"),
+      // Un énoncé ne contient aucun mot de la réponse à écrire : « Comment appelle-t-on une phrase … ? » pour « phrase nominale » en donnait la moitié.
+      ok(!acceptedOf(exo)[0].split(" ").some((word) => word.length >= 5 && prompt.split(/[^a-z]+/u).includes(fold(word))), `l'énoncé contient un mot de la réponse « ${acceptedOf(exo)[0]} » : ${exo.prompt}`),
     );
   },
 

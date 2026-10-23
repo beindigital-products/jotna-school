@@ -17,7 +17,7 @@
  * - Les titres : le Bourba au Djolof, le Damel au Cayor, le Teigne au Baol, le Brak au Walo, le Bour au Sine et au Saloum,
  *   l'Almamy au Fouta, le Mansa au Gabou. AUCUN autre roi, AUCUNE date : la fiche l'interdit.
  * - Le progrès : se déplacer (à pied, en charrette, en car rapide, en train), s'éclairer (lampe à pétrole, électricité),
- *   communiquer (lettre, téléphone, téléphone portable), cuisiner (feu de bois, gaz). Seuls les couples dont l'ordre dans le temps
+ *   communiquer (lettre, téléphone fixe, téléphone portable), cuisiner (feu de bois, gaz). Seuls les couples dont l'ordre dans le temps
  *   ne se discute pas sont comparés : jamais le train et le car rapide.
  *
  * RÈGLES POUR AJOUTER UNE LIGNE
@@ -644,7 +644,7 @@ export function makeCe2TitleOrder(ctx: GameContext): GeneratedGame {
 type Need = { need: string; zone: string; ladder: readonly string[] };
 const NEEDS: readonly Need[] = [
   { need: "s'éclairer", zone: "S'éclairer", ladder: ["Lampe à pétrole", "Lampe électrique"] },
-  { need: "donner des nouvelles", zone: "Donner des nouvelles", ladder: ["Lettre", "Téléphone", "Téléphone portable"] },
+  { need: "donner des nouvelles", zone: "Donner des nouvelles", ladder: ["Lettre", "Téléphone fixe", "Téléphone portable"] },
   { need: "cuisiner", zone: "Cuisiner", ladder: ["Feu de bois", "Cuisinière à gaz"] },
   { need: "se déplacer", zone: "Se déplacer", ladder: ["À pied", "Charrette", "Car rapide"] },
 ];
@@ -654,7 +654,7 @@ const WITH_ARTICLE: Record<string, string> = {
   "Lampe à pétrole": "la lampe à pétrole",
   "Lampe électrique": "la lampe électrique",
   Lettre: "la lettre",
-  Téléphone: "le téléphone",
+  "Téléphone fixe": "le téléphone fixe",
   "Téléphone portable": "le téléphone portable",
   "Feu de bois": "le feu de bois",
   "Cuisinière à gaz": "la cuisinière à gaz",
@@ -666,7 +666,7 @@ const CHOICE: Record<string, string> = {
   "Lampe à pétrole": "Lampe à pétrole",
   "Lampe électrique": "Lampe électrique",
   Lettre: "Lettre",
-  Téléphone: "Téléphone",
+  "Téléphone fixe": "Téléphone fixe",
   "Téléphone portable": "Téléphone portable",
   "Feu de bois": "Feu de bois",
   "Cuisinière à gaz": "Cuisinière à gaz",
@@ -744,7 +744,7 @@ const NEED_ITEMS: Record<string, readonly (readonly string[])[]> = {
   "S'éclairer": [["Lampe à pétrole", "Lampe électrique"]],
   "Donner des nouvelles": [
     ["Lettre", "Téléphone portable"],
-    ["Téléphone", "Lettre"],
+    ["Téléphone fixe", "Lettre"],
   ],
   Cuisiner: [["Feu de bois", "Cuisinière à gaz"]],
   "Se déplacer": [
