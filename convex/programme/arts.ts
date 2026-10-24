@@ -349,6 +349,9 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "pixel-memoire", count: 6 },
           { kind: "pixel-copie", count: 1 },
+          { kind: "cm1-mem-qcm", count: 1 },
+          { kind: "cm1-mem-ordre", count: 1 },
+          { kind: "cm1-mem-glisser", count: 1 },
         ],
       },
       {
@@ -361,6 +364,9 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "frise-couleurs", count: 2 },
           { kind: "frise-objets", count: 1 },
           { kind: "pixel-copie", count: 2 },
+          { kind: "cm1-mot-qcm", count: 1 },
+          { kind: "cm1-mot-relier", count: 1 },
+          { kind: "cm1-mot-glisser", count: 1 },
         ],
       },
       {
@@ -371,6 +377,11 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "ecoute-rythme", count: 2 },
           { kind: "ecoute-motif-rythmique", count: 2 },
+          { kind: "cm1-ins-qcm", count: 2 },
+          { kind: "cm1-ins-trou", count: 1 },
+          { kind: "cm1-ins-ecrire", count: 1 },
+          { kind: "cm1-ins-relier", count: 1 },
+          { kind: "cm1-ins-glisser", count: 1 },
         ],
       },
       {
@@ -382,6 +393,8 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "ecoute-motif-rythmique", count: 4 },
           { kind: "frise-rythme", count: 3 },
           { kind: "ecoute-rythme", count: 1 },
+          { kind: "cm1-ryt-qcm", count: 1 },
+          { kind: "cm1-ryt-ecrire", count: 1 },
         ],
       },
       {

@@ -2933,6 +2933,25 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     homophones, dictionnaires de synonymes, de contraires et de mots formés, lecture des phrases du texte. 195 pannes provoquées vues sur 203 (`scratchpad/mutations-fr1.py` à `-fr7.py`) : les huit survivantes ne changent aucun exercice
     (un mauvais choix de personne qui n'est jamais le même que la bonne forme, une garde d'auxiliaire sans effet sur les lignes retenues, une zone dont l'ordre est indifférent, un nombre d'emplois sans effet, une garde de longueur que
     les lignes retenues n'atteignent pas). Le contrôleur ne signale aucun défaut, avertissement compris, sur 70 000 exercices (200 tirages par thématique et par palier). PAS vu : l'écran, l'iPhone, l'application native, la production.
+- **Les arts mixtes du CM1** (`paliers/games/cm1Plastique.ts` et `cm1Musique.ts`, avec `cm1Faits.ts`) : treize gabarits pour `ar-cm1-memoire`, `ar-cm1-motifs`, `ar-cm1-instruments` et
+  `ar-cm1-rythmes`. Ces quatre fiches GARDENT leurs jeux de dessin et d'écoute (`pixel-memoire`, `pixel-copie`, `frise-*`, `ecoute-*`) : les gabarits prennent seulement les places qui restent (3, 3, 6 et 2 sur
+  dix) et le modèle n'écrit plus rien. Les noms commencent par `cm1-mem-` (QCM, ordre, glissé), `cm1-mot-` (QCM, appariement, glissé), `cm1-ins-` (QCM 2 fois, phrase à trou, réponse à écrire, appariement, glissé) et
+  `cm1-ryt-` (QCM, réponse à écrire). Même construction que le civique : des tableaux de faits fermés (`cm1Faits.ts`), cinq paliers, une fenêtre de lignes par palier.
+  - **Ce que les tableaux disent.** Le dessin de mémoire : modèle, reproduction, dessin de mémoire ; observer, retenir, cacher le modèle, redessiner, comparer, et leur ordre. Les frises et les motifs : frise, motif,
+    symétrie ; répéter, alterner, symétriser ; pagne, calebasse, poterie ; une suite répétée ou alternée. Les instruments : djembé, sabar, tama et balafon sont des percussions, kora, xalam, riti et guitare ont des
+    cordes ; comment on joue de cinq d'entre eux ; reconnaître six instruments à ce qui les décrit. Les rythmes : rythme, pulsation, silence ; lire un rythme écrit en mots (« long, court, court ») et compter ses coups longs
+    ou courts. Aucune consigne n'attend un dessin, un son ou un enregistrement.
+  - **HORS FICHE, À FAIRE RELIRE PAR LE PROPRIÉTAIRE** : les cinq gestes du dessin de mémoire et leur ordre, les étapes de la reproduction ; ce que sont le pagne (un tissu), la calebasse (un fruit séché gravé) et la
+    poterie (de l'argile cuite) ; les suites de formes ; comment on joue du djembé (avec les mains), du sabar (une main et une baguette), du balafon (des mailloches sur des lames de bois), de la kora (cordes pincées,
+    vingt et une cordes) et du riti (une corde frottée avec un archet) ; le tama tenu sous le bras ; le djembé en forme de calice ; les définitions de la pulsation et du silence ; les rythmes écrits en mots.
+  - **Pièges rencontrés.** (1) Le moteur de test (`lib/test-support/cm1TestKit.ts`) connaît maintenant `keptGames` : une fiche qui garde ses jeux n'est vérifiée que sur ses gabarits (les jeux gardés ont leurs
+    propres tests) et ne passe pas la règle « un gabarit de chaque type pour la démo ». (2) La banque de la vitrine (`components/landing/demo/bank/`) veut, sur une thématique TOUT en jeux, un gabarit du type de chaque
+    exercice qu'elle y pose : « Les rythmes » y a une réponse à écrire, d'où `cm1-ryt-ecrire` à la place d'un glissé. (3) Une réponse numérique à écrire accepte le mot et le chiffre ; le test recompte le nombre de coups
+    sur la suite écrite dans l'énoncé. (4) Un énoncé n'a qu'une apostrophe droite au plus (« Quel instrument à cordes ouest-africain… » et non « de l'Afrique de l'Ouest »). (5) Un indice n'écrit aucun mot de quatre
+    lettres ou plus d'une option : les indices des instruments évitent « peau », « cordes », « archet » quand ces mots sont des choix.
+  - **Mesuré** : 50 tests (`convex/__tests__/cm1ArtsMixtesTemplates.test.ts`) qui lisent leurs réponses dans des tables écrites à part. 55 pannes provoquées vues sur 55 (`scratchpad/mutations-arts.py`). Le contrôleur
+    ne signale aucun défaut, avertissement compris, sur 40 000 exercices (200 tirages par palier et par thématique, jeux gardés compris). PAS vu : l'écran, l'iPhone, l'application native, la production ; aucun
+    professeur d'arts ou de musique n'a relu les tableaux.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
