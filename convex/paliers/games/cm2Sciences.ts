@@ -82,8 +82,8 @@ const MLI_AQUA: Pool = {
       id: "poisson",
       q: ["Lequel de ces êtres vivants vit dans l'eau ?", "Quel animal à nageoires vit dans l'eau ?", "Quel être vivant aquatique a des écailles ?"],
       a: "Poisson",
-      w: "Écris le nom d'un être vivant du milieu aquatique.",
-      also: ["Poisson", "Crevette", "Nénuphar", "Nenuphar"],
+      w: "Quel animal à nageoires vit dans l'eau ? Écris la réponse.",
+      also: ["Poisson", "Le poisson"],
       ga: "le poisson",
       s: ["Dans l'eau vit ___.", "Un animal à nageoires du milieu aquatique, c'est ___."],
       hint: "Il a un corps allongé et il ne quitte jamais l'eau.",
@@ -119,8 +119,8 @@ const MLI_TERRE: Pool = {
       id: "chevre",
       q: ["Quel animal terrestre a des poils et broute l'herbe ?", "Lequel de ces êtres vivants vit sur la terre ferme et a des poils ?", "Quel animal de la terre ferme broute et saute sur les rochers ?"],
       a: "Chèvre",
-      w: "Écris le nom d'un être vivant du milieu terrestre.",
-      also: ["Chèvre", "Chevre", "Baobab", "La chèvre"],
+      w: "Quel animal terrestre a des poils et broute l'herbe ? Écris la réponse.",
+      also: ["Chèvre", "Chevre", "La chèvre"],
       ga: "la chèvre",
       s: ["Sur la terre ferme vit ___.", "Un animal terrestre qui broute, c'est ___."],
       hint: "Elle broute l'herbe et saute sur les rochers.",
@@ -955,7 +955,7 @@ const SAN_PREVENIR: Pool = {
   items: [
     {
       id: "prevenir",
-      q: ["Que faut-il éviter pour se protéger du VIH ?", "Quel geste protège du virus du sida ?", "Que ne faut-il jamais partager pour éviter le VIH ?"],
+      q: ["Que doit-on faire pour se protéger du VIH ?", "Quel geste protège du virus du sida ?", "Quelle règle simple évite de prendre le VIH ?"],
       a: "Ne pas partager d'aiguille ni de lame",
       noWrite: true,
       ga: "ne pas partager d'aiguille ni de lame",
@@ -974,9 +974,27 @@ const SAN_PREVENIR: Pool = {
   ],
   extras: ["Éviter de serrer la main d'un malade", "Ne plus manger avec ses amis"],
   gextras: ["éviter de serrer la main d'un malade", "ne plus manger avec ses amis"],
+  onlyExtras: true,
 };
 
-const SAN_POOLS = [SAN_SOINS, SAN_CARNET, SAN_LAIT, SAN_FAMILLE, SAN_VIH, SAN_MODE, SAN_PREVENIR] as const;
+const SAN_OBJET: Pool = {
+  items: [
+    {
+      id: "objet",
+      q: ["Que ne faut-il jamais partager pour éviter le VIH ?", "Quel objet qui pique ou qui coupe ne se partage jamais ?"],
+      a: "Une aiguille ou une lame",
+      also: ["Aiguille ou lame", "Aiguille", "Lame", "Une aiguille", "Une lame"],
+      ga: "une aiguille ou une lame",
+      s: ["Pour éviter le VIH, on ne partage jamais ___.", "Pour se protéger du VIH, il ne faut jamais partager ___."],
+      hint: "Ce qui pique ou coupe ne passe pas d'une personne à l'autre.",
+    },
+  ],
+  extras: ["Un ballon de foot", "Un cahier d'école"],
+  gextras: ["un ballon de foot", "un cahier d'école"],
+  onlyExtras: true,
+};
+
+const SAN_POOLS = [SAN_SOINS, SAN_CARNET, SAN_LAIT, SAN_FAMILLE, SAN_VIH, SAN_MODE, SAN_PREVENIR, SAN_OBJET] as const;
 const SAN_QCM = questionRows("sc-cm2-sante", SAN_POOLS);
 const SAN_TROU = gapRows("sc-cm2-sante", SAN_POOLS);
 const SAN_ECRIRE = writeRows("sc-cm2-sante", SAN_POOLS);

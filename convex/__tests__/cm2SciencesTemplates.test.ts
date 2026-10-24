@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defineTemplateTests } from "@/lib/test-support/cm1TestKit";
+import { allProgrammeEntries } from "../programme";
+import { generateGames } from "../paliers/games";
 
 /**
  * LES SCIENCES DU CM2 : cinq thématiques, vingt-neuf gabarits (`cm2Sciences.ts`).
@@ -28,10 +30,10 @@ const ASSOC: Record<string, string[]> = {
   ecailles: ["recouvre la peau du poisson", "petites plaques dures", "couverture brillante", "peau du poisson est protégée", "corps du poisson est couvert"],
   poils: ["couvre la peau de la chèvre", "corps d'une chèvre", "animaux comme la chèvre", "corps de la chèvre est couvert", "chèvre se protège du froid"],
   plumes: ["corps d'un oiseau", "permettent à l'oiseau de voler", "ailes d'un oiseau", "corps de l'oiseau est couvert", "oiseau vole grâce à ses"],
-  poisson: ["Lequel de ces êtres vivants vit dans l'eau", "animal à nageoires", "aquatique a des écailles", "Dans l'eau vit", "être vivant du milieu aquatique"],
+  poisson: ["Lequel de ces êtres vivants vit dans l'eau", "animal à nageoires", "aquatique a des écailles", "Dans l'eau vit"],
   crevette: ["animal à carapace", "aquatique a une carapace", "vit dans la mer ou dans le fleuve", "animaux du milieu aquatique", "Dans la mer ou dans le fleuve vit"],
   nenuphar: ["surface de l'eau", "plante aquatique", "larges feuilles", "plante du milieu aquatique", "étang flotte"],
-  chevre: ["animal terrestre a des poils", "terre ferme et a des poils", "terre ferme broute", "Sur la terre ferme vit", "animal terrestre qui broute", "être vivant du milieu terrestre"],
+  chevre: ["animal terrestre a des poils", "terre ferme et a des poils", "terre ferme broute", "Sur la terre ferme vit", "animal terrestre qui broute"],
   baobab: ["arbre géant", "grand arbre de la savane", "tronc énorme", "êtres vivants du milieu terrestre", "grand arbre de la terre ferme"],
   lion: [],
   "racines profondes": ["chercher l'eau très loin", "puiser l'eau profondément", "trouver de l'eau", "pour chercher l'eau", "loin sous le sol"],
@@ -128,7 +130,10 @@ const ASSOC: Record<string, string[]> = {
   "par une poignee de main": [],
   "en partageant un repas": [],
   "par une piqure de moustique": [],
-  "ne pas partager d aiguille ni de lame": ["éviter pour se protéger du VIH", "geste protège du virus du sida", "jamais partager pour éviter le VIH", "Pour se protéger du VIH", "Pour éviter le VIH"],
+  "ne pas partager d aiguille ni de lame": ["Que doit-on faire pour se protéger du VIH", "geste protège du virus du sida", "règle simple évite de prendre le VIH", "Pour se protéger du VIH, il faut", "Pour éviter le VIH, on doit"],
+  "aiguille ou une lame": ["ne faut-il jamais partager pour éviter le VIH", "objet qui pique ou qui coupe ne se partage jamais", "on ne partage jamais", "il ne faut jamais partager"],
+  "ballon de foot": [],
+  "cahier d ecole": [],
   "suivre son traitement au centre de sante": ["personne qui vit avec le VIH pour rester en bonne santé", "personne séropositive peut-elle vivre longtemps", "malade du sida à se soigner", "Une personne qui vit avec le VIH", "personne séropositive doit"],
   "eviter de serrer la main d un malade": [],
   "ne plus manger avec ses amis": [],
@@ -217,6 +222,8 @@ const TWINS: readonly (readonly string[])[] = [
   ["chevre", "baobab"],
   ["poisson", "crevette", "nenuphar"],
   ["debrancher l appareil", "secher ses mains", "appeler un adulte"],
+  // Une personne qui vit avec le VIH se protège aussi en ne partageant ni aiguille ni lame : les deux gestes ne sont jamais proposés ensemble.
+  ["ne pas partager d aiguille ni de lame", "suivre son traitement au centre de sante"],
 ];
 /** Les énoncés où tout le groupe est juste : « vit dans l'eau », « sur la terre ferme », « si un appareil fume ». */
 const LIST_STEM = /lequel de ces etres vivants vit dans l eau|parmi les animaux du milieu aquatique|dans l eau vit|si un appareil fume|quand un fil est abime|fume ou fait des etincelles|sent le brule|fil electrique est abime/;
@@ -266,5 +273,25 @@ describe("les vérifications voient un énoncé abîmé", () => {
     const san = checkOf("cm2-san-qcm");
     expect(san(qcm("Quel virus cause le sida ?", ["VIH", "Paludisme", "Rougeole"], 0))).toBeNull();
     expect(san(qcm("Quel virus cause le sida ?", ["Sida", "Paludisme", "Rougeole"], 0))).not.toBeNull();
+  });
+});
+
+describe("une phrase à trou n'accorde aucun mot placé après le blanc", () => {
+  /** Les seuls mots qui suivent un blanc dans ce lot : jamais un adjectif ni un participe, que le genre de la réponse ferait accorder. */
+  const AFTER_BLANK = new Set(["aident", "après", "d'abord", "donnent", "défendent", "en", "le", "pour", "qui"]);
+
+  it("laisse après le blanc un verbe ou un petit mot, jamais un mot qui s'accorde", () => {
+    for (const entry of allProgrammeEntries()) {
+      if (!(entry.topic.key in TOPIC_KINDS)) continue;
+      for (let n = 0; n < 30; n++)
+        for (let palier = 1; palier <= 5; palier++) {
+          const games = generateGames(entry.topic.games ?? [], { klass: "CM2", palierIndex: palier, palierCount: 5, seed: `accord:${entry.topic.key}:${n}:${palier}` });
+          for (const game of games) {
+            if (game.type !== "fill-blank") continue;
+            const next = /___ ([\p{L}']+)/u.exec(String(game.payload.text))?.[1];
+            if (next !== undefined) expect(AFTER_BLANK.has(next.toLowerCase()), `« ${String(game.payload.text)} » : « ${next} » suit le blanc`).toBe(true);
+          }
+        }
+    }
   });
 });
