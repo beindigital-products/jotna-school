@@ -2859,6 +2859,32 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     76 pannes provoquées vues sur 77 (`scratchpad/mutations-cm1m1.py` ; la survivante, « deux demis » proposé comme mauvais choix, est du français valable) ; le contrôleur ne trouve aucun défaut, avertissement
     compris, sur 15 000 exercices par thématique ; moins de 5 % de questions revues d'un palier à l'autre ; recherche sur les 26 thématiques du CM1 fabriquées par le code (390 000 exercices) : aucun défaut
     de français dans les maths. PAS vu : l'écran, l'iPhone, l'application native, la production.
+- **Les sciences du CM2** (`paliers/games/cm2Sciences.ts`, avec `cm1Faits.ts`) : vingt-neuf gabarits pour les cinq thématiques `sc-cm2-milieux`, `-appareils`, `-nutrition`,
+  `-ressources` et `-sante`, que le modèle n'écrit plus. Les noms commencent par `cm2-mli-`, `cm2-apr-`, `cm2-nut-`, `cm2-rsc-` et `cm2-san-`, les fonctions sont des `makeCm2…`. Lot 2 du CM2 :
+  six gabarits par thématique (un QCM à 3 par palier, une phrase à trou à 2, une réponse à écrire, un ordre, un appariement, un glissé à 2), sauf les milieux, qui n'ont rien à ranger : cinq gabarits,
+  deux réponses à écrire.
+  - **Ce que les tableaux disent.** Les milieux : branchies, nageoires, écailles, poils, plumes ; le poisson, la crevette et le nénuphar dans l'eau, la chèvre et le baobab sur la terre ; les racines
+    profondes et les feuilles épineuses en zone sèche. Les appareils : réfrigérateur, ventilateur, téléphone portable, fer à repasser ; débrancher avant de nettoyer, sécher ses mains, appeler un adulte ;
+    éteindre la lumière, débrancher le chargeur, ouvrir peu la porte du réfrigérateur ; la poussière, le fer qui refroidit, les chocs. La nutrition : les trois groupes d'aliments et leurs aliments, le
+    thiéboudienne, le mafé et le yassa, le repas équilibré, la carence, la malnutrition et l'obésité. Les ressources : la ressource naturelle, la jachère, le sol épuisé, la pauvreté ; fermer le robinet,
+    replanter, laisser le champ au repos, rejeter les petits poissons ; les causes et les conséquences. La santé : la consultation prénatale, la vaccination, l'allaitement, le carnet de santé, le lait
+    maternel, les naissances espacées ; le VIH et le sida, ce qui le transmet (le sang, une aiguille ou une lame déjà utilisée) et ce qui ne le transmet pas.
+  - **HORS FICHE, À FAIRE RELIRE.** Les milieux : le lion comme exemple terrestre, l'oiseau et ses plumes (la fiche dit « plumes » sans nommer l'oiseau), la carapace de la crevette, les feuilles qui
+    flottent du nénuphar, le tronc large du baobab. Les appareils : le balai, le pilon et la daba comme outils sans électricité, l'ampoule et la radio comme mauvais choix, toutes les étapes des gestes
+    (repasser, nettoyer un ventilateur, recharger, changer une ampoule). La nutrition : le classement de chaque aliment (riz, mil, igname, patate pour la force ; poisson, niébé, viande, œuf pour grandir ;
+    mangue, orange, papaye, légumes verts pour se défendre), les trois plats et leurs ingrédients, les définitions de la carence, de la malnutrition et de l'obésité. Les ressources : les définitions, les
+    causes et les conséquences, les gestes et leurs étapes. La santé, le plus sensible : la sage-femme et l'infirmier, le carnet de santé, le lait maternel seul pendant les premiers mois, les naissances
+    espacées pour que la mère reprenne des forces, et tout ce qui touche au VIH. Le ton reste celui de 10-11 ans, sans détail intime : le VIH se dit par le sang, les aiguilles et les lames, jamais autrement.
+  - **Pièges rencontrés.** (1) Une question « Qu'est-ce qui… » a déjà une apostrophe : avec « d'un oiseau » ou « de l'eau » elle en a deux, d'où « Quelle couverture a… » et « Quelle partie aide… ».
+    (2) Un indice qui écrit un mot d'une réponse ACCEPTÉE (pas seulement de la tuile) est refusé : « jamais » (cultiver sans jamais laisser reposer), « celui » (à la place de celui qu'on coupe), « plus »,
+    « mère » (lait de la mère), « reposer » (se reposer), « chutes » (éviter les chutes). (3) Un indice qui écrit un mot d'un mauvais choix lui retire sa place : « moins » dans l'indice d'un sol épuisé
+    écartait « Moins de poissons à vendre », il ne restait plus deux mauvais choix. (4) Les options d'une phrase à trou s'écrivent toutes avec un article ou toutes sans : « un seul groupe d'aliments »,
+    « des sucreries seulement » et « des aliments des trois groupes ». (5) Les mêmes cinq lignes d'ordre, cinq d'appariement et dix de glissé qu'au lot 1, sans quoi les questions reviennent.
+    (6) Des réponses toutes justes pour la même question (débrancher, sécher ses mains et appeler un adulte quand un appareil fume ; le poisson, la crevette et le nénuphar pour « vit dans l'eau ») :
+    `onlyExtras` leur interdit d'être des mauvais choix, et les tables du test les listent en groupes.
+  - **Mesuré** : 83 tests (`convex/__tests__/cm2SciencesTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part ; 85 pannes provoquées sur 85 vues (`scratchpad/mutations-cm2sci.py` : une réponse changée pour chaque fait, un `not` ou un `onlyExtras` retiré, deux suites, deux paires ou une case échangées, un indice qui écrit la réponse, une apostrophe de trop, un article en capitale, une élision manquante) ; le contrôleur ne signale aucun défaut,
+    avertissements compris, sur 7 500 paliers fabriqués (75 000 exercices, nom de la matière donné) ; la recherche sur les cinq thématiques (apostrophes, élisions, contractions, mots d'un indice) ne
+    trouve que des faux positifs. Suite complète 185 fichiers (9 317 tests), `tsc` racine et `convex` propres. PAS vu : l'écran, l'iPhone, la production.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à

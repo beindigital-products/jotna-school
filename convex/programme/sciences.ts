@@ -489,30 +489,69 @@ export const EVEIL_SCIENTIFIQUE: ProgrammeSubject = {
     CM2: [
       {
         key: "sc-cm2-milieux",
+        games: [
+          { kind: "cm2-mli-qcm", count: 3 },
+          { kind: "cm2-mli-trou", count: 2 },
+          { kind: "cm2-mli-ecrire", count: 2 },
+          { kind: "cm2-mli-relier", count: 1 },
+          { kind: "cm2-mli-glisser", count: 2 },
+        ],
         name: "Vivre dans l'eau, vivre sur terre",
         description:
           "IST, étape 3, paliers 3-4 : les êtres du milieu aquatique (poisson, crevette, nénuphar) et du milieu terrestre (chèvre, baobab) ; leurs adaptations : nageoires, branchies, écailles, poils, plumes, racines profondes, feuilles épineuses en zone sèche.",
       },
       {
         key: "sc-cm2-appareils",
+        games: [
+          { kind: "cm2-apr-qcm", count: 3 },
+          { kind: "cm2-apr-trou", count: 2 },
+          { kind: "cm2-apr-ecrire", count: 1 },
+          { kind: "cm2-apr-ordre", count: 1 },
+          { kind: "cm2-apr-relier", count: 1 },
+          { kind: "cm2-apr-glisser", count: 2 },
+        ],
         name: "Les appareils de la maison",
         description:
           "IST, étape 3, paliers 3-4 : outils et appareils courants (réfrigérateur, ventilateur, téléphone portable, fer à repasser) : usage, entretien, sécurité électrique, économies d'énergie.",
       },
       {
         key: "sc-cm2-nutrition",
+        games: [
+          { kind: "cm2-nut-qcm", count: 3 },
+          { kind: "cm2-nut-trou", count: 2 },
+          { kind: "cm2-nut-ecrire", count: 1 },
+          { kind: "cm2-nut-ordre", count: 1 },
+          { kind: "cm2-nut-relier", count: 1 },
+          { kind: "cm2-nut-glisser", count: 2 },
+        ],
         name: "Bien se nourrir pour bien grandir",
         description:
           "Vivre dans son milieu, étape 3, paliers 3-4 : les groupes d'aliments (énergétiques, de construction, de protection), un repas équilibré avec des plats sénégalais, les troubles nutritionnels (carences, malnutrition, obésité).",
       },
       {
         key: "sc-cm2-ressources",
+        games: [
+          { kind: "cm2-rsc-qcm", count: 3 },
+          { kind: "cm2-rsc-trou", count: 2 },
+          { kind: "cm2-rsc-ecrire", count: 1 },
+          { kind: "cm2-rsc-ordre", count: 1 },
+          { kind: "cm2-rsc-relier", count: 1 },
+          { kind: "cm2-rsc-glisser", count: 2 },
+        ],
         name: "Gérer et restaurer les ressources",
         description:
           "Vivre dans son milieu, étape 3, paliers 3-4 : la dégradation des ressources (déforestation, surpêche, sols épuisés) et la pauvreté ; la gestion et la restauration : reboisement, jachère, pêche responsable, économiser l'eau.",
       },
       {
         key: "sc-cm2-sante",
+        games: [
+          { kind: "cm2-san-qcm", count: 3 },
+          { kind: "cm2-san-trou", count: 2 },
+          { kind: "cm2-san-ecrire", count: 1 },
+          { kind: "cm2-san-ordre", count: 1 },
+          { kind: "cm2-san-relier", count: 1 },
+          { kind: "cm2-san-glisser", count: 2 },
+        ],
         name: "La santé de la mère et de l'enfant",
         description:
           "Vivre dans son milieu, étape 3, paliers 3-4 : les consultations prénatales, la vaccination des enfants, l'allaitement, la taille de la famille et la santé de la mère et de l'enfant ; la prévention du VIH/SIDA. Ton adapté à des enfants de 10-11 ans, sans détail intime.",
