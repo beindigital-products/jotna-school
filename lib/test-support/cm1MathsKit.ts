@@ -111,6 +111,12 @@ export type MathsTestConfig = {
   asked?: (exo: Exo) => string[] | null;
   /** Les jeux plus anciens d'une thématique mixte (« pixel-copie ») : ils comptent dans les dix places, mais n'ont ni vérification ni passage au contrôleur ici. */
   extraKinds?: readonly string[];
+  /** La matière des fiches (par défaut « Mathématiques ») : le contrôleur et le test des fiches la lisent. */
+  subject?: string;
+  /** Le plus grand nombre de mots d'un énoncé (par défaut 28, le plafond d'un énoncé court ; une lecture porte son texte dans l'énoncé). */
+  promptWords?: number;
+  /** Un indice n'écrit aucun mot de quatre lettres ou plus d'une option, d'une tuile, d'une case ou de la bonne réponse (les lots de français l'exigent). */
+  hintsNeverWriteChoices?: boolean;
 };
 
 export function defineMathsTests(cfg: MathsTestConfig) {
@@ -119,6 +125,8 @@ export function defineMathsTests(cfg: MathsTestConfig) {
   const PALIERS = [1, 2, 3, 4, 5];
   const CHECKS = cfg.checks;
   const EXTRA = new Set(cfg.extraKinds ?? []);
+  const SUBJECT = cfg.subject ?? "Mathématiques";
+  const PROMPT_WORDS = cfg.promptWords ?? 28;
   const KINDS = Object.keys(CHECKS) as GameKind[];
   const TOPIC_KEYS = Object.keys(cfg.topicKinds);
   const entryOf = (key: string) => allProgrammeEntries().find((entry) => entry.topic.key === key)!;
@@ -128,7 +136,7 @@ export function defineMathsTests(cfg: MathsTestConfig) {
   const make = (kind: GameKind, d: (typeof draws)[number]) =>
     GAME_KINDS[kind].make(makeContext(KLASS, d.level, `${kind}:${d.seed}`, new Set(), undefined, undefined, { index: d.palier, count: COUNT })) as unknown as Exo;
   const audit = (exo: Exo, kind: string) =>
-    auditExercise({ type: GAME_KINDS[kind as GameKind].type, prompt: exo.prompt, payload: exo.payload, answerKey: exo.answerKey, hints: exo.hints, class: KLASS, subject: "Mathématiques" });
+    auditExercise({ type: GAME_KINDS[kind as GameKind].type, prompt: exo.prompt, payload: exo.payload, answerKey: exo.answerKey, hints: exo.hints, class: KLASS, subject: SUBJECT });
 
   describe(`chaque gabarit ${cfg.label} a sa vérification`, () => {
     it("couvre exactement les gabarits des thématiques, tous inscrits au registre", () => {
@@ -167,11 +175,11 @@ export function defineMathsTests(cfg: MathsTestConfig) {
   describe(`tous les gabarits ${cfg.label}`, () => {
     const exos = KINDS.flatMap((kind) => draws.filter((_, i) => i % 2 === 0).map((d) => ({ kind, exo: make(kind, d) })));
 
-    it("ont un énoncé que l'écran sait couper : pas de deux-points, une apostrophe au plus, vingt-huit mots au plus", () => {
+    it("ont un énoncé que l'écran sait couper : pas de deux-points, une apostrophe au plus, et pas plus de mots que la limite de la thématique", () => {
       for (const { kind, exo } of exos) {
         expect(exo.prompt, kind).not.toMatch(/:/);
         expect(apostrophes(exo.prompt), `${kind} : ${exo.prompt}`).toBeLessThanOrEqual(1);
-        expect(wordCount(exo.prompt), `${kind} : ${exo.prompt}`).toBeLessThanOrEqual(28);
+        expect(wordCount(exo.prompt), `${kind} : ${exo.prompt}`).toBeLessThanOrEqual(PROMPT_WORDS);
       }
     });
 
@@ -222,6 +230,32 @@ export function defineMathsTests(cfg: MathsTestConfig) {
       for (const { kind, exo } of exos) for (const hint of exo.hints) expect(hint, `${kind} : « ${hint} »`).not.toMatch(/\d/);
     });
 
+    if (cfg.hintsNeverWriteChoices) {
+      it("n'écrivent dans un indice aucun mot de quatre lettres ou plus d'une option, d'une tuile, d'une case ou de la bonne réponse", () => {
+        const wordsOf = (text: string) =>
+          text
+            .normalize("NFD")
+            .replace(/\p{M}/gu, "")
+            .toLowerCase()
+            .split(/[^a-z]+/u)
+            .filter((word) => word.length >= 4);
+        for (const { kind, exo } of exos) {
+          const shown: string[] = [exo.answerKey];
+          if (exo.payload.options) shown.push(...optionsOf(exo));
+          if (exo.payload.blanks) shown.push(...blankOf(exo).options);
+          if (exo.payload.correctSequence) shown.push(...sequenceOf(exo));
+          if (exo.payload.pairs) shown.push(...pairsOf(exo).flatMap((pair) => [pair.left, pair.right]));
+          if (exo.payload.items) shown.push(...itemsOf(exo).map((item) => item.text), ...zonesOf(exo));
+          if (exo.payload.acceptedAnswers) shown.push(...acceptedOf(exo));
+          const forbidden = new Set(shown.flatMap(wordsOf));
+          for (const hint of exo.hints) {
+            const found = wordsOf(hint).filter((word) => forbidden.has(word));
+            expect(found, `${kind} : « ${hint} » écrit ${found.join(", ")} (${exo.prompt})`).toEqual([]);
+          }
+        }
+      });
+    }
+
     it("donnent trois indices différents, et se refont à l'identique avec la même graine", () => {
       for (const kind of KINDS) {
         const a = GAME_KINDS[kind].make(makeContext(KLASS, 3, "graine", new Set(), undefined, undefined, { index: 4, count: COUNT }));
@@ -271,7 +305,7 @@ export function defineMathsTests(cfg: MathsTestConfig) {
     it("sont celles du CM1, à cinq paliers, et gardent leur clé", () => {
       for (const key of TOPIC_KEYS) {
         expect(entryOf(key).klass, key).toBe(KLASS);
-        expect(entryOf(key).subject.name, key).toBe("Mathématiques");
+        expect(entryOf(key).subject.name, key).toBe(SUBJECT);
         expect(topicOf(key).palierCount, key).toBeUndefined();
       }
     });
