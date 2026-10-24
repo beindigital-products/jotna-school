@@ -54,8 +54,8 @@ const ASSOC: Record<string, string[]> = {
   // ---------------------------------------------------------------------------------------------------------------- VENT
   "flute peule": ["instrument à vent traditionnel est joué par les bergers peuls", "tradition peule se joue en soufflant dans un tuyau", "Le berger peul joue de", "instrument à vent de la tradition peule est"],
   trompette: ["en cuivre se joue avec trois pistons", "en cuivre a trois pistons et un son brillant", "à vent en cuivre à trois pistons est", "jouer avec trois pistons, on prend"],
-  saxophone: ["très utilisé dans le jazz", "à anche accompagne souvent les orchestres de jazz", "à anche, joué dans le jazz, est", "orchestre de jazz, on entend souvent"],
-  clairon: ["sonne les appels militaires", "sans piston, sert à sonner l'appel", "soldat sonne l'appel avec", "sans piston qui sonne l'appel est"],
+  saxophone: ["à anche est très utilisé dans le jazz", "à anche accompagne souvent les orchestres de jazz", "à anche, joué dans le jazz, est", "orchestre de jazz, on entend souvent"],
+  clairon: ["sans piston, sonne les appels militaires", "sans piston, sert à sonner l'appel", "soldat sonne l'appel avec", "sans piston qui sonne l'appel est"],
   kora: [],
   djembe: [],
   balafon: [],
@@ -76,7 +76,7 @@ const ASSOC: Record<string, string[]> = {
   solo: [],
   // ---------------------------------------------------------------------------------------------------------------- MISE EN SCÈNE
   decor: ["ce qui montre le lieu de l'histoire sur la scène", "éléments qui représentent l'endroit où se passe la pièce", "les arbres en carton forment"],
-  costume: ["vêtements que porte un comédien pour jouer son rôle", "tenue d'un personnage sur la scène", "vêtements du comédien pour son rôle forment", "tenue du personnage sur la scène s'appelle"],
+  costume: ["vêtements que porte un comédien pour jouer son rôle", "tenue qu'un comédien porte pour son rôle sur la scène", "vêtements du comédien pour son rôle forment", "tenue du personnage sur la scène s'appelle"],
   deguisement: ["se transformer avec des vêtements pour ressembler à une autre personne", "transformation d'un enfant en pirate ou en roi pour jouer", "enfant qui se transforme en roi porte", "vêtements de fête pour ressembler à une autre personne forment"],
   "mise en scene": ["art de placer les comédiens, les décors et la lumière", "façon d'organiser le spectacle sur la scène", "Placer les comédiens, le décor et la lumière, c'est faire", "Organiser le spectacle sur la scène, c'est faire"],
   "metteur en scene": ["dirige les comédiens et organise le spectacle", "dirige tout le spectacle et les comédiens", "personne qui dirige les comédiens est", "Celui qui dirige tout le spectacle est"],

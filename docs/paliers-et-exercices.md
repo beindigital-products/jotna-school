@@ -2919,8 +2919,11 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     déclare jumeaux. (6) La démo du site (`components/landing/demo/bank/education-artistique.ts`) veut, pour une thématique tout en jeux, un gabarit du type de chacun de ses exercices : les rosaces ont donc
     un ordre et une réponse à écrire, et ni appariement ni glissé. (7) Un indice qui contient « pose » ne va pas avec une tuile « posé » : le texte des étiquettes évite « posé » et « posée ». (8) Un adjectif ou un
     participe après le blanc (« ___ déjà utilisée ») trahit le genre de la réponse : un test relit tous les mots qui suivent un blanc.
-  - **Mesuré** : 144 tests (`convex/__tests__/cm2CiviqueTemplates.test.ts` : 74 ; `cm2ArtsTemplates.test.ts` : 70), dont une vérification par gabarit contre des tables écrites à part ; 112 pannes
-    provoquées sur 115 vues (`scratchpad/mutations-cm2-l3.py` : une réponse échangée pour chaque fait, un `not` retiré, une suite, une paire ou une case échangée, une apostrophe de trop, une tuile avec
+    (9) La relecture du lot en production a trouvé quatre questions qui laissaient deux réponses possibles : « Commerce » à côté de « Jumelage » pour « le lien d'échange entre deux villes », et trois réponses à écrire dont la
+    question ne ferme pas la porte à la trompette (« très utilisé dans le jazz », « sonne les appels militaires ») ou au déguisement (« la tenue d'un personnage »). Une réponse à écrire n'a pas de mauvais choix pour la
+    départager : sa question dit le trait qui distingue (« à anche », « sans piston », « qu'un comédien porte pour son rôle »), et la table du test exige ce trait.
+  - **Mesuré** : 144 tests (`convex/__tests__/cm2CiviqueTemplates.test.ts` : 74 ; `cm2ArtsTemplates.test.ts` : 70), dont une vérification par gabarit contre des tables écrites à part ; 116 pannes
+    provoquées sur 119 vues (`scratchpad/mutations-cm2-l3.py` : une réponse échangée pour chaque fait, un `not` retiré, une suite, une paire ou une case échangée, une apostrophe de trop, une tuile avec
     article ; les trois survivantes : la tuile avec article, que le test des images du CI attrape dans son propre fichier, et deux `not` que les décalages fixes des mauvais choix n'atteignent pas, gardés par
     précaution) ; le scan de 13 500 paliers (300 tirages × 5 paliers × 9 thématiques, nom de la matière donné) ne trouve aucun défaut du contrôleur, aucune apostrophe de trop, aucune élision ni contraction
     fausse : les seuls mots d'indice signalés sont ceux des jeux gardés (`pixel-*`, `ecoute-*`). Suite complète 198 fichiers (10 099 tests), `tsc` racine et `convex` propres. PAS vu : l'écran, l'iPhone, la
