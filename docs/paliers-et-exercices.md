@@ -2989,6 +2989,36 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     n'a presque aucune chance de produire, et le calcul « ÷ 10 » compté comme « ÷ 100 », qui garde le même rang) ; le scan de 5 000 paliers (250 tirages × 5 paliers × 4 thématiques, nom de la matière donné)
     ne trouve aucun défaut du contrôleur, aucune apostrophe de trop, aucun « : » ni aucune élision fausse. Suite complète 203 fichiers (10 496 tests), `tsc` racine et `convex` propres. PAS vu : l'écran, l'iPhone,
     la production, la relecture des lignes fabriquées.
+- **Les mathématiques du CM2, la symétrie, les volumes, la vitesse et les problèmes** (`paliers/games/cm2Symetrie.ts`, `cm2Volumes.ts`, `cm2Vitesse.ts`, `cm2Problemes.ts`) :
+  trente-sept gabarits pour `ma-cm2-symetrie` (sept `cm2-sym-*`, plus les trois dessins `pixel-symetrie` gardés), `ma-cm2-volumes` (dix `cm2-vol-*`), `ma-cm2-vitesse` (dix `cm2-vit-*`) et
+  `ma-cm2-problemes` (dix `cm2-pb-*`), que le modèle n'écrit plus. Lot 5b du CM2, qui complète le lot 5a : toutes les mathématiques du CM2 sont alors fabriquées par le code. Comme les autres mathématiques
+  de la classe, ces gabarits CALCULENT leur réponse ou la lisent dans un tableau fermé, et le test la refait avec sa propre arithmétique (`lib/test-support/cm1MathsKit.ts`, `klass: "CM2"`).
+  - **Ce que chaque thématique pose.** Symétrie et translation : le nombre d'axes d'une figure, le symétrique d'une colonne ou d'une ligne par rapport à un axe (et l'inverse, aux deux derniers paliers),
+    la translation d'un point écrit `(4 ; 3)`, les nombres de faces, d'arêtes et de sommets, la somme des longueurs des arêtes d'un cube et d'un pavé droit, relier, classer. Solides et volumes : le volume d'un
+    pavé droit et d'un cube, une dimension d'après le volume, les conversions entre cm³, dm³, m³ et litre, la contenance d'un récipient en litres, ranger des volumes écrits dans plusieurs unités, nommer et
+    classer les angles. Vitesse, distance et durée : la distance, la vitesse, la durée, l'heure d'arrivée d'un car ou d'un train, la durée entre deux horaires, trou, réponse à écrire, ranger, relier et classer
+    des trajets. Problèmes du CFEE : cinq scénarios à trois ou quatre calculs (achat avec monnaie rendue, récolte, partage puis dépense, trajet en deux étapes, achat revendu) et trois en démarche régressive
+    (argent, sacs, mangues dont on vend la moitié), la question intermédiaire, la donnée inutile, l'ordre des étapes, relier un problème à son calcul, la phrase réponse, vérifier.
+  - **Les mauvais choix sont des erreurs d'enfant**, jamais un nombre que l'énoncé écrit déjà : additionner les dimensions d'un pavé, prendre l'aire d'une face pour le volume, se tromper d'un facteur dix
+    ou cent dans une conversion, lire 2 h 30 comme 2,30, soustraire les minutes sans emprunter, compter la colonne de l'axe en trop, oublier un déplacement, ne pas remonter l'histoire, oublier un calcul.
+  - **Pièges rencontrés.** (1) La tuile « un axe » est refusée par `templatePictures.test.ts` (article et nom au singulier : un objet à illustrer) ; les nombres d'axes s'écrivent « 1 axe », « 2 axes ».
+    (2) Le contrôleur (`hint_gives_answer`) refuse le premier indice « Un angle droit mesure quatre-vingt-dix degrés » quand la mesure est 90 : l'équerre sert d'indice. (3) La donnée inutile d'un problème
+    ne peut pas être un nombre du problème (« Le car a 50 places » avec un car à 50 km/h) : le tirage est refait. (4) La réponse d'un problème n'est jamais écrite dans l'énoncé (un bénéfice égal à un
+    prix). (5) Un énoncé de problème n'a qu'une apostrophe : les prénoms commencent par une consonne et le test vérifie l'accord de « il » et « elle ». (6) Un mauvais choix plus de trois fois plus grand que
+    la bonne réponse se récuse tout seul (1 080 km/h) : il est écarté. (7) Les minutes d'une durée (« 30 » dans « 5 h 30 min ») sont des nombres de l'énoncé et ne sont jamais un mauvais choix.
+    (8) « à 1 carreaux » : une distance d'un seul carreau n'est pas servie, parce que le pluriel serait faux.
+  - **HORS FICHE, À FAIRE RELIRE.** Les coordonnées `(4 ; 3)` pour la translation, sans les mots « abscisse » et « ordonnée » ; le pentagone et l'hexagone réguliers (cinq et six axes) ; la somme des
+    longueurs des arêtes ; le litre égal au décimètre cube et les conversions de mille en mille ; les angles aigu, droit, obtus et plat ; les vitesses d'un marcheur (4 à 6), d'un cycliste (10 à 20), d'un
+    camion (40 à 70), d'un car (50 à 90) et d'un train (80 à 120) ; les villes qui nomment un départ ; les horaires en vingt-quatre heures ; les prix des pagnes, seaux, sacs de charbon et cartons de savon ;
+    la récolte d'arachide ; la démarche régressive des mangues ; les prénoms.
+  - **Mesuré** : 134 tests (`cm2MathsVitesseTemplates.test.ts` : 35 ; `cm2MathsVolumesTemplates.test.ts` : 35 ; `cm2MathsSymetrieTemplates.test.ts` : 29 ; `cm2MathsProblemesTemplates.test.ts` : 35), dont une
+    vérification par gabarit qui relit l'énoncé avec ses propres expressions régulières et refait le calcul (le test évalue lui-même le calcul écrit sur une tuile) ; 104 pannes provoquées sur 106
+    attrapées (`scratchpad/mutations-cm2-ma5b.py` : une vitesse, une durée, une heure d'arrivée, un volume, un facteur de conversion, un symétrique, une translation, un nombre d'arêtes, un calcul de problème,
+    une démarche à l'envers, un accord, une apostrophe) ; les deux survivantes ne changent rien à ce que voit l'enfant (le plafond des mauvais choix d'un volume, que la liste des erreurs d'enfant n'atteint
+    jamais, et un contrôle de l'argent du début que `drawProblem` refait déjà) ; le scan de 5 000 paliers (250 tirages × 5 paliers × 4 thématiques, nom de la matière donné) ne trouve aucun défaut du
+    contrôleur, aucune apostrophe de trop, aucun « : » ; les seuls « réponse dans l'énoncé » sont la donnée inutile (par construction) et un « 500 FCFA » contenu dans « 1 500 FCFA ». Suite complète 207 fichiers
+    (10 667 tests), `tsc` racine et `convex` propres. PAS vu : l'écran, l'iPhone, la production, la relecture des lignes fabriquées.
+
 - **Les mathématiques du CM1, les figures, les périmètres et aires, les mesures** (`paliers/games/figuresCm1.ts`, `perimetreAireCm1.ts`, `mesuresCm1.ts`) :
   vingt-neuf gabarits pour `ma-cm1-figures` (neuf `cm1-fig-*` et le dessin à reproduire `pixel-copie`), `ma-cm1-perimetres-aires` (dix `cm1-per-*`) et `ma-cm1-mesures` (dix `cm1-mes-*`), avec le même
   moteur de test (`lib/test-support/cm1MathsKit.ts`, qui accepte maintenant `extraKinds` pour un jeu hors du lot, ici `pixel-copie`). Les périmètres et les mesures sont CALCULÉS comme les nombres.
