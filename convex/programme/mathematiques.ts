@@ -738,24 +738,72 @@ export const MATHEMATIQUES: ProgrammeSubject = {
     CM2: [
       {
         key: "ma-cm2-milliards",
+        games: [
+          { kind: "cm2-grn-comparer", count: 1 },
+          { kind: "cm2-grn-ranger", count: 1 },
+          { kind: "cm2-grn-chiffres", count: 1 },
+          { kind: "cm2-grn-suite", count: 1 },
+          { kind: "cm2-grn-arrondir", count: 1 },
+          { kind: "cm2-grn-ecrire", count: 1 },
+          { kind: "cm2-grn-lire", count: 1 },
+          { kind: "cm2-grn-calculer", count: 1 },
+          { kind: "cm2-grn-relier", count: 1 },
+          { kind: "cm2-grn-glisser", count: 1 },
+        ],
         name: "Millions et milliards",
         description:
           "Activités numériques de l'étape 3, palier 4 : la numération jusqu'aux millions et aux milliards, les opérations sur les grands nombres.",
       },
       {
         key: "ma-cm2-decimaux",
+        games: [
+          { kind: "cm2-dcm-fois10", count: 1 },
+          { kind: "cm2-dcm-div10", count: 1 },
+          { kind: "cm2-dcm-fois-entier", count: 1 },
+          { kind: "cm2-dcm-fois-decimal", count: 1 },
+          { kind: "cm2-dcm-diviser", count: 1 },
+          { kind: "cm2-dcm-ecrire", count: 1 },
+          { kind: "cm2-dcm-trou", count: 1 },
+          { kind: "cm2-dcm-ranger", count: 1 },
+          { kind: "cm2-dcm-relier", count: 1 },
+          { kind: "cm2-dcm-glisser", count: 1 },
+        ],
         name: "Opérations sur les décimaux",
         description:
           "Étape 3 (répartition proposée pour le CM2) : multiplier et diviser par 10, 100 et 1 000, la multiplication d'un nombre décimal, la division décimale.",
       },
       {
         key: "ma-cm2-commerce",
+        games: [
+          { kind: "cm2-com-revient", count: 1 },
+          { kind: "cm2-com-benefice", count: 1 },
+          { kind: "cm2-com-gain-perte", count: 1 },
+          { kind: "cm2-com-vente", count: 1 },
+          { kind: "cm2-com-budget", count: 1 },
+          { kind: "cm2-com-quantite", count: 1 },
+          { kind: "cm2-com-ecrire", count: 1 },
+          { kind: "cm2-com-ranger", count: 1 },
+          { kind: "cm2-com-relier", count: 1 },
+          { kind: "cm2-com-glisser", count: 1 },
+        ],
         name: "Acheter, vendre, gagner",
         description:
           "Activités de mesure de l'étape 3, palier 4 : le budget familial, le prix d'achat, les frais, le prix de revient, le prix de vente, le bénéfice et la perte, en FCFA.",
       },
       {
         key: "ma-cm2-partages-moyenne",
+        games: [
+          { kind: "cm2-par-egal", count: 1 },
+          { kind: "cm2-par-inegal", count: 1 },
+          { kind: "cm2-par-parts", count: 1 },
+          { kind: "cm2-par-moyenne", count: 1 },
+          { kind: "cm2-par-manquant", count: 1 },
+          { kind: "cm2-par-comparer", count: 1 },
+          { kind: "cm2-par-ecrire", count: 1 },
+          { kind: "cm2-par-ranger", count: 1 },
+          { kind: "cm2-par-relier", count: 1 },
+          { kind: "cm2-par-glisser", count: 1 },
+        ],
         name: "Partages et moyenne",
         description:
           "Étape 3, palier 4 : partages égaux et inégaux, calculer une moyenne (notes, températures, récoltes d'arachide).",

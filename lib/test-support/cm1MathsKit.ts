@@ -117,10 +117,12 @@ export type MathsTestConfig = {
   promptWords?: number;
   /** Un indice n'écrit aucun mot de quatre lettres ou plus d'une option, d'une tuile, d'une case ou de la bonne réponse (les lots de français l'exigent). */
   hintsNeverWriteChoices?: boolean;
+  /** La classe des thématiques (par défaut le CM1) : le CM2 a aussi cinq paliers. */
+  klass?: "CM1" | "CM2";
 };
 
 export function defineMathsTests(cfg: MathsTestConfig) {
-  const KLASS = "CM1" as const;
+  const KLASS = cfg.klass ?? "CM1";
   const COUNT = 5;
   const PALIERS = [1, 2, 3, 4, 5];
   const CHECKS = cfg.checks;
@@ -266,7 +268,7 @@ export function defineMathsTests(cfg: MathsTestConfig) {
       }
     });
 
-    it("passent le contrôleur au CM1 sans aucun défaut, avertissement compris, à tous les paliers", () => {
+    it(`passent le contrôleur au ${KLASS} sans aucun défaut, avertissement compris, à tous les paliers`, () => {
       for (const { kind, exo } of exos) expect(audit(exo, kind), `${kind} : ${exo.prompt} ${exo.payload.text ?? ""}`).toEqual([]);
     });
 
@@ -302,7 +304,7 @@ export function defineMathsTests(cfg: MathsTestConfig) {
       }
     });
 
-    it("sont celles du CM1, à cinq paliers, et gardent leur clé", () => {
+    it(`sont celles du ${KLASS}, à cinq paliers, et gardent leur clé`, () => {
       for (const key of TOPIC_KEYS) {
         expect(entryOf(key).klass, key).toBe(KLASS);
         expect(entryOf(key).subject.name, key).toBe(SUBJECT);

@@ -2963,6 +2963,32 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     trois lettres dans un indice) ; le scan de 7 000 paliers (250 tirages × 3 ou 4 paliers × 8 thématiques, nom de la matière donné) ne trouve aucun défaut du contrôleur ni aucune apostrophe de trop, et
     les seuls trous dont la réponse est dans l'énoncé sont ceux de la lecture, où la réponse est dans le texte par construction. Suite complète 199 fichiers (10 311 tests), `tsc` racine et `convex` propres.
     PAS vu : l'écran, l'iPhone, la production, la relecture des lignes fabriquées.
+- **Les mathématiques du CM2, les nombres et l'argent** (`paliers/games/cm2Milliards.ts`, `cm2Decimaux.ts`, `cm2Commerce.ts`, `cm2Partages.ts`, avec les aides de `cm2MathsOutils.ts`) :
+  quarante gabarits pour `ma-cm2-milliards`, `-decimaux`, `-commerce` et `-partages-moyenne`, que le modèle n'écrit plus. Lot 5a du CM2 (les quatre autres mathématiques, la symétrie, les volumes,
+  la vitesse et les problèmes du CFEE, sont le lot 5b). Les noms commencent par `cm2-grn-` (grands nombres : « mil » appartenait déjà aux milieux de la géographie), `cm2-dcm-`, `cm2-com-` et `cm2-par-` ;
+  dix gabarits par thématique, un de chaque sorte de jeu, aux dix places du palier. Comme les maths du CM1, ces gabarits CALCULENT leur réponse (aucun tableau de faits) et le test la refait avec son
+  arithmétique : le moteur `lib/test-support/cm1MathsKit.ts` accepte maintenant `klass: "CM2"`.
+  - **Ce que chaque thématique pose.** Millions et milliards : comparer, ranger, le chiffre, la valeur et le nombre d'un rang, compléter une suite, arrondir, écrire un nombre en chiffres d'après ses
+    lettres, le lire, additionner, soustraire, multiplier et diviser par 10, 100, 1 000, relier, placer par rapport à un seuil ; sept chiffres au palier 1 jusqu'à douze chiffres (centaines de milliards)
+    au palier 5. Décimaux : multiplier et diviser par 10, 100 et 1 000, un décimal fois un entier, fois un décimal, une division à quotient décimal, écrire le résultat, trouver le facteur, ranger,
+    relier, dire si le résultat est plus grand ou plus petit ; les nombres sont des entiers de MILLIÈMES (`dec3`), jamais plus de trois chiffres après la virgule. Commerce : le prix de revient (achat plus
+    frais), le bénéfice, gagner ou perdre, le prix de vente, le budget d'une famille, la quantité achetée, en FCFA. Partages et moyenne : partager également, avec un écart, en parts, la moyenne de notes,
+    de températures et de récoltes d'arachide, la note qui manque, comparer deux moyennes.
+  - **Les mauvais choix sont des erreurs d'enfant**, jamais un nombre que l'énoncé écrit déjà : une virgule décalée d'un seul rang, la virgule oubliée dans un produit, le reste jeté dans une division,
+    les frais oubliés, la somme prise pour la moyenne, la moitié de la somme pour la part de celui qui reçoit plus.
+  - **Pièges rencontrés.** (1) `cm2-mil-*` existait déjà (les milieux de la géographie) : une clé en double dans le registre ne se voit qu'à `tsc` ; les grands nombres sont `cm2-grn-*`. (2) « cent » prend un s
+    devant « million » et « milliard » (« deux cents millions ») mais pas devant « mille » (« deux cent mille ») : `wordsOfCm2` et le test l'écrivent chacun à leur façon et se comparent sur trois mille nombres.
+    (3) Un énoncé de plus de vingt-huit mots : les nombres à six ou sept chiffres comptent pour deux ou trois mots chacun (« 1 940 000 »), d'où des marchandises dites en deux mots (« du riz ») et un budget
+    à deux dépenses au-delà du troisième palier. (4) « les notes de Awa », « de plus que Ibrahima » : un prénom qui commence par une voyelle prend « d' » et « qu' », et le test le vérifie. (5) Un entier qui se
+    partage en décimal ne se propose qu'à partir du troisième palier : aux premiers paliers le nombre à partager est un décimal. (6) Un mauvais choix égal à un nombre de l'énoncé est refusé (`avoid`).
+  - **HORS FICHE, À FAIRE RELIRE.** Le vocabulaire du commerce (prix de revient, frais, bénéfice, perte) tel que le gabarit le définit ; les marchandises (riz, mil, sucre, savon, poisson, pagnes,
+    arachides) ; les températures de 20 à 45 degrés et les récoltes de 40 à 900 kg ; les prénoms ; « 1 million » et « 1 milliard » pour les seuils ; l'arrondi qui monte à cinq.
+  - **Mesuré** : 145 tests (`cm2MathsGrandsNombresTemplates.test.ts` : 38 ; `cm2MathsDecimauxTemplates.test.ts` : 37 ; `cm2MathsCommerceTemplates.test.ts` : 35 ; `cm2MathsPartagesTemplates.test.ts` : 35), dont
+    une vérification par gabarit qui refait le calcul avec sa propre arithmétique ; 59 pannes provoquées sur 61 attrapées (`scratchpad/mutations-cm2-ma5a.py` : un rang, un mot de nombre, un produit, un
+    quotient, une virgule, un prix de revient, un bénéfice, une moyenne, une somme, une élision, un seuil) ; les deux survivantes ne changent rien à ce que voit l'enfant (un nombre égal au seuil que le tirage
+    n'a presque aucune chance de produire, et le calcul « ÷ 10 » compté comme « ÷ 100 », qui garde le même rang) ; le scan de 5 000 paliers (250 tirages × 5 paliers × 4 thématiques, nom de la matière donné)
+    ne trouve aucun défaut du contrôleur, aucune apostrophe de trop, aucun « : » ni aucune élision fausse. Suite complète 203 fichiers (10 496 tests), `tsc` racine et `convex` propres. PAS vu : l'écran, l'iPhone,
+    la production, la relecture des lignes fabriquées.
 - **Les mathématiques du CM1, les figures, les périmètres et aires, les mesures** (`paliers/games/figuresCm1.ts`, `perimetreAireCm1.ts`, `mesuresCm1.ts`) :
   vingt-neuf gabarits pour `ma-cm1-figures` (neuf `cm1-fig-*` et le dessin à reproduire `pixel-copie`), `ma-cm1-perimetres-aires` (dix `cm1-per-*`) et `ma-cm1-mesures` (dix `cm1-mes-*`), avec le même
   moteur de test (`lib/test-support/cm1MathsKit.ts`, qui accepte maintenant `extraKinds` pour un jeu hors du lot, ici `pixel-copie`). Les périmètres et les mesures sont CALCULÉS comme les nombres.
