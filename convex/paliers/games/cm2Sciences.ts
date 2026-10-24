@@ -260,7 +260,7 @@ const APR_USAGE: Pool = {
       a: "Fer à repasser",
       also: ["Le fer à repasser", "Fer a repasser", "Fer"],
       ga: "le fer à repasser",
-      s: ["Pour défroisser un habit, on utilise ___.", "On lisse le tissu avec ___ chaud."],
+      s: ["Pour défroisser un habit, on utilise ___.", "On lisse un habit froissé avec ___."],
       hint: "Sa semelle chauffe et peut brûler.",
     },
   ],
@@ -342,7 +342,7 @@ const APR_ENTRETIEN: Pool = {
   items: [
     {
       id: "ent-poussiere",
-      q: ["Que faire régulièrement sur un ventilateur pour qu'il tourne bien ?", "Quel entretien aide un ventilateur à bien tourner ?", "Que faut-il retirer des pales pour que le ventilateur souffle bien ?"],
+      q: ["Que faire des pales sales pour que le ventilateur tourne bien ?", "Quel entretien retire la saleté posée sur un ventilateur ?", "Que faut-il retirer des pales pour que le ventilateur souffle bien ?"],
       a: "Enlever la poussière",
       also: ["Nettoyer", "Enlever la poussiere"],
       ga: "enlever la poussière",
@@ -388,7 +388,7 @@ const APR_ORDRE: readonly OrderRow[] = [
 const APR_RELIER: readonly LinkRow[] = [
   link("Relie chaque appareil à son usage.", [["Réfrigérateur", "Garder au frais"], ["Ventilateur", "Rafraîchir l'air"], ["Téléphone portable", "Appeler"], ["Fer à repasser", "Défroisser"]]),
   link("Relie chaque appareil à ce qu'il fait.", [["Réfrigérateur", "Conserve les aliments"], ["Ventilateur", "Fait du vent"], ["Fer à repasser", "Chauffe pour lisser les habits"]]),
-  link("Relie chaque geste à son effet.", [["Éteindre la lumière", "Économiser l'électricité"], ["Fermer la porte du réfrigérateur", "Garder le froid"], ["Débrancher le chargeur", "Éviter de gaspiller"]]),
+  link("Relie chaque geste à son effet.", [["Éteindre la lumière", "Économiser l'électricité"], ["Fermer la porte du réfrigérateur", "Garder le froid"], ["Débrancher l'appareil", "Éviter le choc électrique"]]),
   link("Relie chaque appareil à son entretien.", [["Ventilateur", "Enlever la poussière"], ["Fer à repasser", "Laisser refroidir"], ["Téléphone portable", "Éviter les chocs"]]),
   link("Relie chaque appareil ou chaque objet à son danger.", [["Fer à repasser", "Brûlure"], ["Prise", "Choc électrique"], ["Ventilateur", "Doigts dans les pales"]]),
 ];
@@ -430,8 +430,8 @@ const NUT_GROUPE: Pool = {
       q: ["Quels aliments donnent de la force pour courir et jouer ?", "Quels aliments donnent de l'énergie au corps ?", "Quel groupe d'aliments nous fait avancer toute la journée ?"],
       a: "Aliments énergétiques",
       also: ["Énergétiques", "Energetiques", "Les aliments énergétiques"],
-      ga: "énergétiques",
-      s: ["Le riz et le mil sont des aliments ___.", "Les aliments ___ donnent de la force pour la journée."],
+      ga: "aliments énergétiques",
+      s: ["Le riz et le mil font partie des ___.", "Les ___ donnent de la force pour la journée."],
       hint: "Ce sont surtout des céréales et des tubercules.",
     },
     {
@@ -439,8 +439,8 @@ const NUT_GROUPE: Pool = {
       q: ["Quels aliments aident le corps à grandir et à fabriquer muscles et os ?", "Quel groupe d'aliments sert à construire le corps ?", "Quels aliments riches en protéines font grandir l'enfant ?"],
       a: "Aliments de construction",
       also: ["De construction", "Les aliments de construction"],
-      ga: "de construction",
-      s: ["Le poisson et le niébé sont des aliments ___.", "Les aliments ___ aident l'enfant à grandir."],
+      ga: "aliments de construction",
+      s: ["Le poisson et le niébé font partie des ___.", "Les ___ aident l'enfant à grandir."],
       hint: "On y trouve surtout de la viande, des œufs et des haricots.",
     },
     {
@@ -448,8 +448,8 @@ const NUT_GROUPE: Pool = {
       q: ["Quels aliments protègent le corps contre les maladies ?", "Quel groupe d'aliments apporte des vitamines ?", "Quels fruits et légumes aident le corps à se défendre ?"],
       a: "Aliments de protection",
       also: ["De protection", "Les aliments de protection"],
-      ga: "de protection",
-      s: ["La mangue et les légumes verts sont des aliments ___.", "Les aliments ___ défendent le corps contre les maladies."],
+      ga: "aliments de protection",
+      s: ["La mangue et les légumes verts font partie des ___.", "Les ___ défendent le corps contre les maladies."],
       hint: "On les reconnaît à leurs couleurs vives.",
     },
   ],
@@ -462,8 +462,8 @@ const NUT_ALIMENT: Pool = {
       q: ["À quel groupe appartient le riz ?", "Le riz est un aliment de quel groupe ?"],
       a: "Aliment énergétique",
       also: ["Énergétique", "Energetique"],
-      ga: "énergétique",
-      s: ["Le riz est un aliment ___.", "Dans un repas, le riz joue le rôle d'un aliment ___."],
+      ga: "aliments énergétiques",
+      s: ["Le riz fait partie des ___.", "Dans un repas, le riz est classé parmi les ___."],
       hint: "C'est une céréale qui donne de la force.",
     },
     {
@@ -471,8 +471,8 @@ const NUT_ALIMENT: Pool = {
       q: ["À quel groupe d'aliments appartient le mil ?", "Le mil est un aliment de quel groupe ?"],
       a: "Aliment énergétique",
       also: ["Énergétique", "Energetique"],
-      ga: "énergétique",
-      s: ["Le mil est un aliment ___.", "La bouillie de mil est un aliment ___."],
+      ga: "aliments énergétiques",
+      s: ["Le mil fait partie des ___.", "La farine de mil est classée parmi les ___."],
       hint: "Ses grains se pilent pour faire de la farine.",
     },
     {
@@ -480,8 +480,8 @@ const NUT_ALIMENT: Pool = {
       q: ["À quel groupe appartient le poisson ?", "Le poisson est un aliment de quel groupe ?"],
       a: "Aliment de construction",
       also: ["De construction"],
-      ga: "de construction",
-      s: ["Le poisson est un aliment ___.", "Dans un repas, le poisson joue le rôle d'un aliment ___."],
+      ga: "aliments de construction",
+      s: ["Le poisson fait partie des ___.", "Dans un repas, le poisson est classé parmi les ___."],
       hint: "Il vient de la mer ou du fleuve et il est riche en protéines.",
     },
     {
@@ -489,8 +489,8 @@ const NUT_ALIMENT: Pool = {
       q: ["À quel groupe appartient le niébé ?", "Le niébé est un aliment de quel groupe ?"],
       a: "Aliment de construction",
       also: ["De construction"],
-      ga: "de construction",
-      s: ["Le niébé est un aliment ___.", "Les haricots comme le niébé sont des aliments ___."],
+      ga: "aliments de construction",
+      s: ["Le niébé fait partie des ___.", "Les haricots comme le niébé sont classés parmi les ___."],
       hint: "Ce haricot cuit se mange avec du riz.",
     },
     {
@@ -498,8 +498,8 @@ const NUT_ALIMENT: Pool = {
       q: ["À quel groupe appartient la mangue ?", "La mangue est un aliment de quel groupe ?"],
       a: "Aliment de protection",
       also: ["De protection"],
-      ga: "de protection",
-      s: ["La mangue est un aliment ___.", "Dans un repas, la mangue joue le rôle d'un aliment ___."],
+      ga: "aliments de protection",
+      s: ["La mangue fait partie des ___.", "Dans un repas, la mangue est classée parmi les ___."],
       hint: "Ce fruit sucré est plein de vitamines.",
     },
     {
@@ -507,8 +507,8 @@ const NUT_ALIMENT: Pool = {
       q: ["À quel groupe appartiennent les légumes verts ?", "Les légumes verts sont des aliments de quel groupe ?"],
       a: "Aliment de protection",
       also: ["De protection"],
-      ga: "de protection",
-      s: ["Les légumes verts sont des aliments ___.", "Les feuilles vertes sont des aliments ___."],
+      ga: "aliments de protection",
+      s: ["Les légumes verts font partie des ___.", "Les feuilles vertes sont classées parmi les ___."],
       hint: "Les feuilles et les légumes se mangent crus ou en sauce.",
     },
   ],
@@ -642,7 +642,7 @@ const RSC_TERME: Pool = {
       a: "Ressource naturelle",
       also: ["Ressources naturelles", "Une ressource naturelle", "La ressource naturelle"],
       ga: "la ressource naturelle",
-      s: ["Ce que la nature donne aux hommes se nomme ___.", "L'eau, les arbres et les poissons sont chacun ___."],
+      s: ["Ce que la nature donne aux hommes se nomme ___.", "Tout ce que la nature fournit aux gens s'appelle ___."],
       hint: "On la trouve dans la nature et on en a tous besoin.",
     },
     {
@@ -761,7 +761,7 @@ const RSC_CONSEQ: Pool = {
     },
     {
       id: "cause-mer",
-      q: ["Que gagnent les pêcheurs quand la mer manque de poissons ?", "Quelle conséquence a la surpêche pour les familles de pêcheurs ?", "Que deviennent les prises des pêcheurs quand les poissons deviennent rares ?"],
+      q: ["Que rapportent les pêcheurs au port quand la mer manque de poissons ?", "Quelle conséquence a la surpêche pour les familles de pêcheurs ?", "Que deviennent les prises des pêcheurs quand les poissons deviennent rares ?"],
       a: "Moins de poissons à vendre",
       noWrite: true,
       hint: "Les filets reviennent presque vides au port.",
@@ -785,8 +785,8 @@ const RSC_ORDRE: readonly OrderRow[] = [
   order("Range les étapes de la jachère, de la première à la dernière.", ["On cultive le champ", "Le sol s'épuise", "On laisse le champ au repos", "Le sol retrouve sa richesse"], "rsc-ordre:jachere"),
   order("Range les gestes d'un pêcheur responsable, du premier au dernier.", ["Jeter le filet", "Remonter le filet", "Rejeter les petits poissons", "Garder les gros poissons"], "rsc-ordre:pecheur"),
   order("Range les gestes pour se laver les mains sans gaspiller l'eau, du premier au dernier.", ["Mouiller les mains", "Fermer le robinet", "Se savonner", "Rouvrir pour rincer"], "rsc-ordre:mains"),
-  order("Range les étapes pour refaire un petit bois, de la première à la dernière.", ["Planter les jeunes arbres", "Arroser les jeunes arbres", "Protéger les jeunes arbres", "Attendre que les arbres grandissent"], "rsc-ordre:bois"),
-  order("Range les gestes pour arroser un jardin sans gaspiller, du premier au dernier.", ["Arroser tôt le matin", "Arroser au pied des plantes", "Fermer l'eau quand c'est fini"], "rsc-ordre:jardin"),
+  order("Range les étapes pour refaire un petit bois, de la première à la dernière.", ["Choisir un terrain", "Planter les jeunes arbres", "Arroser les jeunes arbres", "Attendre que les arbres grandissent"], "rsc-ordre:bois"),
+  order("Range les gestes pour arroser un jardin, du premier au dernier.", ["Remplir l'arrosoir", "Porter l'arrosoir au jardin", "Arroser au pied des plantes", "Replacer l'arrosoir"], "rsc-ordre:jardin"),
 ];
 
 const RSC_RELIER: readonly LinkRow[] = [
@@ -895,7 +895,7 @@ const SAN_FAMILLE: Pool = {
   items: [
     {
       id: "naissances",
-      q: ["Que permet à la mère une famille où les naissances sont espacées ?", "Pourquoi est-il bon d'espacer les naissances pour la santé de la mère ?"],
+      q: ["Que permet à la mère l'espacement des naissances ?", "Pourquoi est-il bon d'espacer les naissances pour la santé de la mère ?"],
       a: "Reprendre des forces",
       also: ["Se reposer", "Reprendre ses forces"],
       ga: "reprendre des forces",
@@ -938,7 +938,7 @@ const SAN_MODE: Pool = {
   items: [
     {
       id: "sang",
-      q: ["Par quoi le VIH peut-il passer d'une personne à une autre ?", "Par quel moyen le virus du sida peut-il se transmettre ?", "Quel liquide du corps peut transmettre le VIH ?"],
+      q: ["Par quoi le VIH peut-il passer d'une personne à une autre ?", "Par quel moyen le virus du sida peut-il se transmettre ?", "De quelle façon le VIH peut-il se transmettre ?"],
       a: "Par le sang",
       also: ["Le sang", "Sang"],
       ga: "par le sang",
@@ -1002,12 +1002,12 @@ const SAN_GLISSER = [
     "Glisse chaque soin dans la bonne case.",
     ["Avant la naissance", "Après la naissance"],
     ["Consultation prénatale", "Suivi de la grossesse", "Visite chez la sage-femme"],
-    ["Allaitement", "Vaccination", "Carnet de santé"],
+    ["Allaitement", "Vaccin du bébé", "Pesée du bébé"],
     SORT_HINTS,
     9,
   ),
   ...sortRows(
-    "Glisse chaque geste dans la bonne case.",
+    "Glisse chaque situation dans la bonne case.",
     ["Peut transmettre le VIH", "Ne transmet pas le VIH"],
     ["Aiguille déjà utilisée", "Lame déjà utilisée", "Sang d'une personne infectée"],
     ["Poignée de main", "Repas partagé", "Câlin entre amis", "Piqûre de moustique"],
