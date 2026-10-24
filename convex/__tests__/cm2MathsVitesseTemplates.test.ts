@@ -141,6 +141,7 @@ const checkGap: Check = (exo) => {
   const common = all(
     ok(!wrongNums.some((n) => own.includes(n) || n === num(answer)), `un mauvais choix égal à la bonne réponse ou à un nombre du texte : ${options.join(" ; ")}`),
     ok(exo.hints.length === 3, "trois indices"),
+    ok(wrongNums.every((n) => n <= Math.max(num(answer) * 10, 20)), `un mauvais choix plus de dix fois plus grand que la bonne réponse : ${options.join(" ; ")}`),
   );
   const distanceForm = new RegExp(`^(Un \\p{L}+) (roule|marche) à (\\d+) km/h pendant (\\d+) h\\. Il parcourt ___ km\\.$`, "u").exec(text);
   if (distanceForm) {

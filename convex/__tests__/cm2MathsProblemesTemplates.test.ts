@@ -15,7 +15,7 @@ const fmt = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 const numbersIn = (text: string) => (text.match(new RegExp(N, "g")) ?? []).map(num);
 const SUBJECTS: Record<string, string> = { Moussa: "Il", Fatou: "Elle", Modou: "Il", Binta: "Elle", Sidy: "Il", Khady: "Elle", Cheikh: "Il", Mariama: "Elle" };
 
-type Solved = { scenario: string; value: number; unit: string; calc: string; numbers: number[]; story: string; question: string; goals: string; reply: string; person?: string };
+type Solved = { scenario: string; value: number; unit: string; calc: string; numbers: number[]; story: string; question: string; goals: string; reply: string; person?: string; feasible?: boolean };
 
 /** Évalue un calcul écrit à l'école : « 10 500 − (3 × 3 000 + 500) ». */
 function evaluate(expression: string): number {
@@ -55,12 +55,12 @@ function solve(text: string): Solved | null {
   m = new RegExp(`^(\\p{L}+) avait de l'argent\\. (Il|Elle) dépense (${N}) FCFA, puis reçoit (${N}) FCFA de sa tante\\. \\2 a maintenant (${N}) FCFA\\. Combien avait-(il|elle) au début \\?$`, "u").exec(text);
   if (m) {
     const [spent, received, end] = [num(m[3]), num(m[4]), num(m[5])];
-    return { scenario: "argent", value: end - received + spent, unit: "FCFA", calc: `${fmt(end)} − ${fmt(received)} + ${fmt(spent)}`, numbers: [spent, received, end], story: text, question: "", goals: "l'argent du début", reply: `${m[2]} avait ___ FCFA au début.`, person: m[1] + "|" + m[2] + "|" + m[6] };
+    return { scenario: "argent", value: end - received + spent, unit: "FCFA", calc: `${fmt(end)} − ${fmt(received)} + ${fmt(spent)}`, numbers: [spent, received, end], story: text, question: "", goals: "l'argent du début", reply: `${m[2]} avait ___ FCFA au début.`, person: m[1] + "|" + m[2] + "|" + m[6], feasible: end > received };
   }
   m = new RegExp(`^Un commerçant a des sacs de riz\\. Le matin il en vend (${N}), l'après-midi il en reçoit (${N})\\. Il en a maintenant (${N})\\. Combien en avait-il au début \\?$`).exec(text);
   if (m) {
     const [sold, received, end] = [num(m[1]), num(m[2]), num(m[3])];
-    return { scenario: "stock", value: end - received + sold, unit: "", calc: `${fmt(end)} − ${fmt(received)} + ${fmt(sold)}`, numbers: [sold, received, end], story: text, question: "", goals: "le nombre de sacs du début", reply: "Il en avait ___ au début." };
+    return { scenario: "stock", value: end - received + sold, unit: "", calc: `${fmt(end)} − ${fmt(received)} + ${fmt(sold)}`, numbers: [sold, received, end], story: text, question: "", goals: "le nombre de sacs du début", reply: "Il en avait ___ au début.", feasible: end > received };
   }
   m = new RegExp(`^Un marchand vend la moitié de ses mangues le matin, puis (${N}) mangues l'après-midi\\. Il lui en reste (${N})\\. Combien de mangues avait-il au début \\?$`).exec(text);
   if (m) {
@@ -92,6 +92,8 @@ const SEMANTIC = (solved: Solved, level: GameLevel, backward: boolean) =>
     ok(solved.numbers.every((n) => Number.isInteger(n) && n > 0 && n <= MAX_NUMBER[level]), `un nombre hors de la plage du niveau ${level} : ${solved.numbers.join(", ")}`),
     ok(!solved.numbers.includes(solved.value), "la réponse est écrite dans l'énoncé"),
     ok(PERSON_OK(solved.person), `un prénom et un pronom qui ne vont pas ensemble : ${solved.person}`),
+    // En démarche régressive, ce qui reste avant de recevoir couvre ce qui a été dépensé ou vendu : le début est au moins égal à la dépense.
+    ok(solved.feasible !== false, `l'histoire dépense ou vend plus qu'il n'y avait : ${solved.story}`),
   );
 
 const answerText = (solved: Solved) => `${fmt(solved.value)}${solved.unit ? ` ${solved.unit}` : ""}`;

@@ -276,7 +276,8 @@ export function makeCm2VitGap(ctx: GameContext): GeneratedGame {
       prompt: "Complète avec le bon nombre.",
       text,
       answer: show(answer),
-      wrong: wrongNumbers(ctx, answer, pool, 1, 99999, avoid),
+      // Un mauvais choix plus de dix fois plus grand que la bonne réponse (72 h pour 2 h) se récuse tout seul : on ne le sert pas.
+      wrong: wrongNumbers(ctx, answer, pool, 1, Math.max(answer * 10, 20), avoid),
       hints:
         missing === "distance"
           ? ["La vitesse dit combien de kilomètres on parcourt en une heure.", "Pour trouver la distance, multiplie la vitesse par la durée.", "Multiplie le nombre de kilomètres par heure par le nombre d'heures."]
