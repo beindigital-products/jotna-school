@@ -187,9 +187,10 @@ const INJUNCTIVE = DOCS.filter((doc) => doc.steps.length > 0);
 
 const KINDS: readonly Kind[] = ["Recette", "Règle de jeu", "Notice", "Fiche documentaire", "Article"];
 const KIND_HINTS = hints("Regarde le titre et les intertitres du texte.", "Le texte donne-t-il des ordres ou des informations ?", "Les verbes donnent-ils des ordres, comme chauffe ou verse ?");
-/** Deux autres genres de texte ; « Fiche documentaire » ne se présente jamais avec deux noms courts. */
+/** Deux autres genres de texte ; « Fiche documentaire » ne se présente jamais avec deux noms courts, ni « Article » avec « Fiche documentaire » (même forme, même contenu : l'élève ne peut pas les départager). */
 function wrongKinds(kind: Kind, seed: number): [string, string] {
-  const others = KINDS.filter((candidate) => candidate !== kind);
+  const informative = kind === "Article" || kind === "Fiche documentaire";
+  const others = KINDS.filter((candidate) => candidate !== kind && !(informative && (candidate === "Article" || candidate === "Fiche documentaire")));
   const first = cycle(others, seed);
   let second = cycle(others, seed + 2);
   if (second === first) second = cycle(others, seed + 3);
