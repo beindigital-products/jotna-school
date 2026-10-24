@@ -109,7 +109,7 @@ export function makeCm2ComGainOrLoss(ctx: GameContext): GeneratedGame {
       answer: sentence(gain, diff),
       // Les erreurs d'enfant : le gain pour la perte, ou la bonne direction avec une autre somme.
       wrong: [sentence(!gain, diff), sentence(gain, otherSum > 0 && otherSum !== diff ? otherSum : diff + unit)],
-      hints: ["Compare le prix de vente et le prix payé en tout.", "Si on vend plus cher qu'on a payé, on gagne ; sinon, on perd.", "La somme est l'écart entre les deux prix."],
+      hints: ["Compare le prix de vente et le prix payé en tout.", "Si on vend plus cher qu'on a payé, on gagne ; sinon, on perd.", "Pour savoir de combien, calcule l'écart entre les deux prix."],
     };
   });
 }
@@ -317,7 +317,7 @@ export function makeCm2ComLinks(ctx: GameContext): GeneratedGame {
     return {
       prompt: "Relie chaque situation à ce qui se passe, en FCFA.",
       pairs,
-      hints: ["Compare le prix de vente et le prix de revient.", "Un prix de vente plus grand donne un bénéfice, plus petit une perte.", "La somme est l'écart entre les deux prix."],
+      hints: ["Compare le prix de vente et le prix de revient.", "Un prix de vente plus grand donne un bénéfice, plus petit une perte.", "Pour savoir de combien, calcule l'écart entre les deux prix."],
     };
   });
 }
