@@ -248,7 +248,7 @@ const VEN_INSTRUMENT: Pool = {
     },
     {
       id: "saxophone",
-      q: ["Quel instrument à vent est très utilisé dans le jazz ?", "Quel instrument à vent à anche accompagne souvent les orchestres de jazz ?"],
+      q: ["Quel instrument à vent à anche est très utilisé dans le jazz ?", "Quel instrument à vent à anche accompagne souvent les orchestres de jazz ?"],
       a: "Saxophone",
       also: ["Le saxophone", "Saxo"],
       not: ["Trompette"],
@@ -258,7 +258,7 @@ const VEN_INSTRUMENT: Pool = {
     },
     {
       id: "clairon",
-      q: ["Quel instrument à vent en cuivre sonne les appels militaires ?", "Quel instrument à vent simple, sans piston, sert à sonner l'appel ?"],
+      q: ["Quel instrument à vent en cuivre, sans piston, sonne les appels militaires ?", "Quel instrument à vent simple, sans piston, sert à sonner l'appel ?"],
       a: "Clairon",
       also: ["Le clairon"],
       not: ["Trompette"],
@@ -447,7 +447,7 @@ const MES_MOTS: Pool = {
     },
     {
       id: "costume",
-      q: ["Comment appelle-t-on les vêtements que porte un comédien pour jouer son rôle ?", "Quel mot désigne la tenue d'un personnage sur la scène ?"],
+      q: ["Comment appelle-t-on les vêtements que porte un comédien pour jouer son rôle ?", "Quel mot désigne la tenue qu'un comédien porte pour son rôle sur la scène ?"],
       a: "Costume",
       also: ["Le costume"],
       not: ["Déguisement"],

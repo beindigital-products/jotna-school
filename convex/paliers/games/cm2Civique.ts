@@ -682,16 +682,16 @@ const MON_JUMELAGE: Pool = {
   items: [
     {
       id: "jumelage",
-      q: ["Comment appelle-t-on l'amitié officielle entre deux villes de pays différents ?", "Quel mot désigne le lien d'échange entre deux villes de pays différents ?"],
+      q: ["Comment appelle-t-on l'amitié officielle entre deux villes de pays différents ?", "Quel mot désigne le fait que deux villes de pays différents deviennent officiellement amies ?"],
       a: "Jumelage",
       also: ["Le jumelage", "Villes jumelées"],
       ga: "le jumelage",
-      s: ["Une amitié officielle entre deux villes de pays différents s'appelle ___.", "Pour unir deux villes de pays différents, on organise ___."],
+      s: ["Une amitié officielle entre deux villes de pays différents s'appelle ___.", "Deux villes de pays différents officiellement amies sont liées par ___."],
       hint: "Deux cités s'unissent au-delà des frontières.",
     },
   ],
-  extras: ["Commerce", "Voyage"],
-  gextras: ["le commerce", "le voyage"],
+  extras: ["Concours", "Championnat"],
+  gextras: ["un concours", "un championnat"],
 };
 
 const MON_POOLS = [MON_AGENCE, MON_AUTRE, MON_JOJ, MON_JUMELAGE] as const;

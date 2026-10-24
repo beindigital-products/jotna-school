@@ -93,9 +93,9 @@ const ASSOC: Record<string, string[]> = {
   dakar: ["accueille les Jeux olympiques de la jeunesse en 2026", "se tiennent les Jeux olympiques de la jeunesse en 2026", "Jeux olympiques de la jeunesse de 2026 ont lieu à", "jeunes sportifs du monde se retrouvent à"],
   abidjan: [],
   bamako: [],
-  jumelage: ["amitié officielle entre deux villes de pays différents", "lien d'échange entre deux villes de pays différents", "Pour unir deux villes de pays différents"],
-  commerce: [],
-  voyage: [],
+  jumelage: ["amitié officielle entre deux villes de pays différents", "deux villes de pays différents deviennent officiellement amies", "villes de pays différents officiellement amies sont liées par"],
+  concours: [],
+  championnat: [],
 };
 
 /** Les suites : chaque énoncé qui contient `when` n'accepte que des tuiles prises dans une de ces listes, dans cet ordre. */
