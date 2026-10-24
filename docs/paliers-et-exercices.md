@@ -2833,7 +2833,7 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   cinquante gabarits pour les cinq thématiques `ma-cm1-grands-nombres`, `-divisibilite`, `-division`, `-fractions` et `-decimaux`, que le modèle n'écrit plus. Les noms commencent
   par `cm1-gn-`, `cm1-dbl-`, `cm1-div-`, `cm1-frc-` et `cm1-dcm-` (`cm1-dec-` était déjà pris par le découpage administratif de la géographie). Pas de tableau de faits ici : la
   réponse est CALCULÉE (un reste de division, un produit en croix, un nombre de centièmes), comme les mathématiques du CE2. Dix gabarits par thématique, un de chaque, cinq à six types
-  par palier. Restent au CM1 : le français (7), l'anglais (7, une autre branche) ; les figures, périmètres et aires et mesures sont décrites plus bas.
+  par palier. Restent au CM1 : l'anglais (7, une autre branche) et les quatre thématiques d'arts mixtes ; les figures, périmètres et aires et mesures, puis le français, sont décrits plus bas.
   - **Cinq paliers, pas quatre.** `stepOf` (`cm1MathsOutils.ts`) lit la place du palier (1 à 5) dans `GameContext.palier` ; sans lui (`regenerateGame`), elle se déduit du niveau (1, 2, 4, 5).
     Le niveau 2 joue donc les paliers 2 et 3, et les vérifications des tests en acceptent les deux plages.
   - **Ce que chaque thématique pose.** Les grands nombres : jusqu'à 9 999 999 (le milliard est au CM2), voisin et ajouter un nombre rond (retenues qui traversent plusieurs rangs), comparer et
@@ -2905,6 +2905,29 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     (`scratchpad/mutations-cm1m2.py`) : deux survivantes tuées par deux tests ajoutés (le carré a quatre côtés égaux ; les comptages de deux paliers ne se recoupent pas), la troisième (le libellé d'une
     mesure dans la mauvaise unité) retombe sur la liste de secours, qui est juste : sa sortie reste correcte ; le contrôleur ne trouve aucun défaut, avertissement compris, sur 120 000 exercices des huit
     thématiques de maths du CM1 ; moins de 5 % de questions revues d'un palier à l'autre. PAS vu : l'écran, l'iPhone, l'application native, la production.
+- **Le français du CM1, les sept thématiques** (`paliers/games/cm1Conjugaison.ts`, `cm1Grammaire.ts`, `cm1Accords.ts`, `cm1Homophones.ts`, `cm1Vocabulaire.ts`, `cm1Recit.ts`, `cm1Informer.ts`) :
+  soixante-cinq gabarits pour `fr-cm1-indicatif`, `-grammaire`, `-accords`, `-homophones`, `-vocabulaire`, `-recit` et `-informer`, que le modèle n'écrit plus. Les noms commencent par `cm1-ind-`, `cm1-gra-`,
+  `cm1-acc-`, `cm1-hom-`, `cm1-voc-`, `cm1-rec-` et `cm1-inf-`. Chaque exercice est BÂTI à partir de tableaux fermés (quarante-neuf verbes, un corpus de quarante phrases analysées, soixante phrases d'homophones,
+  trente expressions, dix récits et dix documents avec leur titre et leurs intertitres), jamais écrit par le modèle ; les cinq paliers prennent chacun six lignes d'une liste de trente (`windowAt`), rangées du plus facile au plus difficile.
+  - **Ce que chaque thématique pose.** Le présent, l'imparfait, le futur, le passé composé et le passé simple (3e personne) : trou, temps d'une phrase, forme à écrire, mot de temps, groupe, phrase bien conjuguée, histoire
+    à remettre dans l'ordre. La grammaire : nature d'un mot, fonction d'un groupe (sujet, COD, COI, attribut, complément circonstanciel), sens du complément, type et forme de phrase, pronom qui remplace le complément.
+    Les accords : le verbe avec son sujet (éloigné, placé après le verbe, coordonné), l'adjectif, le participe avec être, le pluriel des noms (-al, -eau, -ou, -eu, -au). Les homophones : les dix familles (a/à, et/est, on/ont, son/sont,
+    ou/où, ces/ses, ce/se, leur/leurs, mais/mes, la/l'a/là), la phrase bien écrite, le mot mal écrit, l'astuce de remplacement. Le vocabulaire : préfixes in-, im-, dé-, re-, suffixes -eur, -age, -ment, synonymes, contraires,
+    sens figuré, champ lexical. Le récit et les textes qui informent : le TEXTE est dans l'énoncé (cent mots au plus), la réponse est écrite dans la phrase du texte qui contient le mot-clé de la question.
+  - **HORS FICHE, À FAIRE RELIRE PAR LE PROPRIÉTAIRE** : les verbes pouvoir, vouloir, savoir, boire, lire, écrire, ouvrir, mettre, attendre, répondre ; le passé simple de tous les verbes du tableau ; les quarante phrases du corpus
+    de grammaire et les trente phrases du pronom ; les soixante phrases des homophones et leurs onze astuces ; les trente noms du pluriel (cailloux, joujoux, kangourous, neveux) ; les trente expressions et leur sens ; les cinq thèmes de
+    champ lexical (la pêche, l'hivernage, la fête, l'école, le marché) ; les dix récits et les dix documents (leurs personnages, leurs lieux, leurs chiffres écrits en lettres) ; les quinze histoires à remettre dans l'ordre.
+  - **Pièges rencontrés.** (1) Un mot de temps accepte plus d'un temps (« hier » : passé composé et imparfait ; « demain » : futur et présent) : un mauvais choix n'est jamais un temps que le mot accepte. (2) Une forme lue à deux temps
+    (« il finit », « il dit », « il vit ») ne sert jamais à demander son temps. (3) Une phrase d'homophones n'a qu'un bon mot : « Regarde ces oiseaux » accepte aussi « ses », elle n'est pas dans la banque ; « Fatou range ses affaires » non plus.
+    (4) Un indice n'écrit aucun mot de quatre lettres ou plus d'une option, d'une tuile, d'une case ou de la bonne réponse : la règle est maintenant vérifiée par le moteur de test (`hintsNeverWriteChoices`), qui a trouvé « commence »,
+    « dans », « premier », « tout », « cette », « autres », « sans » dans des indices. (5) `templatePictures.test.ts` rejette une option « article + nom » ; un énoncé qui commence par « Lis… » est exempté (les récits, les documents,
+    les groupes sujets, les homophones à l'apostrophe). (6) Un texte n'a ni apostrophe droite, ni deux-points, ni chiffre (« la rivière », « des milliers de petites ouvrières »). (7) Le mot d'une phrase à trou de lecture revient ailleurs dans le texte,
+    et jamais dans le titre ; les mauvais choix n'y sont pas. (8) Un tableau de verbes ne tient pas dans une boucle qui ne visite que quatre cases : le passé simple n'a que « il » et « ils » (`cells` cherche la personne la plus proche).
+  - **Mesuré** : 317 tests (`convex/__tests__/cm1FrancaisConjugaisonTemplates.test.ts` 46, `Grammaire` 51, `Homophones` 41, `Accords` 42, `Vocabulaire` 45, `Recit` 48, `Informer` 44) avec le moteur `lib/test-support/cm1MathsKit.ts`
+    (réglable : matière, longueur d'énoncé, indices). Chaque test refait la réponse avec ses propres tables : conjugaison de quarante-neuf verbes, analyse de phrase (verbe, sujet, COD, COI, attribut, compléments), règles de voisinage des
+    homophones, dictionnaires de synonymes, de contraires et de mots formés, lecture des phrases du texte. 195 pannes provoquées vues sur 203 (`scratchpad/mutations-fr1.py` à `-fr7.py`) : les huit survivantes ne changent aucun exercice
+    (un mauvais choix de personne qui n'est jamais le même que la bonne forme, une garde d'auxiliaire sans effet sur les lignes retenues, une zone dont l'ordre est indifférent, un nombre d'emplois sans effet, une garde de longueur que
+    les lignes retenues n'atteignent pas). Le contrôleur ne signale aucun défaut, avertissement compris, sur 70 000 exercices (200 tirages par thématique et par palier). PAS vu : l'écran, l'iPhone, l'application native, la production.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
