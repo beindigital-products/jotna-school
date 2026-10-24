@@ -421,6 +421,9 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "pixel-symetrie", count: 5 },
           { kind: "coloriage-magique", count: 2 },
+          { kind: "cm2-ros-qcm", count: 1 },
+          { kind: "cm2-ros-ordre", count: 1 },
+          { kind: "cm2-ros-ecrire", count: 1 },
         ],
       },
       {
@@ -431,6 +434,11 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "pixel-memoire", count: 2 },
           { kind: "pixel-copie", count: 2 },
+          { kind: "cm2-obs-qcm", count: 2 },
+          { kind: "cm2-obs-trou", count: 1 },
+          { kind: "cm2-obs-ordre", count: 1 },
+          { kind: "cm2-obs-relier", count: 1 },
+          { kind: "cm2-obs-glisser", count: 1 },
         ],
       },
       {
@@ -441,6 +449,11 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
         games: [
           { kind: "ecoute-melodie", count: 2 },
           { kind: "ecoute-pareil", count: 2 },
+          { kind: "cm2-ven-qcm", count: 2 },
+          { kind: "cm2-ven-trou", count: 1 },
+          { kind: "cm2-ven-ecrire", count: 1 },
+          { kind: "cm2-ven-relier", count: 1 },
+          { kind: "cm2-ven-glisser", count: 1 },
         ],
       },
       {
@@ -452,10 +465,22 @@ export const EDUCATION_ARTISTIQUE: ProgrammeSubject = {
           { kind: "ecoute-intensite", count: 2 },
           { kind: "ecoute-motif-rythmique", count: 2 },
           { kind: "ecoute-melodie", count: 2 },
+          { kind: "cm2-cha-qcm", count: 1 },
+          { kind: "cm2-cha-trou", count: 1 },
+          { kind: "cm2-cha-relier", count: 1 },
+          { kind: "cm2-cha-glisser", count: 1 },
         ],
       },
       {
         key: "ar-cm2-mise-en-scene",
+        games: [
+          { kind: "cm2-mes-qcm", count: 3 },
+          { kind: "cm2-mes-trou", count: 2 },
+          { kind: "cm2-mes-ecrire", count: 1 },
+          { kind: "cm2-mes-ordre", count: 1 },
+          { kind: "cm2-mes-relier", count: 1 },
+          { kind: "cm2-mes-glisser", count: 2 },
+        ],
         name: "La mise en scène",
         description:
           "Arts scéniques, étape 3, paliers 3-4 : interpréter un personnage d'une histoire ; le décor, le costume, le déguisement, la mise en scène ; les étapes de la préparation d'un spectacle.",

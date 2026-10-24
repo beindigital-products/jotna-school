@@ -358,24 +358,56 @@ export const INSTRUCTION_CIVIQUE: ProgrammeSubject = {
     CM2: [
       {
         key: "ci-cm2-republique",
+        games: [
+          { kind: "cm2-rep-qcm", count: 3 },
+          { kind: "cm2-rep-trou", count: 2 },
+          { kind: "cm2-rep-ecrire", count: 1 },
+          { kind: "cm2-rep-ordre", count: 1 },
+          { kind: "cm2-rep-relier", count: 1 },
+          { kind: "cm2-rep-glisser", count: 2 },
+        ],
         name: "La République du Sénégal",
         description:
           "Vivre ensemble, étape 3, paliers 3-4 : les attributs de la souveraineté : la République, la Constitution, le drapeau, le sceau, la devise « Un Peuple – Un But – Une Foi », l'hymne national.",
       },
       {
         key: "ci-cm2-institutions",
+        games: [
+          { kind: "cm2-ins-qcm", count: 3 },
+          { kind: "cm2-ins-trou", count: 2 },
+          { kind: "cm2-ins-ecrire", count: 1 },
+          { kind: "cm2-ins-ordre", count: 1 },
+          { kind: "cm2-ins-relier", count: 1 },
+          { kind: "cm2-ins-glisser", count: 2 },
+        ],
         name: "Les institutions de la République",
         description:
           "Vivre ensemble, étape 3, paliers 3-4 : le Président de la République, élu au suffrage universel ; le Gouvernement (le Premier ministre et les ministres) ; l'Assemblée nationale, dont les députés votent les lois ; les cours et tribunaux, qui rendent la justice.",
       },
       {
         key: "ci-cm2-afrique",
+        games: [
+          { kind: "cm2-afr-qcm", count: 3 },
+          { kind: "cm2-afr-trou", count: 2 },
+          { kind: "cm2-afr-ecrire", count: 1 },
+          { kind: "cm2-afr-ordre", count: 1 },
+          { kind: "cm2-afr-relier", count: 1 },
+          { kind: "cm2-afr-glisser", count: 2 },
+        ],
         name: "Les organisations africaines",
         description:
           "Vivre ensemble, étape 3, paliers 3-4 : la CEDEAO et l'UEMOA (coopération entre pays d'Afrique de l'Ouest), l'OMVS (fleuve Sénégal), l'OMVG (fleuve Gambie), le CILSS (lutte contre la sécheresse), la BCEAO (banque centrale, siège à Dakar), la BOAD, l'Union africaine (siège à Addis-Abeba), la BAD, la CAF (football) : à quoi elles servent.",
       },
       {
         key: "ci-cm2-monde",
+        games: [
+          { kind: "cm2-mon-qcm", count: 3 },
+          { kind: "cm2-mon-trou", count: 2 },
+          { kind: "cm2-mon-ecrire", count: 1 },
+          { kind: "cm2-mon-ordre", count: 1 },
+          { kind: "cm2-mon-relier", count: 1 },
+          { kind: "cm2-mon-glisser", count: 2 },
+        ],
         name: "Les organisations internationales",
         description:
           "Vivre ensemble, étape 3, paliers 3-4 : l'ONU et ses agences (UNICEF pour les enfants, UNESCO pour l'éducation et la culture, FAO pour l'alimentation, OMS pour la santé, HCR pour les réfugiés, OIT pour le travail, FNUAP pour la population, OMC pour le commerce) ; le CICR (Croix-Rouge), la FIFA, le CIO (Jeux olympiques ; Dakar accueille les Jeux olympiques de la jeunesse en 2026), la Fédération mondiale des villes jumelées.",
