@@ -682,19 +682,57 @@ export const MATHEMATIQUES: ProgrammeSubject = {
         name: "Figures planes et constructions",
         description:
           "Activités géométriques de l'étape 3 : positions relatives des droites, le carré, le rectangle, les triangles, le parallélogramme, le cercle (rayon, diamètre) ; constructions aux instruments.",
-        games: [{ kind: "pixel-copie", count: 1 }],
+        // Dix exercices : le dessin à reproduire sur quadrillage, puis neuf gabarits de géométrie (`figuresCm1.ts`) : sept figures, droites, instruments, rayon et diamètre.
+        games: [
+          { kind: "pixel-copie", count: 1 },
+          { kind: "cm1-fig-figure", count: 1 },
+          { kind: "cm1-fig-droites", count: 1 },
+          { kind: "cm1-fig-outil", count: 1 },
+          { kind: "cm1-fig-compter", count: 1 },
+          { kind: "cm1-fig-rayon", count: 1 },
+          { kind: "cm1-fig-trou", count: 1 },
+          { kind: "cm1-fig-ecrire", count: 1 },
+          { kind: "cm1-fig-relier", count: 1 },
+          { kind: "cm1-fig-glisser", count: 1 },
+        ],
       },
       {
         key: "ma-cm1-perimetres-aires",
         name: "Périmètres et aires",
         description:
           "Activités de mesure de l'étape 3 : périmètre et aire du carré et du rectangle, unités d'aire (m², cm²).",
+        // Dix gabarits (`perimetreAireCm1.ts`) : le carré et le rectangle, l'aire avec son unité au carré, les unités d'aire (m², dm², cm²).
+        games: [
+          { kind: "cm1-per-perimetre", count: 1 },
+          { kind: "cm1-per-aire", count: 1 },
+          { kind: "cm1-per-cote", count: 1 },
+          { kind: "cm1-per-comparer", count: 1 },
+          { kind: "cm1-per-ecrire", count: 1 },
+          { kind: "cm1-per-unite", count: 1 },
+          { kind: "cm1-per-conversion", count: 1 },
+          { kind: "cm1-per-relier", count: 1 },
+          { kind: "cm1-per-glisser", count: 1 },
+          { kind: "cm1-per-probleme", count: 1 },
+        ],
       },
       {
         key: "ma-cm1-mesures",
         name: "Longueurs, masses, capacités, durées",
         description:
           "Activités de mesure de l'étape 3 (répartition proposée pour le CM1) : unités et conversions de longueur, de masse et de capacité, calculs sur les durées.",
+        // Dix gabarits (`mesuresCm1.ts`) : dix couples d'unités (km, m, cm, mm, t, kg, g, L, dL, cL, mL), des demi-unités et des quarts, les durées.
+        games: [
+          { kind: "cm1-mes-convertir", count: 1 },
+          { kind: "cm1-mes-ecrire", count: 1 },
+          { kind: "cm1-mes-trou", count: 1 },
+          { kind: "cm1-mes-comparer", count: 1 },
+          { kind: "cm1-mes-ranger", count: 1 },
+          { kind: "cm1-mes-unite", count: 1 },
+          { kind: "cm1-mes-relier", count: 1 },
+          { kind: "cm1-mes-glisser", count: 1 },
+          { kind: "cm1-mes-duree", count: 1 },
+          { kind: "cm1-mes-probleme", count: 1 },
+        ],
       },
     ],
     CM2: [

@@ -109,6 +109,8 @@ export type MathsTestConfig = {
   caps?: readonly { prefix: string; max: number }[];
   /** Ce qu'un exercice demande, quand deux exercices d'un même palier ne doivent pas le demander deux fois (une table, une division) ; `null` : rien à suivre. */
   asked?: (exo: Exo) => string[] | null;
+  /** Les jeux plus anciens d'une thématique mixte (« pixel-copie ») : ils comptent dans les dix places, mais n'ont ni vérification ni passage au contrôleur ici. */
+  extraKinds?: readonly string[];
 };
 
 export function defineMathsTests(cfg: MathsTestConfig) {
@@ -116,6 +118,7 @@ export function defineMathsTests(cfg: MathsTestConfig) {
   const COUNT = 5;
   const PALIERS = [1, 2, 3, 4, 5];
   const CHECKS = cfg.checks;
+  const EXTRA = new Set(cfg.extraKinds ?? []);
   const KINDS = Object.keys(CHECKS) as GameKind[];
   const TOPIC_KEYS = Object.keys(cfg.topicKinds);
   const entryOf = (key: string) => allProgrammeEntries().find((entry) => entry.topic.key === key)!;
@@ -129,7 +132,7 @@ export function defineMathsTests(cfg: MathsTestConfig) {
 
   describe(`chaque gabarit ${cfg.label} a sa vérification`, () => {
     it("couvre exactement les gabarits des thématiques, tous inscrits au registre", () => {
-      expect([...new Set(Object.values(cfg.topicKinds).flat())].sort()).toEqual([...KINDS].sort());
+      expect([...new Set(Object.values(cfg.topicKinds).flat())].filter((kind) => !EXTRA.has(kind)).sort()).toEqual([...KINDS].sort());
       for (const kind of KINDS) expect(Object.keys(GAME_KINDS), kind).toContain(kind);
     });
   });
@@ -284,7 +287,8 @@ export function defineMathsTests(cfg: MathsTestConfig) {
             expect(new Set(paliers.map((game) => game.type)).size, `${key} palier ${palierIndex}`).toBeGreaterThanOrEqual(5);
             const askedInPalier: string[] = [];
             for (const game of paliers) {
-              const kind = (game.payload.game as { kind: string }).kind;
+              const kind = (game.payload.game as { kind: string } | undefined)?.kind ?? game.type;
+              if (EXTRA.has(kind) || (game.payload.game as { kind: string } | undefined) === undefined) continue;
               const exo = game as unknown as Exo;
               expect(audit(exo, kind), `${key} palier ${palierIndex} : ${game.prompt}`).toEqual([]);
               expect(CHECKS[kind](exo), `${key} palier ${palierIndex} ${kind} : ${game.prompt} ${game.payload.text ?? ""}`).toBeNull();
@@ -306,6 +310,7 @@ export function defineMathsTests(cfg: MathsTestConfig) {
             const paliers = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: COUNT, seed: `variete:${key}:${n}:${palierIndex}` });
             const here = new Set<string>();
             for (const game of paliers) {
+              if (EXTRA.has((game.payload.game as { kind: string } | undefined)?.kind ?? "")) continue;
               const id = `${(game.payload.game as { kind: string }).kind}|${game.prompt}|${String(game.payload.text ?? "")}|${game.answerKey}`;
               questions += 1;
               if (seen.has(id)) repeats += 1;
@@ -322,6 +327,7 @@ export function defineMathsTests(cfg: MathsTestConfig) {
       for (const key of TOPIC_KEYS) {
         for (const spec of topicOf(key).games ?? []) {
           const kind = spec.kind as GameKind;
+          if (EXTRA.has(kind)) continue;
           for (const level of [1, 2, 3, 4]) {
             for (let n = 0; n < 20; n++) {
               const origin = { kind, level };
