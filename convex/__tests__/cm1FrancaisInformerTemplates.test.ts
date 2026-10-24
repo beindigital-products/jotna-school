@@ -59,6 +59,8 @@ const checkKind: Check = (exo) => {
     ok(TITLES[parsed.title] === rightOption(exo), `« ${parsed.title} » est ${TITLES[parsed.title]}, pas ${rightOption(exo)}`),
     ok(INJUNCTIVE_KINDS.has(rightOption(exo)) ? orders >= 3 : orders === 0, `${orders} ordres dans un texte de genre ${rightOption(exo)}`),
     ok(wrongOf(exo).every((option) => option !== rightOption(exo)) && new Set(optionsOf(exo)).size === 3, "trois genres"),
+    // Un article et une fiche documentaire se présentent de la même façon : un élève ne peut pas les départager, ils ne sont jamais proposés ensemble.
+    ok(!(optionsOf(exo).includes("Article") && optionsOf(exo).includes("Fiche documentaire")), `deux genres informatifs côte à côte : ${optionsOf(exo).join(" | ")}`),
   );
 };
 
@@ -285,6 +287,7 @@ describe("les vérifications des textes voient un énoncé abîmé", () => {
   it("le genre, l'information, l'intertitre", () => {
     expect(checkKind(qcm("Quel est le type de ce texte ?", ["Recette", "Article", "Notice"], 0))).toBeNull();
     expect(checkKind(qcm("Quel est le type de ce texte ?", ["Recette", "Article", "Notice"], 1))).not.toBeNull();
+    expect(checkKind(qcm("Quel est le type de ce texte ?", ["Recette", "Article", "Fiche documentaire"], 0))).not.toBeNull();
     expect(checkInfo(qcm("Que faut-il chauffer en premier ?", ["le lait", "la farine", "le sucre"], 0))).toBeNull();
     expect(checkInfo(qcm("Que faut-il chauffer en premier ?", ["le lait", "la farine", "le sucre"], 1))).not.toBeNull();
     expect(checkHeading(qcm("Sous quel intertitre lit-on la liste des produits ?", ["Les ingrédients", "La préparation", "Le goût"], 1))).not.toBeNull();

@@ -10,7 +10,8 @@
  * - Une phrase n'a qu'un bon mot : « Awa ___ un livre » (a) n'accepte pas « à », et « as » ne va qu'avec « tu ». Les phrases où deux mots conviennent (« Il ___ le roi » entre
  *   est et et, « Regarde ___ oiseaux » entre ces et ses) ne sont pas dans la banque.
  * - « ses » ne s'emploie que quand le sujet possède ce qu'il touche, une partie de lui ou de sa famille (« Omar embrasse ses parents », « Awa lave ses mains »), jamais pour un objet
- *   qu'on peut montrer ; « ces » ouvre la phrase (« Ces enfants jouent »).
+ *   qu'on peut montrer ; « ces » ouvre la phrase ET porte un « -là » ou un « -ci » sur le nom (« Ces enfants-là jouent »), parce que « Ses enfants jouent » est une
+ *   phrase juste aussi : sans ce repère, le trou a deux réponses (défaut relevé en production le 24 octobre 2026).
  * - « leur » devant un nom au singulier ou devant un verbe, « leurs » devant un nom au pluriel : les phrases du trou ne mettent « leur » que devant un nom.
  * - « mais » après une virgule, « mes » devant un nom à moi. « où » en tête de question ou après un lieu (« la maison où »).
  * - Le trou ne montre qu'une apostrophe droite au plus : « J'aime le riz, ___ pas le mil » et « l'a » comme choix ne se rencontrent pas dans le même trou.
@@ -78,11 +79,11 @@ export const BANK: readonly Homophone[] = [
   hom("ou/où", "Voici la maison ___ j'habite.", "où"),
   hom("ou/où", "Prends la rouge ___ la verte.", "ou"),
   hom("ou/où", "Le village ___ je suis né est calme.", "où"),
-  hom("ces/ses", "___ enfants jouent dans la cour.", "ces"),
+  hom("ces/ses", "___ enfants-là jouent dans la cour.", "ces"),
   hom("ces/ses", "Awa lave ___ mains.", "ses"),
-  hom("ces/ses", "___ belles mangues viennent du marché.", "ces"),
+  hom("ces/ses", "___ belles mangues-ci viennent du marché.", "ces"),
   hom("ces/ses", "Omar embrasse ___ parents.", "ses"),
-  hom("ces/ses", "___ petits poissons nagent dans la mer.", "ces"),
+  hom("ces/ses", "___ petits poissons-là nagent dans la mer.", "ces"),
   hom("ces/ses", "Fatou brosse ___ dents.", "ses"),
   // Palier 4.
   hom("ce/se", "Il ___ lave les mains.", "se"),

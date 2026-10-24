@@ -35,6 +35,8 @@ const REFLEXIVE = new Set(["lave", "promène", "couchent"]);
 const TO_VERBS = new Set(["va", "parle", "pense", "joue", "donne", "ressemble", "répond", "téléphone", "obéit", "sourit", "arrive"]);
 const PLACES = new Set(["maison", "village", "ville", "endroit", "école", "quartier"]);
 const POSSESSED = new Set(["mains", "parents", "dents", "cheveux", "jambes"]);
+/** Le repère qui écarte « ses » : « ces enfants-là », « ces mangues-ci ». */
+const DEICTIC = /-(là|ci)$/u;
 const DET = new Set(["un", "une", "des", "le", "la", "les", "mon", "ma", "mes", "ton", "ta", "tes", "son", "sa", "ses", "du", "ce", "cet", "cette", "ces", "leur", "leurs", "deux"]);
 
 const isSingularNoun = (word?: string) => word !== undefined && (NOUN[word] === "ms" || NOUN[word] === "fs");
@@ -83,11 +85,17 @@ function valid(family: Family, c: Context): string[] {
       add(!c.atStart && !(prev !== undefined && PLACES.has(prev)) && coordinationOf(prev, c.before) !== null && coordinationOf(prev, c.before) === coordinationOf(next, prev), "ou");
       add(prev !== undefined && TO_VERBS.has(prev) && isMasculineSingular(next), "au");
       break;
-    case "ces/ses":
-      add(c.atStart && adjectiveThenNoun(isPluralNoun), "ces");
+    case "ces/ses": {
+      // « Ses enfants jouent » est une phrase juste : « ces » en tête de phrase n'est seul que si le nom porte un « -là » ou un « -ci ».
+      const marked = (w?: string) => w !== undefined && DEICTIC.test(w);
+      const bare = (w?: string) => w?.replace(DEICTIC, "");
+      const markedNoun = (marked(next) && isPluralNoun(bare(next))) || (next !== undefined && ADJ.has(next) && marked(afterNext) && isPluralNoun(bare(afterNext)));
+      add(c.atStart && markedNoun, "ces");
+      add(c.atStart && adjectiveThenNoun(isPluralNoun), "ses");
       add(!c.atStart && (NAMES.has(c.first) || ["il", "elle"].includes(c.first)) && prev !== undefined && VERB.has(prev) && next !== undefined && POSSESSED.has(next), "ses");
-      add(adjectiveThenNoun(isMasculineSingular), "ce");
+      add(adjectiveThenNoun(isMasculineSingular) || (marked(next) && isMasculineSingular(bare(next))), "ce");
       break;
+    }
     case "ce/se":
       add(next !== undefined && REFLEXIVE.has(next), "se");
       add(adjectiveThenNoun(isMasculineSingular), "ce");
@@ -321,8 +329,12 @@ describe("les vérifications des homophones voient un énoncé abîmé", () => {
     expect(checkGap(gap("Le chef ___ le maître.", ["et", "est", "es"], "est"))).not.toBeNull();
   });
 
-  it("ces ouvre la phrase, ses suit un verbe dont le sujet possède", () => {
-    expect(checkGap(gap("___ enfants jouent dans la cour.", ["ces", "ses", "ce"], "ces"))).toBeNull();
+  it("ces ouvre la phrase avec un -là ou un -ci, ses suit un verbe dont le sujet possède", () => {
+    expect(checkGap(gap("___ enfants-là jouent dans la cour.", ["ces", "ses", "ce"], "ces"))).toBeNull();
+    expect(checkGap(gap("___ belles mangues-ci viennent du marché.", ["ces", "ses", "ce"], "ces"))).toBeNull();
+    // Sans repère, « Ses enfants jouent » est juste aussi : le trou a deux réponses.
+    expect(checkGap(gap("___ enfants jouent dans la cour.", ["ces", "ses", "ce"], "ces"))).not.toBeNull();
+    expect(checkGap(gap("___ belles mangues viennent du marché.", ["ces", "ses", "ce"], "ces"))).not.toBeNull();
     expect(checkGap(gap("Omar embrasse ___ parents.", ["ces", "ses", "ce"], "ses"))).toBeNull();
     expect(checkGap(gap("Omar embrasse ___ parents.", ["ces", "ses", "ce"], "ces"))).not.toBeNull();
   });
