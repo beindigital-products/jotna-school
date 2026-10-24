@@ -480,6 +480,14 @@ export const ANGLAIS: ProgrammeSubject = {
     CM2: [
       {
         key: "an-cm2-was-were",
+        games: [
+          { kind: "cm2-en-wv-phrase", count: 3 },
+          { kind: "cm2-en-wv-trou", count: 2 },
+          { kind: "cm2-en-wv-ecrire", count: 1 },
+          { kind: "cm2-en-wv-ordre", count: 1 },
+          { kind: "cm2-en-wv-relier", count: 1 },
+          { kind: "cm2-en-wv-glisser", count: 2 },
+        ],
         name: "Hier : was et were",
         palierCount: 3,
         description:
@@ -487,6 +495,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm2-past-regular",
+        games: [
+          { kind: "cm2-en-pr-phrase", count: 3 },
+          { kind: "cm2-en-pr-trou", count: 2 },
+          { kind: "cm2-en-pr-ecrire", count: 1 },
+          { kind: "cm2-en-pr-ordre", count: 1 },
+          { kind: "cm2-en-pr-relier", count: 1 },
+          { kind: "cm2-en-pr-glisser", count: 2 },
+        ],
         name: "Raconter hier : verbes en -ed",
         palierCount: 4,
         description:
@@ -494,6 +510,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm2-past-irregular",
+        games: [
+          { kind: "cm2-en-pi-phrase", count: 3 },
+          { kind: "cm2-en-pi-trou", count: 2 },
+          { kind: "cm2-en-pi-ecrire", count: 1 },
+          { kind: "cm2-en-pi-ordre", count: 1 },
+          { kind: "cm2-en-pi-relier", count: 1 },
+          { kind: "cm2-en-pi-glisser", count: 2 },
+        ],
         name: "Raconter hier : verbes irréguliers",
         palierCount: 4,
         description:
@@ -501,6 +525,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm2-going-to",
+        games: [
+          { kind: "cm2-en-gt-phrase", count: 3 },
+          { kind: "cm2-en-gt-trou", count: 2 },
+          { kind: "cm2-en-gt-ecrire", count: 1 },
+          { kind: "cm2-en-gt-ordre", count: 1 },
+          { kind: "cm2-en-gt-relier", count: 1 },
+          { kind: "cm2-en-gt-glisser", count: 2 },
+        ],
         name: "Demain : être going to",
         palierCount: 3,
         description:
@@ -508,6 +540,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm2-comparatives",
+        games: [
+          { kind: "cm2-en-cp-phrase", count: 3 },
+          { kind: "cm2-en-cp-trou", count: 2 },
+          { kind: "cm2-en-cp-ecrire", count: 1 },
+          { kind: "cm2-en-cp-ordre", count: 1 },
+          { kind: "cm2-en-cp-relier", count: 1 },
+          { kind: "cm2-en-cp-glisser", count: 2 },
+        ],
         name: "Comparer : plus grand, le plus grand",
         palierCount: 4,
         description:
@@ -515,6 +555,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm2-directions",
+        games: [
+          { kind: "cm2-en-dr-phrase", count: 3 },
+          { kind: "cm2-en-dr-trou", count: 2 },
+          { kind: "cm2-en-dr-ecrire", count: 1 },
+          { kind: "cm2-en-dr-ordre", count: 1 },
+          { kind: "cm2-en-dr-relier", count: 1 },
+          { kind: "cm2-en-dr-glisser", count: 2 },
+        ],
         name: "Demander son chemin",
         palierCount: 3,
         description:
@@ -522,6 +570,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm2-questions",
+        games: [
+          { kind: "cm2-en-qs-phrase", count: 3 },
+          { kind: "cm2-en-qs-trou", count: 2 },
+          { kind: "cm2-en-qs-ecrire", count: 1 },
+          { kind: "cm2-en-qs-ordre", count: 1 },
+          { kind: "cm2-en-qs-relier", count: 1 },
+          { kind: "cm2-en-qs-glisser", count: 2 },
+        ],
         name: "Poser des questions",
         palierCount: 3,
         description:
@@ -529,6 +585,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm2-reading",
+        games: [
+          { kind: "cm2-en-rd-phrase", count: 3 },
+          { kind: "cm2-en-rd-trou", count: 2 },
+          { kind: "cm2-en-rd-ecrire", count: 1 },
+          { kind: "cm2-en-rd-ordre", count: 1 },
+          { kind: "cm2-en-rd-relier", count: 1 },
+          { kind: "cm2-en-rd-glisser", count: 2 },
+        ],
         name: "Lire un petit texte",
         palierCount: 4,
         description:

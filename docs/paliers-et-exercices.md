@@ -2928,6 +2928,41 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     précaution) ; le scan de 13 500 paliers (300 tirages × 5 paliers × 9 thématiques, nom de la matière donné) ne trouve aucun défaut du contrôleur, aucune apostrophe de trop, aucune élision ni contraction
     fausse : les seuls mots d'indice signalés sont ceux des jeux gardés (`pixel-*`, `ecoute-*`). Suite complète 198 fichiers (10 099 tests), `tsc` racine et `convex` propres. PAS vu : l'écran, l'iPhone, la
     production, la relecture des lignes fabriquées.
+- **L'anglais du CM2** (`paliers/games/cm2AnglaisVerbes.ts` pour les verbes, `cm2AnglaisMots.ts` pour les mots et les textes, `cm2AnglaisOutils.ts` pour les aides) : quarante-huit gabarits
+  pour les huit thématiques `an-cm2-was-were`, `-past-regular`, `-past-irregular`, `-going-to`, `-comparatives`, `-directions`, `-questions` et `-reading`, que le modèle n'écrit plus. Les noms
+  commencent par `cm2-en-wv-`, `-pr-`, `-pi-`, `-gt-`, `-cp-`, `-dr-`, `-qs-` et `-rd-`, six gabarits chacun (`-phrase` : QCM à 3, `-trou` : phrase à trou à 2, `-ecrire`, `-ordre`, `-relier`, `-glisser` à 2).
+  Lot 4 du CM2. Les thématiques ont TROIS, QUATRE, QUATRE, TROIS, QUATRE, TROIS, TROIS et QUATRE paliers (pas cinq) : chaque gabarit donne à chaque palier sa part de la liste (`ce2Outils.windowAt`), et
+  le moteur de test (`lib/test-support/cm1TestKit.ts`) accepte maintenant un nombre de paliers par thématique (`count` en table), un juge à lui (`check`), un nombre de tirages (`draws`) et un plafond de
+  mots (`maxWords`, la lecture recopie son texte dans l'énoncé).
+  - **Une phrase se déduit, elle ne s'écrit pas à la main.** Un sujet, un verbe, un complément et un repère de temps pris dans des tables fermées donnent la phrase juste ; les mauvais choix sont les
+    fautes d'enfant de la fiche (« She were », « Did you played », « I goed », « more taller », « beautifuler », « where are the market », « He is going to plays »), jamais une phrase qui serait juste aussi.
+    Le test refait à part TOUTES les phrases justes (des milliers : tous les sujets, tous les compléments, tous les repères de temps), leurs négations, leurs questions, leurs réponses courtes et leur
+    français ; un exercice est juste quand sa bonne réponse y est, qu'aucun mauvais choix n'y est et que la phrase française de la consigne est celle de la phrase anglaise.
+  - **Ce que les tableaux disent.** Hier : was avec I, he, she, it et un seul nom, were avec you, we, they et un pluriel ; la négation (was not), la question (Were you … ?) et la réponse courte (Yes, I was.).
+    Le passé des verbes réguliers (dix verbes, -ed, study → studied, dance → danced) et irréguliers (dix verbes : went, had, saw, ate, drank, bought, came, made, took, wrote), did not et Did you … ? suivis de
+    l'infinitif. Demain : am, is ou are devant going to, la négation, la question, What are you going to do ?, les repères (tomorrow, tonight, next week, next month). Comparer : -er et -est (tall, small,
+    big, old, fast), more et most (beautiful, expensive), better et the best, big → bigger (consonne doublée). Le chemin : huit lieux, go straight on, turn left, turn right, next to, opposite, between, des
+    dialogues de trois phrases. Les questions : who, where, when, why, how many, how much, what et « Because… » avec vingt-six couples question et réponse. La lecture : sept petits textes de trois à cinq
+    phrases, leurs questions, leurs phrases True et False, leurs nombres, huit dialogues.
+  - **HORS FICHE, À FAIRE RELIRE PAR UN PROFESSEUR D'ANGLAIS.** Les compléments (at home, at the mosque, in the street ; play football, help a friend, clean the house, listen to the radio, buy a mango, make a
+    cake, take the bus, come to the party) ; « It was hot / cold » ; « My friends » ; les repères last night et last Sunday ; le français de chaque phrase (le passé composé tient lieu de passé simple ;
+    « allé » et « venu » ne sont donnés qu'à un sujet dont on connaît le genre : he, she, they, Awa, Moussa, jamais I, you, we) ; les objets comparés (mango, banana, bag, hat, house, shop, book, pen) et
+    « better » avec des personnes ; le sens de chaque indication de chemin ; les questions de la liste et leurs réponses ; les sept textes, leurs questions françaises et leurs phrases vrai ou faux ; les
+    dialogues (« Excuse me », « Thank you », « I would like … , please »).
+  - **Pièges rencontrés.** (1) Une phrase de plus de huit mots ne se range pas : un ordre garde de trois à huit tuiles ; un sujet double (« Awa and Moussa ») ne se range jamais, « Moussa and Awa » est
+    aussi juste (le test déclare les deux ordres). (2) Les hints ne disent ni « going », ni « where », ni « dans » : le test lit chaque indice contre les mots de la réponse, des tuiles, des cases et de toute
+    paire (« chaque », « plus », « deux » ont fait tomber des indices de relier). (3) « Combien de stylos as-tu ? » est refusé par le contrôleur (`visual_missing`, il compte des objets absents) : « possèdes-tu ».
+    (4) Les cases « Un lieu », « Une personne » sont un article et un nom, le test des images du CI les refuse : « Lieu », « Personne ». (5) Un prix est aussi un nombre : « How much is it ? » ne se propose
+    jamais pour « Quelle question demande un nombre ? », ni l'inverse. (6) La bonne option ne se devine pas à sa longueur (`qcm_correct_option_stands_out`) : les mauvais choix d'un chemin ou d'une
+    question sont pris parmi les plus proches en longueur. (7) « Qui va aider au marché ? » avait pour réponse le père alors que le texte dit que l'enfant l'aide : la question est « Qui l'enfant va-t-il aider ? ».
+    (8) L'indice de longueur du verbe être (« trois lettres ») est vérifié contre la vraie réponse (am et is ont deux lettres). (9) Une réponse à écrire qui ne demande qu'un mot du texte ne peut pas
+    demander ce mot (il serait recopié) : la lecture demande des nombres en chiffres.
+  - **Mesuré** : 164 tests (`convex/__tests__/cm2AnglaisTemplates.test.ts`), dont une vérification par gabarit contre des tables écrites à part et un contrôle des indices qui comptent les lettres ;
+    83 pannes provoquées sur 85 vues (`scratchpad/mutations-cm2-en.py` : un sujet, un verbe, un passé, un comparatif, un lieu, un chemin, un couple question et réponse, un texte, une négation, une question,
+    un doublon de mauvais choix, un indice qui écrit la réponse, une apostrophe de trop) ; les deux survivantes ne changent rien à ce que voit l'enfant (la lettre d'un indice qui reste la même, un mot de
+    trois lettres dans un indice) ; le scan de 7 000 paliers (250 tirages × 3 ou 4 paliers × 8 thématiques, nom de la matière donné) ne trouve aucun défaut du contrôleur ni aucune apostrophe de trop, et
+    les seuls trous dont la réponse est dans l'énoncé sont ceux de la lecture, où la réponse est dans le texte par construction. Suite complète 199 fichiers (10 311 tests), `tsc` racine et `convex` propres.
+    PAS vu : l'écran, l'iPhone, la production, la relecture des lignes fabriquées.
 - **Les mathématiques du CM1, les figures, les périmètres et aires, les mesures** (`paliers/games/figuresCm1.ts`, `perimetreAireCm1.ts`, `mesuresCm1.ts`) :
   vingt-neuf gabarits pour `ma-cm1-figures` (neuf `cm1-fig-*` et le dessin à reproduire `pixel-copie`), `ma-cm1-perimetres-aires` (dix `cm1-per-*`) et `ma-cm1-mesures` (dix `cm1-mes-*`), avec le même
   moteur de test (`lib/test-support/cm1MathsKit.ts`, qui accepte maintenant `extraKinds` pour un jeu hors du lot, ici `pixel-copie`). Les périmètres et les mesures sont CALCULÉS comme les nombres.

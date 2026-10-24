@@ -52,40 +52,47 @@ export type TemplateTestConfig = {
   /** « de l'histoire et de la géographie du CM1 » : la fin des titres. */
   label: string;
   klass: "CM1" | "CM2";
-  /** Le nombre de paliers de ces thématiques (cinq au CM1 et au CM2). */
-  count: number;
+  /** Le nombre de paliers de ces thématiques (cinq au CM1 et au CM2) : un nombre pour toutes, ou un nombre par thématique (l'anglais a deux à quatre paliers). */
+  count: number | Readonly<Record<string, number>>;
   topicKinds: Record<string, readonly string[]>;
   expectedKinds: number;
   topicCount: number;
   /** Les noms des gabarits de ces thématiques dans le registre. */
   kindPattern: RegExp;
-  assoc: Record<string, string[]>;
-  twins: readonly (readonly string[])[];
+  /** Les tables de vérification (sans elles, `check` juge chaque exercice). */
+  assoc?: Record<string, string[]>;
+  twins?: readonly (readonly string[])[];
   /** Les énoncés qui demandent « lequel de ces noms » : aucun autre nom du groupe ne s'y propose. */
-  listStem: RegExp;
-  chains: { when: RegExp; chain: string[] }[];
-  pairs: readonly (readonly [string, string])[];
-  members: Record<string, string[]>;
+  listStem?: RegExp;
+  chains?: { when: RegExp; chain: string[] }[];
+  pairs?: readonly (readonly [string, string])[];
+  members?: Record<string, string[]>;
   /** Les couples de cases de glissé : aucune étiquette n'est dans les deux. */
-  zonePairs: readonly (readonly [string, string])[];
+  zonePairs?: readonly (readonly [string, string])[];
   /**
    * Les jeux qu'une fiche gardait déjà (dessin, écoute), avec leurs places : les gabarits prennent les places qui restent. Ces jeux ne
    * sont ni vérifiés ni comptés dans les tables ; la fiche qui en garde est dispensée de la démo du site, qui veut un gabarit de chaque type.
    */
   keptGames?: Record<string, Record<string, number>>;
+  /** Le nombre de tirages par palier et par gabarit (40 par défaut) : plus de lignes dans les tableaux, plus de tirages. */
+  draws?: number;
+  /** Un juge à lui, qui recalcule la bonne réponse d'un exercice avec ses propres règles : renvoie null quand l'exercice est juste. */
+  check?: (kind: string, exo: { type?: string; prompt: string; answerKey: string; hints: string[]; payload: Record<string, unknown> }) => string | null;
+  /** Le plafond de mots d'un énoncé (28 par défaut) : une lecture recopie son texte dans l'énoncé. */
+  maxWords?: number;
 };
 
 export function defineTemplateTests(cfg: TemplateTestConfig) {
   const KLASS = cfg.klass;
-  const COUNT = cfg.count;
-  const PALIERS = Array.from({ length: COUNT }, (_, i) => i + 1);
+  const countOfTopic = (key: string): number => (typeof cfg.count === "number" ? cfg.count : cfg.count[key]);
+  const palierList = (count: number) => Array.from({ length: count }, (_, i) => i + 1);
   const TOPIC_KINDS = cfg.topicKinds;
-  const ASSOC = cfg.assoc;
-  const TWINS = cfg.twins;
-  const LIST_STEM = cfg.listStem;
-  const CHAINS = cfg.chains;
-  const PAIRS = new Set(cfg.pairs.map(([left, right]) => `${norm(left)}|${norm(right)}`));
-  const MEMBER_SET = new Map(Object.entries(cfg.members).map(([zone, items]) => [norm(zone), new Set(items.map(norm))]));
+  const ASSOC = cfg.assoc ?? {};
+  const TWINS = cfg.twins ?? [];
+  const LIST_STEM = cfg.listStem ?? /zzzzzzzz/;
+  const CHAINS = cfg.chains ?? [];
+  const PAIRS = new Set((cfg.pairs ?? []).map(([left, right]) => `${norm(left)}|${norm(right)}`));
+  const MEMBER_SET = new Map(Object.entries(cfg.members ?? {}).map(([zone, items]) => [norm(zone), new Set(items.map(norm))]));
 
   const TOPIC_KEYS = Object.keys(TOPIC_KINDS);
   const KINDS = Object.values(TOPIC_KINDS).flat() as GameKind[];
@@ -97,9 +104,12 @@ export function defineTemplateTests(cfg: TemplateTestConfig) {
   const entryOf = (key: string) => allProgrammeEntries().find((entry) => entry.topic.key === key)!;
   const subjectOfKind = (kind: string) => entryOf(topicOfKind(kind)).subject.name;
 
-const draws = PALIERS.flatMap((palier) => Array.from({ length: 40 }, (_, n) => ({ palier, level: gameLevel(palier, COUNT) as GameLevel, seed: `cm1hg:${palier}:${n}` })));
-const make = (kind: GameKind, d: (typeof draws)[number]) =>
-  GAME_KINDS[kind].make(makeContext(KLASS, d.level, `${kind}:${d.seed}`, new Set(), undefined, undefined, { index: d.palier, count: COUNT }));
+const countOfKind = (kind: string) => countOfTopic(topicOfKind(kind));
+const drawsOf = (kind: string) =>
+  palierList(countOfKind(kind)).flatMap((palier) => Array.from({ length: cfg.draws ?? 40 }, (_, n) => ({ palier, level: gameLevel(palier, countOfKind(kind)) as GameLevel, seed: `cm1hg:${palier}:${n}` })));
+type Draw = ReturnType<typeof drawsOf>[number];
+const make = (kind: GameKind, d: Draw) =>
+  GAME_KINDS[kind].make(makeContext(KLASS, d.level, `${kind}:${d.seed}`, new Set(), undefined, undefined, { index: d.palier, count: countOfKind(kind) }));
 
 type Exo = { type?: string; prompt: string; answerKey: string; hints: string[]; payload: Record<string, unknown> };
 const optionsOf = (exo: Exo) => exo.payload.options as string[];
@@ -186,7 +196,7 @@ const checkSort: Check = (exo) => {
 };
 
 const CHECK_OF_TYPE: Record<string, Check> = { qcm: checkQuestion, "fill-blank": checkGap, "short-answer": checkWrite, order: checkOrder, match: checkLink, "drag-drop": checkSort };
-const checkOf = (kind: string): Check => CHECK_OF_TYPE[GAME_KINDS[kind as GameKind].type];
+const checkOf = (kind: string): Check => (cfg.check ? (exo) => cfg.check!(kind, exo) : CHECK_OF_TYPE[GAME_KINDS[kind as GameKind].type]);
 
 
 describe(`chaque gabarit ${cfg.label} a sa vérification`, () => {
@@ -209,7 +219,7 @@ describe(`chaque gabarit ${cfg.label} a sa vérification`, () => {
 describe(`les gabarits ${cfg.label} recalculent juste, depuis des tables écrites à part`, () => {
   for (const kind of KINDS) {
     it(`${kind} : la bonne réponse se lit dans la table, à chacun des cinq paliers`, () => {
-      for (const d of draws) {
+      for (const d of drawsOf(kind)) {
         const exo = make(kind, d) as unknown as Exo;
         expect(checkOf(kind)(exo), `${kind} palier ${d.palier} : ${exo.prompt} ${exo.payload.text ?? ""}`).toBeNull();
       }
@@ -217,7 +227,7 @@ describe(`les gabarits ${cfg.label} recalculent juste, depuis des tables écrite
   }
 });
 
-describe("les tables elles-mêmes sont saines", () => {
+describe.runIf(cfg.assoc !== undefined)("les tables elles-mêmes sont saines", () => {
   it("n'ont pas de fragment vide, ni deux fois le même", () => {
     for (const [answer, fragments] of Object.entries(ASSOC)) {
       for (const fragment of fragments) expect(fold(fragment.replace(/\*$/, "")).length, `${answer} : « ${fragment} »`).toBeGreaterThan(2);
@@ -233,7 +243,7 @@ describe("les tables elles-mêmes sont saines", () => {
   });
 
   it("ne mettent aucune étiquette dans les deux cases d'un même glissé", () => {
-    const pairs = cfg.zonePairs;
+    const pairs = cfg.zonePairs ?? [];
     for (const [a, b] of pairs) {
       const first = MEMBER_SET.get(norm(a))!;
       const second = MEMBER_SET.get(norm(b))!;
@@ -288,7 +298,7 @@ function mutate(kind: GameKind, exo: Exo): Exo | null {
 describe("les vérifications voient une bonne réponse abîmée", () => {
   for (const kind of KINDS) {
     it(`${kind} : la réponse abîmée est refusée à tous les tirages`, () => {
-      for (const d of draws.filter((_, i) => i % 5 === 0)) {
+      for (const d of drawsOf(kind).filter((_, i) => i % 5 === 0)) {
         const exo = make(kind, d) as unknown as Exo;
         const broken = mutate(kind, exo);
         expect(broken, kind).not.toBeNull();
@@ -304,7 +314,7 @@ describe("les vérifications voient une bonne réponse abîmée", () => {
 // ===========================================================================
 
 describe(`tous les gabarits ${cfg.label}`, () => {
-  const exos = KINDS.flatMap((kind) => draws.filter((_, i) => i % 4 === 0).map((d) => ({ kind, exo: make(kind, d) as unknown as Exo })));
+  const exos = KINDS.flatMap((kind) => drawsOf(kind).filter((_, i) => i % 4 === 0).map((d) => ({ kind, exo: make(kind, d) as unknown as Exo })));
 
   const texts = (exo: Exo): string[] => {
     const out = [...exo.hints];
@@ -316,14 +326,14 @@ describe(`tous les gabarits ${cfg.label}`, () => {
     return out;
   };
 
-  it("ont un énoncé que l'écran sait couper : pas de deux-points, une apostrophe au plus, vingt-huit mots au plus", () => {
+  it("ont un énoncé que l'écran sait couper : pas de deux-points, une apostrophe au plus, vingt-huit mots au plus (ou `maxWords`)", () => {
     for (const { kind, exo } of exos) {
       const stem = `${exo.prompt} ${exo.payload.text ?? ""}`;
       expect(stem, kind).not.toMatch(/:/);
       expect(apostrophes(exo.prompt), `${kind} : ${exo.prompt}`).toBeLessThanOrEqual(1);
       expect(apostrophes(String(exo.payload.text ?? "")), `${kind} : ${stem}`).toBeLessThanOrEqual(1);
-      expect(wordCount(exo.prompt), `${kind} : ${exo.prompt}`).toBeLessThanOrEqual(28);
-      expect(wordCount(String(exo.payload.text ?? "")), `${kind} : ${stem}`).toBeLessThanOrEqual(28);
+      expect(wordCount(exo.prompt), `${kind} : ${exo.prompt}`).toBeLessThanOrEqual(cfg.maxWords ?? 28);
+      expect(wordCount(String(exo.payload.text ?? "")), `${kind} : ${stem}`).toBeLessThanOrEqual(cfg.maxWords ?? 28);
     }
   });
 
@@ -415,8 +425,9 @@ describe(`tous les gabarits ${cfg.label}`, () => {
 
   it("donnent trois indices différents, et se refont à l'identique avec la même graine", () => {
     for (const kind of KINDS) {
-      const a = GAME_KINDS[kind].make(makeContext(KLASS, 2, "graine", new Set(), undefined, undefined, { index: 3, count: COUNT }));
-      const b = GAME_KINDS[kind].make(makeContext(KLASS, 2, "graine", new Set(), undefined, undefined, { index: 3, count: COUNT }));
+      const where = { index: Math.min(3, countOfKind(kind)), count: countOfKind(kind) };
+      const a = GAME_KINDS[kind].make(makeContext(KLASS, 2, "graine", new Set(), undefined, undefined, where));
+      const b = GAME_KINDS[kind].make(makeContext(KLASS, 2, "graine", new Set(), undefined, undefined, where));
       expect(a).toEqual(b);
       expect(a.hints).toHaveLength(3);
       expect(new Set(a.hints).size, kind).toBe(3);
@@ -458,16 +469,18 @@ describe(`tous les gabarits ${cfg.label}`, () => {
   });
 
   it("changent de lignes d'un palier à l'autre : la fenêtre suit la place du palier, pas le niveau (les paliers 2 et 3 sont tous deux de niveau 2)", () => {
-    for (const kind of KINDS.filter((k) => /-(qcm|trou|ecrire)$/.test(k))) {
+    for (const kind of KINDS.filter((k) => /-(qcm|trou|ecrire|phrase)$/.test(k))) {
+      const count = countOfKind(kind);
       const seen = (palier: number) =>
         new Set(
           Array.from({ length: 30 }, (_, n) => {
-            const exo = GAME_KINDS[kind].make(makeContext(KLASS, gameLevel(palier, COUNT), `${kind}:fenetre:${palier}:${n}`, new Set(), undefined, undefined, { index: palier, count: COUNT })) as unknown as Exo;
+            const exo = GAME_KINDS[kind].make(makeContext(KLASS, gameLevel(palier, count), `${kind}:fenetre:${palier}:${n}`, new Set(), undefined, undefined, { index: palier, count })) as unknown as Exo;
             return `${exo.prompt}|${exo.payload.text ?? ""}|${exo.answerKey}`;
           }),
         );
-      const two = seen(2);
-      const three = seen(3);
+      const [first, second] = count >= 3 ? [2, 3] : [1, 2];
+      const two = seen(first);
+      const three = seen(second);
       const common = [...two].filter((question) => three.has(question));
       expect(common.length, `${kind} : ${common.length} questions communes aux paliers 2 et 3`).toBeLessThan(Math.max(2, Math.ceil(two.size / 2)));
     }
@@ -498,7 +511,7 @@ describe(`les thématiques ${cfg.label}`, () => {
   it(`sont celles du ${KLASS}, et n'ont changé ni leur clé ni leur nombre de paliers`, () => {
     for (const key of TOPIC_KEYS) {
       expect(entryOf(key).klass, key).toBe(KLASS);
-      expect(topicOf(key).palierCount, key).toBeUndefined();
+      expect(topicOf(key).palierCount, key).toBe(typeof cfg.count === "number" ? undefined : cfg.count[key]);
     }
     expect(TOPIC_KEYS).toHaveLength(cfg.topicCount);
   });
@@ -506,8 +519,8 @@ describe(`les thématiques ${cfg.label}`, () => {
   it("fabriquent des paliers entiers, de dix exercices tous différents, qui passent le contrôleur et la table", () => {
     for (const key of TOPIC_KEYS) {
       for (let n = 0; n < 25; n++) {
-        for (const palierIndex of PALIERS) {
-          const games = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: COUNT, seed: `${key}:${n}:${palierIndex}` });
+        for (const palierIndex of palierList(countOfTopic(key))) {
+          const games = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: countOfTopic(key), seed: `${key}:${n}:${palierIndex}` });
           expect(games, `${key} palier ${palierIndex}`).toHaveLength(PALIER_SIZE);
           // Les jeux gardés par la fiche (dessin, écoute) ne sont ni comparés ni vérifiés ici : ils ont leurs propres tests.
           const ours = games.filter((game) => isOurs(kindOfGame(game)));
@@ -534,8 +547,8 @@ describe(`les thématiques ${cfg.label}`, () => {
 
   it("varient les types d'un palier : au moins quatre sortes d'exercices sur dix", () => {
     for (const key of TOPIC_KEYS) {
-      for (const palierIndex of PALIERS) {
-        const games = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: COUNT, seed: key });
+      for (const palierIndex of palierList(countOfTopic(key))) {
+        const games = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: countOfTopic(key), seed: key });
         expect(new Set(games.map((game) => game.type)).size, `${key} palier ${palierIndex}`).toBeGreaterThanOrEqual(4);
       }
     }
@@ -547,8 +560,8 @@ describe(`les thématiques ${cfg.label}`, () => {
       let repeated = 0;
       for (let n = 0; n < 40; n++) {
         const before = new Set<string>();
-        for (const palierIndex of PALIERS) {
-          const games = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: COUNT, seed: `variete:${key}:${n}:${palierIndex}` }).filter((game) => isOurs(kindOfGame(game)));
+        for (const palierIndex of palierList(countOfTopic(key))) {
+          const games = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: countOfTopic(key), seed: `variete:${key}:${n}:${palierIndex}` }).filter((game) => isOurs(kindOfGame(game)));
           const keys = games.map((game) => `${game.prompt}|${String(game.payload.text ?? "")}|${game.answerKey}`);
           for (const question of keys) {
             seen += 1;
@@ -583,5 +596,7 @@ describe(`les thématiques ${cfg.label}`, () => {
 });
 
 
-  return { make, draws, checkOf };
+  // Les tirages d'un palier unique pour toutes les thématiques (le CM1 et le CM2 ont cinq paliers) : ce que les fichiers de test attendaient avant `count` par thématique.
+  const draws = KINDS.length > 0 ? drawsOf(KINDS[0]) : [];
+  return { make, draws, drawsOf, checkOf };
 }
