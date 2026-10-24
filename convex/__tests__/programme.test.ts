@@ -123,9 +123,9 @@ describe("l'anglais, hors du guide officiel", () => {
 
   it("n'attend ni écoute ni oral : l'application ne lit pas l'anglais", () => {
     for (const { klass, topic } of topics()) {
-      // Seules les thématiques du CI (`paliers/games/anglaisCi.ts`), du CP (`paliers/games/anglais.ts`), du CE1 (`paliers/games/ce1Anglais.ts`) et du
-      // CE2 (`paliers/games/ce2Anglais.ts`, `ce2AnglaisVocab.ts`) ont des gabarits : jamais un jeu d'écoute.
-      if (klass !== "CI" && klass !== "CP" && klass !== "CE1" && klass !== "CE2") expect(topic.games, topic.key).toBeUndefined();
+      // Seules les thématiques du CI (`paliers/games/anglaisCi.ts`), du CP (`paliers/games/anglais.ts`), du CE1 (`paliers/games/ce1Anglais.ts`), du
+      // CE2 (`paliers/games/ce2Anglais.ts`, `ce2AnglaisVocab.ts`) et du CM2 (`paliers/games/cm2AnglaisVerbes.ts`, `cm2AnglaisMots.ts`) ont des gabarits : jamais un jeu d'écoute.
+      if (klass !== "CI" && klass !== "CP" && klass !== "CE1" && klass !== "CE2" && klass !== "CM2") expect(topic.games, topic.key).toBeUndefined();
       for (const spec of topic.games ?? []) {
         expect(GAME_KINDS[spec.kind].type, `${topic.key} : ${spec.kind}`).not.toBe("listen");
       }

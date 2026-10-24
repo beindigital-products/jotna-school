@@ -27,7 +27,7 @@ type Fact = { fact?: string };
 /** Une question à trois choix : la bonne réponse et deux mauvais choix qui ne peuvent pas être une deuxième bonne réponse. */
 export type QuestionRow = Fact & { prompt: string; answer: string; wrong: readonly string[]; hints: Hints };
 /** Une phrase à trou : le trou s'écrit `___`. */
-export type GapRow = Fact & { text: string; answer: string; wrong: readonly string[]; hints: Hints };
+export type GapRow = Fact & { text: string; answer: string; wrong: readonly string[]; hints: Hints; prompt?: string };
 /** Une suite à remettre dans l'ordre : l'énoncé dit selon quoi. */
 export type OrderRow = Fact & { prompt: string; sequence: readonly string[]; hints: Hints };
 /** Des paires à relier : toutes les gauches, et toutes les droites, sont différentes. */
@@ -120,7 +120,7 @@ export function ce2Question(
 export function ce2Gap(ctx: GameContext, kind: string, concept: string, rows: readonly GapRow[], uses = 1, shift = 0, prompt = "Complète la phrase."): GeneratedGame {
   return gapGame(ctx, kind, concept, () => {
     const row = pickRow(ctx, kind, rows, uses, (candidate) => candidate.text, shift);
-    return { prompt, text: row.text, answer: row.answer, wrong: row.wrong, hints: row.hints };
+    return { prompt: row.prompt ?? prompt, text: row.text, answer: row.answer, wrong: row.wrong, hints: row.hints };
   });
 }
 
