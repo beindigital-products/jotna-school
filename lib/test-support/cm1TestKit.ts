@@ -68,6 +68,11 @@ export type TemplateTestConfig = {
   members: Record<string, string[]>;
   /** Les couples de cases de glissé : aucune étiquette n'est dans les deux. */
   zonePairs: readonly (readonly [string, string])[];
+  /**
+   * Les jeux qu'une fiche gardait déjà (dessin, écoute), avec leurs places : les gabarits prennent les places qui restent. Ces jeux ne
+   * sont ni vérifiés ni comptés dans les tables ; la fiche qui en garde est dispensée de la démo du site, qui veut un gabarit de chaque type.
+   */
+  keptGames?: Record<string, Record<string, number>>;
 };
 
 export function defineTemplateTests(cfg: TemplateTestConfig) {
@@ -84,6 +89,10 @@ export function defineTemplateTests(cfg: TemplateTestConfig) {
 
   const TOPIC_KEYS = Object.keys(TOPIC_KINDS);
   const KINDS = Object.values(TOPIC_KINDS).flat() as GameKind[];
+  const KEPT = cfg.keptGames ?? {};
+  /** Un jeu de ces gabarits (et non un jeu gardé par la fiche) : lui seul est vérifié contre les tables. */
+  const isOurs = (kind?: string) => kind !== undefined && (KINDS as string[]).includes(kind);
+  const kindOfGame = (game: { payload: Record<string, unknown> }) => (game.payload.game as { kind?: string } | undefined)?.kind;
   const topicOfKind = (kind: string) => TOPIC_KEYS.find((key) => TOPIC_KINDS[key].includes(kind)) as string;
   const entryOf = (key: string) => allProgrammeEntries().find((entry) => entry.topic.key === key)!;
   const subjectOfKind = (kind: string) => entryOf(topicOfKind(kind)).subject.name;
@@ -476,7 +485,8 @@ describe(`les thématiques ${cfg.label}`, () => {
     for (const key of TOPIC_KEYS) {
       const specs = topicOf(key).games ?? [];
       expect(specs.reduce((sum, spec) => sum + spec.count, 0), key).toBe(PALIER_SIZE);
-      expect(sameSeq(specs.map((spec) => spec.kind as string).sort(), [...TOPIC_KINDS[key]].sort()), `${key} : ${specs.map((spec) => spec.kind).join(" ")}`).toBe(true);
+      expect(sameSeq(specs.map((spec) => spec.kind as string).sort(), [...TOPIC_KINDS[key], ...Object.keys(KEPT[key] ?? {})].sort()), `${key} : ${specs.map((spec) => spec.kind).join(" ")}`).toBe(true);
+      for (const [kept, places] of Object.entries(KEPT[key] ?? {})) expect(specs.find((spec) => spec.kind === kept)?.count, `${key} : ${kept} garde ses places`).toBe(places);
       for (const spec of specs) {
         expect(Object.keys(GAME_KINDS), `${key} : ${spec.kind}`).toContain(spec.kind);
         expect(spec.vocabulary, `${key} : ${spec.kind}`).toBeUndefined();
@@ -499,9 +509,11 @@ describe(`les thématiques ${cfg.label}`, () => {
         for (const palierIndex of PALIERS) {
           const games = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: COUNT, seed: `${key}:${n}:${palierIndex}` });
           expect(games, `${key} palier ${palierIndex}`).toHaveLength(PALIER_SIZE);
-          const questions = games.map((game) => `${game.prompt}|${String(game.payload.text ?? "")}|${game.answerKey}`);
+          // Les jeux gardés par la fiche (dessin, écoute) ne sont ni comparés ni vérifiés ici : ils ont leurs propres tests.
+          const ours = games.filter((game) => isOurs(kindOfGame(game)));
+          const questions = ours.map((game) => `${game.prompt}|${String(game.payload.text ?? "")}|${game.answerKey}`);
           expect(new Set(questions).size, `${key} #${n} palier ${palierIndex}`).toBe(questions.length);
-          for (const game of games) {
+          for (const game of ours) {
             const defects = auditExercise({
               type: game.type,
               prompt: game.prompt,
@@ -536,7 +548,7 @@ describe(`les thématiques ${cfg.label}`, () => {
       for (let n = 0; n < 40; n++) {
         const before = new Set<string>();
         for (const palierIndex of PALIERS) {
-          const games = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: COUNT, seed: `variete:${key}:${n}:${palierIndex}` });
+          const games = generateGames(topicOf(key).games ?? [], { klass: KLASS, palierIndex, palierCount: COUNT, seed: `variete:${key}:${n}:${palierIndex}` }).filter((game) => isOurs(kindOfGame(game)));
           const keys = games.map((game) => `${game.prompt}|${String(game.payload.text ?? "")}|${game.answerKey}`);
           for (const question of keys) {
             seen += 1;
@@ -551,7 +563,7 @@ describe(`les thématiques ${cfg.label}`, () => {
 
   it("gardent de quoi servir la démo du site : un gabarit pour chaque type que sa banque d'exercices attend", () => {
     const typesOf = (key: string) => new Set((topicOf(key).games ?? []).map((spec) => GAME_KINDS[spec.kind].type));
-    for (const key of TOPIC_KEYS) {
+    for (const key of TOPIC_KEYS.filter((entry) => KEPT[entry] === undefined)) {
       for (const type of ["qcm", "fill-blank", "drag-drop"]) expect(typesOf(key).has(type as never), `${key} : ${type}`).toBe(true);
       expect(typesOf(key).has("order" as never) || typesOf(key).has("match" as never), `${key} : ordre ou appariement`).toBe(true);
     }
@@ -564,7 +576,7 @@ describe(`les thématiques ${cfg.label}`, () => {
         const again = regenerateGame(origin, KLASS, `reprise:${key}:${spec.kind}`);
         expect(again, spec.kind).not.toBeNull();
         expect(again!.type, spec.kind).toBe(GAME_KINDS[spec.kind].type);
-        expect(checkOf(spec.kind)(again as unknown as Exo), spec.kind).toBeNull();
+        if (isOurs(spec.kind)) expect(checkOf(spec.kind)(again as unknown as Exo), spec.kind).toBeNull();
       }
     }
   });

@@ -1623,6 +1623,23 @@ import {
   makeCm1InfVerb,
 } from "./cm1Informer";
 import {
+  makeCm1MemGlisser,
+  makeCm1MemOrdre,
+  makeCm1MemQcm,
+  makeCm1MotGlisser,
+  makeCm1MotQcm,
+  makeCm1MotRelier,
+} from "./cm1Plastique";
+import {
+  makeCm1InsEcrire,
+  makeCm1InsGlisser,
+  makeCm1InsQcm,
+  makeCm1InsRelier,
+  makeCm1InsTrou,
+  makeCm1RytEcrire,
+  makeCm1RytQcm,
+} from "./cm1Musique";
+import {
   gameLevel,
   makeContext,
   type GameContext,
@@ -3219,6 +3236,19 @@ export const GAME_KINDS = {
   "cm1-inf-relier": { label: "Relier le début et la suite d'une phrase du texte", type: "match", make: makeCm1InfLink },
   "cm1-inf-glisser": { label: "Ranger des phrases en ordres et en informations", type: "drag-drop", make: makeCm1InfSort },
   "cm1-inf-verbe": { label: "Reconnaître la phrase qui donne un ordre", type: "qcm", make: makeCm1InfVerb },
+  "cm1-mem-qcm": { label: "Les mots et les gestes du dessin de mémoire", type: "qcm", make: makeCm1MemQcm },
+  "cm1-mem-ordre": { label: "Ranger les étapes du dessin de mémoire ou de la reproduction", type: "order", make: makeCm1MemOrdre },
+  "cm1-mem-glisser": { label: "Classer les gestes faits avec ou sans le modèle", type: "drag-drop", make: makeCm1MemGlisser },
+  "cm1-mot-qcm": { label: "Les mots et les gestes des frises et des motifs", type: "qcm", make: makeCm1MotQcm },
+  "cm1-mot-relier": { label: "Relier un objet décoré, un mot ou un geste à son sens", type: "match", make: makeCm1MotRelier },
+  "cm1-mot-glisser": { label: "Classer les suites de motifs répétées ou alternées", type: "drag-drop", make: makeCm1MotGlisser },
+  "cm1-ins-qcm": { label: "Reconnaître la famille d'un instrument et la façon d'en jouer", type: "qcm", make: makeCm1InsQcm },
+  "cm1-ins-trou": { label: "Compléter une phrase sur un instrument à percussion ou à cordes", type: "fill-blank", make: makeCm1InsTrou },
+  "cm1-ins-ecrire": { label: "Écrire le nom d'un instrument", type: "short-answer", make: makeCm1InsEcrire },
+  "cm1-ins-relier": { label: "Relier un instrument à ce qui produit son son ou au geste du musicien", type: "match", make: makeCm1InsRelier },
+  "cm1-ins-glisser": { label: "Classer les instruments à percussion et à cordes", type: "drag-drop", make: makeCm1InsGlisser },
+  "cm1-ryt-qcm": { label: "Les mots du rythme et la lecture d'un rythme écrit", type: "qcm", make: makeCm1RytQcm },
+  "cm1-ryt-ecrire": { label: "Écrire un mot du rythme ou le nombre de coups d'un rythme écrit", type: "short-answer", make: makeCm1RytEcrire },
 } as const satisfies Record<
   string,
   { label: string; type: GameExerciseType; make: (ctx: GameContext) => GeneratedGame }
