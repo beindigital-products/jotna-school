@@ -429,6 +429,14 @@ export const ANGLAIS: ProgrammeSubject = {
     CM1: [
       {
         key: "an-cm1-present-simple",
+        games: [
+          { kind: "cm1-en-ps-phrase", count: 3 },
+          { kind: "cm1-en-ps-trou", count: 2 },
+          { kind: "cm1-en-ps-ecrire", count: 1 },
+          { kind: "cm1-en-ps-ordre", count: 1 },
+          { kind: "cm1-en-ps-relier", count: 1 },
+          { kind: "cm1-en-ps-glisser", count: 2 },
+        ],
         name: "Ce que je fais : le présent",
         palierCount: 4,
         description:
@@ -436,6 +444,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm1-he-she-it",
+        games: [
+          { kind: "cm1-en-hs-phrase", count: 3 },
+          { kind: "cm1-en-hs-trou", count: 2 },
+          { kind: "cm1-en-hs-ecrire", count: 1 },
+          { kind: "cm1-en-hs-ordre", count: 1 },
+          { kind: "cm1-en-hs-relier", count: 1 },
+          { kind: "cm1-en-hs-glisser", count: 2 },
+        ],
         name: "He, she, it : le s du verbe",
         palierCount: 4,
         description:
@@ -443,6 +459,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm1-routine",
+        games: [
+          { kind: "cm1-en-rt-phrase", count: 3 },
+          { kind: "cm1-en-rt-trou", count: 2 },
+          { kind: "cm1-en-rt-ecrire", count: 1 },
+          { kind: "cm1-en-rt-ordre", count: 1 },
+          { kind: "cm1-en-rt-relier", count: 1 },
+          { kind: "cm1-en-rt-glisser", count: 2 },
+        ],
         name: "Ma journée en anglais",
         palierCount: 3,
         description:
@@ -450,6 +474,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm1-continuous",
+        games: [
+          { kind: "cm1-en-cn-phrase", count: 3 },
+          { kind: "cm1-en-cn-trou", count: 2 },
+          { kind: "cm1-en-cn-ecrire", count: 1 },
+          { kind: "cm1-en-cn-ordre", count: 1 },
+          { kind: "cm1-en-cn-relier", count: 1 },
+          { kind: "cm1-en-cn-glisser", count: 2 },
+        ],
         name: "En ce moment : le -ing",
         palierCount: 4,
         description:
@@ -457,6 +489,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm1-jobs",
+        games: [
+          { kind: "cm1-en-jb-phrase", count: 3 },
+          { kind: "cm1-en-jb-trou", count: 2 },
+          { kind: "cm1-en-jb-ecrire", count: 1 },
+          { kind: "cm1-en-jb-ordre", count: 1 },
+          { kind: "cm1-en-jb-relier", count: 1 },
+          { kind: "cm1-en-jb-glisser", count: 2 },
+        ],
         name: "Les métiers en anglais",
         palierCount: 2,
         description:
@@ -464,6 +504,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm1-market",
+        games: [
+          { kind: "cm1-en-mk-phrase", count: 3 },
+          { kind: "cm1-en-mk-trou", count: 2 },
+          { kind: "cm1-en-mk-ecrire", count: 1 },
+          { kind: "cm1-en-mk-ordre", count: 1 },
+          { kind: "cm1-en-mk-relier", count: 1 },
+          { kind: "cm1-en-mk-glisser", count: 2 },
+        ],
         name: "Au marché en anglais",
         palierCount: 3,
         description:
@@ -471,6 +519,14 @@ export const ANGLAIS: ProgrammeSubject = {
       },
       {
         key: "an-cm1-describe",
+        games: [
+          { kind: "cm1-en-ds-phrase", count: 3 },
+          { kind: "cm1-en-ds-trou", count: 2 },
+          { kind: "cm1-en-ds-ecrire", count: 1 },
+          { kind: "cm1-en-ds-ordre", count: 1 },
+          { kind: "cm1-en-ds-relier", count: 1 },
+          { kind: "cm1-en-ds-glisser", count: 2 },
+        ],
         name: "Décrire une personne ou un objet",
         palierCount: 3,
         description:

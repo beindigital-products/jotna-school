@@ -129,7 +129,7 @@ type Written = {
 type Upsert = { status: string; qaStatus?: string; generationTraceId?: string; factCheckResults?: Record<string, number> };
 
 /** Une base factice : ce que `generateBucketCore` lit et écrit, et un modèle qui refuse de répondre. */
-function fakeConvex(programmeKey: string) {
+function fakeConvex(programmeKey: string, storedKey: string = programmeKey) {
   const entry = programmeTopic(programmeKey)!;
   const upserts: Upsert[] = [];
   const written: Written[][] = [];
@@ -148,7 +148,7 @@ function fakeConvex(programmeKey: string) {
               description: entry.topic.description,
               class: entry.klass,
               palierCount: null,
-              programmeKey,
+              programmeKey: storedKey,
             },
           };
         default:
@@ -273,9 +273,10 @@ describe.each(WITHOUT_MODEL)("la génération d'un palier de « %s »", (key) =>
 });
 
 describe("le faux modèle ne laisse rien passer", () => {
-  // Tout le CI, tout le CP et tout le CE1 sont faits par le code : l'exemple d'une thématique écrite par le modèle vient de l'anglais du CM1.
-  it("fait échouer un palier qui a besoin du modèle (an-cm1-present-simple : des exercices à écrire)", async () => {
-    const { ctx, modelCalls, upserts, entry } = fakeConvex("an-cm1-present-simple");
+  // Les 267 thématiques du programme sont faites par le code : l'exemple d'un palier qui a besoin du modèle est une thématique faite à la main, dont la clé
+  // n'est dans aucune fiche du programme (le nom et la description viennent de `an-cm1-present-simple`, la clé gardée en base est inconnue).
+  it("fait échouer un palier qui a besoin du modèle (une thématique sans fiche du programme : des exercices à écrire)", async () => {
+    const { ctx, modelCalls, upserts, entry } = fakeConvex("an-cm1-present-simple", "thematique-faite-a-la-main");
     await expect(generateBucketCore(ctx, bucket(1, entry.klass as "CI" | "CP"))).rejects.toThrow(MODEL_CALLED);
     expect(modelCalls).toEqual(["aiGateway/index:generate"]);
     // Rien n'est écrit : le palier reste « generating », sans exercice.

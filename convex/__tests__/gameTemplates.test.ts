@@ -1447,10 +1447,10 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
   it("annonce ces paliers comme gratuits à la pré-génération, et les autres comme payants", () => {
     for (const key of keys) expect(topicUsesModel(key), key).toBe(false);
     expect(topicUsesModel("ar-ci-grave-aigu")).toBe(false);
-    // Tout le CI, tout le CP et tout le CE1 sont faits par le code : l'exemple d'une thématique écrite par le modèle vient de l'anglais du CM1.
+    // Les 267 thématiques du programme sont faites par le code, de l'anglais du CM1 compris : seule une thématique sans fiche (plus bas) a besoin du modèle.
     expect(topicUsesModel("ma-ce1-mesures")).toBe(false);
     expect(topicUsesModel("ar-ci-mimes")).toBe(false);
-    expect(topicUsesModel("an-cm1-present-simple")).toBe(true);
+    expect(topicUsesModel("an-cm1-present-simple")).toBe(false);
     // Sans fiche du programme (thématique faite à la main), le modèle écrit tout.
     expect(topicUsesModel(null)).toBe(true);
     expect(topicUsesModel(undefined)).toBe(true);
