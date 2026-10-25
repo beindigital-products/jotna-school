@@ -3153,6 +3153,27 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   - **Mesuré** : 50 tests (`convex/__tests__/cm1ArtsMixtesTemplates.test.ts`) qui lisent leurs réponses dans des tables écrites à part. 55 pannes provoquées vues sur 55 (`scratchpad/mutations-arts.py`). Le contrôleur
     ne signale aucun défaut, avertissement compris, sur 40 000 exercices (200 tirages par palier et par thématique, jeux gardés compris). PAS vu : l'écran, l'iPhone, l'application native, la production ; aucun
     professeur d'arts ou de musique n'a relu les tableaux.
+- **L'anglais du CM1** (`paliers/games/cm1AnglaisVerbes.ts`, `cm1AnglaisMots.ts`, `cm1AnglaisOutils.ts`) : quarante-deux gabarits pour les sept thématiques `an-cm1-present-simple`,
+  `-he-she-it`, `-routine`, `-continuous`, `-jobs`, `-market` et `-describe`, que le modèle n'écrit plus. Les noms commencent par `cm1-en-ps-`, `cm1-en-hs-`, `cm1-en-rt-`, `cm1-en-cn-`,
+  `cm1-en-jb-`, `cm1-en-mk-` et `cm1-en-ds-` (`-phrase`, `-trou`, `-ecrire`, `-ordre`, `-relier`, `-glisser`). Ces thématiques n'ont pas cinq paliers mais quatre, quatre, trois, quatre, deux, trois et
+  trois : chaque gabarit donne à chaque palier sa part de la liste (`windowAt`), comme au reste du CM1. Un palier reste de dix exercices : un QCM (3), une phrase à trou (2), une réponse à écrire (1),
+  un ordre (1), un appariement (1) et un glissé (2).
+  - **Une phrase se DÉDUIT, elle ne s'écrit pas.** Un sujet, un verbe et un complément pris dans des tables fermées donnent la phrase : le s de he, she, it (watches, goes, has), do not ou does not,
+    am, is ou are + -ing, at ou in, le pluriel (-s, -es), l'adjectif avant le nom et jamais accordé. Les mauvais choix sont les fautes d'enfant de la fiche (le verbe sans s, le s gardé après does, le
+    verbe sans être, runing pour running, five hundreds francs, two smalls dogs) et jamais une phrase qui serait juste aussi. Le français des consignes (« Nous mangeons du riz. ») vient de tables qui
+    gardent une apostrophe au plus.
+  - **HORS FICHE, À FAIRE RELIRE PAR UN PROFESSEUR D'ANGLAIS** : les compléments de chaque verbe (play football, eat rice, drink water, read a book, write a letter, watch television, like mangoes,
+    go to school, have breakfast, study mathematics, cook rice, eat bread), les prénoms et les personnes (Awa, Moussa, my father, my aunt…), « it » seulement avec eat, drink, sleep, le français de chaque
+    phrase et les mots « toujours, en général, parfois, jamais », la routine (les heures six, sept, huit, cinq, neuf, une ; l'ordre d'une journée), les métiers au féminin et ce que fait chaque métier
+    (« attrape des poissons », « coud des habits »), les quantités de deux à six, les prix ronds de cent à mille francs, les mots mal écrits proposés (fourty, ninty, eightty…), les noms et les couleurs
+    des phrases qui décrivent.
+  - **Pièges rencontrés.** (1) Une consigne qui écrit am, is ou are donne la réponse : « Écris le verbe être qui manque ». (2) Le contrôleur refuse une case « Réponse » (zone sans sens pour l'enfant) :
+    « Je demande » et « Je réponds ». (3) « a old » n'est pas une phrase : les tailles qui commencent par une voyelle ne vont pas derrière « a », donc pas dans un trou qui laisse l'article devant. (4) Un
+    mâle seulement est pêcheur (fisherman) et seuls un frère ou une sœur sont élèves : le tableau des personnes par métier est restreint. (5) Pour que les tests tirent chaque ligne d'un grand tableau, le
+    moteur partagé accepte un nombre de tirages par gabarit (`draws`) et un nombre de paliers par thématique. (6) `GapRow` porte maintenant sa propre consigne (`prompt`) : la phrase française de la ligne.
+  - **Mesuré** : 104 tests (`convex/__tests__/cm1AnglaisTemplates.test.ts`) qui refont à part TOUTES les phrases justes de ces thématiques (le jeu de phrases, leurs traductions, leurs négations, leurs
+    réponses courtes) et jugent chaque exercice contre lui ; 66 pannes provoquées sur 66 vues (`scratchpad/mutations-cm1en.py`) ; le contrôleur ne signale aucun défaut sur 12 000 paliers fabriqués
+    (120 000 exercices), sans doublon dans un palier ; 0,0 à 0,6 % de questions revues d'un palier à l'autre. Les deux tests qui prenaient `an-cm1-present-simple` comme thématique écrite par le modèle (`templatesWithoutModel.test.ts`, `gameTemplates.test.ts`) prennent maintenant une thématique sans fiche du programme : plus aucune des 267 thématiques n'a besoin du modèle.
 - **Le contrôleur juge aussi les gabarits.** Les tests n'en trouvent aucun en
   défaut, mais une thématique sans exercice du modèle n'a plus personne pour
   relire son palier. `generateBucketCore` passe donc chaque gabarit à
