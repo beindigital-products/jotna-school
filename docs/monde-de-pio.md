@@ -101,6 +101,67 @@ le bas pour ne pas montrer de couture ; sur « lite », un dégradé et quelques
 buissons en CSS. La géométrie a ses tests dans
 `lib/__tests__/trailGeometry.test.ts`.
 
+## Les mondes peints et la carte dézoomée
+
+**Un monde peint par matière.** Chaque matière a sa vignette ronde dans
+`public/images/world/mondes/` : un boulier géant dans la savane (mathématiques),
+un livre ouvert et une plume (français), une serre et un télescope (éveil
+scientifique), des ruines et une amphore (histoire), un globe et un panneau
+(géographie), l'arbre à palabres (instruction civique), une palette et un
+djembé (éducation artistique), un phare et des bulles (anglais). Elles sont
+faites avec le serveur `studio` (modèle `bfl/flux-3-image`, 0,048 $ l'image),
+le biome `biome-riviere.jpg` en référence de style, puis détourées en disque
+par `scripts/build-world-scenes.mjs` : 384 pixels pour `full`, 192 pixels
+(`-s`) pour `lite`. `lib/world-scenes.ts` retrouve le monde par le NOM de la
+matière (pas par sa clé `icon`, que le catalogue partage entre matières) ;
+une matière sans monde peint garde un biome générique et son pictogramme.
+Pour en ajouter un : générer la vignette, l'ajouter à `WORLD_SCENE_IDS` et à
+`RULES`, lancer le script deux fois ; `lib/__tests__/world-scenes.test.ts`
+vérifie que chaque identifiant a ses deux fichiers.
+
+**Le socle** (`biome-medallion.tsx`) est celui des boutons du jeu : face crème,
+flanc épais, monde serti dedans, anneau de progression teinté par la couleur de
+la matière, couronne et lueur quand le monde est terminé. La plaque dessous
+(`world-node.tsx`) porte le numéro, le nom et la jauge. La bannière du haut
+(`world-map-title.tsx`) ajoute la progression de toute l'aventure.
+
+**Lisible à tout zoom.** La caméra publie son zoom (`useCounterScale`,
+`useMapScale` dans `map-viewport.tsx`) : le médaillon, Pio et la route
+regrossissent quand on dézoome, jusqu'à un plafond ; au zoom 1 ou plus, rien ne
+change. Sur un téléphone, le monde dézoomé est une colonne étroite : la plaque
+passe alors sur le côté libre du socle, à taille d'écran constante. « Voir toute
+la carte » cale le monde sous la bannière (`fitInsets`), et un cadre crème
+(`WorldBoard`) en fait un plateau posé sur la savane dans l'ombre.
+
+**Une route couchée sur les cadres larges.** Sur tablette et ordinateur, la route
+verticale (420 pixels de large) n'était qu'une bande au milieu d'un grand vide.
+`worldLayoutFor` choisit, debout ou couchée, la route qui rend la carte entière
+la plus grande (debout sous 640 pixels de large ou sous cinq mondes) et
+`worldTrailFor` la couche : MÊME forme que sur téléphone, tournée d'un quart de
+tour, les mondes avancent de gauche à droite en zigzag, un en haut, le suivant en
+bas, reliés par des courbes en S qui entrent et sortent à l'horizontale (axe `x`
+de `trailPathD` et `buildTrail`). Un premier essai en serpentin à rangées (retour
+de droite à gauche, long raccord vertical) a été retiré : le propriétaire ne
+l'aimait pas. La route ondule d'autant plus fort que le cadre est haut (jusqu'à
+200 pixels d'amplitude, par pas de 20) pour en prendre la hauteur. Les socles y
+sont plus grands (`worldNodeSizeFor`), Pio marche de face et ne se retourne que
+selon le sens (`horizontal` dans `usePioWalker`). La page mesure son cadre avant
+la première peinture (`use-frame-size.ts`) et change de route en remontant
+`GameMap` (`key`), parce que la caméra n'arrive qu'une fois par montage.
+
+**À l'horizontale.** L'application tourne dans les deux sens (`Info.plist`,
+`viewportFit: cover`). Sous 500 pixels de haut, la coque rétrécit (en-tête de 48
+pixels, marge basse réduite, encoche respectée à gauche et à droite) et le cadre
+de la carte remplit ce qui reste au lieu de garder ses 440 pixels minimum. Sous
+460 pixels de cadre, la route couchée se resserre (`isCompactWorldFrame`,
+`worldTrailFor(…, true, …)`, socles de 144 pixels), la bannière tient sur une ligne
+avec le compte des étapes, et les boutons de zoom passent en rangée. Un téléphone
+à l'horizontale (812 × 375) voit les huit mondes d'un coup, une tablette
+(1024 × 768) aussi.
+
+**La voir sans serveur** : `/dev/carte` (développement), huit mondes factices sur
+la vraie carte. Il faut une adresse Convex bidon : `NEXT_PUBLIC_CONVEX_URL=http://127.0.0.1:3210 pnpm dev`.
+
 ## Le HUD
 
 En haut de chaque lieu, à droite de l'en-tête : le niveau et la barre qui

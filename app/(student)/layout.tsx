@@ -90,7 +90,7 @@ export default function StudentLayout({
             {/* Une seule ligne : logo + état du joueur à gauche (l'avatar est
                 descendu dans la barre du bas sur téléphone), les lieux au centre
                 et l'avatar à droite sur grand écran. */}
-            <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:h-20">
+            <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:h-20 [@media(max-height:500px)]:h-12">
               {/* À gauche : le logo. */}
               <Brand href="/student/home" size="md" />
 
@@ -153,7 +153,7 @@ export default function StudentLayout({
           className={`mx-auto w-full max-w-5xl flex-1 ${
             focusMode
               ? "px-4 pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]"
-              : "px-0 pb-32 sm:px-4 sm:pb-8"
+              : "px-0 pb-32 sm:pl-[max(1rem,env(safe-area-inset-left))] sm:pr-[max(1rem,env(safe-area-inset-right))] sm:pb-8 [@media(max-height:500px)]:pb-2"
           }`}
         >
           <StudentGate>{children}</StudentGate>
