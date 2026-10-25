@@ -54,7 +54,7 @@ export const DOCS: readonly Doc[] = [
     effect: ask("Que fait une partie de l'eau quand le soleil chauffe ?", "Elle monte dans le ciel", "Elle tombe sur les pêcheurs", "Elle devient de la glace"),
     statement: ask("Quelle phrase est vraie selon le texte ?", "Les rivières apportent des sels à la mer.", "Les pêcheurs ajoutent du sel dans la mer.", "Le sel monte dans les nuages."),
     links: [["Le soleil chauffe la mer", "Une partie de son eau monte dans le ciel"], ["Le sel ne monte pas avec elle", "Il reste dans la mer"], ["Les rivières apportent des sels pris dans la roche", "La mer contient beaucoup de sel"]],
-    cloze: { word: "roche", wrong: ["boue", "sable"] },
+    cloze: { word: "roche", wrong: ["boue", "forêt"] },
   },
   {
     title: "Pourquoi il faut boire",
@@ -136,7 +136,7 @@ export const DOCS: readonly Doc[] = [
     effect: ask("Que permet de vider les seaux chaque semaine ?", "Les œufs ne peuvent pas grandir", "Les seaux deviennent propres", "Les moustiques piquent moins fort"),
     statement: ask("Quelle phrase est vraie selon le texte ?", "Les moustiques sortent quand le soleil se couche.", "Les moustiques dorment pendant la nuit.", "Le paludisme est une maladie légère."),
     links: [["Une eau qui ne bouge pas", "Les moustiques y pondent leurs œufs"], ["Le soleil se couche", "Les moustiques sortent et piquent les gens"], ["Vider les seaux chaque semaine", "Les œufs ne peuvent pas grandir"]],
-    cloze: { word: "paludisme", wrong: ["rougeole", "grippe"] },
+    cloze: { word: "paludisme", wrong: ["rhume", "hoquet"] },
   },
   // Palier 4.
   {
@@ -158,7 +158,7 @@ export const DOCS: readonly Doc[] = [
   {
     title: "Pourquoi il faut dormir",
     sentences: [
-      "Un enfant a besoin de dormir environ dix heures par nuit.",
+      "Un enfant grandit vite, donc il a besoin de dormir environ dix heures par nuit.",
       "Pendant le sommeil, le corps se repose et grandit.",
       "Un enfant qui dort peu est fatigué le lendemain.",
       "Il écoute alors moins bien en classe et se met vite en colère.",
@@ -168,7 +168,7 @@ export const DOCS: readonly Doc[] = [
     cause: ask("Pourquoi un enfant est-il fatigué le lendemain ?", "Il dort peu", "Il a trop joué au ballon", "Il a mangé trop de riz"),
     effect: ask("Que se passe-t-il quand un enfant est fatigué ?", "Il écoute moins bien en classe", "Il grandit plus vite que les autres", "Il oublie son cartable chaque jour"),
     statement: ask("Quelle phrase est vraie selon le texte ?", "Le corps se repose pendant le sommeil.", "Le corps travaille plus la nuit.", "Un enfant doit dormir deux heures."),
-    links: [["Un enfant dort peu", "Il est fatigué le lendemain"], ["Pendant le sommeil", "Le corps se repose et grandit"], ["Le manque de sommeil", "Il se met vite en colère"]],
+    links: [["Un enfant dort peu", "Il est fatigué le lendemain"], ["Pendant le sommeil", "Le corps se repose et grandit"], ["Un enfant grandit vite", "Il a besoin de dormir dix heures par nuit"]],
     cloze: { word: "sommeil", wrong: ["repas", "travail"] },
   },
   // Palier 5.
