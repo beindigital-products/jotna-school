@@ -604,42 +604,133 @@ export const FRANCAIS: ProgrammeSubject = {
       {
         key: "fr-cm2-informer",
         name: "Lire pour s'informer et comprendre",
+        // Dix gabarits (`cm2Informer.ts`) : dix textes qui expliquent, leurs causes et leurs conséquences, les mots de liaison.
+        games: [
+          { kind: "cm2-inf-sujet", count: 1 },
+          { kind: "cm2-inf-cause", count: 1 },
+          { kind: "cm2-inf-consequence", count: 1 },
+          { kind: "cm2-inf-vrai", count: 1 },
+          { kind: "cm2-inf-trou", count: 1 },
+          { kind: "cm2-inf-ordre", count: 1 },
+          { kind: "cm2-inf-relier", count: 1 },
+          { kind: "cm2-inf-glisser", count: 1 },
+          { kind: "cm2-inf-liaison", count: 1 },
+          { kind: "cm2-inf-ecrire", count: 1 },
+        ],
         description:
           "Palier 5 du CM2 : textes informatifs et explicatifs (pourquoi, comment) ; repérer l'idée principale, les causes et les conséquences, les mots de liaison (car, donc, c'est pourquoi, parce que).",
       },
       {
         key: "fr-cm2-argumenter",
         name: "Donner son avis",
+        // Dix gabarits (`cm2Argumenter.ts`) : faits et opinions, arguments pour et contre, mots de liaison, règles du débat.
+        games: [
+          { kind: "cm2-arg-nature", count: 1 },
+          { kind: "cm2-arg-glisser", count: 1 },
+          { kind: "cm2-arg-argument", count: 1 },
+          { kind: "cm2-arg-contre", count: 1 },
+          { kind: "cm2-arg-relier", count: 1 },
+          { kind: "cm2-arg-trou", count: 1 },
+          { kind: "cm2-arg-ordre", count: 1 },
+          { kind: "cm2-arg-compter", count: 1 },
+          { kind: "cm2-arg-liaison", count: 1 },
+          { kind: "cm2-arg-debat", count: 1 },
+        ],
         description:
           "Palier 6 du CM2 : le texte argumentatif et le débat. Distinguer un fait d'une opinion, trouver l'argument qui défend une idée, les connecteurs (d'abord, de plus, enfin, cependant, au contraire), les règles d'un débat respectueux.",
       },
       {
         key: "fr-cm2-dialogue",
         name: "Le dialogue",
+        // Dix gabarits (`cm2Dialogue.ts`) : ponctuation, verbes de parole, récit, téléphone, signes du dialogue.
+        games: [
+          { kind: "cm2-dia-ponctuation", count: 1 },
+          { kind: "cm2-dia-verbe", count: 1 },
+          { kind: "cm2-dia-recit", count: 1 },
+          { kind: "cm2-dia-telephone", count: 1 },
+          { kind: "cm2-dia-ranger", count: 1 },
+          { kind: "cm2-dia-signe", count: 1 },
+          { kind: "cm2-dia-role", count: 1 },
+          { kind: "cm2-dia-compter", count: 1 },
+          { kind: "cm2-dia-relier", count: 1 },
+          { kind: "cm2-dia-glisser", count: 1 },
+        ],
         description:
           "Palier 7 du CM2 : le texte dialogué. La ponctuation du dialogue (deux-points, guillemets, tiret), les verbes de parole (demander, répondre, s'écrier, murmurer), passer du dialogue au récit, la conversation au téléphone.",
       },
       {
         key: "fr-cm2-poesie",
         name: "La poésie",
+        // Dix gabarits (`cm2Poesie.ts`) : rimes, strophes, sonorités, comparaisons ; dix poèmes écrits pour l'exercice, aucun vers n'est attribué à un poète.
+        games: [
+          { kind: "cm2-poe-rime", count: 1 },
+          { kind: "cm2-poe-intrus", count: 1 },
+          { kind: "cm2-poe-schema", count: 1 },
+          { kind: "cm2-poe-compter", count: 1 },
+          { kind: "cm2-poe-sonorite", count: 1 },
+          { kind: "cm2-poe-trou", count: 1 },
+          { kind: "cm2-poe-relier", count: 1 },
+          { kind: "cm2-poe-glisser", count: 1 },
+          { kind: "cm2-poe-comparer", count: 1 },
+          { kind: "cm2-poe-comparaison", count: 1 },
+        ],
         description:
           "Palier 8 du CM2 : l'expression poétique. Vers, strophes, rimes, sonorités, comparaisons ; jouer avec les mots, déclamer. Les poètes du Sénégal (Léopold Sédar Senghor, Birago Diop) peuvent être nommés, mais ne JAMAIS leur attribuer des vers : les vers des exercices sont écrits pour l'exercice et présentés comme tels.",
       },
       {
         key: "fr-cm2-modes",
         name: "Conditionnel et subjonctif",
+        // Dix gabarits (`cm2Modes.ts`) : le conditionnel et le subjonctif de quinze verbes, bâtis sur un tableau fermé.
+        games: [
+          { kind: "cm2-mod-trou", count: 1 },
+          { kind: "cm2-mod-mode", count: 1 },
+          { kind: "cm2-mod-ecrire", count: 1 },
+          { kind: "cm2-mod-forme", count: 1 },
+          { kind: "cm2-mod-conditionnel", count: 1 },
+          { kind: "cm2-mod-subjonctif", count: 1 },
+          { kind: "cm2-mod-ranger", count: 1 },
+          { kind: "cm2-mod-relier", count: 1 },
+          { kind: "cm2-mod-glisser", count: 1 },
+          { kind: "cm2-mod-intrus", count: 1 },
+        ],
         description:
           "Conjugaison de l'étape 3 (répartition proposée pour le CM2) : les quatre modes (indicatif, impératif, conditionnel, subjonctif) ; le conditionnel présent et le subjonctif présent des verbes usuels (être, avoir, aller, faire, finir, prendre), le subjonctif après « il faut que » et « pour que ».",
       },
       {
         key: "fr-cm2-phrase-complexe",
         name: "La phrase complexe",
+        // Dix gabarits (`cm2PhraseComplexe.ts`) : le nombre de propositions, leur lien, le pronom relatif, le COD, le COI et le COS, bâtis sur un corpus fermé de phrases analysées.
+        games: [
+          { kind: "cm2-phc-nombre", count: 1 },
+          { kind: "cm2-phc-lien", count: 1 },
+          { kind: "cm2-phc-pronom", count: 1 },
+          { kind: "cm2-phc-antecedent", count: 1 },
+          { kind: "cm2-phc-relative", count: 1 },
+          { kind: "cm2-phc-fonction", count: 1 },
+          { kind: "cm2-phc-conjonction", count: 1 },
+          { kind: "cm2-phc-ecrire", count: 1 },
+          { kind: "cm2-phc-relier", count: 1 },
+          { kind: "cm2-phc-glisser", count: 1 },
+        ],
         description:
           "Grammaire de l'étape 3 (répartition proposée pour le CM2) : propositions indépendantes, juxtaposées, coordonnées ; la proposition subordonnée relative (qui, que, dont, où), complément du nom ; le COI et le COS (complément d'objet second).",
       },
       {
         key: "fr-cm2-cfee",
         name: "Révisions du CFEE",
+        // Dix gabarits (`cm2Cfee.ts`) : participes, homophones, pluriels, terminaisons et conjugaison, bâtis sur des tableaux fermés.
+        games: [
+          { kind: "cm2-cfe-etre", count: 1 },
+          { kind: "cm2-cfe-avoir", count: 1 },
+          { kind: "cm2-cfe-participe", count: 1 },
+          { kind: "cm2-cfe-homophone", count: 1 },
+          { kind: "cm2-cfe-pluriel", count: 1 },
+          { kind: "cm2-cfe-relier", count: 1 },
+          { kind: "cm2-cfe-glisser", count: 1 },
+          { kind: "cm2-cfe-terminaison", count: 1 },
+          { kind: "cm2-cfe-conjuguer", count: 1 },
+          { kind: "cm2-cfe-ranger", count: 1 },
+        ],
         description:
           "Préparation au Certificat de Fin d'Études Élémentaires : accord du participe passé (avec être et avec avoir), homophones grammaticaux, pluriels difficiles, terminaisons -é/-er/-ez/-ait, conjugaison des verbes usuels aux temps de l'indicatif.",
       },
