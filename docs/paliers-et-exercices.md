@@ -3023,6 +3023,66 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     contrôleur, aucune apostrophe de trop, aucun « : » ; les seuls « réponse dans l'énoncé » sont la donnée inutile (par construction) et un « 500 FCFA » contenu dans « 1 500 FCFA ». Suite complète 207 fichiers
     (10 667 tests), `tsc` racine et `convex` propres. PAS vu : l'écran, l'iPhone, la production, la relecture des lignes fabriquées.
 
+- **Le français du CM2, le conditionnel et le subjonctif, la phrase complexe, les révisions du CFEE** (`paliers/games/cm2Modes.ts`, `cm2PhraseComplexe.ts`, `cm2Cfee.ts`) :
+  trente gabarits pour `fr-cm2-modes` (dix `cm2-mod-*`), `fr-cm2-phrase-complexe` (dix `cm2-phc-*`) et `fr-cm2-cfee` (dix `cm2-cfe-*`), que le modèle n'écrit plus. Lot 6a du CM2, suivi du lot 6b
+  (lire pour s'informer, donner son avis, le dialogue, la poésie). Chaque exercice est BÂTI à partir de tableaux fermés, jamais écrit par
+  le modèle ; le test (`lib/test-support/cm1MathsKit.ts`, `klass: "CM2"`, `subject: "Français"`) relit chaque phrase avec ses propres tableaux, écrits à part des sources.
+  - **Conditionnel et subjonctif.** Quinze verbes (chanter, jouer, être, avoir, finir, manger, choisir, aller, faire, prendre, venir, voir, dire, pouvoir, savoir) ; le conditionnel se déduit du futur (le radical
+    du futur, les terminaisons de l'imparfait), le subjonctif et l'impératif sont écrits une fois pour chaque verbe. Pièges évités : au singulier le subjonctif d'un verbe en -er s'écrit comme le présent
+    (un mauvais choix n'est jamais cette forme) ; « si le temps était beau, nous chantions » se lit aussi comme une habitude (jamais proposé) ; le mode se demande pour un verbe NOMMÉ (« le verbe
+    « finisses » »), jamais pour « le verbe de la phrase » ; « pouvoir » n'a pas d'impératif ; « que » devant « il » s'écrit « qu' » (« que il » n'existe pas).
+  - **La phrase complexe.** Un corpus fermé de phrases analysées à la main : le nombre de propositions (un verbe conjugué par proposition, un infinitif ne compte pas), le lien (juxtaposées, coordonnées,
+    subordonnée relative), le pronom relatif et le mot qu'il complète, la fonction d'un groupe (COD, COI, COS), le mot de liaison (« car » la cause, « donc » la conséquence, « mais » l'opposition). « Et »
+    n'est jamais un mauvais choix, « ou » ne se pose pas, « habiter » et « le jour que » ne sont pas employés, et les verbes qui se prêtent à deux analyses ne sont pas posés.
+  - **Les révisions du CFEE.** Le participe passé avec « être » (accord avec le sujet, onze verbes) et avec « avoir » (quatre formes de phrase : complément avant le verbe, pronom « les », complément après, pas
+    de complément ; neuf verbes à l'objet direct et six sans), cinquante phrases d'homophones grammaticaux (a/à/as, et/est, on/ont, son/sont, ou/où, ce/se, sa/ça, mais/mes/met, peu/peut/peux), soixante-quinze
+    pluriels rangés par famille, les terminaisons -é/-er/-ez/-ait, la conjugaison de quinze verbes à l'indicatif. Pièges : « la histoire » (l'article s'élide : les noms qui commencent par une voyelle ou
+    un h se posent au pluriel après « les », ou après « un » et « une » quand le complément suit) ; le pronom « l' » cache le genre et n'est jamais employé ; un mauvais choix n'est jamais un autre pluriel admis ;
+    les mots qui ont deux pluriels (« travail », « ciel », « ail ») ne sont pas posés ; les mots qui ne changent pas (« nez », « souris ») ne sont jamais en choix multiple (« sourix » ne ressemble à aucune
+    faute d'enfant) ; « ces/ses » et « leur/leurs » sont laissés de côté, parce que les deux mots vont souvent dans la même phrase ; « rire » est écarté (« rie », « ries » se lisent comme d'autres mots).
+    Trouvés à la relecture des lignes avant la PR, que les tests n'avaient pas vus : « la histoire » (le test ne vérifiait que le genre de l'article) et des phrases en double dans les listes.
+  - **HORS FICHE, À FAIRE RELIRE.** Modes : les neuf verbes en plus des six de la fiche, « papa répète pour que » et « maman prépare le repas pour que », « si le temps était beau », l'impératif de quatorze
+    verbes. Phrase complexe : les phrases du corpus et leur analyse, « jouer au ballon » comme COI, « sourire aux enfants » et « rêver de leurs vacances » comme COI. CFEE : les onze verbes conjugués avec
+    « être », les neuf verbes à l'objet direct et leurs objets, les phrases d'appui des homophones, la liste des pluriels (dont quatorze qui ne changent pas), « Autrefois, … » pour l'imparfait en -ait, les seize
+    verbes en -er des terminaisons.
+  - **Limite connue.** Dans les terminaisons, la bonne réponse de la ligne « infinitif » est le verbe écrit dans la parenthèse : l'enfant choisit entre le recopier et le changer, ce qui rend cette ligne plus
+    facile que les trois autres.
+  - **Mesuré** : 108 tests (`cm2FrancaisModesTemplates.test.ts` : 36 ; `cm2FrancaisPhraseComplexeTemplates.test.ts` : 36 ; `cm2FrancaisCfeeTemplates.test.ts` : 36) ; pannes provoquées : 14 attrapées sur 18
+    pour les modes (`scratchpad/mut-6a.py` : une forme du subjonctif, une de l'impératif, une terminaison du conditionnel, le radical, « si » au présent, un pronom, un ordre, une case), 15 sur 15 pour la phrase
+    complexe, 37 sur 37 pour le CFEE (`scratchpad/mut-cfe.py`) ; les quatre survivantes des modes ne changent rien à ce que voit l'enfant (deux cases du tableau jamais posées, « saches » et « faites » ; un
+    impératif « tu » remplacé par « nous », qui reste un impératif ; « qu'il » dans un énoncé que la liste ne pose pas). Le scan de 3 750 paliers (250 tirages × 5 paliers × 3 thématiques, nom de la matière donné) ne
+    trouve aucun défaut du contrôleur, aucune apostrophe de trop, aucun « : ». PAS vu : l'écran, l'iPhone, la production, la relecture des lignes fabriquées après déploiement.
+
+- **Le français du CM2, lire pour s'informer, donner son avis, le dialogue, la poésie** (`paliers/games/cm2Informer.ts`, `cm2Argumenter.ts`, `cm2Dialogue.ts`, `cm2Poesie.ts`) :
+  quarante gabarits pour `fr-cm2-informer` (dix `cm2-inf-*`), `fr-cm2-argumenter` (dix `cm2-arg-*`), `fr-cm2-dialogue` (dix `cm2-dia-*`) et `fr-cm2-poesie` (dix `cm2-poe-*`), que le modèle n'écrit plus. Lot 6b du
+  CM2, qui complète le lot 6a : toute la classe de CM2 est alors fabriquée par le code (46 thématiques). Ces quatre thématiques sont celles où le modèle écrivait des textes absents de l'énoncé : ici le TEXTE est
+  dans l'énoncé (dix documents, dix poèmes, des conversations), chaque question porte sur une phrase qu'on peut relire, et le test relit le texte avec ses propres tableaux (`lib/test-support/cm1MathsKit.ts`).
+  - **Lire pour s'informer.** Dix documents de cinq phrases (la mer salée, boire, les pêcheurs, le baobab, se laver les mains, les moustiques, le plastique, le sommeil, la mangrove, le désert), sans deux-points
+    ni chiffre, avec au plus une apostrophe : le sujet, la cause, la conséquence, la phrase vraie, un mot caché, les phrases à remettre dans l'ordre, relier une cause à sa conséquence, glisser dans « cause » et
+    « conséquence ». Une bonne réponse n'emploie que des mots du texte, un mauvais choix en emploie au moins un que le texte n'écrit pas. Les mots de liaison (car, parce que, donc, alors, c'est pourquoi, ainsi, mais,
+    pourtant) viennent de trente phrases à deux propositions : un trou (seul le rapport juste va) et une réponse à écrire (tous les mots du rapport sont admis). Pièges : « parce que » devant une voyelle s'écrit
+    « parce qu' », donc ces phrases prennent « car » ; un pronom ne passe jamais avant son nom (« Elle mange une mangue parce que Fatou a faim »), donc quatre conséquences ne se disent pas à l'envers ; « le car »
+    (le véhicule) contient le mot « car » et faisait afficher la réponse dans l'énoncé ; la question « d'après le texte » a une apostrophe de trop, elle devient « selon le texte ».
+  - **Donner son avis.** Seize faits et seize opinions (un fait se vérifie, une opinion juge), huit idées avec trois arguments pour et trois contre, seize règles de débat, sept rôles de mots de liaison. Le trou d'une
+    liste d'arguments est le mot que le texte n'emploie pas (« d'abord », « de plus », « enfin ») : les deux autres s'y lisent déjà, donc un seul va. « Cependant » et « au contraire » ne se posent pas dans un trou, parce
+    qu'ils se lisent presque partout. Les mauvais choix d'une question sont de même longueur que la bonne réponse (le contrôleur refuse la bonne option qui se devine à sa longueur).
+  - **Le dialogue.** Seize phrases à ponctuer de deux façons justes (guillemets après deux-points, ou tiret avec le verbe de parole après), quinze phrases à verbe de parole où le texte impose un verbe (une question appelle
+    « demande », un cri « s'écrie », un secret « murmure », un ordre « ordonne », une réponse « répond »), douze phrases mises au récit, huit conversations de politesse au téléphone, le signe qui manque, le rôle des
+    signes, huit dialogues à compter, le sens des verbes de parole. Un énoncé n'a jamais de deux-points : les dialogues qui en ont sont des choix, des tuiles ou le trou d'une phrase. Trouvé à la relecture des lignes avant
+    la PR, que les tests n'avaient pas vu : « Où vas-tu? » sans espace avant le point d'interrogation (le test acceptait les deux).
+  - **La poésie.** Dix poèmes écrits pour l'exercice (chaque énoncé qui en porte un commence par « Poème écrit pour l'exercice. »), AUCUN nom de poète et aucun vers attribué : la règle de la fiche est tenue. Dix-huit
+    familles de rimes (une rime est un son : « soleil » et « réveil », « poisson » et « maison »), les rimes à trouver, l'intrus, relier, glisser, le schéma d'une strophe (AABB, ABAB, ABBA), le nombre de vers et de strophes,
+    le mot qui rime à la fin d'un vers, le vers qui répète une consonne, la comparaison. Deux familles proches à l'oreille (« soleil » et « famille », « maison » et « chemin ») ne sont jamais dans le même exercice : le test
+    refuse un mauvais choix qui rime ou qui ressemble. Un mauvais choix du trou ne rime avec aucun vers de la strophe.
+  - **HORS FICHE, À FAIRE RELIRE.** Informer : les dix documents et leurs explications (le baobab garde son eau, le sel reste dans la mer, les moustiques pondent dans l'eau qui dort, le plastique tue les poissons, la
+    mangrove protège la côte), les trente phrases de liaison, « alors », « ainsi », « mais », « pourtant ». Avis : les seize faits (« L'eau bout à cent degrés ») et les seize opinions, les huit idées et leurs arguments,
+    les seize règles du débat, « ensuite » et « pourtant ». Dialogue : « explique » et « ordonne » comme verbes de parole, les phrases à ponctuer, les phrases au récit, les conversations au téléphone. Poésie : les dix
+    poèmes et leurs rimes, les dix-huit familles, les douze vers à sonorité, les douze comparaisons.
+  - **Mesuré** : 144 tests (`cm2FrancaisInformerTemplates.test.ts`, `cm2FrancaisArgumenterTemplates.test.ts`, `cm2FrancaisDialogueTemplates.test.ts`, `cm2FrancaisPoesieTemplates.test.ts` : 36 chacun) ; 60 pannes
+    provoquées sur 60 attrapées (`scratchpad/mut-6b.py` : une cause, une conséquence, un mot de liaison du mauvais rapport, un fait rangé avec les opinions, un argument contre parmi les pour, un deux-points oublié, une
+    espace oubliée, un verbe de parole qui ne convient pas, un mot dans deux familles de rimes, un schéma faux, un mauvais choix qui rime) ; le scan de 5 000 paliers (250 tirages × 5 paliers × 4 thématiques, nom de
+    la matière donné) ne trouve aucun défaut du contrôleur, aucune collision d'indice, aucune apostrophe de trop. PAS vu : l'écran, l'iPhone, la production, la relecture des lignes fabriquées après déploiement.
+
 - **Les mathématiques du CM1, les figures, les périmètres et aires, les mesures** (`paliers/games/figuresCm1.ts`, `perimetreAireCm1.ts`, `mesuresCm1.ts`) :
   vingt-neuf gabarits pour `ma-cm1-figures` (neuf `cm1-fig-*` et le dessin à reproduire `pixel-copie`), `ma-cm1-perimetres-aires` (dix `cm1-per-*`) et `ma-cm1-mesures` (dix `cm1-mes-*`), avec le même
   moteur de test (`lib/test-support/cm1MathsKit.ts`, qui accepte maintenant `extraKinds` pour un jeu hors du lot, ici `pixel-copie`). Les périmètres et les mesures sont CALCULÉS comme les nombres.
