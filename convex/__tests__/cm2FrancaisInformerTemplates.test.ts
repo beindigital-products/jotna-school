@@ -36,7 +36,7 @@ const LINKS: Record<string, string[][]> = {
   "Pourquoi il faut laver ses mains": [["Nos mains touchent beaucoup de choses", "Elles prennent des microbes"], ["Nous mangeons sans nous laver les mains", "Les microbes entrent dans le ventre"], ["Un lavage au savon avant le repas", "Il protège toute la famille"]],
   "Les moustiques et l'eau qui dort": [["Une eau qui ne bouge pas", "Les moustiques y pondent leurs œufs"], ["Le soleil se couche", "Les moustiques sortent et piquent les gens"], ["Vider les seaux chaque semaine", "Les œufs ne peuvent pas grandir"]],
   "Pourquoi il faut recycler le plastique": [["Il pleut", "Les sachets sont emportés vers les rivières"], ["Les poissons mangent ces morceaux", "Ils tombent malades"], ["Ramasser et recycler le plastique", "Cela protège les animaux et nos villages"]],
-  "Pourquoi il faut dormir": [["Un enfant dort peu", "Il est fatigué le lendemain"], ["Pendant le sommeil", "Le corps se repose et grandit"], ["Le manque de sommeil", "Il se met vite en colère"]],
+  "Pourquoi il faut dormir": [["Un enfant dort peu", "Il est fatigué le lendemain"], ["Pendant le sommeil", "Le corps se repose et grandit"], ["Un enfant grandit vite", "Il a besoin de dormir dix heures par nuit"]],
   "Pourquoi protéger la mangrove": [["Les racines retiennent la terre", "La mer ne ronge pas la côte"], ["On coupe trop les arbres", "La côte disparaît peu à peu"], ["Les poissons viennent se cacher entre les racines", "Ils peuvent grandir"]],
   "Pourquoi le désert avance": [["Les habitants coupent des arbres", "Le vent emporte la terre"], ["Rien ne pousse plus", "Les familles doivent partir"], ["Planter des arbres", "Le désert s'arrête peu à peu"]],
 };
@@ -81,9 +81,18 @@ const checkQuestion: Check = (exo) => {
   );
 };
 
+// Le genre des mots cachés et de leurs mauvais choix : après « le », « la », « cette »… un mauvais choix du mauvais genre se rejette sans lire le texte.
+const GENDER: Record<string, "m" | "f"> = {
+  roche: "f", boue: "f", forêt: "f", réserve: "f", graine: "f", racine: "f",
+  paludisme: "m", rhume: "m", hoquet: "m", sommeil: "m", repas: "m", travail: "m", vent: "m", froid: "m", sable: "m",
+};
+const SINGULAR_DETERMINERS = new Set(["le", "la", "un", "une", "ce", "cet", "cette", "son", "sa", "notre", "votre"]);
+
 const checkCloze: Check = (exo) => {
   const text = textOf(exo);
   const blank = blankOf(exo);
+  const before = /(\p{L}+) ___/u.exec(text)?.[1]?.toLowerCase();
+  const agrees = before !== undefined && SINGULAR_DETERMINERS.has(before);
   const doc = readText(text.replace("___", blank.answer));
   if (!TRUTH[doc.title]) return `titre inconnu : ${doc.title}`;
   const bodyWords = wordsOf(doc.body);
@@ -93,6 +102,7 @@ const checkCloze: Check = (exo) => {
     ok(doc.sentences.length === 5, "cinq phrases attendues"),
     ok(bodyWords.includes(blank.answer), `${blank.answer} n'est pas dans le texte`),
     ...blank.options.filter((option) => option !== blank.answer).map((option) => ok(!bodyWords.includes(option), `un mauvais choix est un mot du texte : ${option}`)),
+    ...(agrees ? blank.options.map((option) => ok(GENDER[option] !== undefined && GENDER[option] === GENDER[blank.answer], `après « ${before} », « ${option} » n'a pas le genre de « ${blank.answer} »`)) : []),
   );
 };
 
