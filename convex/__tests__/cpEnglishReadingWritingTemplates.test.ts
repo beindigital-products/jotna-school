@@ -691,7 +691,11 @@ const CHECKS: Record<string, Check> = {
     const letter = /par la lettre (\p{L}) \?$/u.exec(exo.prompt)?.[1] ?? "";
     const options = optionsOf(exo);
     const starts = options.map((option) => option[0]);
+    // La forme des lettres, écrite à part : le ventre du b est à droite de la tige, celui du d à gauche. Un indice qui place un ventre le place juste.
+    const BELLY: Record<string, string> = { b: "droite", d: "gauche" };
+    const bellies = exo.hints.flatMap((hint) => [...hint.matchAll(/un (b|d) a son ventre à (droite|gauche)/giu)].map((m) => [m[1].toLowerCase(), m[2]] as const));
     return (
+      ok(bellies.every(([shape, side]) => BELLY[shape] === side), `un indice place mal le ventre d'une lettre : ${exo.hints.join(" | ")}`) ??
       ok(rightOption(exo).startsWith(letter), `« ${rightOption(exo)} » ne commence pas par ${letter}`) ??
       ok(options.filter((option) => option.startsWith(letter)).length === 1, "deux mots commencent par la lettre") ??
       ok(same(starts, ["b", "d", "p"]), `premières lettres ${starts.join(" ")}`)

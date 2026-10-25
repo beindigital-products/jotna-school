@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Play, Volume2 } from "lucide-react";
 import { Reward, Tile3D, useGameFeel, type TileState } from "@/components/student/game-kit";
 import { graphemeCount, qcmLayout } from "@/components/student/game-kit/choix-texte";
+import { typesetTile } from "@/components/student/game-kit/tile-typeset";
 import { SandTable } from "@/components/student/game-kit/ecrans-decor";
 import ExercisePrompt from "./ExercisePrompt";
 import { BrokenExercise, SubmitButton, type ExerciseScreenProps } from "./game-parts";
@@ -192,7 +193,7 @@ export default function ListenExercise({
               data-option={index}
             >
               <span className="sr-only">{letter}</span>
-              {option}
+              {typesetTile(option)}
             </Tile3D>
           );
           // Une option seule sur la dernière ligne se centre, à la largeur des autres.

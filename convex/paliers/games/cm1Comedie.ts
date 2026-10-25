@@ -151,6 +151,9 @@ const CMD_IMITER: Pool = {
       id: "imiter",
       q: ["Que fait un comédien qui reproduit les gestes et la voix d'une autre personne ?"],
       a: "Imiter",
+      // La réponse écrite demande le verbe (un élève répond sinon « il imite ») et admet aussi la forme conjuguée.
+      w: "Quel verbe veut dire reproduire les gestes et la voix d'une autre personne ? Écris le verbe.",
+      also: ["Imite", "Il imite", "Il les imite", "Il l'imite"],
       s: ["Reproduire les gestes et la voix des autres, c'est ___."],
       ga: "imiter",
       hint: "Il copie ce qu'il a bien observé.",

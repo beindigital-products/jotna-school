@@ -39,6 +39,9 @@ const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLo
 const apostrophes = (text: string) => (text.match(/'/g) ?? []).length;
 const wordCount = (text: string) => text.split(/\s+/).filter((token) => /[\p{L}\p{N}]/u.test(token)).length;
 const same = (a: readonly string[], b: readonly string[]) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+/** Les écritures admises d'un verbe conjugué « avec « ils » » : le verbe seul, ou avec le pronom de la consigne (« j'ai » s'élide). */
+const writtenWith = (pronoun: string, form: string): string[] =>
+  pronoun === "je" && /^[aeéèêiouyh]/u.test(form) ? [form, `j'${form}`, `j’${form}`] : [form, `${pronoun} ${form}`];
 
 type Check = (exo: Exo) => string | null;
 const ok = (condition: boolean, message: string) => (condition ? null : message);
@@ -433,7 +436,7 @@ const CHECKS: Record<string, Check> = {
     const verb = match[1];
     const person = PERSON[match[2]];
     const want = present ? PRESENT_FORMS[verb]?.[person] : `${AVOIR[person]} ${PARTICIPLE[verb]}`;
-    return ok(acceptedOf(exo).length === 1 && acceptedOf(exo)[0] === want && exo.answerKey === want, `la forme juste est « ${want} », le gabarit dit « ${acceptedOf(exo).join(" | ")} »`);
+    return ok(same(acceptedOf(exo), writtenWith(match[2], want)) && acceptedOf(exo)[0] === want && exo.answerKey === want, `la forme juste est « ${want} », le gabarit dit « ${acceptedOf(exo).join(" | ")} »`);
   },
 
   // --- L'impératif et le futur ---
@@ -473,12 +476,14 @@ const CHECKS: Record<string, Check> = {
   }),
   "ce1-fr-imperatif-ecrire": (exo) => {
     const future = /^Écris (\p{L}+) au futur avec « (\p{L}+) »\.$/u.exec(exo.prompt);
-    const imperative = /^Écris l'impératif d(?:e |')(\p{L}+) avec « (\p{L}+) »\.$/u.exec(exo.prompt);
+    // L'impératif n'a pas de pronom : l'énoncé dit d'écrire le verbe seul, et seul le verbe est admis.
+    const imperative = /^Écris l'impératif d(?:e |')(\p{L}+) avec « (\p{L}+) »\. Écris seulement le verbe\.$/u.exec(exo.prompt);
     const match = future ?? imperative;
     if (!match) return `énoncé inconnu : ${exo.prompt}`;
     const verb = match[1];
     const want = future ? `${verb}${FUTURE_END[PERSON[match[2]]]}` : verb === "manger" ? "mangeons" : `${verb.slice(0, -2)}${match[2] === "nous" ? "ons" : "ez"}`;
-    return ok(acceptedOf(exo).length === 1 && acceptedOf(exo)[0] === want && exo.answerKey === want, `la forme juste est « ${want} », le gabarit dit « ${acceptedOf(exo).join(" | ")} »`);
+    const accepted = future ? writtenWith(match[2], want) : [want];
+    return ok(same(acceptedOf(exo), accepted) && acceptedOf(exo)[0] === want && exo.answerKey === want, `la forme juste est « ${want} », le gabarit dit « ${acceptedOf(exo).join(" | ")} »`);
   },
 
   // --- Le dictionnaire ---

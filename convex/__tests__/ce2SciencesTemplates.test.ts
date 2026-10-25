@@ -145,6 +145,21 @@ const PART_ROLE: Record<string, string> = {
 // ===== La vie des animaux =====
 const OVIPARES_T = ["Poule", "Tortue", "Poisson", "Canard", "Pigeon", "Crocodile", "Grenouille", "Papillon", "Pintade"];
 const VIVIPARES_T = ["Chèvre", "Chat", "Homme", "Vache", "Mouton", "Chien", "Âne", "Cheval", "Lion", "Éléphant", "Singe"];
+/**
+ * « Nomme un animal ovipare / vivipare » est une question ouverte : tout animal juste et courant doit
+ * passer, pas seulement ceux des QCM. Pas de requin (beaucoup sont vivipares), pas de coq (il ne pond pas).
+ */
+const OVIPARES_WRITTEN_T = [
+  "poule", "tortue", "poisson", "canard", "pigeon", "crocodile", "grenouille", "papillon", "pintade",
+  "oiseau", "serpent", "lézard", "margouillat", "autruche", "caïman", "crapaud", "oie", "oies", "dinde", "perroquet", "aigle", "moineau",
+  "abeille", "fourmi", "moustique", "escargot", "araignée", "criquet", "sauterelle",
+];
+const VIVIPARES_WRITTEN_T = [
+  "chèvre", "chat", "homme", "vache", "mouton", "chien", "âne", "cheval", "lion", "éléphant", "singe",
+  "lapin", "cochon", "porc", "chameau", "dromadaire", "girafe", "zèbre", "hyène", "gazelle", "antilope", "phacochère", "hippopotame",
+  "rhinocéros", "buffle", "bœuf", "taureau", "brebis", "bouc", "souris", "rat", "chauve-souris", "baleine", "dauphin", "panthère",
+  "léopard", "guépard", "chacal", "renard", "loup", "ours", "gorille", "chimpanzé", "humain",
+];
 const YOUNG_T: Record<string, string> = { Poule: "Poussin", Chèvre: "Chevreau", Chat: "Chaton", Chien: "Chiot", Vache: "Veau", Mouton: "Agneau", Canard: "Caneton", Cheval: "Poulain" };
 const LIFE_T: Record<string, string[]> = {
   papillon: ["Œuf", "Chenille", "Chrysalide", "Papillon"],
@@ -302,7 +317,7 @@ const PLANTE_ECRIRE_T: [string, string[]][] = [
   ["Quelle partie sort la première de la graine qui germe ? Écris le mot.", ["racine", "la racine"]],
   ["Eau, air et ___ font germer la graine. Écris le mot.", ["chaleur", "la chaleur"]],
   ["Que porte le fruit ? Écris le mot.", ["graines", "des graines", "graine"]],
-  ["Dans quoi se trouvent les graines de l'arachide ? Écris le mot.", ["gousse", "une gousse", "la gousse"]],
+  ["Dans quoi se trouvent les graines de l'arachide ? Écris le mot.", ["gousse", "une gousse", "la gousse", "coque", "cosse"]],
   ["Comment s'appelle le moment où la graine commence à pousser ? Écris le mot.", ["germination", "la germination"]],
   ["Combien de choses faut-il à une graine pour germer ? Écris le nombre.", ["3", "trois"]],
   ["Quelle partie de la mangue contient la graine ? Écris le mot.", ["noyau", "le noyau"]],
@@ -359,8 +374,8 @@ const ANIMAL_TROU_T: [string, string, string[]][] = [
   ["Le têtard devient une ___.", "grenouille", ["chenille", "poule"]],
 ];
 const ANIMAL_ECRIRE_T: [string, string[]][] = [
-  ["Nomme un animal ovipare. Écris le mot.", ["poule", "tortue", "poisson", "canard", "pigeon", "crocodile", "grenouille", "papillon"]],
-  ["Nomme un animal vivipare. Écris le mot.", ["chèvre", "chat", "homme", "vache", "mouton", "chien", "âne", "cheval", "lion", "éléphant", "singe"]],
+  ["Nomme un animal ovipare. Écris le mot.", OVIPARES_WRITTEN_T],
+  ["Nomme un animal vivipare. Écris le mot.", VIVIPARES_WRITTEN_T],
   ["Un animal qui met ses petits au monde est ___. Écris le mot.", ["vivipare", "vivipares"]],
   ["Un animal qui pond des œufs est ___. Écris le mot.", ["ovipare", "ovipares"]],
   ["Quel animal sort de l'œuf du papillon ? Écris le mot.", ["chenille", "la chenille", "une chenille"]],
@@ -456,11 +471,11 @@ const SANTE_ECRIRE_T: [string, string[]][] = [
   ["Que doit-on faire de l'eau qui ne bouge pas autour de la maison ? Écris le verbe.", ["vider"]],
   ["Comment s'appelle la maladie transmise par les moustiques ? Écris le mot.", ["paludisme", "le paludisme", "palu"]],
   ["Quel insecte transmet le paludisme ? Écris le mot.", ["moustique", "le moustique", "un moustique"]],
-  ["Quel objet ne faut-il jamais partager pour éviter le VIH ? Écris le mot.", ["lame", "seringue", "une lame", "une seringue"]],
+  ["Quel objet ne faut-il jamais partager pour éviter le VIH ? Écris le mot.", ["lame", "seringue", "une lame", "une seringue", "rasoir", "lame de rasoir", "aiguille"]],
   ["Sous quoi dort-on pour éviter les piqûres de moustique ? Écris le mot.", ["moustiquaire", "une moustiquaire", "la moustiquaire"]],
   ["Que ne faut-il pas toucher d'une autre personne pour éviter le VIH ? Écris le mot.", ["sang", "le sang"]],
   ["Le soir, on porte des habits ___ pour éviter les piqûres. Écris le mot.", ["longs", "long"]],
-  ["Que faut-il vider autour de la maison pour éviter les moustiques ? Écris le mot.", ["eau", "l'eau"]],
+  ["Quel liquide faut-il vider des vieux pots et des pneus pour éviter les moustiques ? Écris le mot.", ["eau", "l'eau", "eau stagnante", "l'eau stagnante"]],
 ];
 const ENV_CAUSE_QCM_T: [string, string, string[]][] = [
   ["Que provoque la coupe de trop d'arbres ?", "Moins d'ombre et moins d'abris pour les animaux", ["Plus d'animaux dans la brousse", "Plus d'ombre sous le soleil"]],
@@ -505,7 +520,10 @@ const ENV_TROU_T: [string, string, string[]][] = [
 const ENV_ECRIRE_T: [string, string[]][] = [
   ["Que ramasse-t-on ensemble pour garder le quartier propre ? Écris le mot.", ["déchets", "les déchets", "dechets", "ordures"]],
   ["Que faut-il fermer pour ne pas gaspiller l'eau ? Écris le mot.", ["robinet", "le robinet"]],
-  ["Quel objet en plastique reste très longtemps dans la nature ? Écris le mot.", ["sachet", "sachets", "un sachet", "sachet plastique"]],
+  [
+    "Quel objet en plastique, donné au marché pour porter les achats, reste très longtemps dans la nature ? Écris le mot.",
+    ["sachet", "sachets", "un sachet", "sachet plastique", "sachets plastiques", "sachet en plastique", "sac", "sac plastique", "sac en plastique"],
+  ],
   ["Où faut-il mettre les déchets ? Écris le mot.", ["poubelle", "la poubelle", "une poubelle"]],
   ["Quel liquide manque dans un quartier trop peuplé ? Écris le mot.", ["eau", "l'eau"]],
   ["Comment appelle-t-on le feu qui brûle les herbes et les arbres ? Écris les trois mots.", ["feu de brousse", "feux de brousse", "un feu de brousse"]],
@@ -581,8 +599,13 @@ const CHECKS: Record<string, Check> = {
     const ovipare = exo.prompt === "Nomme un animal ovipare. Écris le mot.";
     const vivipare = exo.prompt === "Nomme un animal vivipare. Écris le mot.";
     if (!ovipare && !vivipare) return null;
-    const names = (ovipare ? OVIPARES_T : VIVIPARES_T).map((name) => name.toLowerCase());
-    return ok(acceptedOf(exo).every((answer) => names.includes(answer)), `réponse admise qui n'est pas ${ovipare ? "ovipare" : "vivipare"} : ${acceptedOf(exo).join(" | ")}`);
+    // Tout animal de la leçon (ceux des QCM et du glissé) est admis, et aucun animal de l'autre sorte.
+    const lesson = (ovipare ? OVIPARES_T : VIVIPARES_T).map((name) => name.toLowerCase());
+    const otherSort = ovipare ? VIVIPARES_WRITTEN_T : OVIPARES_WRITTEN_T;
+    return all(
+      ok(lesson.every((name) => acceptedOf(exo).includes(name)), `un animal de la leçon est refusé : ${lesson.filter((name) => !acceptedOf(exo).includes(name)).join(" | ")}`),
+      ok(acceptedOf(exo).every((answer) => !otherSort.includes(answer)), `réponse admise qui n'est pas ${ovipare ? "ovipare" : "vivipare"} : ${acceptedOf(exo).join(" | ")}`),
+    );
   }),
 
   // ----- Le circuit électrique -----

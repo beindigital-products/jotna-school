@@ -11,10 +11,15 @@ import {
   type TileState,
 } from "@/components/student/game-kit";
 import { FlyingToken, useTokenFlight } from "@/components/student/game-kit/choix-vol-jeton";
+import { typesetTile } from "@/components/student/game-kit/tile-typeset";
+import type { ItemImage } from "@/lib/item-images";
+import { splitTile } from "@/lib/item-pictures";
 import ExercisePrompt from "./ExercisePrompt";
 import { payloadImage } from "./ExerciseImage";
 import { BrokenExercise, ExerciseActions, type ExerciseScreenProps } from "./game-parts";
+import { ItemPicture, useTileGroupPictures } from "./item-pictures";
 import { SENTENCE_INDEX, useTileVoice } from "./prompt-reader";
+import { isDenseTileCount, TilePicture, tileName } from "./tile-picture";
 import { splitBlanks, type FillBlankView } from "@/convex/paliers/games/types";
 
 /**
@@ -36,6 +41,23 @@ import { splitBlanks, type FillBlankView } from "@/convex/paliers/games/types";
  * tableau, un mot par trou, comme avant ; les noms accessibles des trous
  * (« Trou 1 : une », « Trou 2, vide ») et des mots (le mot seul) ne changent
  * pas.
+ *
+ * EN CI, UNE OPTION QUI NOMME UNE CHOSE MONTRE SON IMAGE (`item-pictures.tsx`,
+ * règle permanente du dépôt) : « le balai », « les ciseaux », « l'arrosoir » ne se
+ * lisent pas à six ans. Les options de CHAQUE trou se résolvent à part
+ * (`useTileGroupPictures`), comme un QCM (`choice` : un trou n'a qu'une bonne
+ * option, ses images sont toutes ou aucune), avec l'énoncé, l'image d'énoncé et la
+ * phrase (`sentence` : un émoji de la chose dans la phrase la trahirait). L'écran
+ * retire ainsi lui-même les images quand elles donneraient la réponse. La tuile
+ * pose la pastille au-dessus du mot (`TilePicture`, comme l'association), et le
+ * trou rempli la garde, petite, devant le mot. Sans `ItemPicturesProvider` (les
+ * autres classes, la galerie), rien ne change. Le mot envoyé reste le texte
+ * d'origine.
+ *
+ * LES TEXTES AFFICHÉS SONT COMPOSÉS (`typesetTile`) : la phrase, les mots des
+ * tuiles, du trou et du jeton en vol. L'espace avant « ? ! : ; » est insécable, et
+ * le signe qui suit un trou reste collé à lui (`GLUED_AFTER_HOLE`) : « Awa, ___
+ * vite à la maison ! » ne laisse plus un « ! » seul en tête de ligne.
  *
  * « Valider » est posé dans la barre d'action (`ExerciseActions`,
  * `game-parts.tsx`) : pour un enfant qui apprend à lire, « Écouter » vient
@@ -71,6 +93,11 @@ export default function FillBlankExercise({
   // phrase la redit. Avant le retour anticipé : l'ordre des hooks.
   const wordsToHear = blanks[active]?.options ?? [];
   const tileVoice = useTileVoice(wordsToHear, prompt, { sentence: text || null, autoRead: true });
+  // Les images des options (CI), trou par trou ; avant le retour anticipé, comme la voix.
+  const pictures = useTileGroupPictures(
+    blanks.map((blank) => (Array.isArray(blank?.options) ? blank.options.filter((o): o is string => typeof o === "string") : [])),
+    { prompt, choice: true, exerciseImage: payloadImage(payload), sentence: text },
+  );
 
   if (!text || blanks.length === 0 || parts.length !== blanks.length + 1) {
     return <BrokenExercise prompt={prompt} onSkip={onSkip} disabled={disabled} />;
@@ -92,6 +119,12 @@ export default function FillBlankExercise({
 
   const complete = chosen.every((value) => value !== null);
   const options = blanks[active]?.options ?? [];
+  /** L'image d'un mot parmi les options d'un trou, ou `null`. */
+  const pictureOf = (blank: number, word: string | null): ItemImage | null => {
+    if (word === null) return null;
+    const index = (blanks[blank]?.options ?? []).indexOf(word);
+    return index === -1 ? null : (pictures[blank]?.[index] ?? null);
+  };
 
   const frame =
     isCorrect === true
@@ -117,25 +150,40 @@ export default function FillBlankExercise({
           tileVoice?.hear(SENTENCE_INDEX);
         }}
       >
-        {parts.map((part, i) => (
-          <span key={i}>
-            {part}
-            {i < blanks.length && (
+        {parts.map((part, i) => {
+          // Le signe qui suit un trou (« ___ ! ») part avec lui : il ne commence jamais une ligne.
+          const lead = i > 0 ? (GLUED_AFTER_HOLE.exec(part)?.[0] ?? "") : "";
+          const glue = i < blanks.length ? (GLUED_AFTER_HOLE.exec(parts[i + 1] ?? "")?.[0] ?? "") : "";
+          const hole =
+            i < blanks.length ? (
               <Hole
                 ref={(el) => {
                   holeRefs.current[i] = el;
                 }}
                 index={i}
                 word={chosen[i]}
+                image={pictureOf(i, chosen[i])}
                 active={i === active && !disabled}
                 hidden={landing === i}
                 verdict={isCorrect}
                 disabled={disabled}
                 onPress={() => setActive(i)}
               />
-            )}
-          </span>
-        ))}
+            ) : null;
+          return (
+            <span key={i}>
+              {typesetTile(part.slice(lead.length))}
+              {hole && glue ? (
+                <span className="whitespace-nowrap">
+                  {hole}
+                  {typesetTile(glue)}
+                </span>
+              ) : (
+                hole
+              )}
+            </span>
+          );
+        })}
         <Reward fire={isCorrect === true ? "juste" : null} />
       </div>
 
@@ -147,6 +195,7 @@ export default function FillBlankExercise({
         <div className={`grid grid-cols-2 gap-3 ${options.length > 4 ? "sm:grid-cols-3" : ""}`}>
           {options.map((word, wordIndex) => {
             const picked = chosen[active] === word;
+            const image = pictures[active]?.[wordIndex] ?? null;
             const state: TileState =
               picked && isCorrect !== null ? (isCorrect ? "juste" : "fausse") : picked ? "choisie" : "repos";
             return (
@@ -163,7 +212,7 @@ export default function FillBlankExercise({
                 onPress={() => choose(word)}
                 speaking={tileVoice?.speaking === wordIndex}
               >
-                {word}
+                {image ? <TilePicture text={word} image={image} dense={isDenseTileCount(options.length)} /> : typesetTile(word)}
               </Tile3D>
             );
           })}
@@ -195,13 +244,21 @@ export default function FillBlankExercise({
               color: ACCENT.text,
             }}
           >
-            {flight.text}
+            {typesetTile(flight.text)}
           </span>
         )}
       </FlyingToken>
     </div>
   );
 }
+
+/**
+ * Le début du morceau de phrase qui suit un trou, quand c'est un signe qui ne doit
+ * pas commencer une ligne : l'espace éventuelle, puis « . , ; : ! ? … » ou un
+ * guillemet ou une parenthèse fermante. Il est rendu collé au trou, dans un même
+ * `nowrap`, et retiré du morceau suivant.
+ */
+const GLUED_AFTER_HOLE = /^\s?[.,;:!?…»)\]]+/u;
 
 /**
  * Un trou de la phrase : une case en ligne, 56 px de haut. Vide : un
@@ -217,6 +274,8 @@ const Hole = forwardRef<
   {
     index: number;
     word: string | null;
+    /** L'image du mot posé (CI), ou `null` : une petite pastille devant le mot. */
+    image: ItemImage | null;
     active: boolean;
     /** Le mot est en vol : la case le garde invisible jusqu'à l'arrivée. */
     hidden: boolean;
@@ -224,7 +283,7 @@ const Hole = forwardRef<
     disabled: boolean;
     onPress: () => void;
   }
->(function Hole({ index, word, active, hidden, verdict, disabled, onPress }, ref) {
+>(function Hole({ index, word, image, active, hidden, verdict, disabled, onPress }, ref) {
   const filled = word !== null;
   let look: string;
   let style: CSSProperties | undefined;
@@ -261,8 +320,15 @@ const Hole = forwardRef<
       }`}
       style={style}
     >
-      <span key={word ?? "vide"} className={`${filled ? "animate-[gk-pop_0.45s_ease-out]" : ""} ${hidden ? "invisible" : ""}`}>
-        {word ?? "?"}
+      <span
+        key={word ?? "vide"}
+        className={`${filled ? "animate-[gk-pop_0.45s_ease-out]" : ""} ${hidden ? "invisible" : ""} ${
+          image ? "inline-flex items-center gap-1.5" : ""
+        }`}
+      >
+        {/* La pastille (32 px) tient dans la case de 56 px, devant le mot. */}
+        {word !== null && image && <ItemPicture image={image} emoji={splitTile(word).emoji} size="xs" className="-my-1 size-8" />}
+        {word === null ? "?" : typesetTile(tileName(word, image))}
       </span>
     </button>
   );

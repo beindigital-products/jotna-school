@@ -401,8 +401,8 @@ const MEMBERS: Record<string, string[]> = {
   // Protéger nos ressources
   Problème: ["Déforestation", "Feux de brousse", "Surpêche", "Érosion côtière", "Avancée du désert"],
   Solution: ["Reboisement", "Grande Muraille verte", "Aires marines protégées"],
-  "Problème de la terre": ["Déforestation", "Feux de brousse", "Avancée du désert"],
-  "Problème de la mer": ["Surpêche", "Érosion côtière"],
+  "Problème dans les terres": ["Déforestation", "Feux de brousse", "Avancée du désert"],
+  "Problème en mer ou sur la côte": ["Surpêche", "Érosion côtière"],
   // La population du Sénégal
   "Une langue nationale": ["Wolof", "Pulaar", "Sérère", "Diola", "Mandingue", "Soninké"],
   "Une langue étrangère": ["Anglais", "Espagnol", "Portugais", "Allemand"],
@@ -457,7 +457,7 @@ const { checkOf } = defineTemplateTests({
     ["Avant 1960", "Depuis 1960"], ["Un homme politique", "Date"],
     ["Se déplacer", "Communiquer"], ["Pour se soigner", "Pour s'éclairer"],
     ["Vallée du fleuve Sénégal", "Côte"], ["Bassin arachidier", "Ferlo"], ["Casamance", "Ferlo"],
-    ["Problème", "Solution"], ["Problème de la terre", "Problème de la mer"],
+    ["Problème", "Solution"], ["Problème dans les terres", "Problème en mer ou sur la côte"],
     ["Une langue nationale", "Une langue étrangère"], ["Beaucoup d'habitants", "Peu d'habitants"],
     ["À la campagne", "En ville"], ["Un problème de ville", "Un problème de campagne"],
   ],

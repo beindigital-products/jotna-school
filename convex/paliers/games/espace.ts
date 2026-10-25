@@ -563,7 +563,7 @@ export function makeLandmarkPick(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Lequel n'est pas comme les autres ? » : trois repères de la même sorte, un de l'autre. */
+/** « Un seul de ces dessins ne bouge jamais. Lequel ? » : trois repères de la même sorte, un de l'autre. */
 export function makeLandmarkOdd(ctx: GameContext): GeneratedGame {
   return fresh(
     ctx,
@@ -575,7 +575,9 @@ export function makeLandmarkOdd(ctx: GameContext): GeneratedGame {
       const options = shuffle(ctx.rng, [...main, odd]);
       return {
         type: "qcm",
-        prompt: "Lequel n'est pas comme les autres ?",
+        // Le critère est dans l'énoncé : sans lui, le cheval (seul vivant parmi des véhicules) ou la mosquée (seul bâtiment parmi des
+        // arbres) était un intrus défendable, refusé.
+        prompt: fixedMain ? "Un seul de ces dessins peut bouger. Lequel ?" : "Un seul de ces dessins ne bouge jamais. Lequel ?",
         payload: {
           options,
           correctIndex: options.indexOf(odd),
@@ -590,7 +592,7 @@ export function makeLandmarkOdd(ctx: GameContext): GeneratedGame {
         ],
       };
     },
-    // L'énoncé ne change jamais : deux questions d'un palier ne gardent pas le même intrus, même entourées d'autres dessins.
+    // Deux questions d'un palier ne gardent pas le même intrus, même entourées d'autres dessins.
     (game) => game.answerKey,
   );
 }

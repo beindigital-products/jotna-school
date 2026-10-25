@@ -439,7 +439,8 @@ const CON_RELIER: readonly LinkRow[] = [
   link("Relie chaque lieu à sa description.", [["Gorée", "Île en face de Dakar"], ["Saint-Louis", "Ville à l'embouchure du fleuve"], ["Comptoir", "Poste de commerce sur la côte"]]),
   link("Relie chaque mot à son sens.", [["Caravane", "Groupe de marchands en voyage"], ["Comptoir", "Poste de commerce européen"], ["Almoravides", "Peuple venu du Sahara"]]),
   link("Relie chaque voyageur à son moyen de transport.", [["Marchand arabe", "Chameau"], ["Marin portugais", "Caravelle"], ["Pêcheur du fleuve", "Pirogue"]]),
-  link("Relie chaque voyageur à ce qu'il apporte.", [["Marchands arabes", "Islam"], ["Caravane", "Marchandises du Sahara"], ["Comptoir", "Commerce sur la côte"]]),
+  // « Marchands arabes » allait aussi bien avec l'islam qu'avec les marchandises du Sahara : chaque mot n'a plus qu'une place.
+  link("Relie chaque mot à son rôle.", [["Caravane", "Traverse le désert"], ["Caravelle", "Traverse l'océan"], ["Comptoir", "Commerce sur la côte"]]),
   link("Relie chaque période à son siècle.", [["Almoravides", "XIe siècle"], ["Portugais", "XVe siècle"], ["Conquête coloniale", "XIXe siècle"]]),
   link("Relie chaque voyageur à ce qu'il traverse.", [["Marchand arabe", "Désert"], ["Marin portugais", "Océan"], ["Pêcheur du fleuve", "Fleuve"]]),
 ];
@@ -476,6 +477,7 @@ const RES_WHO: Pool = {
       id: "alboury",
       q: ["Quel résistant a été le dernier bourba du Djolof ?", "Quel bourba du Djolof a combattu la conquête française ?"],
       a: "Alboury Ndiaye",
+      also: ["Alboury", "Albouri", "Albouri Ndiaye", "Alboury N'Diaye", "Albouri N'Diaye"],
       ga: "Alboury",
       s: ["___ Ndiaye, bourba du Djolof, a lutté contre la conquête française.", "Le bourba du Djolof, ___ Ndiaye, a combattu la conquête."],
       hint: "Il commandait un royaume wolof de l'intérieur du pays.",

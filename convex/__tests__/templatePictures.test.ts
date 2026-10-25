@@ -3,6 +3,7 @@ import { auditExercise } from "../paliers/exerciseAudit";
 import { GAME_KINDS, type GameKind } from "../paliers/games";
 import { makeContext, type GameLevel } from "../paliers/games/shared";
 import { CATEGORIES, COLORS, MOMENTS, SIZE_SCALE, WEIGHT_SCALE, optionOf, type Thing } from "../paliers/games/things";
+import { allProgrammeEntries } from "../programme";
 import { pictureForTile } from "../../lib/item-pictures";
 
 /**
@@ -58,10 +59,45 @@ describe("les listes de choses des gabarits du CI", () => {
   });
 });
 
+/**
+ * Les gabarits que le programme joue VRAIMENT en CI (`convex/programme`, la classe
+ * CI). Les options d'un texte à trous montrent leur image depuis octobre 2026
+ * (`FillBlankExercise`) : le contrôleur les juge désormais, mais un texte à trous du
+ * CE1 au CM2 (« le djembé », « la kora ») n'est jamais posé à un enfant de CI, et ses
+ * noms n'ont pas à être au catalogue.
+ */
+const CI_KINDS: ReadonlySet<string> = new Set(
+  allProgrammeEntries()
+    .filter((entry) => entry.klass === "CI")
+    .flatMap((entry) => (entry.topic.games ?? []).map((game) => game.kind)),
+);
+
 describe("les exercices fabriqués pour le CI", () => {
   const LEVELS: GameLevel[] = [1, 2, 3, 4];
   const VOCABULARIES = [undefined, "mots-1", "mots-2", "mots-3", "mots-4"] as const;
   const SEEDS = [0, 1, 2, 3, 4];
+
+  it("le programme du CI joue des textes à trous, que le contrôleur juge", () => {
+    const blanks = [...CI_KINDS].filter((kind) => {
+      const exo = GAME_KINDS[kind as GameKind].make(makeContext("CI", 1, `trous:${kind}`));
+      return exo.type === "fill-blank";
+    });
+    // « Les outils de la maison », « Les plantes autour de moi », « Naturel ou fabriqué ? »… : l'audit visuel les a vus sans image.
+    expect(blanks.length).toBeGreaterThan(5);
+  });
+
+  it("un texte à trous du CI qui nomme une chose sans image est signalé", () => {
+    const defect = auditExercise({
+      type: "fill-blank",
+      prompt: "Complète la phrase.",
+      payload: { text: "Pour faire de la musique, je prends ___.", blanks: [{ options: ["le djembé", "le balai", "les ciseaux"] }] },
+      answerKey: "le djembé",
+      hints: [],
+      class: "CI",
+      subject: "Éducation artistique",
+    }).find((found) => found.code === "ci_tile_without_picture");
+    expect(defect?.detail).toContain("le djembé");
+  });
 
   it("ne nomment aucune chose sans image : le contrôleur n'a rien à signaler", () => {
     const failures: string[] = [];
@@ -72,6 +108,8 @@ describe("les exercices fabriqués pour le CI", () => {
           for (const n of SEEDS) {
             const seed = `images:${kind}:${level}:${vocabulary ?? "tous"}:${n}`;
             const exo = GAME_KINDS[kind].make(makeContext("CI", level, seed, undefined, vocabulary));
+            // Un texte à trous d'une autre classe n'est jamais posé en CI (`CI_KINDS`).
+            if (exo.type === "fill-blank" && !CI_KINDS.has(kind)) continue;
             checked += 1;
             const defect = auditExercise({
               type: exo.type,

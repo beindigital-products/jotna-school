@@ -500,6 +500,10 @@ const POSS_GAP_HINTS = hints(
   "Observe si le nom est au masculin, au féminin, au singulier ou au pluriel.",
   "Le petit mot change avec celui qui possède et avec le nom.",
 );
+/**
+ * Les mauvais choix (du trou comme de la phrase à choisir) portent une FAUTE D'ACCORD avec le nom, jamais un autre possesseur : « Nous aimons votre village »,
+ * « Omar et Pape cherchent son ballon » sont des phrases justes que l'app refusait (défaut relevé en production le 25 octobre 2026).
+ */
 const possGap = (text: string, answer: string, wrong: readonly [string, string]): GapRow => gr(text, answer, wrong, POSS_GAP_HINTS);
 export const POSS_GAP_ROWS: readonly GapRow[] = [
   possGap("Moussa a un ballon. C'est ___ ballon.", "son", ["sa", "ses"]),
@@ -507,10 +511,10 @@ export const POSS_GAP_ROWS: readonly GapRow[] = [
   possGap("Awa a deux sœurs. Ce sont ___ sœurs.", "ses", ["son", "sa"]),
   possGap("Je range ___ affaires.", "mes", ["mon", "ma"]),
   possGap("Tu ranges ___ cahiers.", "tes", ["ton", "ta"]),
-  possGap("Nous aimons ___ village.", "notre", ["nos", "votre"]),
-  possGap("Vous lavez ___ mains.", "vos", ["votre", "nos"]),
-  possGap("Les élèves ouvrent ___ cahiers.", "leurs", ["leur", "ses"]),
-  possGap("Pape et Omar jouent avec ___ ballon.", "leur", ["leurs", "son"]),
+  possGap("Nous aimons ___ village.", "notre", ["nos", "ma"]),
+  possGap("Vous lavez ___ mains.", "vos", ["votre", "ta"]),
+  possGap("Les élèves ouvrent ___ cahiers.", "leurs", ["leur", "son"]),
+  possGap("Pape et Omar jouent avec ___ ballon.", "leur", ["leurs", "ses"]),
   possGap("Je range ___ cartable.", "mon", ["ma", "mes"]),
   possGap("Tu prends ___ natte.", "ta", ["ton", "tes"]),
   possGap("Nous cherchons ___ amies.", "nos", ["notre", "votre"]),
@@ -519,7 +523,7 @@ export const POSS_GAP_ROWS: readonly GapRow[] = [
 const POSS_CHOICE_HINTS = hints(
   "Compte le nombre de choses qui appartiennent à quelqu'un.",
   "Cherche si le nom est masculin ou féminin.",
-  "Les trois phrases ont le même sens, une seule accorde bien le petit mot avec le nom.",
+  "Une seule phrase accorde bien le petit mot avec le nom.",
 );
 const possChoice = (answer: string, wrong: readonly [string, string]): QuestionRow => qr("Quelle phrase est écrite correctement ?", answer, wrong, POSS_CHOICE_HINTS);
 export const POSS_CHOICE_ROWS: readonly QuestionRow[] = [
@@ -528,13 +532,13 @@ export const POSS_CHOICE_ROWS: readonly QuestionRow[] = [
   possChoice("Les filles lavent leurs mains.", ["Les filles lavent leur mains.", "Les filles lavent sa mains."]),
   possChoice("Je range mes crayons.", ["Je range mon crayons.", "Je range ma crayons."]),
   possChoice("Tu fermes ta porte.", ["Tu fermes ton porte.", "Tu fermes tes porte."]),
-  possChoice("Nous aimons notre école.", ["Nous aimons nos école.", "Nous aimons votre école."]),
-  possChoice("Vous montrez vos dessins.", ["Vous montrez votre dessins.", "Vous montrez nos dessins."]),
-  possChoice("Omar et Pape cherchent leur ballon.", ["Omar et Pape cherchent leurs ballon.", "Omar et Pape cherchent son ballon."]),
+  possChoice("Nous aimons notre école.", ["Nous aimons nos école.", "Nous aimons mes école."]),
+  possChoice("Vous montrez vos dessins.", ["Vous montrez votre dessins.", "Vous montrez ton dessins."]),
+  possChoice("Omar et Pape cherchent leur ballon.", ["Omar et Pape cherchent leurs ballon.", "Omar et Pape cherchent ses ballon."]),
   possChoice("Awa aide ses cousins.", ["Awa aide son cousins.", "Awa aide sa cousins."]),
   possChoice("Mariama lit sa lettre.", ["Mariama lit son lettre.", "Mariama lit ses lettre."]),
   possChoice("Tu cherches tes clés.", ["Tu cherches ton clés.", "Tu cherches ta clés."]),
-  possChoice("Les enfants gardent leur village.", ["Les enfants gardent leurs village.", "Les enfants gardent son village."]),
+  possChoice("Les enfants gardent leur village.", ["Les enfants gardent leurs village.", "Les enfants gardent ses village."]),
 ];
 
 const DEM_GAP_HINTS = hints(

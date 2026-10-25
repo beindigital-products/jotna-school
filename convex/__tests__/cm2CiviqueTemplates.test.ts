@@ -224,3 +224,28 @@ describe("une phrase à trou n'accorde aucun mot placé après le blanc", () => 
     }
   });
 });
+
+describe("une réponse à écrire qui n'admet qu'un sigle le demande", () => {
+  /** Un sigle : des capitales seules, avec ou sans article (« OMC », « L'OMC », « la FAO »). */
+  const isSigle = (answer: string) => /^((le|la|les) |l')?[A-Z]{2,6}$/u.test(answer.replace(/^(Le|La|Les|L') ?/u, (article) => article.toLowerCase()));
+
+  it("cm2-afr-ecrire et cm2-mon-ecrire : « Écris le sigle. » dès que toutes les écritures admises sont des sigles", () => {
+    let seen = 0;
+    for (const entry of allProgrammeEntries()) {
+      if (!(entry.topic.key in TOPIC_KINDS)) continue;
+      for (let n = 0; n < 20; n++)
+        for (let palier = 1; palier <= 5; palier++) {
+          const games = generateGames(entry.topic.games ?? [], { klass: "CM2", palierIndex: palier, palierCount: 5, seed: `sigle:${entry.topic.key}:${n}:${palier}` });
+          for (const game of games) {
+            if (game.type !== "short-answer") continue;
+            const accepted = game.payload.acceptedAnswers as string[];
+            // « Organisation mondiale du commerce » est juste aussi : sans la consigne, le nom en entier était refusé.
+            if (!accepted.every(isSigle)) continue;
+            seen++;
+            expect(game.prompt, accepted.join(" | ")).toMatch(/Écris le sigle\.$/u);
+          }
+        }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+});

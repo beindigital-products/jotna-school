@@ -511,11 +511,15 @@ export function makeCm1IndGroup(ctx: GameContext): GeneratedGame {
 // ---------------------------------------------------------------------------
 
 const ERROR_HINTS = hints("Dis la phrase à voix haute.", "Cherche la fin du verbe qui va avec le sujet.", "Compare la fin du verbe avec celle que le sujet demande.");
+/**
+ * Les deux mauvaises formes ne sont justes à AUCUN temps pour ce sujet : l'énoncé dit « bien conjugué », et « À cette époque, vous écrivez » est une forme juste du
+ * présent que seul le mot de temps écarte (défaut relevé en production le 25 octobre 2026). Une faute de forme (« écrivaiez ») ou de personne (« vous serons »).
+ */
 type ErrorSpec = readonly [inf: string, tense: Marked, person: number, wrong: readonly [string, string]];
 const ERROR_SPECS: readonly ErrorSpec[] = [
   ["manger", "imparfait", 3, ["mangeions", "mangons"]],
   ["manger", "présent", 3, ["mangons", "mangeont"]],
-  ["finir", "imparfait", 5, ["finisaient", "finissent"]],
+  ["finir", "imparfait", 5, ["finisaient", "finissait"]],
   ["commencer", "imparfait", 2, ["commencait", "commensait"]],
   ["aller", "présent", 1, ["vais", "allas"]],
   ["commencer", "présent", 3, ["commencons", "commençeons"]],
@@ -526,16 +530,16 @@ const ERROR_SPECS: readonly ErrorSpec[] = [
   ["voir", "futur", 5, ["voiront", "voieront"]],
   ["venir", "futur", 1, ["venras", "viendra"]],
   ["avoir", "futur", 3, ["avrons", "aurrons"]],
-  ["être", "futur", 4, ["êtrez", "soyez"]],
+  ["être", "futur", 4, ["êtrez", "serons"]],
   ["aller", "futur", 0, ["allerai", "aillerai"]],
   ["faire", "futur", 3, ["faiserons", "ferrons"]],
   ["courir", "futur", 2, ["courera", "courira"]],
-  ["vendre", "imparfait", 3, ["vendons", "vendiez"]],
+  ["vendre", "imparfait", 3, ["vendaient", "vendiez"]],
   ["mettre", "présent", 5, ["mettont", "mettents"]],
-  ["ouvrir", "présent", 1, ["ouvris", "ouvre"]],
-  ["écrire", "imparfait", 4, ["écrivez", "écrisiez"]],
+  ["ouvrir", "présent", 1, ["ouvrez", "ouvre"]],
+  ["écrire", "imparfait", 4, ["écrivaiez", "écrisiez"]],
   ["boire", "présent", 3, ["boivons", "buvont"]],
-  ["lire", "imparfait", 5, ["lisent", "lisaint"]],
+  ["lire", "imparfait", 5, ["lisait", "lisaint"]],
   ["faire", "passé composé", 3, ["avons fais", "avons faisé"]],
   ["prendre", "passé composé", 5, ["ont prit", "ont prendu"]],
   ["voir", "passé composé", 1, ["as voi", "as voyé"]],

@@ -483,8 +483,8 @@ export function makeCe1CivicSort(ctx: GameContext): GeneratedGame {
 }
 
 const CIVIC_PAIRS: readonly (readonly [string, string])[] = [
-  ["École", "Je ne salis pas les murs"],
-  ["Rue", "Je jette mes papiers à la poubelle"],
+  ["Mur de l'école", "Je n'écris pas dessus"],
+  ["Poubelle", "J'y jette mes papiers"],
   ["Arbre", "Je ne casse pas ses branches"],
   ["Borne-fontaine", "Je ferme le robinet après avoir bu"],
   ["Lampe", "J'éteins quand je sors"],
@@ -494,7 +494,7 @@ const CIVIC_PAIRS: readonly (readonly [string, string])[] = [
 export function makeCe1CivicLink(ctx: GameContext): GeneratedGame {
   return pickPairs(ctx, "ce1-civisme-relier", "relier un bien commun à un bon geste", "Relie chaque bien commun à un bon geste.", CIVIC_PAIRS, [
     "Lis d'abord chaque geste, puis cherche ce qu'il protège.",
-    "Un geste parle d'eau, un autre de propreté, un autre de la nature.",
+    "Chaque geste ne va qu'avec une seule chose.",
     "Commence par la paire dont tu es le plus sûr.",
   ]);
 }
@@ -625,7 +625,7 @@ const CIVIC_WRITES: readonly WriteFact[] = [
   },
   {
     prompt: "Quel objet éteint-on en sortant d'une classe vide ? Écris le mot.",
-    accepted: ["lumière", "la lumière", "une lumière"],
+    accepted: ["lumière", "la lumière", "une lumière", "lampe", "ampoule"],
     hints: ["Elle éclaire la pièce.", "On appuie sur un bouton.", "Le mot commence par la lettre l."],
   },
 ];

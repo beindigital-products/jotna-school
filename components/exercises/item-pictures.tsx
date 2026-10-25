@@ -21,7 +21,8 @@
  * `lib/item-pictures.ts`) dit ce que l'écran sait de l'exercice et que les
  * garde-fous lisent : l'énoncé (`prompt`), les tuiles « que des émojis » de
  * l'autre côté (`glyphTiles`), un QCM (`choice`), les textes de l'autre groupe de
- * tuiles (`counterpart`), l'image d'énoncé (`exerciseImage`). Rien n'est écrit
+ * tuiles (`counterpart`), l'image d'énoncé (`exerciseImage`), la phrase d'un texte à
+ * trous (`sentence`). Rien n'est écrit
  * dans la donnée : le texte de la tuile et la réponse envoyée à `onSubmit` ne
  * changent jamais d'un caractère. Le résultat est mémoïsé sur le CONTENU (les
  * écrans passent un tableau et un objet neufs à chaque rendu), pour qu'il reste le
@@ -78,40 +79,72 @@ export function useItemPicturesEnabled(): boolean {
 /* ── La résolution ──────────────────────────────────────────────────────── */
 
 /**
- * L'image de chaque tuile, dans l'ordre des tuiles, ou `null` : tout `null` quand
- * la porte est fermée, sinon `resolveTilePictures` (garde-fous compris). Le
- * contexte est celui de `TileContext` : l'énoncé, les tuiles « que des émojis » de
- * l'autre côté, un QCM, les textes de l'autre groupe, l'image d'énoncé.
+ * Le contexte, réduit à son CONTENU : une chaîne qui sert de clé de mémoïsation, et
+ * que `contextOfKey` relit. Les écrans passent un objet neuf à chaque rendu.
  */
-export function useTilePictures(tiles: readonly string[], ctx?: TileContext): (ItemImage | null)[] {
-  const enabled = useItemPicturesEnabled();
-  // La clé est le contenu. Le calcul ne relit que la clé : tant qu'elle ne change
-  // pas, le tableau rendu est le même objet, quelle que soit l'identité des arguments.
-  const key = JSON.stringify([
-    tiles,
+function contextKey(ctx: TileContext | undefined): unknown[] {
+  return [
     ctx?.prompt ?? null,
     ctx?.glyphTiles ?? null,
     ctx?.choice === true,
     ctx?.counterpart ?? null,
     ctx?.exerciseImage ?? null,
-  ]);
+    ctx?.sentence ?? null,
+  ];
+}
+
+function contextOfKey(parts: unknown[]): TileContext {
+  const [prompt, glyphTiles, choice, counterpart, exerciseImage, sentence] = parts as [
+    string | null,
+    string[] | null,
+    boolean,
+    string[] | null,
+    string | null,
+    string | null,
+  ];
+  return {
+    prompt: prompt ?? undefined,
+    glyphTiles: glyphTiles ?? undefined,
+    choice,
+    counterpart: counterpart ?? undefined,
+    exerciseImage: exerciseImage ?? undefined,
+    sentence: sentence ?? undefined,
+  };
+}
+
+/**
+ * L'image de chaque tuile, dans l'ordre des tuiles, ou `null` : tout `null` quand
+ * la porte est fermée, sinon `resolveTilePictures` (garde-fous compris). Le
+ * contexte est celui de `TileContext` : l'énoncé, les tuiles « que des émojis » de
+ * l'autre côté, un QCM, les textes de l'autre groupe, l'image d'énoncé, la phrase
+ * d'un texte à trous.
+ */
+export function useTilePictures(tiles: readonly string[], ctx?: TileContext): (ItemImage | null)[] {
+  const enabled = useItemPicturesEnabled();
+  // La clé est le contenu. Le calcul ne relit que la clé : tant qu'elle ne change
+  // pas, le tableau rendu est le même objet, quelle que soit l'identité des arguments.
+  const key = JSON.stringify([tiles, contextKey(ctx)]);
   return useMemo(() => {
-    const [list, prompt, glyphTiles, choice, counterpart, exerciseImage] = JSON.parse(key) as [
-      string[],
-      string | null,
-      string[] | null,
-      boolean,
-      string[] | null,
-      string | null,
-    ];
+    const [list, parts] = JSON.parse(key) as [string[], unknown[]];
     if (!enabled) return list.map(() => null);
-    return resolveTilePictures(list, {
-      prompt: prompt ?? undefined,
-      glyphTiles: glyphTiles ?? undefined,
-      choice,
-      counterpart: counterpart ?? undefined,
-      exerciseImage: exerciseImage ?? undefined,
-    });
+    return resolveTilePictures(list, contextOfKey(parts));
+  }, [enabled, key]);
+}
+
+/**
+ * `useTilePictures` pour plusieurs GROUPES de tuiles qui se résolvent chacun à part,
+ * avec le même contexte : les options de chaque trou d'un texte à trous. Les
+ * garde-fous jouent groupe par groupe (un trou n'a qu'une bonne option : `choice`).
+ * Un tableau par groupe, de la longueur du groupe.
+ */
+export function useTileGroupPictures(groups: readonly (readonly string[])[], ctx?: TileContext): (ItemImage | null)[][] {
+  const enabled = useItemPicturesEnabled();
+  const key = JSON.stringify([groups, contextKey(ctx)]);
+  return useMemo(() => {
+    const [lists, parts] = JSON.parse(key) as [string[][], unknown[]];
+    if (!enabled) return lists.map((list) => list.map(() => null));
+    const context = contextOfKey(parts);
+    return lists.map((list) => resolveTilePictures(list, context));
   }, [enabled, key]);
 }
 

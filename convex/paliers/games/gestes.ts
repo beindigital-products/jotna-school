@@ -105,7 +105,7 @@ export const SCENES: readonly Scene[] = [
     text: "Ton oncle conduit. Il voit le panneau sens interdit.",
     label: "Oncle voit un sens interdit",
     right: "Il n'entre pas dans la rue.",
-    wrong: ["Il entre dans la rue quand même.", "Il entre dans la rue en klaxonnant.", "Il entre dans la rue à toute vitesse."],
+    wrong: ["Il entre dans la rue en sens interdit.", "Il entre en sens interdit en klaxonnant.", "Il fonce en sens interdit à toute vitesse."],
     hint: "Une barre blanche sur un rond rouge ferme le passage.",
   },
   {
@@ -509,7 +509,7 @@ export const SEQUENCES: readonly Sequence[] = [
   {
     topic: "genre",
     prompt: "Mets ces gestes dans le bon ordre pour le repas en famille.",
-    steps: ["Ma sœur et moi lavons nos mains.", "Nous mettons la table.", "Nous mangeons en famille."],
+    steps: ["Ma sœur et moi préparons le repas.", "Nous mangeons en famille.", "Ma sœur et moi lavons la vaisselle."],
   },
   {
     topic: "paix",

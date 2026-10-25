@@ -133,7 +133,7 @@ export function makeCm1DcmDigits(ctx: GameContext): GeneratedGame {
       prompt: `Dans ${dec(h)}, quelle est la valeur du chiffre ${digit} ?`,
       answer: dec(value),
       wrong: wrongDecimals(ctx, value, [...otherValues, digit * 100, digit * 10, digit], 1, 99999),
-      hints: ["Un chiffre vaut plus ou moins selon son rang.", "Cherche son rang : dixièmes, centièmes, unités, dizaines ou centaines.", "Un chiffre des dixièmes vaut un dixième de plus que le même chiffre des centièmes."],
+      hints: ["Un chiffre vaut plus ou moins selon son rang.", "Cherche son rang : dixièmes, centièmes, unités, dizaines ou centaines.", "Un chiffre vaut dix fois plus quand il avance d'un rang vers la gauche."],
     };
   });
 }

@@ -7,12 +7,19 @@
  * font alors 34 px environ) et espacé pour que les émojis d'une rangée ne se
  * touchent pas. Un mot ou une syllabe garde la taille de la tuile et peut se
  * couper n'importe où plutôt que de déborder (« bissap » dans une tuile
- * étroite).
+ * étroite), mais SEULEMENT s'il ne tient pas sur sa ligne : pas d'`hyphens: auto`,
+ * qui coupait aussi des mots qui tiennent (« parta- ⏎ gés », « pen- ⏎ dant » dans
+ * les « relier » de problèmes, audit visuel d'octobre 2026), comme `Tile3D`.
+ *
+ * LE TEXTE AFFICHÉ EST COMPOSÉ (`typesetTile`) : l'espace avant « ? ! : ; » est
+ * insécable, un calcul ne se coupe pas autour de ses opérateurs. Le texte reçu,
+ * lui, ne change pas : c'est lui que l'écran compare et envoie.
  *
  * Pure fonction + un fragment : aucun hook, utilisable partout, testable.
  */
 
 import { isClockEmoji } from "./choix-texte";
+import { typesetTile } from "./tile-typeset";
 
 /** Longueur au-delà de laquelle une suite de glyphes redevient du texte courant. */
 const MAX_GLYPHS = 16;
@@ -35,7 +42,7 @@ export function TileGlyphs({ text }: { text: string }) {
     return <span className="inline-block text-[3rem] leading-none">{text}</span>;
   }
   if (isGlyphOnly(text)) {
-    return <span className="inline-block text-[1.75rem] leading-[1.15] tracking-wide">{text}</span>;
+    return <span className="inline-block text-[1.75rem] leading-[1.15] tracking-wide">{typesetTile(text)}</span>;
   }
-  return <span className="inline-block hyphens-auto [overflow-wrap:anywhere]">{text}</span>;
+  return <span className="inline-block [overflow-wrap:anywhere]">{typesetTile(text)}</span>;
 }

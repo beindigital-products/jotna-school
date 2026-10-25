@@ -353,7 +353,8 @@ const CHECKS: Record<string, Check> = {
     if (/sens d'un mot|livre explique/u.test(exo.prompt) || /dictionnaire/u.test(prompt) === false && /explique les mots/u.test(prompt)) expected = ["dictionnaire", "le dictionnaire"];
     else if (/se disent pareil|disent pareil/u.test(prompt) && /ecrivent autrement|vert, verre/u.test(prompt)) expected = ["homonymes", "des homonymes"];
     else if (/sens proche|presque la meme chose/u.test(prompt)) expected = ["synonymes", "des synonymes"];
-    else if (/terre, terrain|dent, dentiste/u.test(prompt)) expected = ["famille de mots", "une famille de mots"];
+    // « Écris les trois mots » se lisait « recopie-les » : la phrase porte un trou d'un seul mot, que l'énoncé demande.
+    else if (/terre, terrain|dent, dentiste/u.test(prompt)) expected = /forment une ___ de mots\. Écris le mot qui manque\.$/u.test(exo.prompt) ? ["famille", "famille de mots"] : null;
     else if (/quel ordre|selon quel ordre/u.test(prompt)) expected = ["ordre alphabétique", "l'ordre alphabétique", "alphabétique"];
     else if (/homonyme de « mer »/u.test(exo.prompt)) expected = ["mère"];
     else if (/homonyme de « verre »/u.test(exo.prompt)) expected = ["vert"];

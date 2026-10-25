@@ -37,7 +37,8 @@ export const FAMILIES: Record<Family, readonly [string, string, string]> = {
   "son/sont": ["son", "sont", "sons"],
   "ou/où": ["ou", "où", "au"],
   "ces/ses": ["ces", "ses", "ce"],
-  "ce/se": ["ce", "se", "me"],
+  // Pas « me » : « Il me lave les mains », « Les enfants me couchent tôt » sont des phrases justes (défaut relevé en production le 25 octobre 2026).
+  "ce/se": ["ce", "se", "ceux"],
   "leur/leurs": ["leur", "leurs", "eux"],
   "mais/mes": ["mais", "mes", "mets"],
   "la/l'a/là": ["la", "l'a", "là"],
@@ -175,8 +176,24 @@ export function makeCm1HomError(ctx: GameContext): GeneratedGame {
   return ce2Question(ctx, "cm1-hom-erreur", CONCEPT, ERROR_ROWS, 1, (row) => row.prompt);
 }
 
+/**
+ * Le choix que l'énoncé nomme : sans lui, le trou est libre et « Je connais ___ garçon » accepte « le », « mon », « ton »… que l'app refusait
+ * (défaut relevé en production le 25 octobre 2026). Les deux homophones de la famille, les trois pour la/l'a/là ; jamais le troisième mot plausible.
+ */
+export const WRITE_CHOICE: Record<Family, string> = {
+  "a/à": "a ou à",
+  "et/est": "et ou est",
+  "on/ont": "on ou ont",
+  "son/sont": "son ou sont",
+  "ou/où": "ou ou où",
+  "ces/ses": "ces ou ses",
+  "ce/se": "ce ou se",
+  "leur/leurs": "leur ou leurs",
+  "mais/mes": "mais ou mes",
+  "la/l'a/là": "la, l'a ou là",
+};
 export const WRITE_ROWS: readonly WriteRow[] = BANK.map((entry, index) =>
-  wr(`Écris le mot qui manque dans la phrase « ${entry.text} ».`, entry.answer === "l'a" ? ["l'a", "l’a"] : [entry.answer], FAMILY_HINTS[entry.family], `hom:${index}`),
+  wr(`Écris le mot qui manque (${WRITE_CHOICE[entry.family]}) dans la phrase « ${entry.text} ».`,entry.answer === "l'a" ? ["l'a", "l’a"] : [entry.answer], FAMILY_HINTS[entry.family], `hom:${index}`),
 );
 export function makeCm1HomWrite(ctx: GameContext): GeneratedGame {
   return ce2Write(ctx, "cm1-hom-ecrire", CONCEPT, WRITE_ROWS, 2);

@@ -485,10 +485,17 @@ function auditInto(found: Findings, input: AuditInput): void {
 // Les images des tuiles du CI
 // ---------------------------------------------------------------------------
 
-/** Les types dont les tuiles montrent une image (`docs/paliers-et-exercices.md`). */
-const PICTURE_TILE_TYPES = new Set(["qcm", "order", "match", "drag-drop"]);
-/** Les tuiles, par opposition à l'énoncé et aux indices (les étiquettes de `shownTexts`). */
-const TILE_WHERE = /^(?:l'option|la paire|l'élément|la zone|l'étiquette)/;
+/**
+ * Les types dont les tuiles montrent une image (`docs/paliers-et-exercices.md`). Le
+ * texte à trous en est depuis que ses options en montrent une (`FillBlankExercise`,
+ * audit visuel d'octobre 2026 : « le balai », « les ciseaux » s'affichaient sans image).
+ */
+const PICTURE_TILE_TYPES = new Set(["qcm", "order", "match", "drag-drop", "fill-blank"]);
+/**
+ * Les tuiles, par opposition à l'énoncé, aux indices et à la phrase à trous (les
+ * étiquettes de `shownTexts`) : les options d'un trou en sont, la phrase n'en est pas.
+ */
+const TILE_WHERE = /^(?:l'option|la paire|l'élément|la zone|l'étiquette|le mot du trou)/;
 /**
  * Un article et UN mot : la forme d'une tuile qui nomme une chose (« la fenêtre »,
  * « un arbre », « l'ami »). L'espace est obligatoire après un article plein, sans
@@ -1291,9 +1298,11 @@ function auditShortAnswer(found: Findings, prompt: string, payload: Record<strin
   if (filled.length < accepted.length) {
     found.add("short_answer_empty_accepted", "une des réponses acceptées est vide");
   }
-  // L'énoncé ne contient pas sa réponse (un nombre peut y figurer : « 10 − 3 + 3 »).
+  // L'énoncé ne contient pas sa réponse (un nombre peut y figurer : « 10 − 3 + 3 »). Un choix fermé entre parenthèses, de mots seuls
+  // (« Écris le mot qui manque (son ou sont) »), nomme la réponse sans la donner : il ferme le trou, il ne compte pas.
   const first = fold(filled[0]);
-  if (first.length >= 3 && numberForm(first) === null && hasWord(fold(prompt), first)) {
+  const withoutChoice = prompt.replace(/\((?:[^\s(),]+, )*[^\s(),]+ ou [^\s(),]+\)/gu, " ");
+  if (first.length >= 3 && numberForm(first) === null && hasWord(fold(withoutChoice), first)) {
     found.add("short_answer_answer_in_prompt", `la réponse « ${excerpt(filled[0], 30)} » est écrite dans l'énoncé`);
   }
 }

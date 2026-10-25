@@ -158,7 +158,8 @@ export function makeCm1GraNature(ctx: GameContext): GeneratedGame {
 // La fonction d'un groupe
 // ---------------------------------------------------------------------------
 
-const FONCTION_HINTS = hints("Trouve d'abord le verbe de la phrase.", "Pose la question « qui ? » ou « quoi ? » devant le verbe.", "Un groupe qui dit où, quand ou comment peut être supprimé de la phrase.");
+// La question « quoi ? » se pose APRÈS le verbe : posée devant, elle trouve le groupe qui fait l'action (défaut relevé en production le 25 octobre 2026).
+const FONCTION_HINTS = hints("Trouve d'abord le verbe de la phrase.", "Devant le verbe, demande « qui est-ce qui ? ». Après le verbe, demande « quoi ? » ou « à qui ? ».","Un groupe qui dit où, quand ou comment peut être supprimé de la phrase.");
 /** Les groupes d'une phrase avec leur fonction. */
 export function groupsOf(sentence: Sentence): (readonly [string, Fonction])[] {
   const out: (readonly [string, Fonction])[] = [];

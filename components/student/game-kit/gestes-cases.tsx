@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, type ReactNode } from "react";
+import { typesetTile } from "./tile-typeset";
 import { shade, TILE_CORRECT_TONE, TILE_WRONG_TONE, tileChosenTone, tileRestTone, type SurfaceTone } from "./tones";
 
 /**
@@ -91,6 +92,7 @@ export const DropBox = forwardRef<
   {
     /** L'index de la case (0 à 5) : sa couleur d'option. */
     tone: number;
+    /** Le nom de la boîte, tel que la donnée l'écrit : la plaque le compose (`typesetTile`). */
     label: string;
     /** Une image qui nomme la boîte, posée dans la plaque devant son nom (voir l'en-tête). */
     picture?: ReactNode;
@@ -170,7 +172,7 @@ export const DropBox = forwardRef<
         style={{ color: colors.text }}
       >
         {picture}
-        {label}
+        {typesetTile(label)}
       </h4>
       {/* Les étiquettes posées, dans la boîte. */}
       <div className="relative flex min-h-[4rem] flex-wrap items-start justify-center gap-3 px-3 pb-5 pt-2.5">{children}</div>

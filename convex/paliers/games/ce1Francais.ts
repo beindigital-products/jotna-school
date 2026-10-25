@@ -561,10 +561,21 @@ export function makeCe1FrPresentOrder(ctx: GameContext): GeneratedGame {
   return orderRows(ctx, "ce1-fr-present-ordre", PRESENT, PRESENT_ORDERS, 1);
 }
 
+/**
+ * La forme avec le pronom de la consigne : « Écris le passé composé de danser avec « ils » » invite à écrire « ils ont dansé », réponse juste que l'app
+ * refusait (défaut relevé en production le 25 octobre 2026). Le verbe seul reste la réponse affichée ; « je » s'élide devant une voyelle (« j'ai »).
+ */
+export function withPronoun(prompt: string, answer: string): string[] {
+  const pronoun = /« (\p{L}+) »/u.exec(prompt)?.[1];
+  if (!pronoun) return [answer];
+  if (pronoun === "je" && /^[aeéèêiouyh]/u.test(answer)) return [answer, `j'${answer}`, `j’${answer}`];
+  return [answer, `${pronoun} ${answer}`];
+}
 const conjugate = (prompt: string, answer: string): WriteFact => ({
   prompt,
-  accepted: [answer],
-  hints: ["Dis la phrase en entier, avec le pronom de la consigne.", "Le verbe change avec la personne.", "Écris seulement le verbe, sans le pronom."],
+  accepted: withPronoun(prompt, answer),
+  // Le premier indice ne demande plus le pronom quand le troisième l'interdisait : les deux écritures sont admises.
+  hints: ["Dis la phrase à voix basse, avec le pronom de la consigne.", "Le verbe change avec la personne.", "Écris le verbe, avec ou sans le pronom."],
 });
 
 const PRESENT_WRITES: readonly WriteFact[] = [
@@ -768,10 +779,11 @@ export function makeCe1FrFutureLink(ctx: GameContext): GeneratedGame {
   return poolPairs(ctx, "ce1-fr-imperatif-relier", IMPERATIF, FUTURE_POOLS);
 }
 
-const FUTURE_WRITE_HINTS: Hints = ["Dis la phrase en entier, avec le pronom de la consigne.", "On garde le verbe en entier et on ajoute la fin.", "Écris seulement le verbe, sans le pronom."];
-const IMPERATIVE_WRITE_HINTS: Hints = ["Dis l'ordre à voix basse, avec la personne de la consigne.", "À « nous » on finit par -ons, à « vous » par -ez.", "Écris seulement le verbe, sans le pronom."];
-const futureWrite = (prompt: string, answer: string): WriteFact => ({ prompt, accepted: [answer], hints: FUTURE_WRITE_HINTS });
-const imperativeWrite = (prompt: string, answer: string): WriteFact => ({ prompt, accepted: [answer], hints: IMPERATIVE_WRITE_HINTS });
+const FUTURE_WRITE_HINTS: Hints = ["Dis la phrase à voix basse, avec le pronom de la consigne.", "On garde le verbe en entier et on ajoute la fin.", "Écris le verbe, avec ou sans le pronom."];
+const IMPERATIVE_WRITE_HINTS: Hints = ["Dis l'ordre à voix basse, avec la personne de la consigne.", "À « nous » on finit par -ons, à « vous » par -ez.", "Un ordre se dit sans nommer la personne."];
+const futureWrite = (prompt: string, answer: string): WriteFact => ({ prompt, accepted: withPronoun(prompt, answer), hints: FUTURE_WRITE_HINTS });
+/** Un ordre ne porte pas de pronom (« vous dansez » n'est pas l'impératif) : l'énoncé le dit, au lieu de le laisser au dernier indice. */
+const imperativeWrite = (prompt: string, answer: string): WriteFact => ({ prompt: `${prompt} Écris seulement le verbe.`, accepted: [answer], hints: IMPERATIVE_WRITE_HINTS });
 
 const FUTURE_WRITES: readonly WriteFact[] = [
   // Niveau 1

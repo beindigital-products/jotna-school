@@ -474,6 +474,13 @@ export const ITEM_IMAGES: readonly ItemImage[] = [
     about: "a small farm: a red barn, a wooden fence, green grass and a couple of hens" },
   { id: "jardin", alt: "Un jardin", group: "lieux", words: ["jardin"], emoji: [],
     about: "a vegetable garden with neat rows of green plants and a watering can on brown soil" },
+  // Les lieux des textes à trous du CI (relecture de la production du 25 octobre 2026 : « Le mil et l'arachide poussent dans le champ »).
+  { id: "champ", alt: "Un champ", group: "lieux", words: ["champ"], english: ["field"], emoji: [],
+    about: "a small African farm field: neat rows of green millet plants growing in brown soil, a few tall stalks in front" },
+  { id: "foret", alt: "Une forêt", group: "lieux", words: ["forêt", "foret"], english: ["forest"], emoji: [],
+    about: "a forest: five round-topped green trees of different sizes and shades with brown trunks, a little grass at their feet" },
+  { id: "mer", alt: "La mer", group: "lieux", words: ["mer"], english: ["sea"], emoji: [],
+    about: "the sea: blue waves with white foam, a strip of yellow sand at the bottom, nothing else" },
   { id: "marche", alt: "Le marché", group: "lieux", words: ["marché"], emoji: [], ambiguousBare: true, bareInGroup: "lieux",
     about: "a colourful African market stall with a striped canopy and baskets of fruits and vegetables" },
   { id: "abri", alt: "Un abri", group: "lieux", words: ["abri"], emoji: [],

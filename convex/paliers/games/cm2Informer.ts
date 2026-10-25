@@ -53,7 +53,9 @@ export const DOCS: readonly Doc[] = [
     cause: ask("Pourquoi le sel reste-t-il dans la mer ?", "Il ne monte pas avec l'eau", "Les poissons le mangent", "Le vent le pousse vers la terre"),
     effect: ask("Que fait une partie de l'eau quand le soleil chauffe ?", "Elle monte dans le ciel", "Elle tombe sur les pêcheurs", "Elle devient de la glace"),
     statement: ask("Quelle phrase est vraie selon le texte ?", "Les rivières apportent des sels à la mer.", "Les pêcheurs ajoutent du sel dans la mer.", "Le sel monte dans les nuages."),
-    links: [["Le soleil chauffe la mer", "Une partie de son eau monte dans le ciel"], ["Le sel ne monte pas avec elle", "Il reste dans la mer"], ["Les rivières apportent des sels pris dans la roche", "La mer contient beaucoup de sel"]],
+    // Des phrases complètes, sans pronom sans référent (« Il reste », « avec elle ») ; « La mer contient beaucoup de sel » se lisait comme un constat, rangé en cause
+    // (défaut relevé en production le 25 octobre 2026). L'ordre compte : le glissé montre la cause de la première paire et la conséquence de la troisième seules.
+    links: [["Le sel ne monte pas avec l'eau", "Le sel reste dans la mer"], ["Les rivières apportent du sel", "La mer devient salée"], ["Le soleil chauffe la mer", "Une partie de l'eau de la mer monte dans le ciel"]],
     cloze: { word: "roche", wrong: ["boue", "forêt"] },
   },
   {
@@ -69,7 +71,8 @@ export const DOCS: readonly Doc[] = [
     cause: ask("Pourquoi avons-nous la tête lourde ?", "Le corps manque de liquide", "Nous avons trop mangé", "Nous avons couru la veille"),
     effect: ask("Que se passe-t-il quand il fait chaud ?", "Nous transpirons et perdons de cette eau", "Nous gagnons beaucoup de force", "Nous mangeons plus de fruits"),
     statement: ask("Quelle phrase est vraie selon le texte ?", "Un verre à chaque repas aide le corps.", "Il faut boire seulement le matin.", "Le corps ne perd jamais de liquide."),
-    links: [["Il fait chaud", "Nous transpirons"], ["Nous ne buvons pas", "Le corps manque de liquide"], ["Notre corps perd de cette eau", "Nous devons boire souvent"]],
+    // « Notre corps perd de cette eau » se reliait aussi bien à « Le corps manque de liquide » (défaut relevé en production le 25 octobre 2026).
+    links: [["Il fait chaud", "Nous transpirons"], ["Nous ne buvons pas", "Le corps manque de liquide"], ["Un verre à chaque repas", "Le corps reste en forme"]],
     cloze: { word: "liquide", wrong: ["froid", "sang"] },
   },
   // Palier 2.
@@ -135,7 +138,9 @@ export const DOCS: readonly Doc[] = [
     cause: ask("Pourquoi une flaque oubliée devient-elle un bon nid ?", "Les moustiques y pondent leurs œufs", "Les poissons y vivent", "La pluie la remplit chaque jour"),
     effect: ask("Que permet de vider les seaux chaque semaine ?", "Les œufs ne peuvent pas grandir", "Les seaux deviennent propres", "Les moustiques piquent moins fort"),
     statement: ask("Quelle phrase est vraie selon le texte ?", "Les moustiques sortent quand le soleil se couche.", "Les moustiques dorment pendant la nuit.", "Le paludisme est une maladie légère."),
-    links: [["Une eau qui ne bouge pas", "Les moustiques y pondent leurs œufs"], ["Le soleil se couche", "Les moustiques sortent et piquent les gens"], ["Vider les seaux chaque semaine", "Les œufs ne peuvent pas grandir"]],
+    // Des phrases complètes (« y pondent » n'avait pas de référent) ; le glissé montre « Le soleil se couche » et « Les œufs ne peuvent pas grandir » seuls,
+    // sans qu'une cause montrée y paraisse la cause d'une autre conséquence montrée (défaut relevé en production le 25 octobre 2026).
+    links: [["Une eau ne bouge pas", "Les moustiques pondent leurs œufs dans cette eau"], ["Vider les seaux chaque semaine", "Les œufs ne peuvent pas grandir"], ["Le soleil se couche", "Les moustiques sortent et piquent les gens"]],
     cloze: { word: "paludisme", wrong: ["rhume", "hoquet"] },
   },
   // Palier 4.
@@ -153,7 +158,8 @@ export const DOCS: readonly Doc[] = [
     effect: ask("Que se passe-t-il quand les poissons mangent ces morceaux ?", "Ils tombent malades", "Ils grossissent très vite", "Ils nagent plus loin"),
     statement: ask("Quelle phrase est vraie selon le texte ?", "Le plastique peut rester plus de cent ans sur le sol.", "Le plastique disparaît en une semaine.", "Les poissons digèrent bien le plastique."),
     links: [["Il pleut", "Les sachets sont emportés vers les rivières"], ["Les poissons mangent ces morceaux", "Ils tombent malades"], ["Ramasser et recycler le plastique", "Cela protège les animaux et nos villages"]],
-    cloze: { word: "rivières", wrong: ["lacs", "routes"] },
+    // Pas « lacs » : la pluie emporte aussi les sachets vers les lacs, et rien dans le texte ne l'écarte (défaut relevé en production le 25 octobre 2026).
+    cloze: { word: "rivières", wrong: ["nuages", "toits"] },
   },
   {
     title: "Pourquoi il faut dormir",
@@ -377,9 +383,19 @@ export function makeCm2InfLiaison(ctx: GameContext): GeneratedGame {
 }
 
 const WRITE_HINTS = hints("Lis les deux parties de la phrase.", "Demande-toi si la deuxième partie explique la première, ou si elle en est la suite, ou si elle s'y oppose.", "Écris le petit mot qui les relie.");
-/** Tous les mots du rapport sont admis, la graphie « c'est pourquoi » avec les deux apostrophes ; le mot du tableau est le premier. */
+/**
+ * Tous les mots du rapport sont admis, la graphie « c'est pourquoi » avec les deux apostrophes ; le mot du tableau est le premier. Pour la cause, « puisque » aussi.
+ * Devant une voyelle, « parce qu'il » (avec les deux apostrophes) ET « parce que », la forme du mot de liaison qu'un enfant apprend : l'app n'acceptait que « car »
+ * (défaut relevé en production le 25 octobre 2026).
+ */
 const accepted = (part: Connected): string[] => {
-  const same = WORDS[part.relation].filter((word) => word !== "parce que" || !startsWithVowel(part.after)).flatMap((word) => (word === "c'est pourquoi" ? [word, "c’est pourquoi"] : [word]));
+  const words = part.relation === "cause" ? [...WORDS.cause, "puisque"] : WORDS[part.relation];
+  const vowel = startsWithVowel(part.after);
+  const same = words.flatMap((word) => {
+    if (word === "c'est pourquoi") return [word, "c’est pourquoi"];
+    if (vowel && word.endsWith("que")) return [word, `${word.slice(0, -1)}'`, `${word.slice(0, -1)}’`];
+    return [word];
+  });
   return [part.word, ...same.filter((word) => word !== part.word)];
 };
 export const WRITE_ROWS: readonly WriteRow[] = CONNECTED_SPREAD.map((part) =>

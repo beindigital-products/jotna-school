@@ -304,7 +304,7 @@ const regionsNamed = (...names: string[]) => names.map((name) => REGIONS.find((r
 /** Des villes qui ne sont chefs-lieux d'aucune région. */
 const OTHER_TOWNS = ["Mbour", "Touba", "Pikine", "Rufisque", "Richard-Toll", "Podor", "Linguère", "Bakel"];
 
-const REGION_NAME_HINTS = hints("Pense à la liste des quatorze régions du Sénégal.", "Le chef-lieu d'une région porte le même nom qu'elle.", "Les villes qui ne sont pas des régions sont des villes plus petites.");
+const REGION_NAME_HINTS = hints("Pense à la liste des quatorze régions du Sénégal.", "Le chef-lieu d'une région porte le même nom qu'elle.", "Les deux autres sont aussi des villes, mais aucune région ne porte leur nom.");
 const CHIEF_ROWS: readonly QuestionRow[] = REGIONS.flatMap((region, i): QuestionRow[] => [
   {
     prompt: "Laquelle de ces villes est le chef-lieu d'une région ?",

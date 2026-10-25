@@ -29,12 +29,12 @@ const CLOZE: Record<string, string> = {
 };
 /** Les trois paires (cause, conséquence) de chaque texte. */
 const LINKS: Record<string, string[][]> = {
-  "Pourquoi la mer est salée": [["Le soleil chauffe la mer", "Une partie de son eau monte dans le ciel"], ["Le sel ne monte pas avec elle", "Il reste dans la mer"], ["Les rivières apportent des sels pris dans la roche", "La mer contient beaucoup de sel"]],
-  "Pourquoi il faut boire": [["Il fait chaud", "Nous transpirons"], ["Nous ne buvons pas", "Le corps manque de liquide"], ["Notre corps perd de cette eau", "Nous devons boire souvent"]],
+  "Pourquoi la mer est salée": [["Le sel ne monte pas avec l'eau", "Le sel reste dans la mer"], ["Les rivières apportent du sel", "La mer devient salée"], ["Le soleil chauffe la mer", "Une partie de l'eau de la mer monte dans le ciel"]],
+  "Pourquoi il faut boire": [["Il fait chaud", "Nous transpirons"], ["Nous ne buvons pas", "Le corps manque de liquide"], ["Un verre à chaque repas", "Le corps reste en forme"]],
   "Pourquoi les pêcheurs partent tôt": [["Ils cherchent leur nourriture", "Les poissons montent près de la surface"], ["La mer est calme le matin", "Les pêcheurs partent en mer avant le lever du soleil"], ["La chaleur monte à midi", "Les poissons descendent au fond de la mer"]],
   "Le baobab et son eau": [["Pendant la saison des pluies", "Son tronc large se remplit d'eau"], ["Pendant la saison sèche", "Le baobab perd ses feuilles"], ["Grâce à cette réserve", "Il survit même quand il ne pleut pas"]],
   "Pourquoi il faut laver ses mains": [["Nos mains touchent beaucoup de choses", "Elles prennent des microbes"], ["Nous mangeons sans nous laver les mains", "Les microbes entrent dans le ventre"], ["Un lavage au savon avant le repas", "Il protège toute la famille"]],
-  "Les moustiques et l'eau qui dort": [["Une eau qui ne bouge pas", "Les moustiques y pondent leurs œufs"], ["Le soleil se couche", "Les moustiques sortent et piquent les gens"], ["Vider les seaux chaque semaine", "Les œufs ne peuvent pas grandir"]],
+  "Les moustiques et l'eau qui dort": [["Une eau ne bouge pas", "Les moustiques pondent leurs œufs dans cette eau"], ["Vider les seaux chaque semaine", "Les œufs ne peuvent pas grandir"], ["Le soleil se couche", "Les moustiques sortent et piquent les gens"]],
   "Pourquoi il faut recycler le plastique": [["Il pleut", "Les sachets sont emportés vers les rivières"], ["Les poissons mangent ces morceaux", "Ils tombent malades"], ["Ramasser et recycler le plastique", "Cela protège les animaux et nos villages"]],
   "Pourquoi il faut dormir": [["Un enfant dort peu", "Il est fatigué le lendemain"], ["Pendant le sommeil", "Le corps se repose et grandit"], ["Un enfant grandit vite", "Il a besoin de dormir dix heures par nuit"]],
   "Pourquoi protéger la mangrove": [["Les racines retiennent la terre", "La mer ne ronge pas la côte"], ["On coupe trop les arbres", "La côte disparaît peu à peu"], ["Les poissons viennent se cacher entre les racines", "Ils peuvent grandir"]],
@@ -199,11 +199,16 @@ const checkWrite: Check = (exo) => {
   if (!relation) return `deux propositions inconnues : ${exo.prompt}`;
   const accepted = acceptedOf(exo).map((word) => word.replace("’", "'"));
   const vowel = /^[aeiouyéèêâîôûh]/iu.test(m[3]);
-  const expected = [...(relation === "cause" ? CAUSE : relation === "conséquence" ? EFFECT : OPPOSITION)].filter((word) => !(word === "parce que" && vowel));
+  // « puisque » dit aussi la cause ; devant une voyelle, « parce qu' » et « puisqu' » s'élident, et la forme entière du mot de liaison reste admise.
+  const elided = (word: string) => (word === "parce qu'" ? "parce que" : word === "puisqu'" ? "puisque" : word);
+  const relationOfWritten = (word: string) => (elided(word) === "puisque" ? "cause" : relationOf(elided(word)));
+  const base = [...(relation === "cause" ? [...CAUSE, "puisque"] : relation === "conséquence" ? EFFECT : OPPOSITION)];
+  const expected = vowel ? base.flatMap((word) => (word.endsWith("que") ? [word, `${word.slice(0, -1)}'`] : [word])) : base;
   return all(
     ok((m[2] === ",") === (relation !== "cause"), `virgule mal placée : ${exo.prompt}`),
-    ok(accepted.every((word) => relationOf(word) === relation), `un mot admis exprime un autre rapport que ${relation} : ${acceptedOf(exo).join(" | ")}`),
-    ok(!(vowel && accepted.includes("parce que")), `« parce que » est admis devant une voyelle : ${exo.prompt}`),
+    ok(accepted.every((word) => relationOfWritten(word) === relation), `un mot admis exprime un autre rapport que ${relation} : ${acceptedOf(exo).join(" | ")}`),
+    ok(!(!vowel && accepted.some((word) => word.endsWith("'"))), `une élision devant une consonne : ${exo.prompt}`),
+    ok(!(vowel && relation === "cause" && !acceptedOf(exo).includes("parce qu’")), `« parce qu’ » (apostrophe courbe) manque devant une voyelle : ${exo.prompt}`),
     ok(!/^(Elle|Il) /u.test(m[1]) || relation !== "cause", `un pronom avant son nom : ${exo.prompt}`),
     ok(expected.every((word) => accepted.includes(word)), `un mot du rapport ${relation} manque : ${acceptedOf(exo).join(" | ")}`),
   );

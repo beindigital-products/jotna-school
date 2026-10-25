@@ -39,7 +39,7 @@ const ASSOC: Record<string, string[]> = {
   // Le dessin de mémoire : les gestes
   "observer le modele": ["fait-on d abord pour dessiner de memoire", "avec ses yeux avant de cacher le modele"],
   "retenir ce qu on a vu": ["garder le modele dans sa tete", "se souvenir des formes et des couleurs"],
-  "cacher le modele": ["du modele pour dessiner vraiment de memoire", "du modele quand on commence a dessiner de memoire"],
+  "cacher le modele": ["du modele pour dessiner vraiment de memoire", "du modele juste avant de redessiner de memoire"],
   "redessiner de memoire": ["une fois le modele cache", "apres avoir mis le modele de cote"],
   "comparer son dessin au modele": ["a la fin avec le modele et son dessin", "reperer ses erreurs une fois le dessin termine"],
   "colorier le dessin": [],
@@ -126,7 +126,7 @@ const MEMBERS: Record<string, string[]> = {
   Cordes: ["Kora", "Xalam", "Riti", "Guitare"],
 };
 
-const { make, draws } = defineTemplateTests({
+const { make, draws, drawsOf } = defineTemplateTests({
   label: "des arts mixtes du CM1",
   klass: "CM1",
   count: 5,
@@ -146,6 +146,37 @@ const { make, draws } = defineTemplateTests({
     ["Percussion", "Cordes"],
   ],
   keptGames: KEPT_GAMES,
+});
+
+/** Les choix d'un QCM ou d'une phrase à trou, la bonne réponse d'abord. */
+function choicesOf(exo: { payload: { options?: string[]; correctIndex?: number; blanks?: { options: string[]; answer: string }[] } }): { right: string; all: string[] } {
+  if (exo.payload.blanks) return { right: exo.payload.blanks[0].answer, all: exo.payload.blanks[0].options };
+  return { right: exo.payload.options![exo.payload.correctIndex!], all: exo.payload.options! };
+}
+
+describe("aucun mauvais choix n'est une deuxième bonne réponse que la table ne voit pas", () => {
+  it("cacher le modèle : ni observer, ni retenir, ni effacer le modèle (des étapes ou une façon de le cacher)", () => {
+    let seen = 0;
+    for (const d of drawsOf("cm1-mem-qcm")) {
+      const { right, all } = choicesOf(make("cm1-mem-qcm", d) as never);
+      if (right !== "Cacher le modèle") continue;
+      seen += 1;
+      for (const wrong of ["Observer le modèle", "Retenir ce qu'on a vu", "Effacer le modèle"]) expect(all, right).not.toContain(wrong);
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+  it("le sabar : le tama se frappe aussi d'une main et d'une baguette, il n'est jamais un mauvais choix", () => {
+    let seen = 0;
+    for (const kind of ["cm1-ins-qcm", "cm1-ins-trou"] as const) {
+      for (const d of drawsOf(kind)) {
+        const { right, all } = choicesOf(make(kind, d) as never);
+        if (!/sabar/i.test(right)) continue;
+        seen += 1;
+        expect(all.filter((option) => /tama/i.test(option)), right).toEqual([]);
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
 });
 
 describe("les rythmes à écrire : le nombre de coups est recompté sur la suite écrite dans l'énoncé", () => {

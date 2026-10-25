@@ -212,6 +212,10 @@ type Need = {
   nowText: string;
   thenHints: readonly [string, string];
   nowHints: readonly [string, string];
+  /** Les AUTRES besoins que la chose d'autrefois sert aussi (un feu de bois éclaire) : elle n'est jamais un mauvais choix pour eux. */
+  thenAlso?: readonly string[];
+  /** Les AUTRES besoins que la chose d'aujourd'hui sert aussi (un téléphone portable éclaire) : jamais un mauvais choix pour eux. */
+  nowAlso?: readonly string[];
 };
 
 export const NEEDS: readonly Need[] = [
@@ -232,6 +236,7 @@ export const NEEDS: readonly Need[] = [
     nowText: "un téléphone portable",
     thenHints: ["On l'écrit sur du papier et on la glisse dans une enveloppe.", "Elle met plusieurs jours à arriver."],
     nowHints: ["On l'utilise pour appeler ou envoyer un message écrit.", "La réponse arrive en quelques secondes."],
+    nowAlso: ["avoir de la lumière"],
   },
   {
     need: "voyager sur une longue route",
@@ -250,6 +255,7 @@ export const NEEDS: readonly Need[] = [
     nowText: "une cuisinière à gaz",
     thenHints: ["On faisait brûler des morceaux d'arbre sous la marmite.", "Il faut le rallumer et le surveiller."],
     nowHints: ["On tourne un bouton et la flamme apparaît.", "Il suffit d'une bouteille branchée à l'appareil."],
+    thenAlso: ["avoir de la lumière"],
   },
   {
     need: "avoir de l'eau à la maison",
@@ -270,14 +276,15 @@ const NEED_ERAS = NEEDS.flatMap((need) => ERAS.map((era) => ({ need, era })));
 
 const tileOfEra = (need: Need, era: Era) => (era === "then" ? need.then : need.now);
 
+/** Les autres besoins dont la chose de l'époque ne sert PAS aussi le besoin demandé : les seuls mauvais choix possibles. */
+const otherNeeds = (need: Need, era: Era) =>
+  NEEDS.filter((candidate) => candidate !== need && !(era === "then" ? candidate.thenAlso : candidate.nowAlso)?.includes(need.need));
+
 /** « Pour avoir de la lumière, que faisait-on autrefois ? » : ce qu'on utilisait pour un besoin, parmi trois choses de trois besoins. */
 export function makeCe1PastQuestion(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "ce1-autrefois-qcm", "ce qu'on utilisait autrefois et aujourd'hui", () => {
     const { need, era } = pickFresh(ctx, windowFor(NEED_ERAS, ctx.level, 1), (candidate) => `ce1-autrefois:${candidate.need.need}:${candidate.era}`);
-    const others = shuffle(
-      ctx.rng,
-      NEEDS.filter((candidate) => candidate !== need),
-    ).slice(0, 2);
+    const others = shuffle(ctx.rng, otherNeeds(need, era)).slice(0, 2);
     return {
       prompt: era === "then" ? `Pour ${need.need}, que faisait-on autrefois ?` : `Pour ${need.need}, que fait-on de nos jours ?`,
       answer: tileOfEra(need, era),
@@ -331,10 +338,7 @@ export function makeCe1PastSort(ctx: GameContext): GeneratedGame {
 export function makeCe1PastGap(ctx: GameContext): GeneratedGame {
   return gapGame(ctx, "ce1-autrefois-trou", "compléter une phrase sur autrefois ou aujourd'hui", () => {
     const { need, era } = pickFresh(ctx, windowFor(NEED_ERAS, ctx.level, 1), (candidate) => `ce1-autrefois:${candidate.need.need}:${candidate.era}`);
-    const others = shuffle(
-      ctx.rng,
-      NEEDS.filter((candidate) => candidate !== need),
-    ).slice(0, 2);
+    const others = shuffle(ctx.rng, otherNeeds(need, era)).slice(0, 2);
     const textOf = (entry: Need) => (era === "then" ? entry.thenText : entry.nowText);
     return {
       prompt: "Complète la phrase.",
@@ -682,7 +686,7 @@ export function makeCe1SchoolLatest(ctx: GameContext): GeneratedGame {
       hints: [
         "Lis les trois années, une à une.",
         second ? "Parmi les ajouts, cherche celui dont l'année est la plus proche de celle de la première classe." : "Cherche l'année la plus grande des trois.",
-        "Compare les nombres en regardant d'abord le chiffre des centaines.",
+        "Compare les nombres en regardant d'abord le chiffre des milliers, puis celui des centaines.",
       ],
     };
   });
@@ -834,7 +838,7 @@ export function makeCe1VillageLatest(ctx: GameContext): GeneratedGame {
       hints: [
         "Lis les trois années, une à une.",
         second ? "Parmi les ajouts, cherche celui dont l'année est la plus proche de celle de la fondation." : "Cherche l'année la plus grande des trois.",
-        "Compare les nombres en regardant d'abord le chiffre des centaines.",
+        "Compare les nombres en regardant d'abord le chiffre des milliers, puis celui des centaines.",
       ],
     };
   });

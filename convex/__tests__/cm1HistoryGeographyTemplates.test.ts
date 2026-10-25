@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { SHORT_OF_CHOICES, gapRows, questionRows, writeRows, type Pool } from "../paliers/games/cm1Faits";
 import { windowAt } from "../paliers/games/ce2Outils";
-import { defineTemplateTests } from "@/lib/test-support/cm1TestKit";
+import { defineTemplateTests, fold } from "@/lib/test-support/cm1TestKit";
+import { GAME_KINDS } from "../paliers/games";
+import { makeContext, type GameLevel } from "../paliers/games/shared";
 
 /**
  * L'HISTOIRE ET LA GÉOGRAPHIE DU CM1 : dix thématiques, cinquante-sept gabarits (`cm1Histoire.ts`, `cm1Geographie.ts`).
@@ -217,7 +219,8 @@ const ASSOC: Record<string, string[]> = {
   senghor: [],
   diouf: [],
   radio: ["sans montrer d images", "sans images", "sans image", "voix et de la musique"],
-  television: ["images et des sons", "regarder un journal", "voir un journal", "images animees"],
+  television: ["images et entendre des sons", "regarder un journal", "voir un journal", "images animees"],
+  "carte postale": [],
   telephone: ["parler a quelqu un qui est loin", "telephoner", "appeler un ami"],
   internet: ["reseau", "chercher une information", "message* dans le monde"],
   "reseau internet": ["reseau", "chercher une information", "message* dans le monde"],
@@ -262,7 +265,7 @@ const CHAINS: { when: RegExp; chain: string[] }[] = [
   { when: /plus lent au plus rapide/, chain: ["À pied", "À vélo", "En voiture", "En avion"] },
   { when: /plus lent au plus rapide/, chain: ["Charrette", "Voiture", "Avion"] },
   { when: /plus lent au plus rapide/, chain: ["Pirogue à rames", "Bateau à moteur", "Avion"] },
-  { when: /plus lent au plus rapide/, chain: ["Lettre", "Téléphone", "Internet"] },
+  { when: /plus lent au plus rapide/, chain: ["Messager à pied", "Lettre par avion", "Appel au téléphone"] },
   { when: /plus lent au plus rapide/, chain: ["Marcher", "Courir", "Rouler en voiture"] },
 ];
 
@@ -278,8 +281,8 @@ const PAIRS: [string, string][] =
     ["Armée", "Défend le royaume"], ["Agriculture", "Le mil"], ["Élevage", "Le lait et la viande"], ["Commerce", "Les échanges de marchandises"],
     ["Gorée", "Île en face de Dakar"], ["Saint-Louis", "Ville à l'embouchure du fleuve"], ["Comptoir", "Poste de commerce sur la côte"],
     ["Caravane", "Groupe de marchands en voyage"], ["Comptoir", "Poste de commerce européen"], ["Almoravides", "Peuple venu du Sahara"],
-    ["Marchand arabe", "Chameau"], ["Marin portugais", "Caravelle"], ["Pêcheur du fleuve", "Pirogue"], ["Marchands arabes", "L'islam"],
-    ["Caravane", "Marchandises du Sahara"], ["Comptoir", "Commerce sur la côte"], ["Almoravides", "XIe siècle"], ["Portugais", "XVe siècle"],
+    ["Marchand arabe", "Chameau"], ["Marin portugais", "Caravelle"], ["Pêcheur du fleuve", "Pirogue"], ["Caravane", "Traverse le désert"],
+    ["Caravelle", "Traverse l'océan"], ["Comptoir", "Commerce sur la côte"], ["Almoravides", "XIe siècle"], ["Portugais", "XVe siècle"],
     ["Conquête coloniale", "XIXe siècle"], ["Marchand arabe", "Le désert"], ["Marin portugais", "L'océan"], ["Pêcheur du fleuve", "Le fleuve"],
     ["Lat Dior", "Cayor"], ["Alboury Ndiaye", "Djolof"], ["El Hadji Oumar Tall", "Fouta"], ["Lat Dior", "Damel du Cayor"], ["Alboury Ndiaye", "Bourba du Djolof"],
     ["El Hadji Oumar Tall", "Chef religieux toucouleur"], ["Lat Dior", "A défendu le Cayor"], ["El Hadji Oumar Tall", "A fondé un empire sur le fleuve"],
@@ -377,6 +380,29 @@ const { checkOf } = defineTemplateTests({
   ["Un pays", "Une ville"], ["Au nord", "Au sud"], ["Au centre", "Au nord"], ["Au centre", "Au sud"], ["Les divisions", "Les chefs"], ["Élevage", "Mines"],
   ["Industrie", "Artisanat"], ["Transport", "Communication"], ["Sur la terre ferme", "Sur l'eau ou dans l'air"],
 ],
+});
+
+describe("le téléphone n'est jamais un mauvais choix là où il marche aussi", () => {
+  // Un téléphone portable montre des images et des sons, fait entendre une voix sans image, envoie un message au bout du monde.
+  const PHONE_FITS = /images et entendre des sons|journal|sans images|sans image|sans montrer|voix et de la musique|message|informations/;
+  it("cm1-com-qcm et cm1-com-trou : ni « Téléphone » ni « le téléphone » parmi les mauvais choix de ces questions", () => {
+    for (const kind of ["cm1-com-qcm", "cm1-com-trou"] as const) {
+      for (let level = 1; level <= 5; level++) {
+        for (let n = 0; n < 60; n++) {
+          const exo = GAME_KINDS[kind].make(makeContext("CM1", level as GameLevel, `${kind}:tel:${level}:${n}`)) as unknown as {
+            prompt: string;
+            answerKey: string;
+            payload: { options?: string[]; text?: string; blanks?: { options: string[]; answer: string }[] };
+          };
+          const text = fold(exo.payload.text ?? exo.prompt);
+          if (!PHONE_FITS.test(text)) continue;
+          const options = exo.payload.options ?? exo.payload.blanks?.[0].options ?? [];
+          const answer = exo.payload.blanks?.[0].answer ?? exo.answerKey;
+          for (const option of options) if (option !== answer) expect(fold(option), `${kind} : ${text}`).not.toMatch(/telephone/);
+        }
+      }
+    }
+  });
 });
 
 describe("les vérifications voient un énoncé abîmé", () => {

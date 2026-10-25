@@ -201,7 +201,13 @@ const checkNature: Check = (exo) => {
 const checkFunction: Check = (exo) => {
   const [sentence, group] = quotedAll(exo.prompt);
   const fonction = functionOf(sentence, group);
-  return all(ok(fonction !== null, `groupe introuvable : ${exo.prompt}`), ok(rightOption(exo) === fonction, `« ${group} » est ${fonction}, pas ${rightOption(exo)}`), ok(wrongOf(exo).every((option) => option !== fonction), "un mauvais choix est la bonne fonction"));
+  return all(
+    ok(fonction !== null, `groupe introuvable : ${exo.prompt}`),
+    ok(rightOption(exo) === fonction, `« ${group} » est ${fonction}, pas ${rightOption(exo)}`),
+    ok(wrongOf(exo).every((option) => option !== fonction), "un mauvais choix est la bonne fonction"),
+    // La question « quoi ? » du complément se pose APRÈS le verbe : posée devant, elle trouve le sujet. Un indice ne l'apprend jamais à l'envers.
+    ok(!exo.hints.some((hint) => /« quoi \? »[^.]*devant le verbe/u.test(hint) || /devant le verbe[^.]*« quoi \? »/u.test(hint)), `un indice pose « quoi ? » devant le verbe : ${exo.hints.join(" | ")}`),
+  );
 };
 
 const checkCc: Check = (exo) => {

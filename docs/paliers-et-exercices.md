@@ -621,7 +621,15 @@ chaîne est un nom du catalogue.
   pour un QCM. L'image est dessinée par `ItemPicture`, la pastille ;
   l'association et le glisser-déposer la posent par
   `components/exercises/tile-picture.tsx`.
-- Ce qui n'est pas touché : l'écoute (`ListenExercise`), le texte à trous, la
+- Le texte à trous (`FillBlankExercise`) aussi, depuis l'audit visuel d'octobre
+  2026 (53 textes à trous du CI proposaient « le balai / les ciseaux /
+  l'arrosoir » sans image). Les options de chaque trou se résolvent à part
+  (`useTileGroupPictures`), comme un QCM (`choice`), avec l'énoncé, l'image
+  d'énoncé et la phrase (`sentence` : un émoji de la chose dans la phrase la
+  trahirait, garde-fou b ; ses mots ne comptent pas pour le garde-fou a). La
+  tuile pose la pastille au-dessus du mot (`TilePicture`), le trou rempli la
+  garde, petite, devant le mot.
+- Ce qui n'est pas touché : l'écoute (`ListenExercise`), la
   réponse courte, les motifs, le pixel-art, le mélange de couleurs, les tuiles
   d'émojis (comptage, frises, motifs) et les images d'énoncé. La vitrine et
   les aperçus des professeurs n'ont pas de fournisseur : ils ne changent pas.
@@ -2669,8 +2677,8 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
   `ma-ce2-symetrie`, `ma-ce2-perimetre-aire`, `ma-ce2-mesures` et `ma-ce2-problemes`, que le modèle n'écrit plus. Les noms commencent par `ce2-sym-`, `ce2-per-`, `ce2-mes-` et `ce2-pb-` ;
   les fonctions sont des `makeCe2Sym…`, `makeCe2Per…`, `makeCe2Mes…` et `makeCe2Pb…`. Avec elles, les sept thématiques de mathématiques du CE2 sont des gabarits. `ma-ce2-symetrie`
   garde deux dessins à compléter par symétrie (`pixel-symetrie`) et ajoute huit gabarits ; les trois autres fiches ont dix gabarits chacune.
-  - **La symétrie et les solides** : les axes de symétrie de figures simples (carré, rectangle de 6 cm sur 4 cm, triangle équilatéral, losange sans angle droit, parallélogramme sans angle
-    droit, triangle aux côtés inégaux) et de lettres capitales (H, X, A, T, M, F, R, Z, N), jamais le cercle (une infinité). Le rectangle est toujours donné avec ses mesures : un carré est un
+  - **La symétrie et les solides** : les axes de symétrie de figures simples (carré, rectangle de 6 cm sur 4 cm, triangle équilatéral, losange sans angle droit, triangle aux côtés inégaux ; jamais
+    « un parallélogramme sans angle droit », qu'un losange peut être : au CM2 il devient « un parallélogramme quelconque (ni losange, ni rectangle) ») et de lettres capitales (H, X, A, T, M, F, R, Z, N), jamais le cercle (une infinité). Le rectangle est toujours donné avec ses mesures : un carré est un
     rectangle, et il a quatre axes. Le symétrique d'un point se compte en carreaux, en colonnes ou en lignes, de l'autre côté de la ligne de symétrie ; le symétrique s'appelle B (une apostrophe
     de plus dépasserait la limite de l'énoncé). Trois solides : le cube, le pavé droit, le cylindre (la boule et la pyramide ne sont que de mauvais choix). Le cube et le pavé droit ont les
     mêmes nombres (6, 12, 8) : aucune question ne demande lequel des deux, et quand la bonne réponse est l'un, l'autre n'est pas proposé. Le cylindre n'est compté que par ses sommets (aucun).

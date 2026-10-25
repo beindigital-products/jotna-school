@@ -303,10 +303,12 @@ const HEALTH_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
   [
     wr("Quel insecte transmet le paludisme ? Écris le mot.", ["moustique", "le moustique", "un moustique"], hints("Pense à un petit insecte qui pique.", "Il bourdonne la nuit.", "Il aime l'eau qui dort."), "palu:moustique"),
     wr("Sous quoi dort-on pour éviter les piqûres de moustique ? Écris le mot.", ["moustiquaire", "une moustiquaire", "la moustiquaire"], hints("Pense à un filet au-dessus du lit.", "Il empêche les insectes d'approcher.", "On le tend autour du matelas."), "palu:moustiquaire"),
-    wr("Quel objet ne faut-il jamais partager pour éviter le VIH ? Écris le mot.", ["lame", "seringue", "une lame", "une seringue"], hints("Pense à un objet qui coupe ou qui pique.", "Il peut avoir du sang dessus.", "Il y en a deux possibles."), "vih:lame"),
+    // Question ouverte : tout objet qui coupe ou qui pique la peau est juste, le rasoir et l'aiguille aussi.
+    wr("Quel objet ne faut-il jamais partager pour éviter le VIH ? Écris le mot.", ["lame", "seringue", "une lame", "une seringue", "rasoir", "lame de rasoir", "aiguille"], hints("Pense à un objet qui coupe ou qui pique.", "Il peut avoir du sang dessus.", "Les infirmiers et les coiffeurs s'en servent."), "vih:lame"),
     wr("Que ne faut-il pas toucher d'une autre personne pour éviter le VIH ? Écris le mot.", ["sang", "le sang"], hints("Pense à ce qui coule quand on se blesse.", "C'est un liquide rouge.", "Il faut appeler un adulte."), "vih:sang"),
     wr("Comment s'appelle la maladie transmise par les moustiques ? Écris le mot.", ["paludisme", "le paludisme", "palu"], hints("Elle donne de la fièvre.", "Le mot commence par la lettre p.", "On s'en protège avec une moustiquaire."), "palu:nom"),
-    wr("Que faut-il vider autour de la maison pour éviter les moustiques ? Écris le mot.", ["eau", "l'eau"], hints("Pense à une flaque.", "Les moustiques y pondent.", "On la boit aussi."), "palu:eau"),
+    // « Quel liquide », pas « que faut-il vider » : sinon « les pneus », « les pots » ou « les flaques » sont justes et refusés.
+    wr("Quel liquide faut-il vider des vieux pots et des pneus pour éviter les moustiques ? Écris le mot.", ["eau", "l'eau", "eau stagnante", "l'eau stagnante"], hints("Pense à ce qui reste au fond après la pluie.", "Les moustiques y pondent.", "On la boit aussi."), "palu:eau"),
     wr("Le soir, on porte des habits ___ pour éviter les piqûres. Écris le mot.", ["longs", "long"], hints("Pense à couvrir les bras et les jambes.", "Le contraire de courts.", "Les moustiques piquent la peau découverte."), "palu:habits"),
     wr("Que doit-on faire de l'eau qui ne bouge pas autour de la maison ? Écris le verbe.", ["vider"], hints("Pense aux moustiques qui y pondent.", "Sans cette eau, ils ne peuvent pas grandir.", "Le verbe commence par la lettre v."), "palu:eau"),
   ],
@@ -438,7 +440,13 @@ const ENV_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
     wr("Où faut-il mettre les déchets ? Écris le mot.", ["poubelle", "la poubelle", "une poubelle"], hints("Pense à un grand seau avec un couvercle.", "On le vide régulièrement.", "Cela garde le quartier propre."), "env:déchets:solution"),
     wr("Pour remplacer ce qu'on a coupé dans la brousse, on plante un ___. Écris le mot.", ["arbre", "un arbre"], hints("Pense à une petite pousse.", "Elle grandit avec le temps.", "Il donne de l'ombre aux animaux."), "env:arbres:solution"),
     wr("Comment appelle-t-on le feu qui brûle les herbes et les arbres ? Écris les trois mots.", ["feu de brousse", "feux de brousse", "un feu de brousse"], hints("Pense à la saison sèche.", "Il court dans l'herbe.", "Le dernier mot est le nom d'un lieu sauvage."), "env:feu:cause"),
-    wr("Quel objet en plastique reste très longtemps dans la nature ? Écris le mot.", ["sachet", "sachets", "un sachet", "sachet plastique"], hints("Pense à ce qu'on reçoit au marché.", "Il vole dans la rue.", "On peut le remplacer par un sac en tissu."), "env:sachet:cause"),
+    // L'énoncé dit « donné au marché pour porter les achats » : sinon « bouteille » serait juste et refusée.
+    wr(
+      "Quel objet en plastique, donné au marché pour porter les achats, reste très longtemps dans la nature ? Écris le mot.",
+      ["sachet", "sachets", "un sachet", "sachet plastique", "sachets plastiques", "sachet en plastique", "sac", "sac plastique", "sac en plastique"],
+      hints("Il est léger et très fin.", "Il vole dans la rue.", "On peut le remplacer par un panier."),
+      "env:sachet:cause",
+    ),
     wr("Que faut-il fermer pour ne pas gaspiller l'eau ? Écris le mot.", ["robinet", "le robinet"], hints("Pense à ce qu'on tourne pour arrêter l'eau.", "Il est au-dessus de l'évier.", "Il coule quand on l'ouvre."), "env:eau:solution"),
     wr("Un quartier où il y a beaucoup trop de monde est trop ___. Écris le mot.", ["peuplé", "surpeuplé"], hints("Pense au nombre d'habitants.", "Le mot vient de ceux qui y habitent.", "Il se termine par la lettre é."), "env:peuplé:cause"),
     wr("Que ramasse-t-on ensemble pour garder le quartier propre ? Écris le mot.", ["déchets", "les déchets", "dechets", "ordures"], hints("Pense à ce qu'on trouve par terre.", "On les met dans un sac.", "Ils vont ensuite à la poubelle."), "env:déchets:ramasser"),

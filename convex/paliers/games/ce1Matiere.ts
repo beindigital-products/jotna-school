@@ -542,19 +542,23 @@ export function makeCe1PotableKeepingChoice(ctx: GameContext): GeneratedGame {
   return factChoice(ctx, "ce1-pot-garde", "garder l'eau potable", WATER_KEEPING);
 }
 
-/** « Glisse chaque geste dans la bonne case » : ce qui rend l'eau potable, et ce qui ne la rend pas potable. */
+/**
+ * « Glisse chaque geste dans la bonne case » : ce qui rend l'eau plus sûre, et ce qui ne la rend pas
+ * plus sûre. Les cases disent « plus sûre », pas « potable » : un tissu retient les saletés, pas tous
+ * les microbes, donc filtrer seul ne rend pas l'eau potable, il la rend seulement plus sûre.
+ */
 export function makeCe1PotableSort(ctx: GameContext): GeneratedGame {
   return binSort(
     ctx,
     "ce1-pot-glisser",
-    "ranger les gestes selon qu'ils rendent l'eau potable",
+    "ranger les gestes selon qu'ils rendent l'eau plus sûre",
     "Glisse chaque geste dans la bonne case.",
-    { zone: "Rend l'eau potable", tiles: ["Faire bouillir", "Filtrer", "Gouttes de javel"] },
-    { zone: "Ne rend pas l'eau potable", tiles: ["Ajouter du sucre", "Ajouter du sable", "Laisser ouvert", "Remuer avec un bâton", "Jeter du sel"] },
+    { zone: "Rend l'eau plus sûre", tiles: ["Faire bouillir", "Filtrer", "Gouttes de javel"] },
+    { zone: "Ne rend pas l'eau plus sûre", tiles: ["Ajouter du sucre", "Ajouter du sable", "Laisser ouvert", "Remuer avec un bâton", "Jeter du sel"] },
     [
       "Pense à ce qui protège le ventre quand on boit.",
       "Un geste qui nettoie ou qui chauffe aide, un geste qui salit ou qui ajoute n'importe quoi n'aide pas.",
-      "Trois gestes de la maison rendent l'eau plus sûre.",
+      "Trois gestes de la maison chassent une partie des dangers de l'eau.",
     ],
   );
 }

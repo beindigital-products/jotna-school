@@ -191,6 +191,11 @@ describe("les dix récits s'accordent avec les règles écrites à part", () => 
     }
   });
 
+  it("l'imparfait d'un verbe en -er garde le e seulement après un g (« mangeait », jamais « rameait »)", () => {
+    const everything = STORIES.map((story) => JSON.stringify(story)).join(" ");
+    expect(everything.match(/\p{L}*[^g\s]eai(?:s|t|ent)\b/gu) ?? []).toEqual([]);
+  });
+
   it("chaque question a son mot-clé dans une phrase qui contient la bonne réponse et aucun mauvais choix", () => {
     for (const story of STORIES) {
       for (const entry of [...story.asks, story.word]) {

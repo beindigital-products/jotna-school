@@ -24,6 +24,7 @@ vi.setConfig({ testTimeout: 30_000 });
 type Listen = {
   prompt: string;
   answerKey: string;
+  hints: string[];
   payload: ListenPayload & { game: { kind: string; level: number } };
 };
 
@@ -106,6 +107,8 @@ function checkMelody(game: Listen, band: number) {
   }
   // La forme en arche n'est proposée qu'à partir du troisième niveau.
   expect(p.options.includes("Elle monte puis descend")).toBe(p.game.level >= 3);
+  // Une arche finit plus bas qu'elle ne part (ou au même endroit) : comparer la première et la dernière note pousserait vers « Elle descend ».
+  if (p.options.includes("Elle monte puis descend")) for (const hint of game.hints) expect(hint, hint).not.toMatch(/première note et la dernière/u);
   expect(game.answerKey).toBe(answer);
 }
 

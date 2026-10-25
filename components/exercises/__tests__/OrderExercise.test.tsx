@@ -194,7 +194,7 @@ describe("OrderExercise au CI — la tuile qui nomme une chose montre son image"
     for (const tile of tiles()) {
       const label = tile.querySelector(".gk-face-light span.relative > span") as Element;
       expect(label.getAttribute("class")).toBe("block pl-14");
-      expect(label.querySelector("span.inline-block")?.className).toBe("inline-block hyphens-auto [overflow-wrap:anywhere]");
+      expect(label.querySelector("span.inline-block")?.className).toBe("inline-block [overflow-wrap:anywhere]");
     }
   });
 

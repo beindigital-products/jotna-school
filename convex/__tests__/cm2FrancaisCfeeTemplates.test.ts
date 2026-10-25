@@ -303,6 +303,10 @@ const checkPluralSort: Check = (exo) => {
       if (INVARIABLE.includes(item.text) || IRREGULAR.includes(item.text)) return `${item.text} n'a pas sa place ici`;
       return ok(item.correctZone === (plural.endsWith("x") ? zones[1] : zones[0]), `${item.text} (${plural}) est rangé dans « ${item.correctZone} »`);
     }),
+    // Un indice qui donne une règle de fin de mot ne ment pour aucune étiquette : « beaucoup de mots en -ou prennent un x » envoyait trou dans la mauvaise case,
+    // « on entend -aux » y envoyait chacal. La règle des -ou nomme son exception (« sauf »), celle des -al aussi (« mais »).
+    ...exo.hints.map((hint) => ok(!/en -ou/u.test(hint) || /prennent un s, sauf/u.test(hint), `l'indice des mots en -ou oublie que presque tous prennent un s : ${hint}`)),
+    ...exo.hints.map((hint) => ok(!/-al\b/u.test(hint) || /mais/u.test(hint), `l'indice des mots en -al oublie ses exceptions : ${hint}`)),
   );
 };
 

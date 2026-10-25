@@ -404,10 +404,11 @@ export function makeReadLetter(ctx: GameContext): GeneratedGame {
       answerKey: answer.word,
       hints: [
         "Regarde la première lettre de chaque mot.",
+        // Sur un d, le ventre est à GAUCHE de la tige ; sur un b, à droite (l'indice du d le disait à l'envers, défaut relevé en production le 25 octobre 2026).
         letter === "b"
           ? "Un b a son ventre à droite, un d a son ventre à gauche."
           : letter === "d"
-            ? "Un d a son ventre à droite, un b a son ventre à gauche."
+            ? "Un d a son ventre à gauche, un b a son ventre à droite."
             : "Un p a sa tige qui descend sous la ligne.",
         "Lis les mots à voix basse pour être sûr.",
       ],

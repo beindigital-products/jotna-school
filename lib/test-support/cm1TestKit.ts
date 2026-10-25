@@ -227,6 +227,27 @@ describe(`les gabarits ${cfg.label} recalculent juste, depuis des tables écrite
   }
 });
 
+describe(`l'indice de la première lettre ${cfg.label} vient de la réponse entière`, () => {
+  /** La lettre d'un choix : un choix de QCM se lit en entier (« Des enfants » commence par D), un trou garde l'article de la phrase. */
+  const initialOf = (text: string, gap: boolean) => (gap ? norm(text) : fold(text)).charAt(0).toUpperCase();
+  it("donne la première lettre de la bonne réponse, et se retire quand tous les choix commencent par la même", () => {
+    for (const kind of KINDS) {
+      const type = GAME_KINDS[kind].type;
+      if (type !== "qcm" && type !== "fill-blank") continue;
+      for (const d of drawsOf(kind).filter((_, i) => i % 4 === 0)) {
+        const exo = make(kind, d) as unknown as Exo;
+        const letter = exo.hints.map((hint) => /^La réponse commence par la lettre (\p{Lu})\.$/u.exec(hint)?.[1]).find((found) => found !== undefined);
+        if (letter === undefined) continue;
+        const gap = type === "fill-blank";
+        const right = gap ? blankOf(exo).answer : rightOption(exo);
+        const all = gap ? blankOf(exo).options : optionsOf(exo);
+        expect(letter, `${kind} : « ${right} » (${exo.prompt})`).toBe(initialOf(right, gap));
+        expect(all.every((option) => initialOf(option, gap) === letter), `${kind} : tous les choix commencent par ${letter} (${all.join(" / ")})`).toBe(false);
+      }
+    }
+  });
+});
+
 describe.runIf(cfg.assoc !== undefined)("les tables elles-mêmes sont saines", () => {
   it("n'ont pas de fragment vide, ni deux fois le même", () => {
     for (const [answer, fragments] of Object.entries(ASSOC)) {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, Check } from "lucide-react";
 import { ActionButton3D, Reward, Tile3D, type TileState } from "@/components/student/game-kit";
 import { graphemeCount, qcmLayout, splitLeadingEmoji } from "@/components/student/game-kit/choix-texte";
+import { typesetTile } from "@/components/student/game-kit/tile-typeset";
 import type { ItemImage } from "@/lib/item-images";
 import { splitTile } from "@/lib/item-pictures";
 import ExercisePrompt from "./ExercisePrompt";
@@ -76,6 +77,10 @@ interface QcmExerciseProps {
  * enfant qui apprend à lire (CI, CP) le gros bouton bleu « Écouter » vient
  * juste au-dessus ; l'énoncé, lui, prend toute la largeur de la carte. C'est
  * le MODÈLE du câblage des autres écrans.
+ *
+ * LE TEXTE D'UNE OPTION EST COMPOSÉ À L'ÉCRAN (`typesetTile`) : l'espace avant
+ * « ? ! : ; » y est insécable, comme dans l'énoncé, et un calcul ne se coupe pas
+ * autour de ses opérateurs. `options` n'en est pas touché.
  *
  * Le contrat ne change pas : mêmes props, la réponse part toujours en
  * `String(index)`.
@@ -221,11 +226,11 @@ function OptionContent({ text, big, image }: { text: string; big: boolean; image
   if (image) return <PictureOption text={text} big={big} image={image} />;
   const { emoji, rest } = splitLeadingEmoji(text);
   if (!emoji) {
-    if (!big) return <>{text}</>;
+    if (!big) return <>{typesetTile(text)}</>;
     const short = graphemeCount(text.trim()) <= 3;
     return (
       <span className={`block leading-tight ${short ? "py-1 text-3xl [@media(max-height:480px)]:py-0 [@media(max-height:480px)]:text-2xl" : "text-xl"}`}>
-        {text}
+        {typesetTile(text)}
       </span>
     );
   }
@@ -236,14 +241,14 @@ function OptionContent({ text, big, image }: { text: string; big: boolean; image
     return (
       <span className={EMOJI_OPTION_STACK}>
         <span className="text-4xl leading-none [@media(max-height:667px)]:text-3xl">{emoji}</span>
-        <span className="text-lg leading-tight">{rest}</span>
+        <span className="text-lg leading-tight">{typesetTile(rest)}</span>
       </span>
     );
   }
   return (
     <span className="flex items-center gap-3">
       <span className="text-3xl leading-none">{emoji}</span>
-      <span>{rest}</span>
+      <span>{typesetTile(rest)}</span>
     </span>
   );
 }
@@ -299,14 +304,14 @@ function PictureOption({ text, big, image }: { text: string; big: boolean; image
     return (
       <span className={PICTURE_OPTION_STACK}>
         <ItemPicture image={image} emoji={emoji} size="lg" className={PICTURE_OPTION_STICKER} />
-        <span className="text-lg leading-tight">{word}</span>
+        <span className="text-lg leading-tight">{typesetTile(word)}</span>
       </span>
     );
   }
   return (
     <span className="flex items-center gap-3">
       <ItemPicture image={image} emoji={emoji} size="sm" className="-my-0.5 [@media(max-height:667px)]:size-9" />
-      <span>{word}</span>
+      <span>{typesetTile(word)}</span>
     </span>
   );
 }

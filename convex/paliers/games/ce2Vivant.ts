@@ -286,7 +286,8 @@ const PLANT_ROWS: readonly QuestionRow[] = inFactOrder(
 
 const PLANT_GAP_ROWS: readonly GapRow[] = inFactOrder(
   [
-    gr("Eau, air et ___ font germer la graine.", "chaleur", ["glace", "nuit"], hints("Pense à ce que le soleil donne.", "C'est le contraire du froid.", "Elle fait gonfler la graine."), "germe:Chaleur"),
+    // Pas « elle fait gonfler la graine » : c'est l'eau qui la gonfle.
+    gr("Eau, air et ___ font germer la graine.", "chaleur", ["glace", "nuit"], hints("Pense à ce que le soleil donne.", "C'est le contraire du froid.", "Sans elle, la graine reste endormie dans un endroit trop froid."), "germe:Chaleur"),
     gr("Sans ___, une graine ne germe pas.", "eau", ["sel", "sucre"], hints("Pense à ce que tu verses sur la terre.", "On la boit aussi.", "Elle tombe pendant la saison des pluies."), "germe:Eau"),
     gr("Sans ___, une graine ne germe pas.", "air", ["sel", "huile"], hints("Pense à ce que tu respires.", "On ne le voit pas.", "Il est tout autour de nous."), "germe:Air"),
     gr("De la fleur naît le ___.", "fruit", ["tronc", "caillou"], hints("Pense à la mangue ou à l'arachide.", "On le cueille quand il est mûr.", "Il porte les graines."), "plante:fleur"),
@@ -304,12 +305,13 @@ const PLANT_GAP_ROWS: readonly GapRow[] = inFactOrder(
 
 const PLANT_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
   [
-    wr("Eau, air et ___ font germer la graine. Écris le mot.", ["chaleur", "la chaleur"], hints("Pense à ce que le soleil donne.", "C'est le contraire du froid.", "Elle fait gonfler la graine."), "germe:Chaleur"),
+    wr("Eau, air et ___ font germer la graine. Écris le mot.", ["chaleur", "la chaleur"], hints("Pense à ce que le soleil donne.", "C'est le contraire du froid.", "Sans elle, la graine reste endormie dans un endroit trop froid."), "germe:Chaleur"),
     wr("Combien de choses faut-il à une graine pour germer ? Écris le nombre.", ["3", "trois"], hints("Pense à l'eau, à l'air et à la chaleur.", "C'est un de plus que deux.", "On les compte sur les doigts d'une main."), "germe:nombre"),
     wr("Que devient la fleur de la plante ? Écris le mot.", ["fruit", "un fruit", "le fruit"], hints("Pense à la mangue.", "On le cueille quand il est mûr.", "Il porte les graines."), "plante:fleur"),
     wr("Que porte le fruit ? Écris le mot.", ["graines", "des graines", "graine"], hints("Pense à ce qu'on sème dans la terre.", "Chacune peut donner une nouvelle plante.", "Le mil en donne beaucoup."), "plante:fruit"),
     wr("Quelle partie de la mangue contient la graine ? Écris le mot.", ["noyau", "le noyau"], hints("Pense à ce qu'on jette après la mangue.", "Il est dur.", "C'est la graine du manguier."), "plante:mangue"),
-    wr("Dans quoi se trouvent les graines de l'arachide ? Écris le mot.", ["gousse", "une gousse", "la gousse"], hints("Pense à ce qu'on casse avant de manger.", "Elle pousse sous la terre.", "Elle est dure et allongée."), "plante:arachide"),
+    // « Coque » et « cosse » : les mots courants au Sénégal pour l'enveloppe qu'on casse, et justes.
+    wr("Dans quoi se trouvent les graines de l'arachide ? Écris le mot.", ["gousse", "une gousse", "la gousse", "coque", "cosse"], hints("Pense à ce qu'on casse avant de manger.", "Elle pousse sous la terre.", "Elle est dure et allongée."), "plante:arachide"),
     wr("Quelle partie sort la première de la graine qui germe ? Écris le mot.", ["racine", "la racine"], hints("Elle descend dans la terre.", "Elle va chercher l'eau.", "On ne la voit pas."), "plante:racine"),
     wr("Comment s'appelle le moment où la graine commence à pousser ? Écris le mot.", ["germination", "la germination"], hints("Le verbe de cette étape est germer.", "Le mot se termine par ion.", "Il commence par la lettre g."), "plante:graine"),
   ],
@@ -394,6 +396,25 @@ const ANIMAL_FACTS = ["definition:ovipare", "cycle:papillon", "animal:Poule", "c
 const OVIPARES = ["Poule", "Tortue", "Poisson", "Canard", "Pigeon", "Crocodile", "Grenouille", "Papillon", "Pintade"] as const;
 /** Les vivipares : la chèvre, le chat et l'homme de la fiche, et huit exemples sûrs de la même règle. */
 const VIVIPARES = ["Chèvre", "Chat", "Homme", "Vache", "Mouton", "Chien", "Âne", "Cheval", "Lion", "Éléphant", "Singe"] as const;
+
+/**
+ * Ce qu'un enfant peut écrire à « Nomme un animal ovipare » : la question est ouverte, donc tout ovipare
+ * courant au Sénégal est juste (les oiseaux, les reptiles, les insectes). Pas le requin (beaucoup de
+ * requins sont vivipares), ni le coq (il ne pond pas). Le pluriel d'un mot de quatre lettres ou plus
+ * passe déjà comme une faute de frappe ; « oie », trop court, a le sien.
+ */
+const OVIPARES_WRITTEN = [
+  ...OVIPARES.map((name) => name.toLowerCase()),
+  "oiseau", "serpent", "lézard", "margouillat", "autruche", "caïman", "crapaud", "oie", "oies", "dinde", "perroquet", "aigle", "moineau",
+  "abeille", "fourmi", "moustique", "escargot", "araignée", "criquet", "sauterelle",
+];
+/** Ce qu'un enfant peut écrire à « Nomme un animal vivipare » : les mammifères de la ferme, de la savane et de la mer. */
+const VIVIPARES_WRITTEN = [
+  ...VIVIPARES.map((name) => name.toLowerCase()),
+  "lapin", "cochon", "porc", "chameau", "dromadaire", "girafe", "zèbre", "hyène", "gazelle", "antilope", "phacochère", "hippopotame",
+  "rhinocéros", "buffle", "bœuf", "taureau", "brebis", "bouc", "souris", "rat", "chauve-souris", "baleine", "dauphin", "panthère",
+  "léopard", "guépard", "chacal", "renard", "loup", "ours", "gorille", "chimpanzé", "humain",
+];
 
 const OVIPARE_ROWS: readonly QuestionRow[] = [
   ...OVIPARES.map((animal, i) =>
@@ -510,8 +531,8 @@ const ANIMAL_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
     wr("Un animal qui met ses petits au monde est ___. Écris le mot.", ["vivipare", "vivipares"], hints("Le mot rappelle une vie qui naît.", "C'est le cas de la chèvre.", "Ce mot se termine comme ovipare."), "definition:vivipare"),
     wr("Comment s'appelle le bébé de la grenouille ? Écris le mot.", ["têtard", "tetard", "le têtard"], hints("Pense à un petit animal qui nage.", "Il a une queue.", "Il devient grenouille."), "cycle:têtard"),
     wr("Quel animal sort de l'œuf du papillon ? Écris le mot.", ["chenille", "la chenille", "une chenille"], hints("Pense à un petit animal qui mange des feuilles.", "Elle se change en chrysalide.", "Elle rampe sur une branche."), "cycle:chenille"),
-    wr("Nomme un animal ovipare. Écris le mot.", ["poule", "tortue", "poisson", "canard", "pigeon", "crocodile", "grenouille", "papillon"], hints("Pense à un animal qui pond.", "Il y en a dans la cour de l'école ou dans la mare.", "Il a des petits qui sortent d'une coquille."), "animal:ovipare"),
-    wr("Nomme un animal vivipare. Écris le mot.", ["chèvre", "chat", "homme", "vache", "mouton", "chien", "âne", "cheval", "lion", "éléphant", "singe"], hints("Pense à un animal qui n'a pas de coquille.", "Son bébé grandit dans le ventre de sa mère.", "Pense à la ferme ou à la savane."), "animal:vivipare"),
+    wr("Nomme un animal ovipare. Écris le mot.", OVIPARES_WRITTEN, hints("Pense à un animal qui pond.", "Il y en a dans la cour de l'école ou dans la mare.", "Il a des petits qui sortent d'une coquille."), "animal:ovipare"),
+    wr("Nomme un animal vivipare. Écris le mot.", VIVIPARES_WRITTEN, hints("Pense à un animal qui n'a pas de coquille.", "Son bébé grandit dans le ventre de sa mère.", "Pense à la ferme ou à la savane."), "animal:vivipare"),
     wr("Comment s'appelle le bébé de la poule ? Écris le mot.", ["poussin", "le poussin"], hints("Il est tout jaune.", "Il sort d'un œuf.", "Il fait piou piou."), "cycle:poule"),
     wr("Quelle étape vient entre la chenille et le papillon ? Écris le mot.", ["chrysalide", "la chrysalide"], hints("La chenille s'enferme pour se transformer.", "Elle ne bouge presque plus.", "Le mot commence par la lettre c."), "cycle:chrysalide"),
   ],
