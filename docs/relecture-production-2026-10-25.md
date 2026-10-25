@@ -57,7 +57,7 @@ Après la relecture, les 127 constats qui ne relevaient pas des deux correctifs 
 
 - **Vérifié sur l'ensemble** : `tsc` propre à la racine et dans `convex` ; suite complète 218 fichiers, 11 185 tests verts (6 ignorés) ; les 267 thématiques fabriquées en local avec le contrôleur de la production, 15 tirages par palier : 15 420 paliers, 154 200 exercices, 0 défaut, aucun palier de moins de dix exercices.
 - **Rendu** : les écrans du CI s'affichent correctement dans Safari de l'iPhone 17 (simulateur, WebKit) : QCM avec images, rangement, intrus, boutons.
-- **Builds** : `next build --webpack` (export statique, ce que sert le site et ce que `cap sync` copie dans l'application) réussit avec tous les correctifs ; la compilation Xcode de l'application iOS (`ios/App/App.xcodeproj`, schéma App, Debug, simulateur) réussit (`BUILD SUCCEEDED`). L'application n'a pas été lancée sur le simulateur, pas de test de la vibration ; `AndroidManifest.xml` déclare bien la permission `VIBRATE` (ligne 47) ; Android n'a pas été compilé.
+- **Builds** : `next build --webpack` (export statique, ce que sert le site et ce que `cap sync` copie dans l'application) réussit avec tous les correctifs. La compilation Xcode de l'application iOS (`ios/App/App.xcodeproj`, schéma App, Debug) réussit pour le simulateur ET pour l'iPhone réel appairé. La version Android Debug (`gradlew assembleDebug`, SDK Homebrew, plateforme 36) compile aussi (`BUILD SUCCESSFUL`). Une version Debug de l'application, construite avec l'URL Convex de production et signée avec le compte de développement du propriétaire, a été installée sur « iPhone de Mamadou » (iPhone 14 Plus) sur son accord : elle démarre (processus vu sur l'appareil). Personne n'a encore perçu la vibration ni la voix : l'appareil n'a pas d'écran ni de capteur que je puisse lire d'ici. `AndroidManifest.xml` déclare la permission `VIBRATE` (ligne 47).
 - **Pas vérifié** : les nouveaux textes n'ont pas été relus par un humain ; la production n'a pas changé.
 
 ### Décisions qui reviennent au propriétaire
@@ -89,7 +89,7 @@ Les 10 280 exercices se rendent avec les vrais composants, aux deux tailles, san
 ## Ce qui n'est PAS prouvé
 
 - Les relecteurs sont des modèles, pas des enseignants. Aucun humain n'a relu les contenus hors fiche (liste dans `docs/paliers-et-exercices.md`) ni l'anglais. Les 11 constats incertains et le seul « fact-check » confirmé attendent un humain.
-- Le rendu a été mesuré dans Chromium tactile, avec le mouvement réduit. Pas de vrai iPhone ni de WebKit, pas d'audio, de voix, de vibration, d'animation ni de clip de Pio, pas de gestes de glisser réels.
+- Le rendu a été mesuré dans Chromium tactile, avec le mouvement réduit, et regardé dans le WebKit du simulateur iPhone 17. L'application installée sur l'iPhone réel n'a pas été regardée à l'écran par moi : il faut que quelqu'un la prenne en main (vibration, voix des tuiles, trous du CI avec images, « ! » collé au mot). Pas d'audio, d'animation ni de clip de Pio, pas de gestes de glisser réels. Les exercices de la production gardent leurs anciennes données tant qu'ils ne sont pas régénérés : seul l'affichage corrigé se voit sur l'iPhone.
 - Les causes communes sont comptées par mots-clés : les chiffres sont des ordres de grandeur, pas une comptabilité exacte.
 
 ## Annexe : les 159 constats graves confirmés
