@@ -1,7 +1,16 @@
 "use client";
 
-import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
+import {
+  createContext,
+  useContext,
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
@@ -45,6 +54,34 @@ export type CameraHandle = {
 
 export const MAX_SCALE = 2.8;
 
+/**
+ * LE ZOOM, PUBLIÉ AUX ENFANTS. Dézoomé à 0,4, un nom de 15 pixels n'en fait
+ * plus que 6 : illisible. Les étiquettes, les médaillons et Pio se
+ * recalibrent donc contre le zoom (`useCounterScale`), comme les noms d'une
+ * carte routière : ils grossissent à mesure que le monde rapetisse, jusqu'à
+ * un plafond. À zoom 1 ou plus, le facteur vaut 1 et rien ne change.
+ */
+const MapScaleContext = createContext<MotionValue<number> | null>(null);
+
+/**
+ * Le facteur à appliquer à un élément du monde pour qu'il garde une taille
+ * lisible à l'écran : `(1 / zoom) ^ power`, entre 1 et `cap`. `power` 1 garde
+ * la taille écran constante, moins que 1 la laisse un peu rapetisser (les
+ * gros objets, pour que le monde garde de l'air). Hors d'une caméra : 1.
+ */
+/** Le zoom lui-même (1 hors d'une caméra), pour qu'un élément change de rendu selon l'éloignement. */
+export function useMapScale(): MotionValue<number> {
+  const scale = useContext(MapScaleContext);
+  const fallback = useMotionValue(1);
+  return scale ?? fallback;
+}
+
+export function useCounterScale({ cap, power = 1 }: { cap: number; power?: number }): MotionValue<number> {
+  const scale = useContext(MapScaleContext);
+  const fallback = useMotionValue(1);
+  return useTransform(scale ?? fallback, (v) => Math.min(cap, Math.max(1, (1 / v) ** power)));
+}
+
 /** Le zoom d'arrivée : le monde remplit la largeur, sans être minuscule ni énorme. */
 export function initialScaleFor(viewportWidth: number, worldWidth: number): number {
   return clamp(viewportWidth / worldWidth, 0.85, 1.5);
@@ -82,6 +119,12 @@ type Props = {
   frame?: "painted" | "plain";
   /** L'image peinte du cadre ; par défaut la savane de la carte du monde. */
   frameImage?: string;
+  /**
+   * Ce que le HUD mange en haut et en bas du cadre, selon sa taille. « Voir
+   * toute la carte » cale le monde dans l'espace qui reste : sans cela, sur un
+   * téléphone, la bannière recouvrirait le premier monde.
+   */
+  fitInsets?: (size: { w: number; h: number }) => { top: number; bottom: number };
   ref?: Ref<CameraHandle>;
 };
 
@@ -94,6 +137,7 @@ export function MapViewport({
   className = "",
   frame = "plain",
   frameImage = "/images/world/map-trail-bg.jpg",
+  fitInsets,
   ref,
 }: Props) {
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -125,11 +169,16 @@ export function MapViewport({
   }, [worldWidth, worldHeight]);
 
   // ── Bornes ───────────────────────────────────────────────────────────
+  function insets() {
+    return fitInsets?.(size.current) ?? { top: 0, bottom: 0 };
+  }
+
   function fitScale(): number {
     const { w, h } = size.current;
     const world = worldRef.current;
     if (w === 0 || h === 0) return 1;
-    return Math.min(w / world.w, h / world.h);
+    const { top, bottom } = insets();
+    return Math.min(w / world.w, Math.max(1, h - top - bottom) / world.h);
   }
 
   function minScale(): number {
@@ -141,8 +190,10 @@ export function MapViewport({
   }
 
   /** Une translation qui ne laisse pas de vide au-delà du monde (ou le centre s'il est plus petit). */
-  function clampAxis(t: number, scale: number, view: number, world: number): number {
+  function clampAxis(t: number, scale: number, view: number, world: number, padStart = 0, padEnd = 0): number {
     const scaled = world * scale;
+    // Le monde tient entier dans ce que le HUD laisse libre : on le centre là.
+    if (scaled <= view - padStart - padEnd) return padStart + (view - padStart - padEnd - scaled) / 2;
     if (scaled <= view) return (view - scaled) / 2;
     return clamp(t, view - scaled, 0);
   }
@@ -153,7 +204,7 @@ export function MapViewport({
     const sc = clampScale(scale);
     s.set(sc);
     x.set(clampAxis(tx, sc, w, world.w));
-    y.set(clampAxis(ty, sc, h, world.h));
+    y.set(clampAxis(ty, sc, h, world.h, insets().top, insets().bottom));
   }
 
   function targetFor(p: WorldPoint, scale: number) {
@@ -163,7 +214,7 @@ export function MapViewport({
     return {
       sc,
       tx: clampAxis(w / 2 - p.x * sc, sc, w, world.w),
-      ty: clampAxis(h / 2 - p.y * sc, sc, h, world.h),
+      ty: clampAxis(h / 2 - p.y * sc, sc, h, world.h, insets().top, insets().bottom),
     };
   }
 
@@ -200,7 +251,7 @@ export function MapViewport({
       const tx = cx - (cx - x.get()) * (to / from);
       const ty = cy - (cy - y.get()) * (to / from);
       const world = worldRef.current;
-      glide(clampAxis(tx, to, w, world.w), clampAxis(ty, to, h, world.h), to, 0.25);
+      glide(clampAxis(tx, to, w, world.w), clampAxis(ty, to, h, world.h, insets().top, insets().bottom), to, 0.25);
     },
     fitAll() {
       const world = worldRef.current;
@@ -263,11 +314,11 @@ export function MapViewport({
         const ty = py - (py - y.get()) * (to / from);
         s.set(to);
         x.set(clampAxis(tx, to, w, world.w));
-        y.set(clampAxis(ty, to, h, world.h));
+        y.set(clampAxis(ty, to, h, world.h, insets().top, insets().bottom));
       } else {
         const sc = s.get();
         x.set(clampAxis(x.get() - e.deltaX, sc, w, world.w));
-        y.set(clampAxis(y.get() - e.deltaY, sc, h, world.h));
+        y.set(clampAxis(y.get() - e.deltaY, sc, h, world.h, insets().top, insets().bottom));
       }
     }
     // Safari iOS : le pincement natif émet `gesturestart` ; on le coupe pour
@@ -335,7 +386,7 @@ export function MapViewport({
       }
       const sc = s.get();
       x.set(clampAxis(g.startTx + dx, sc, w, world.w));
-      y.set(clampAxis(g.startTy + dy, sc, h, world.h));
+      y.set(clampAxis(g.startTy + dy, sc, h, world.h, insets().top, insets().bottom));
     } else if (g.mode === "pinch" && pointers.current.size >= 2) {
       const [a, b] = Array.from(pointers.current.values());
       const dist = Math.max(1, Math.hypot(b.x - a.x, b.y - a.y));
@@ -351,7 +402,7 @@ export function MapViewport({
       const ty = midY - oy - (g.startMidY - oy - g.startTy) * ratio;
       s.set(to);
       x.set(clampAxis(tx, to, w, world.w));
-      y.set(clampAxis(ty, to, h, world.h));
+      y.set(clampAxis(ty, to, h, world.h, insets().top, insets().bottom));
     }
   }
 
@@ -406,7 +457,7 @@ export function MapViewport({
         className="absolute left-0 top-0 will-change-transform"
         style={{ x, y, scale: s, transformOrigin: "0 0", width: worldWidth, height: worldHeight }}
       >
-        {children}
+        <MapScaleContext.Provider value={s}>{children}</MapScaleContext.Provider>
       </motion.div>
       {hud}
     </div>

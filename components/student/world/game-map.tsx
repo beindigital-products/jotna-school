@@ -1,11 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useTransform } from "framer-motion";
 import { ChevronDown, LocateFixed, Maximize2, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { pioWalkFacing, type PioOutfit, type PioState } from "@/components/student/pio";
 import { useDeviceTier, type DeviceTier } from "@/hooks/use-device-tier";
-import { MapViewport, type CameraHandle } from "./map-viewport";
+import { MapViewport, useCounterScale, type CameraHandle } from "./map-viewport";
 import { PioWalkerSprite, usePioWalker } from "./pio-walker";
 import {
   buildTrail,
@@ -34,6 +34,11 @@ export type MapNodeContext = {
   index: number;
   x: number;
   y: number;
+  /**
+   * Du côté du sentier où se tient l'étape : -1 à gauche de l'axe, 1 à droite,
+   * 0 sur une route couchée (pas de côté libre : les plaques restent dessous).
+   */
+  side: -1 | 0 | 1;
   isPioHere: boolean;
   isTarget: boolean;
   walking: boolean;
@@ -76,6 +81,19 @@ type Props = {
   endPoint?: WorldPoint;
 };
 
+/**
+ * Ce que le HUD mange du cadre quand on voit toute la carte. Sur un téléphone,
+ * la bannière du haut est aussi large que le cadre : le monde se cale dessous.
+ * Dès la tablette, le monde est une colonne au milieu d'un grand cadre, la
+ * bannière est dans un coin, et il reste centré sans marge.
+ */
+const FIT_INSETS = ({ w, h }: { w: number; h: number }) => {
+  if (w < 640) return { top: 96, bottom: 16 };
+  // À l'horizontale sur un téléphone, la bannière tient sur une ligne.
+  if (h < 460) return { top: 64, bottom: 12 };
+  return { top: 16, bottom: 16 };
+};
+
 export function GameMap({
   layout,
   count,
@@ -99,7 +117,8 @@ export function GameMap({
   const totalPoints = count + tailPoints;
   const points = trailNodePoints(totalPoints, layout);
   if (endPoint && points.length > 0) points[points.length - 1] = endPoint;
-  const trail = buildTrail(points);
+  const axis = layout.horizontal ? "x" : "y";
+  const trail = buildTrail(points, axis);
   const worldHeight = trailWorldHeight(totalPoints, layout);
   const safeInitial = Math.min(Math.max(0, initialPioIndex), Math.max(0, totalPoints - 1));
 
@@ -109,6 +128,7 @@ export function GameMap({
     camera,
     onArrive,
     walkFacing: pioWalkFacing(outfit),
+    horizontal: layout.horizontal,
   });
   const { walking, standing, target, heading } = walker.state;
   // De dos quand il monte le sentier, de face quand il le redescend : une
@@ -121,7 +141,7 @@ export function GameMap({
 
   const progressD =
     currentIndex !== null && currentIndex > 0
-      ? trailPathD(trail.points.slice(0, Math.min(currentIndex, totalPoints - 1) + 1))
+      ? trailPathD(trail.points.slice(0, Math.min(currentIndex, totalPoints - 1) + 1), axis)
       : "";
 
   const targetPoint = target !== null ? trail.points[target] : null;
@@ -135,6 +155,7 @@ export function GameMap({
       initialFocus={{ x: initialPoint.x, y: initialPoint.y + 20 }}
       className={className}
       frame={tier === "full" ? "painted" : "plain"}
+      fitInsets={FIT_INSETS}
       frameImage={frameImage}
       hud={
         <>
@@ -155,7 +176,10 @@ export function GameMap({
         </>
       }
     >
-      {backdrop ?? <WorldBackdrop tier={tier} width={layout.worldWidth} height={worldHeight} />}
+      <div aria-hidden className="absolute inset-0 overflow-hidden rounded-[28px]">
+        {backdrop ?? <WorldBackdrop tier={tier} width={layout.worldWidth} height={worldHeight} />}
+      </div>
+      <WorldBoard />
 
       <TrailSvg d={trail.d} progressD={progressD} width={layout.worldWidth} height={worldHeight} />
 
@@ -164,6 +188,7 @@ export function GameMap({
           index: i,
           x: p.x,
           y: p.y,
+          side: layout.horizontal ? 0 : p.x < layout.worldWidth / 2 ? -1 : 1,
           isPioHere: standing === i,
           isTarget: target === i,
           walking,
@@ -180,7 +205,14 @@ export function GameMap({
   );
 }
 
-/** Le sentier : une ombre, le sable, un pointillé clair au milieu, et le vert du chemin déjà fait. */
+/**
+ * Le sentier : une ombre, un bord clair en relief, la terre battue, un
+ * pointillé au milieu, et le chemin déjà fait en vert vif qui défile.
+ *
+ * Dézoomé, la route s'épaissit (jusqu'à presque le double) : une bande de 38
+ * pixels-monde n'en ferait plus que 15 à l'écran, un fil. Au zoom normal, les
+ * largeurs sont celles de toujours.
+ */
 function TrailSvg({
   d,
   progressD,
@@ -192,6 +224,15 @@ function TrailSvg({
   width: number;
   height: number;
 }) {
+  const grow = useCounterScale({ cap: 1.9, power: 0.8 });
+  const shadow = useTransform(grow, (g) => 58 * g);
+  const edge = useTransform(grow, (g) => 48 * g);
+  const road = useTransform(grow, (g) => 38 * g);
+  const lane = useTransform(grow, (g) => 4 * g);
+  const done = useTransform(grow, (g) => 15 * g);
+  const doneDash = useTransform(grow, (g) => 5 * g);
+  const round = { strokeLinecap: "round", strokeLinejoin: "round" } as const;
+
   return (
     <svg
       aria-hidden
@@ -200,21 +241,46 @@ function TrailSvg({
       height={height}
       viewBox={`0 0 ${width} ${height}`}
     >
-      <path d={d} fill="none" stroke="rgba(95,52,12,0.5)" strokeWidth={50} strokeLinecap="round" strokeLinejoin="round" />
-      <path d={d} fill="none" stroke="#f4d078" strokeWidth={38} strokeLinecap="round" strokeLinejoin="round" />
-      <path d={d} fill="none" stroke="#fff4c9" strokeWidth={4} strokeLinecap="round" strokeDasharray="10 16" opacity={0.9} />
+      <motion.path d={d} fill="none" stroke="rgba(70,35,5,0.45)" style={{ strokeWidth: shadow, ...round }} />
+      <motion.path d={d} fill="none" stroke="#8a5420" style={{ strokeWidth: edge, ...round }} />
+      <motion.path d={d} fill="none" stroke="#f4d078" style={{ strokeWidth: road, ...round }} />
+      <motion.path
+        d={d}
+        fill="none"
+        stroke="#fff4c9"
+        strokeDasharray="10 16"
+        opacity={0.9}
+        style={{ strokeWidth: lane, ...round }}
+      />
       {progressD && (
-        <path
-          d={progressD}
-          fill="none"
-          stroke="#5cb434"
-          strokeWidth={14}
-          strokeLinecap="round"
-          strokeDasharray="1 24"
-          className="animate-[trail-dash_2.4s_linear_infinite]"
-        />
+        <>
+          <motion.path d={progressD} fill="none" stroke="#3f9a22" style={{ strokeWidth: done, ...round }} />
+          <motion.path
+            d={progressD}
+            fill="none"
+            stroke="#c8f27a"
+            strokeDasharray="1 24"
+            className="animate-[trail-dash_2.4s_linear_infinite]"
+            style={{ strokeWidth: doneDash, ...round }}
+          />
+        </>
       )}
     </svg>
+  );
+}
+
+/**
+ * Le bord du monde : un cadre crème à flanc épais, hors du monde (il ne mange
+ * rien au zoom normal), qui n'apparaît qu'en dézoomant. Le monde n'est plus un
+ * rectangle de peinture coupé net, c'est un plateau de jeu posé sur la savane
+ * dans l'ombre. Son ombre portée tombe vers le bas, comme celle d'un bouton.
+ */
+function WorldBoard() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute -inset-4 rounded-[44px] border-[16px] border-[#fff1cc] shadow-[0_0_0_4px_#c9a35a,0_10px_0_4px_#a8791f,0_28px_44px_rgba(30,15,0,0.65),inset_0_0_46px_rgba(90,50,0,0.5)]"
+    />
   );
 }
 
@@ -248,7 +314,7 @@ function ZoomControls({
 }) {
   const depth = { "--btn-depth": "#c9a35a" } as React.CSSProperties;
   return (
-    <div className="absolute right-3 top-3 z-20 flex flex-col gap-2.5">
+    <div className="absolute right-3 top-3 z-20 flex flex-col gap-2 [@media(max-height:500px)]:flex-row sm:gap-2.5">
       <button type="button" className={CONTROL} style={depth} aria-label="Zoomer" onClick={() => camera.current?.zoomBy(1.35)}>
         <Plus className="h-6 w-6" strokeWidth={3.5} aria-hidden />
       </button>

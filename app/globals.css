@@ -211,6 +211,18 @@
   100% { transform: translate(var(--x), var(--y)) scale(1.5); opacity: 0; }
 }
 
+/* La carte : l'icône d'un monde flotte sur son socle, un monde terminé brille.
+   Transform et opacité seulement ; `.savanna-motion` les coupe sous
+   `prefers-reduced-motion`. */
+@keyframes world-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-7px) rotate(1.5deg); }
+}
+@keyframes world-glow {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.12); opacity: 0.95; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .savanna-motion, .savanna-motion * {
     animation: none !important;

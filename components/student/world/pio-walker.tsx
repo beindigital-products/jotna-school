@@ -11,7 +11,7 @@ import {
 } from "framer-motion";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { Pio, pioWalkFacing, type PioOutfit, type PioState } from "@/components/student/pio";
-import type { CameraHandle } from "./map-viewport";
+import { useCounterScale, type CameraHandle } from "./map-viewport";
 import { walkDuration, type Trail } from "./trail-geometry";
 
 /**
@@ -75,6 +75,7 @@ export function usePioWalker({
   camera,
   onArrive,
   walkFacing = 1,
+  horizontal = false,
 }: {
   trail: Trail;
   initialIndex: number;
@@ -82,6 +83,8 @@ export function usePioWalker({
   onArrive: (index: number) => void;
   /** Le sens des clips de marche de la tenue (`pioWalkFacing`). */
   walkFacing?: 1 | -1;
+  /** Route couchée : Pio avance de face, et c'est son retournement qui dit le sens. */
+  horizontal?: boolean;
 }): PioWalker {
   const reducedMotion = useReducedMotion();
   const start = trail.points[initialIndex] ?? { x: 0, y: 0 };
@@ -125,7 +128,7 @@ export function usePioWalker({
 
     // Vers le haut de la carte, Pio s'éloigne : on le voit de dos.
     const heading: WalkHeading =
-      (trail.points[index]?.y ?? 0) < trail.pointAt(from).y ? "away" : "toward";
+      !horizontal && (trail.points[index]?.y ?? 0) < trail.pointAt(from).y ? "away" : "toward";
 
     if (reducedMotion || Math.abs(span) < 1) {
       pioLen.set(to);
@@ -194,6 +197,7 @@ export function PioWalkerSprite({
   // tenue regarde peut-être à gauche, on le retourne alors à l'inverse.
   const walkFacing = pioWalkFacing(outfit);
   const scaleX = useTransform(walker.facing, (dir) => dir * walkFacing);
+  const grow = useCounterScale({ cap: 1.55, power: 0.7 });
 
   return (
     <motion.div
@@ -201,23 +205,26 @@ export function PioWalkerSprite({
       className="pointer-events-none absolute left-0 top-0 z-20"
       style={{ x: walker.pioX, y: walker.pioY }}
     >
-      <div className="relative -translate-x-1/2 -translate-y-full" style={{ width, height: size }}>
-        {/* L'ombre au sol, immobile : elle ancre Pio sur le sentier. */}
-        <div
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-[100%] bg-black/30 blur-[2px]"
-          style={{ width: width * 0.9, height: 14, transform: "translate(-50%, 8px)" }}
-        />
-
-        {/* Le retournement : Pio regarde dans le sens de la marche */}
-        <motion.div className="absolute inset-0" style={{ scaleX }}>
-          <Pio
-            state={pose}
-            outfit={outfit}
-            size={size}
-            className="drop-shadow-[0_10px_12px_rgba(60,30,0,0.4)]"
+      {/* Dézoomé, Pio grossit autour de ses pattes : il reste le héros de la carte. */}
+      <motion.div style={{ scale: grow, transformOrigin: "0 0", width, height: size }}>
+        <div className="relative -translate-x-1/2 -translate-y-full" style={{ width, height: size }}>
+          {/* L'ombre au sol, immobile : elle ancre Pio sur le sentier. */}
+          <div
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-[100%] bg-black/30 blur-[2px]"
+            style={{ width: width * 0.9, height: 14, transform: "translate(-50%, 8px)" }}
           />
-        </motion.div>
-      </div>
+
+          {/* Le retournement : Pio regarde dans le sens de la marche */}
+          <motion.div className="absolute inset-0" style={{ scaleX }}>
+            <Pio
+              state={pose}
+              outfit={outfit}
+              size={size}
+              className="drop-shadow-[0_10px_12px_rgba(60,30,0,0.4)]"
+            />
+          </motion.div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
