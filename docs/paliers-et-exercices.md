@@ -3063,6 +3063,9 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     pourtant) viennent de trente phrases à deux propositions : un trou (seul le rapport juste va) et une réponse à écrire (tous les mots du rapport sont admis). Pièges : « parce que » devant une voyelle s'écrit
     « parce qu' », donc ces phrases prennent « car » ; un pronom ne passe jamais avant son nom (« Elle mange une mangue parce que Fatou a faim »), donc quatre conséquences ne se disent pas à l'envers ; « le car »
     (le véhicule) contient le mot « car » et faisait afficher la réponse dans l'énoncé ; la question « d'après le texte » a une apostrophe de trop, elle devient « selon le texte ».
+    Trouvé à la relecture des 350 lignes en production (25 octobre 2026), que ni les tests ni le contrôleur n'avaient vu : dans le texte du baobab, « Le baobab garde son eau » était la conséquence d'un couple
+    (« Il pleut peu dans la région ») et, dans le texte, la cause de la survie (« Grâce à cette réserve ») ; glissé dans « cause » et « conséquence » avec « Il survit même quand il ne pleut pas », il prêtait à confusion.
+    Le couple est maintenant « Pendant la saison sèche » et « Le baobab perd ses feuilles ». Règle : une moitié de couple ne sert de cause à aucune autre phrase du texte.
   - **Donner son avis.** Seize faits et seize opinions (un fait se vérifie, une opinion juge), huit idées avec trois arguments pour et trois contre, seize règles de débat, sept rôles de mots de liaison. Le trou d'une
     liste d'arguments est le mot que le texte n'emploie pas (« d'abord », « de plus », « enfin ») : les deux autres s'y lisent déjà, donc un seul va. « Cependant » et « au contraire » ne se posent pas dans un trou, parce
     qu'ils se lisent presque partout. Les mauvais choix d'une question sont de même longueur que la bonne réponse (le contrôleur refuse la bonne option qui se devine à sa longueur).

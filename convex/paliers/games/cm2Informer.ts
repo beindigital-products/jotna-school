@@ -102,7 +102,7 @@ export const DOCS: readonly Doc[] = [
     cause: ask("Pourquoi le baobab perd-il ses feuilles ?", "Pour garder son eau", "Il a trop froid la nuit", "Les oiseaux les mangent"),
     effect: ask("Que permet la réserve du tronc ?", "Il survit même quand il ne pleut pas", "Il pousse vite chaque année", "Il donne plus de fruits"),
     statement: ask("Quelle phrase est vraie selon le texte ?", "Le tronc du baobab se remplit pendant la saison des pluies.", "Le baobab perd ses racines en été.", "Les habitants coupent le tronc pour jouer."),
-    links: [["Pendant la saison des pluies", "Son tronc large se remplit d'eau"], ["Il pleut peu dans la région", "Le baobab garde son eau"], ["Grâce à cette réserve", "Il survit même quand il ne pleut pas"]],
+    links: [["Pendant la saison des pluies", "Son tronc large se remplit d'eau"], ["Pendant la saison sèche", "Le baobab perd ses feuilles"], ["Grâce à cette réserve", "Il survit même quand il ne pleut pas"]],
     cloze: { word: "réserve", wrong: ["graine", "racine"] },
   },
   // Palier 3.
