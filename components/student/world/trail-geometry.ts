@@ -31,6 +31,17 @@ export type TrailLayout = {
    * d'écran : `topPad` est toujours au-dessus du point le plus haut.
    */
   direction?: "down" | "up";
+  /**
+   * La même route, couchée : les étapes avancent de gauche à droite et
+   * zigzaguent en haut et en bas (`swing` devient l'amplitude verticale). C'est
+   * la forme des cadres larges (`worldTrailFor`), où la route verticale ne
+   * serait qu'une bande étroite au milieu d'un grand vide.
+   */
+  horizontal?: boolean;
+  /** Écart des étapes sur l'axe de la route, en pixels (route couchée seulement). */
+  spacing?: number;
+  /** Marge à gauche et à droite de la route couchée, en pixels. */
+  sidePad?: number;
 };
 
 /**
@@ -79,6 +90,14 @@ export const QURAN_TRAIL: TrailLayout = {
  * sentiers ne soient pas tirés au cordeau.
  */
 export function trailNodePoint(index: number, layout: TrailLayout): WorldPoint {
+  if (layout.horizontal) {
+    const side = index % 2 === 0 ? -1 : 1;
+    const breath = 0.82 + 0.18 * Math.abs(Math.sin(index * 1.3));
+    return {
+      x: (layout.sidePad ?? 0) + index * (layout.spacing ?? 0),
+      y: layout.topPad + layout.swing + side * layout.swing * breath,
+    };
+  }
   const side = index % 2 === 0 ? -1 : 1;
   const breath = 0.82 + 0.18 * Math.abs(Math.sin(index * 1.3));
   return {
@@ -89,7 +108,82 @@ export function trailNodePoint(index: number, layout: TrailLayout): WorldPoint {
 
 export function trailWorldHeight(count: number, layout: TrailLayout): number {
   if (count === 0) return layout.topPad + layout.bottomPad;
+  // Couchée, la route ne descend pas : sa hauteur est celle de son zigzag.
+  if (layout.horizontal) return layout.topPad + 2 * layout.swing + layout.bottomPad;
   return layout.topPad + (count - 1) * layout.rowHeight + layout.bottomPad;
+}
+
+/**
+ * LA ROUTE DE LA CARTE DU MONDE, selon le cadre. Un téléphone tenu debout garde
+ * le zigzag vertical (`WORLD_TRAIL`). Un cadre large, lui, ferait d'une colonne
+ * de 420 pixels une bande étroite au milieu d'un grand vide : la même route est
+ * alors couchée et avance de gauche à droite, une étape en haut, la suivante en
+ * bas. Même forme, tournée d'un quart de tour : l'enfant la reconnaît.
+ */
+export function worldTrailFor(
+  horizontal: boolean,
+  compact: boolean,
+  count: number,
+  frame?: { w: number; h: number },
+): TrailLayout {
+  if (!horizontal) return WORLD_TRAIL;
+  const sidePad = compact ? 150 : 180;
+  const spacing = compact ? 215 : 240;
+  const topPad = compact ? 130 : 210;
+  const bottomPad = compact ? 170 : 190;
+  const worldWidth = sidePad * 2 + Math.max(0, count - 1) * spacing;
+  let swing = compact ? 62 : 85;
+  if (frame && frame.w > 0 && frame.h > 0) {
+    // La route est plus longue que haute : vue en entier, elle ne remplirait que
+    // le milieu du cadre. Elle ondule plus fort pour en prendre la hauteur, par
+    // pas de 20 pixels (un cadre qui bouge d'un pixel ne déplace pas les mondes).
+    const fit = Math.min(frame.w / worldWidth, 0.9);
+    const wanted = (frame.h - 24) / fit;
+    const max = compact ? 110 : 200;
+    swing = Math.min(max, Math.max(swing, Math.floor((wanted - topPad - bottomPad) / 2 / 20) * 20));
+  }
+  return {
+    worldWidth,
+    rowHeight: 0,
+    topPad,
+    bottomPad,
+    swing,
+    horizontal: true,
+    spacing,
+    sidePad,
+  };
+}
+
+/**
+ * Un cadre bas : un téléphone tenu à l'horizontale (375 pixels de haut, moins
+ * l'en-tête). La route couchée y est resserrée (`worldTrailFor(…, true, …)`),
+ * sinon ses marges du haut et du bas mangeraient la moitié de la hauteur.
+ */
+export function isCompactWorldFrame(frameHeight: number): boolean {
+  return frameHeight > 0 && frameHeight < 460;
+}
+
+/**
+ * Debout ou couchée ? On prend la route qui rend la carte entière la plus
+ * grande dans ce cadre, sans jamais dépasser le zoom normal (au-delà, rien ne
+ * s'agrandirait). Sous 640 pixels de large, ou sous cinq mondes : debout, c'est
+ * un téléphone, et il fait défiler la route vers le bas. À égalité : debout, la
+ * route de toujours.
+ */
+export function worldLayoutFor(
+  frameWidth: number,
+  frameHeight: number,
+  count: number,
+): { horizontal: boolean; compact: boolean } {
+  const compact = isCompactWorldFrame(frameHeight);
+  if (frameWidth < 640 || frameHeight <= 0 || count <= 4) return { horizontal: false, compact };
+  const score = (layout: TrailLayout) =>
+    Math.min(
+      Math.min(frameWidth / layout.worldWidth, frameHeight / trailWorldHeight(count, layout)),
+      0.9,
+    );
+  const horizontal = score(worldTrailFor(true, compact, count)) > score(WORLD_TRAIL) + 0.02;
+  return { horizontal, compact };
 }
 
 /**
@@ -106,15 +200,26 @@ export function trailNodePoints(count: number, layout: TrailLayout): WorldPoint[
   return Array.from({ length: count }, (_, i) => trailPointAt(i, count, layout));
 }
 
+/**
+ * L'axe de la route : `y` (debout) sort et entre dans chaque étape à la
+ * verticale, `x` (couchée) à l'horizontale. Les courbes sont des S dans les deux cas.
+ */
+export type TrailAxis = "x" | "y";
+
 /** Le `d` SVG qui relie les points par des courbes en S. */
-export function trailPathD(points: WorldPoint[]): string {
+export function trailPathD(points: WorldPoint[], axis: TrailAxis = "y"): string {
   if (points.length === 0) return "";
   let d = `M ${round(points[0].x)} ${round(points[0].y)}`;
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1];
     const b = points[i];
-    const midY = (a.y + b.y) / 2;
-    d += ` C ${round(a.x)} ${round(midY)}, ${round(b.x)} ${round(midY)}, ${round(b.x)} ${round(b.y)}`;
+    if (axis === "x") {
+      const midX = (a.x + b.x) / 2;
+      d += ` C ${round(midX)} ${round(a.y)}, ${round(midX)} ${round(b.y)}, ${round(b.x)} ${round(b.y)}`;
+    } else {
+      const midY = (a.y + b.y) / 2;
+      d += ` C ${round(a.x)} ${round(midY)}, ${round(b.x)} ${round(midY)}, ${round(b.x)} ${round(b.y)}`;
+    }
   }
   return d;
 }
@@ -141,7 +246,7 @@ const SAMPLES_PER_SEGMENT = 36;
  * échantillonnés une fois ; `pointAt` interpole ensuite linéairement entre
  * deux échantillons, ce qui suffit largement pour poser un personnage.
  */
-export function buildTrail(points: WorldPoint[]): Trail {
+export function buildTrail(points: WorldPoint[], axis: TrailAxis = "y"): Trail {
   const samples: TrailSample[] = [];
   const cumulative: number[] = [];
   const nodeLength: number[] = [];
@@ -156,11 +261,14 @@ export function buildTrail(points: WorldPoint[]): Trail {
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1];
     const b = points[i];
+    const midX = (a.x + b.x) / 2;
     const midY = (a.y + b.y) / 2;
+    const c1 = axis === "x" ? { x: midX, y: a.y } : { x: a.x, y: midY };
+    const c2 = axis === "x" ? { x: midX, y: b.y } : { x: b.x, y: midY };
     let prev = a;
     for (let s = 1; s <= SAMPLES_PER_SEGMENT; s++) {
       const t = s / SAMPLES_PER_SEGMENT;
-      const p = cubic(a, { x: a.x, y: midY }, { x: b.x, y: midY }, b, t);
+      const p = cubic(a, c1, c2, b, t);
       const dx = p.x - prev.x;
       const dy = p.y - prev.y;
       total += Math.hypot(dx, dy);
@@ -195,7 +303,7 @@ export function buildTrail(points: WorldPoint[]): Trail {
     };
   }
 
-  return { d: trailPathD(points), points, nodeLength, total, pointAt };
+  return { d: trailPathD(points, axis), points, nodeLength, total, pointAt };
 }
 
 function cubic(p0: WorldPoint, p1: WorldPoint, p2: WorldPoint, p3: WorldPoint, t: number): WorldPoint {

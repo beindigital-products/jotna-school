@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useWorldMap } from "@/hooks/use-student-data";
 import { Pio } from "@/components/student/pio";
-import { BiomeMedallion } from "@/components/student/world/biome-medallion";
 import { GameMap, type MapNodeContext } from "@/components/student/world/game-map";
-import { WORLD_TRAIL } from "@/components/student/world/trail-geometry";
-import { pioSays } from "@/lib/pioCopy";
+import { useFrameSize } from "@/components/student/world/use-frame-size";
+import { worldLayoutFor, worldTrailFor } from "@/components/student/world/trail-geometry";
+import { WorldNode, worldNodeSizeFor } from "@/components/student/world/world-node";
+import { WorldMapTitle } from "@/components/student/world/world-map-title";
 
 /**
  * LA CARTE DU MONDE — chaque matière est une zone de la savane, le long
@@ -51,13 +52,12 @@ function remember(index: number) {
 /** Le temps de saluer avant d'ouvrir le monde. */
 const GREETING_MS = 420;
 
-const MEDALLION = 128;
-
 export default function WorldMapPage() {
   // Calculée sur l'appareil : la carte s'ouvre et avance sans réseau.
   const zones = useWorldMap();
   const router = useRouter();
   const [remembered] = useState(rememberedIndex);
+  const [frameRef, frame] = useFrameSize();
 
   useEffect(() => {
     router.prefetch("/student/subjects");
@@ -71,6 +71,12 @@ export default function WorldMapPage() {
           zones.findIndex((z) => z.completedTopics < z.totalTopics),
         )
       : null;
+  // Un cadre large pose les mondes en serpentin ; un téléphone garde le sentier vertical.
+  const { horizontal, compact } = frame
+    ? worldLayoutFor(frame.w, frame.h, count)
+    : { horizontal: false, compact: false };
+  const layout = worldTrailFor(horizontal, compact, count, frame ?? undefined);
+
   const pioStart =
     remembered !== null && remembered < count ? remembered : (currentIndex ?? 0);
 
@@ -90,64 +96,7 @@ export default function WorldMapPage() {
 
   function renderNode(ctx: MapNodeContext) {
     const zone = zones![ctx.index];
-    // Les étapes d'un monde sont ses paliers : c'est ce que le sentier montre.
-    const pct =
-      zone.totalPaliers > 0
-        ? Math.round((zone.completedPaliers / zone.totalPaliers) * 100)
-        : 0;
-    const fresh = zone.completedPaliers === 0 && zone.startedTopics === 0;
-
-    return (
-      <div
-        key={zone._id}
-        className="absolute z-10"
-        style={{ left: ctx.x, top: ctx.y, width: MEDALLION, height: MEDALLION, transform: "translate(-50%, -50%)" }}
-      >
-        <button
-          type="button"
-          onClick={ctx.walkTo}
-          className="group relative block h-full w-full rounded-full transition-transform focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white active:scale-95"
-          aria-label={`${zone.name} : ${zone.completedPaliers} étape${zone.completedPaliers > 1 ? "s" : ""} sur ${zone.totalPaliers}${ctx.isPioHere ? ", Pio est ici" : ""}`}
-        >
-          {/* Le nom du monde, sur une plaque au-dessus */}
-          <span className="absolute -top-13 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-[3px] border-white bg-amber-950 px-4 py-1.5 font-display text-[15px] font-extrabold text-white shadow-lg">
-            {zone.name}
-          </span>
-
-          <span
-            className={`block rounded-full ${
-              ctx.isPioHere ? "ring-[5px] ring-white shadow-[0_0_0_10px_rgba(255,255,255,0.35)]" : ""
-            }`}
-          >
-            <BiomeMedallion
-              index={ctx.index}
-              color={zone.color}
-              icon={zone.icon}
-              label={zone.name}
-              progressPct={pct}
-              size={MEDALLION}
-              showLabel={false}
-            />
-          </span>
-
-          {/* Le numéro du monde, en haut à droite : Pio se tient en bas à gauche */}
-          <span
-            aria-hidden
-            className="absolute -right-1 -top-1 flex h-9 w-9 items-center justify-center rounded-full border-[3px] border-white bg-amber-900 font-display text-base font-extrabold text-white shadow"
-          >
-            {ctx.index + 1}
-          </span>
-
-          {/* La progression, sous le médaillon */}
-          <span
-            aria-hidden
-            className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-amber-900/15 bg-white px-3 py-1 font-display text-xs font-extrabold text-amber-950 shadow-md"
-          >
-            {fresh ? pioSays.zoneNew : `${zone.completedPaliers}/${zone.totalPaliers} étapes`}
-          </span>
-        </button>
-      </div>
-    );
+    return <WorldNode key={zone._id} zone={zone} ctx={ctx} size={worldNodeSizeFor(horizontal, compact)} />;
   }
 
   if (zones === undefined) {
@@ -173,28 +122,25 @@ export default function WorldMapPage() {
   }
 
   return (
-    <GameMap
-      layout={WORLD_TRAIL}
-      count={count}
-      initialPioIndex={pioStart}
-      currentIndex={currentIndex}
-      onArrive={onArrive}
-      poseAt={poseAt}
-      renderNode={renderNode}
-      pioSize={104}
-      className="h-[calc(100dvh-16rem)] min-h-[440px] sm:mt-1 sm:h-[calc(100dvh-11rem)] sm:max-h-[880px] sm:rounded-[2rem] sm:shadow-2xl"
-      hud={
-        <div className="pointer-events-none absolute left-3 top-3 z-20 max-w-[calc(100%-5rem)]">
-          <div className="rounded-2xl border-[3px] border-white bg-amber-950/85 px-4 py-2 text-white shadow-lg backdrop-blur-sm">
-            <h1 className="font-display text-xl font-extrabold leading-tight sm:text-2xl">
-              {pioSays.mapTitle}
-            </h1>
-            <p className="font-display text-xs font-bold text-amber-100 sm:text-sm">
-              {pioSays.mapTap}
-            </p>
-          </div>
-        </div>
-      }
-    />
+    <div
+      ref={frameRef}
+      className="h-[calc(100dvh-16rem)] min-h-[440px] sm:mt-1 sm:h-[calc(100dvh-11rem)] sm:max-h-[880px] [@media(max-height:500px)]:h-[calc(100dvh-4.5rem)] [@media(max-height:500px)]:min-h-0"
+    >
+      {frame && (
+        <GameMap
+          key={`${horizontal}-${compact}-${layout.swing}`}
+          layout={layout}
+          count={count}
+          initialPioIndex={pioStart}
+          currentIndex={currentIndex}
+          onArrive={onArrive}
+          poseAt={poseAt}
+          renderNode={renderNode}
+          pioSize={horizontal ? (compact ? 96 : 112) : 104}
+          className="h-full sm:rounded-[2rem] sm:shadow-2xl"
+          hud={<WorldMapTitle zones={zones} />}
+        />
+      )}
+    </div>
   );
 }
