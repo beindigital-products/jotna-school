@@ -223,7 +223,8 @@ const BREATH_Q: readonly QRow[] = [
   ["Où vaut-il mieux aller pour respirer un air pur ?", "Sous les arbres", ["Près des arbres"]],
 ];
 const POLLUTES = ["Fumée", "Poussière", "Déchets brûlés"];
-const CLEAN_AIR = ["Vent", "Pluie", "Arbres"];
+/** Pas le vent dans le QCM : l'harmattan soulève la poussière. */
+const CLEAN_AIR = ["Pluie", "Arbres", "Plantes"];
 const AIR_SORT_ZONES: readonly [string, string] = ["Pollue l'air", "Ne pollue pas l'air"];
 const POLLUTES_TILES = ["Fumée noire", "Poussière", "Déchets brûlés", "Fumée de voiture"];
 const CLEAN_TILES = ["Vent", "Pluie", "Arbres", "Herbe", "Nuage"];
@@ -350,16 +351,17 @@ const KEEPING_Q: readonly QRow[] = [
   ["Pourquoi lave-t-on le seau avant de mettre l'eau potable dedans ?", "Pour ne pas salir l'eau"],
   ["Quel récipient garde l'eau potable propre ?", "Un seau propre avec son couvercle"],
 ];
-const POTABLE_ZONES: readonly [string, string] = ["Rend l'eau potable", "Ne rend pas l'eau potable"];
+/** « Plus sûre », pas « potable » : filtrer avec un tissu retient les saletés, pas tous les microbes. */
+const POTABLE_ZONES: readonly [string, string] = ["Rend l'eau plus sûre", "Ne rend pas l'eau plus sûre"];
 const POTABLE_SORT_T: Record<string, string> = {
-  "Faire bouillir": "Rend l'eau potable",
-  Filtrer: "Rend l'eau potable",
-  "Gouttes de javel": "Rend l'eau potable",
-  "Ajouter du sucre": "Ne rend pas l'eau potable",
-  "Ajouter du sable": "Ne rend pas l'eau potable",
-  "Laisser ouvert": "Ne rend pas l'eau potable",
-  "Remuer avec un bâton": "Ne rend pas l'eau potable",
-  "Jeter du sel": "Ne rend pas l'eau potable",
+  "Faire bouillir": "Rend l'eau plus sûre",
+  Filtrer: "Rend l'eau plus sûre",
+  "Gouttes de javel": "Rend l'eau plus sûre",
+  "Ajouter du sucre": "Ne rend pas l'eau plus sûre",
+  "Ajouter du sable": "Ne rend pas l'eau plus sûre",
+  "Laisser ouvert": "Ne rend pas l'eau plus sûre",
+  "Remuer avec un bâton": "Ne rend pas l'eau plus sûre",
+  "Jeter du sel": "Ne rend pas l'eau plus sûre",
 };
 const POTABLE_STEPS_T: readonly (readonly [string, readonly string[]])[] = [
   ["Pour rendre l'eau potable en la chauffant, mets ces gestes du premier au dernier.", ["Verse l'eau dans une casserole", "Fais bouillir l'eau", "Laisse refroidir l'eau"]],
@@ -434,9 +436,9 @@ const MALARIA_SORT_T: Record<string, string> = {
   "Vider les vieux pneus": "Protège du paludisme",
   "Dormir sans moustiquaire": "Expose au paludisme",
   "Laisser l'eau stagner": "Expose au paludisme",
-  "Garder des seaux pleins": "Expose au paludisme",
+  "Laisser des seaux ouverts dehors": "Expose au paludisme",
   "Laisser des flaques": "Expose au paludisme",
-  "Laisser un pneu plein": "Expose au paludisme",
+  "Laisser de l'eau dans un pneu": "Expose au paludisme",
 };
 const WORM_ZONES: readonly [string, string] = ["Peut donner des vers", "Protège des vers"];
 const WORM_SORT_T: Record<string, string> = {
@@ -669,7 +671,14 @@ const CHECKS: Record<string, Check> = {
     const wants = positive.includes(exo.prompt) ? POLLUTES : negative.includes(exo.prompt) ? CLEAN_AIR : null;
     if (!wants) return `énoncé inconnu : ${exo.prompt}`;
     const unwanted = wants === POLLUTES ? CLEAN_AIR : POLLUTES;
-    return all(ok(wants.includes(rightOption(exo)), `« ${rightOption(exo)} » n'est pas la bonne sorte`), ok(wrongOf(exo).length === 2 && wrongOf(exo).every((option) => unwanted.includes(option)), `mauvais choix ${wrongOf(exo).join(" | ")}`));
+    // L'indice sur les deux autres choix doit dire ce qu'ils sont vraiment : propres quand on cherche
+    // ce qui salit, sales quand on cherche ce qui ne salit pas.
+    const othersHint = wants === POLLUTES ? "Les deux autres choix ne salissent pas l'air." : "Les deux autres choix salissent l'air.";
+    return all(
+      ok(wants.includes(rightOption(exo)), `« ${rightOption(exo)} » n'est pas la bonne sorte`),
+      ok(wrongOf(exo).length === 2 && wrongOf(exo).every((option) => unwanted.includes(option)), `mauvais choix ${wrongOf(exo).join(" | ")}`),
+      ok(exo.hints.includes(othersHint), `indices à contresens : ${exo.hints.join(" | ")}`),
+    );
   },
   "ce1-resp-air-glisser": checkSort(AIR_SORT_ZONES, {
     ...Object.fromEntries(POLLUTES_TILES.map((tile) => [tile, AIR_SORT_ZONES[0]])),

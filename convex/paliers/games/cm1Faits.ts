@@ -31,6 +31,11 @@ export type Item = {
   w?: string;
   /** Vrai quand la réponse à écrire n'a pas de sens pour ce fait (une autre ligne la pose déjà). */
   noWrite?: boolean;
+  /**
+   * La consigne d'écriture ajoutée à la question (par défaut « Écris la réponse. »). Un sigle dit « Écris le sigle. » : sans elle, le nom
+   * en entier (« Organisation mondiale du commerce ») était juste et refusé.
+   */
+  writeAs?: string;
   /** D'autres réponses justes à cette question : jamais proposées comme mauvais choix. */
   not?: readonly string[];
   /** Le deuxième indice : parle du sujet, n'écrit aucun mot de quatre lettres ou plus de la réponse ni d'une tuile. */
@@ -58,6 +63,20 @@ function letterHint(answer: string, fallback: string): string {
   const first = fold(withoutArticle(answer)).charAt(0).toUpperCase();
   return /[A-Z]/.test(first) ? `La réponse commence par la lettre ${first}.` : fallback;
 }
+
+/**
+ * Le troisième indice d'un choix : la première lettre de la réponse, lue comme les choix sont lus (`initial`), ou la relecture quand un
+ * les choix commencent tous par la même lettre (l'indice ne départagerait rien).
+ */
+function choiceLetterHint(answer: string, wrong: readonly string[], initial: (text: string) => string, fallback: string): string {
+  const first = initial(answer);
+  if (!/[A-Z]/.test(first) || wrong.every((choice) => initial(choice) === first)) return fallback;
+  return `La réponse commence par la lettre ${first}.`;
+}
+/** Un choix de QCM se lit en entier : « Des enfants qui jouent » commence par D, pas par le E d'« enfants ». */
+const tileInitial = (text: string) => fold(text).charAt(0).toUpperCase();
+/** Un choix de phrase à trou garde l'article que la phrase demande : la lettre est celle du nom (« le sabar », S). */
+const gapInitial = (text: string) => fold(withoutArticle(text)).charAt(0).toUpperCase();
 
 /** Un choix possible, écrit comme une tuile et comme la phrase à trou le veut. */
 type Choice = { tile: string; gap: string };
@@ -106,23 +125,45 @@ function inWaysOrder<T extends { q?: readonly string[]; s?: readonly string[] }>
 const factOf = (topic: string, item: Item) => `${topic}:${item.id}`;
 
 export function questionRows(topic: string, pools: readonly Pool[]): QuestionRow[] {
-  return inWaysOrder(pools, (item) => item.q).map(({ pool, item, index, way, text }): QuestionRow => ({
-    prompt: text,
-    answer: item.a,
-    wrong: wrongChoices(pool, item, index, 1 + 2 * way, false),
-    hints: hints("Lis la question en entier, mot après mot.", item.hint, letterHint(item.a, "Relis ta leçon, puis choisis.")),
-    fact: factOf(topic, item),
-  }));
+  return inWaysOrder(pools, (item) => item.q).map(({ pool, item, index, way, text }): QuestionRow => {
+    const wrong = wrongChoices(pool, item, index, 1 + 2 * way, false);
+    return {
+      prompt: text,
+      answer: item.a,
+      wrong,
+      hints: hints("Lis la question en entier, mot après mot.", item.hint, choiceLetterHint(item.a, wrong, tileInitial, "Relis ta leçon, puis choisis.")),
+      fact: factOf(topic, item),
+    };
+  });
 }
 
 export function gapRows(topic: string, pools: readonly Pool[]): GapRow[] {
-  return inWaysOrder(pools, (item) => item.s).map(({ pool, item, index, way, text }): GapRow => ({
-    text,
-    answer: item.ga ?? item.a,
-    wrong: wrongChoices(pool, item, index, 2 + 2 * way, true),
-    hints: hints("Lis la phrase en entier, mot après mot.", item.hint, letterHint(item.ga ?? item.a, "Relis ta leçon, puis choisis.")),
-    fact: factOf(topic, item),
-  }));
+  return inWaysOrder(pools, (item) => item.s).map(({ pool, item, index, way, text }): GapRow => {
+    const wrong = wrongChoices(pool, item, index, 2 + 2 * way, true);
+    return {
+      text,
+      answer: item.ga ?? item.a,
+      wrong,
+      hints: hints("Lis la phrase en entier, mot après mot.", item.hint, choiceLetterHint(item.ga ?? item.a, wrong, gapInitial, "Relis ta leçon, puis choisis.")),
+      fact: factOf(topic, item),
+    };
+  });
+}
+
+/**
+ * L'indice de la première lettre, remplacé par une relecture quand il égare. Un QCM range ses choix sous les lettres A, B et C : « La
+ * réponse commence par la lettre A » s'y lit « choisis A ». Et une lettre que porte aussi un mauvais choix (« Aliments de construction »
+ * parmi « Aliments de protection ») ne départage rien. `lettered` : les choix s'affichent sous des lettres (le QCM, pas la phrase à trou).
+ * Les lignes qui ne l'appellent pas gardent leur indice : c'est un choix de gabarit, pas une règle de ce fichier.
+ */
+export function withUsefulLetter<R extends QuestionRow | GapRow>(rows: readonly R[], lettered: boolean): R[] {
+  const initial = (text: string) => fold(withoutArticle(text)).charAt(0).toUpperCase();
+  return rows.map((row) => {
+    const letter = /^La réponse commence par la lettre ([A-Z])\.$/.exec(row.hints[2])?.[1];
+    if (letter === undefined) return row;
+    const misleading = (lettered && ["A", "B", "C"].includes(letter)) || row.wrong.some((choice) => initial(choice) === letter);
+    return misleading ? { ...row, hints: hints(row.hints[0], row.hints[1], "Relis ta leçon, puis choisis.") } : row;
+  });
 }
 
 /** Les écritures admises d'une réponse : telle quelle, sans accent, sans article, et les variantes du fait. */
@@ -134,7 +175,7 @@ function acceptedOf(item: Item): string[] {
 }
 
 export function writeRows(topic: string, pools: readonly Pool[]): WriteRow[] {
-  return inWaysOrder(pools, (item) => (item.noWrite ? undefined : item.w !== undefined ? [item.w] : item.q.map((question) => `${question} Écris la réponse.`))).map(({ item, text }): WriteRow => ({
+  return inWaysOrder(pools, (item) => (item.noWrite ? undefined : item.w !== undefined ? [item.w] : item.q.map((question) => `${question} ${item.writeAs ?? "Écris la réponse."}`))).map(({ item, text }): WriteRow => ({
     prompt: text,
     accepted: acceptedOf(item),
     hints: hints("Lis la question en entier, mot après mot.", item.hint, letterHint(item.a, "Relis ta leçon, puis écris.")),

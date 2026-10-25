@@ -87,6 +87,40 @@ describe("juger une réponse", () => {
       expect(verifyAnswer(word(["mange"]), "manges")).toBe(true);
     });
 
+    it("l'article de tête ne compte pas : « le maire » est « maire »", () => {
+      // Relevé à la relecture de la production : « le maire », « les Portugais », « l'air », « au nord », « la radio » étaient refusés.
+      const maire = word(["Maire"]);
+      for (const typed of ["le maire", "Le Maire", "un maire", "au maire", "du maire"]) expect(verifyAnswer(maire, typed), typed).toBe(true);
+      expect(verifyAnswer(word(["Portugais"]), "les Portugais")).toBe(true);
+      expect(verifyAnswer(word(["Air"]), "de l'air")).toBe(true);
+      expect(verifyAnswer(word(["Air"]), "l’air")).toBe(true);
+      expect(verifyAnswer(word(["Au nord"]), "nord")).toBe(true);
+      expect(verifyAnswer(word(["Au nord"]), "le nord")).toBe(true);
+      expect(verifyAnswer(word(["radio"]), "la radio")).toBe(true);
+      expect(verifyAnswer(word(["le maire"]), "maire")).toBe(true);
+      expect(verifyAnswer(word(["Sénégal"]), "le Senegal")).toBe(true);
+      // Une faute de frappe sur le mot reste tolérée, et la graphie attendue est rendue sans l'article.
+      expect(verifyAnswer(maire, "le mair")).toBe(true);
+      expect(spellingNote(maire, "le mair")).toBe("Maire");
+      expect(spellingNote(maire, "le maire")).toBeNull();
+    });
+
+    it("l'article ne fait pas passer une autre réponse", () => {
+      expect(verifyAnswer(word(["Maire"]), "le mari")).toBe(false);
+      expect(verifyAnswer(word(["Maire"]), "le roi")).toBe(false);
+      expect(verifyAnswer(word(["le"]), "la")).toBe(false);
+      expect(verifyAnswer(word(["le"]), "le")).toBe(true);
+      expect(verifyAnswer(word(["la"]), "l'a")).toBe(false);
+      expect(verifyAnswer(word(["a"]), "l'a")).toBe(false);
+    });
+
+    it("exactSpelling garde l'article : l'orthographe est la question", () => {
+      const strict = word(["maire"], { exactSpelling: true });
+      expect(verifyAnswer(strict, "maire")).toBe(true);
+      expect(verifyAnswer(strict, "le maire")).toBe(false);
+      expect(verifyAnswer(word(["le maire"], { exactSpelling: true }), "maire")).toBe(false);
+    });
+
     it("ne donne une graphie que pour une réponse courte", () => {
       expect(spellingNote({ type: "qcm", payload: { options: ["a"], correctIndex: 0 } }, "0")).toBeNull();
     });

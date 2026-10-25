@@ -58,7 +58,10 @@
  *   b. L'énoncé contient l'émoji d'une chose du catalogue, et une tuile résout vers
  *      cette même image (« Quel animal est-ce ? [éléphant] » avec « l'éléphant ») :
  *      aucune tuile n'a d'image. L'émoji s'y lit LARGE (`guardEmoji` : le carré
- *      noir, le dé, la brique, la boîte de conserve).
+ *      noir, le dé, la brique, la boîte de conserve). La phrase d'un texte à trous
+ *      (`sentence`) compte ici comme l'énoncé : « Je mange une [mangue] ___ » montre
+ *      déjà la chose que l'option nomme. Ses MOTS, eux, ne comptent pas pour le
+ *      garde-fou a : « Je lis un ___ » parle de lire, il ne demande pas de lire.
  *   c. Association : un côté ne montre que des émojis (`glyphTiles`), et une
  *      tuile-mot de l'autre côté résout vers l'image d'un de ces émojis : le
  *      côté des mots n'a pas d'image. Le côté des émojis est laissé tel quel
@@ -418,6 +421,12 @@ export type TileContext = {
   counterpart?: readonly string[];
   /** L'identifiant de l'image d'énoncé (`payload.image`) : c'est celle d'une tuile, elle trahit (garde-fou e). */
   exerciseImage?: string;
+  /**
+   * Texte à trous : la phrase montrée autour des trous. Un émoji de la chose qu'une
+   * option nomme y trahit l'option, comme dans l'énoncé (garde-fou b) ; ses mots ne
+   * comptent pas pour le garde-fou a.
+   */
+  sentence?: string;
 };
 
 /** Le garde-fou qui a retiré les images d'un exercice. */
@@ -426,7 +435,7 @@ export type TileGuard = "a" | "b" | "c" | "d" | "e" | "f";
 /** Ce que dit chaque garde-fou, pour les rapports, les tests et la documentation. */
 export const TILE_GUARDS: Record<TileGuard, string> = {
   a: "l'énoncé demande de lire, de décoder, de ranger les mots d'une phrase, de nommer ou de traduire",
-  b: "l'énoncé montre l'émoji d'une chose qu'une tuile nomme",
+  b: "l'énoncé (ou la phrase à trous) montre l'émoji d'une chose qu'une tuile nomme",
   c: "association : l'autre côté montre en émojis ce que celui-ci nomme",
   d: "QCM : une tuile à lettres sans image désigne, par élimination, la tuile qui en a une",
   e: "l'image de l'énoncé est celle d'une tuile",
@@ -459,8 +468,10 @@ export function explainTilePictures(tiles: readonly string[], ctx?: TileContext)
   const prompt = typeof ctx?.prompt === "string" ? ctx.prompt : "";
   if (prompt && promptForbidsPictures(prompt)) return cut("a");
 
-  // b. L'énoncé montre l'émoji d'une chose qu'une tuile nomme.
-  if (prompt && itemImagesInText(prompt.normalize("NFC")).some((image) => ids.has(image.id))) return cut("b");
+  // b. L'énoncé, ou la phrase d'un texte à trous, montre l'émoji d'une chose qu'une tuile nomme.
+  const sentence = typeof ctx?.sentence === "string" ? ctx.sentence : "";
+  const shown = [prompt, sentence].filter(Boolean).join("\n");
+  if (shown && itemImagesInText(shown.normalize("NFC")).some((image) => ids.has(image.id))) return cut("b");
 
   // c. Association : l'autre côté montre en émojis ce que celui-ci nomme en mots.
   const glyphTiles = Array.isArray(ctx?.glyphTiles) ? ctx.glyphTiles : [];

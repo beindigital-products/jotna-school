@@ -305,6 +305,8 @@ export function makeCe1NbBracket(ctx: GameContext): GeneratedGame {
     const name = unit === 10 ? "dizaines" : unit === 100 ? "centaines" : "milliers";
     // « milliers » est masculin : « quels milliers », mais « quelles dizaines » et « quelles centaines ».
     const which = unit === 1000 ? "quels" : "quelles";
+    // Les indices s'accordent de même : « le millier … le plus petit », mais « la centaine … la plus petite ».
+    const masculine = unit === 1000;
     // Un nombre qui n'est pas un multiple du rang, dans la plage du palier : le décaler d'un multiple dépasserait parfois le plafond du palier.
     let n = randomInt(ctx.rng, lo, Math.min(top, cap - 1));
     for (let attempt = 0; attempt < 50 && n % unit === 0; attempt++) n = randomInt(ctx.rng, lo, Math.min(top, cap - 1));
@@ -318,8 +320,8 @@ export function makeCe1NbBracket(ctx: GameContext): GeneratedGame {
       answer: label(below),
       wrong: wrong.slice(0, 2).map(label),
       hints: [
-        `Cherche la ${unit === 10 ? "dizaine" : unit === 100 ? "centaine" : "millier"} juste en dessous du nombre.`,
-        "Le nombre est plus grand que la plus petite et plus petit que la plus grande.",
+        `Cherche ${masculine ? "le" : "la"} ${unit === 10 ? "dizaine" : unit === 100 ? "centaine" : "millier"} juste en dessous du nombre.`,
+        masculine ? "Le nombre est plus grand que le plus petit et plus petit que le plus grand." : "Le nombre est plus grand que la plus petite et plus petit que la plus grande.",
         "Garde les chiffres de gauche, mets des zéros derrière.",
       ],
     };

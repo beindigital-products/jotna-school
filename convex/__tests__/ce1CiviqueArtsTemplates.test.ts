@@ -213,8 +213,8 @@ const CIVIC_SORT_T: Record<string, string> = {
   "Laisser la lampe allumée": CIVIC_ZONES[1],
 };
 const CIVIC_LINK_T: Record<string, string> = {
-  École: "Je ne salis pas les murs",
-  Rue: "Je jette mes papiers à la poubelle",
+  "Mur de l'école": "Je n'écris pas dessus",
+  Poubelle: "J'y jette mes papiers",
   Arbre: "Je ne casse pas ses branches",
   "Borne-fontaine": "Je ferme le robinet après avoir bu",
   Lampe: "J'éteins quand je sors",
@@ -244,7 +244,7 @@ const CIVIC_WRITE_T: readonly WRow[] = [
   ["Que ferme-t-on après avoir bu à la borne-fontaine ? Écris le mot.", "robinet", ["robinet", "le robinet", "un robinet"]],
   ["Où jette-t-on un papier dans la rue ? Écris le mot.", "poubelle", ["poubelle", "la poubelle", "une poubelle"]],
   ["Que fait-on pour donner à boire à un arbre ? Écris le verbe.", "arroser", ["arroser", "l'arroser", "arrose"]],
-  ["Quel objet éteint-on en sortant d'une classe vide ? Écris le mot.", "lumière", ["lumière", "la lumière", "une lumière"]],
+  ["Quel objet éteint-on en sortant d'une classe vide ? Écris le mot.", "lumière", ["lumière", "la lumière", "une lumière", "lampe", "ampoule"]],
 ];
 
 // ===========================================================================
@@ -444,8 +444,8 @@ const FOLD_STEPS_T: readonly (readonly [string, readonly string[]])[] = [
   ["Pour plier une feuille en deux, mets ces gestes du premier au dernier.", ["Je prends une feuille", "Je plie en deux", "J'appuie sur le pli", "Je déplie la feuille"]],
   ["Pour modeler un objet, mets ces gestes du premier au dernier.", ["Je prends de l'argile", "Je forme un objet", "Je laisse sécher"]],
   ["Pour modeler un objet, mets ces gestes du premier au dernier.", ["Je prends de l'argile", "Je roule une boule", "Je forme un objet", "Je laisse sécher"]],
-  ["Pour découper une forme, mets ces gestes du premier au dernier.", ["Je dessine un trait", "Je prends les ciseaux", "Je découpe sur le trait"]],
-  ["Pour découper une forme, mets ces gestes du premier au dernier.", ["Je prends un crayon", "Je dessine un trait", "Je prends les ciseaux", "Je découpe sur le trait"]],
+  ["Pour découper une forme, mets ces gestes du premier au dernier.", ["Je dessine un trait", "Je découpe sur le trait", "Je range les ciseaux"]],
+  ["Pour découper une forme, mets ces gestes du premier au dernier.", ["Je prends un crayon", "Je dessine un trait", "Je découpe sur le trait", "Je range les ciseaux"]],
 ];
 const FOLD_GAP_T: readonly GRow[] = [
   ["Pour découper, j'utilise des ___.", "ciseaux", ["crayons", "livres"]],
@@ -467,11 +467,26 @@ const FOLD_SYMMETRY_Q: readonly QRow[] = [
 
 const SOUND_LINK_T: Record<string, string> = {
   Chuchotement: "Un son faible",
-  Sirène: "Un son fort",
-  "Coup de sifflet": "Un son court",
-  Cloche: "Un son qui dure",
+  Murmure: "Un son faible",
+  "Pas de chat": "Un son faible",
+  Tonnerre: "Un son fort",
+  Pétard: "Un son fort",
   Tambour: "Un son grave",
   Flûte: "Un son aigu",
+  Sifflet: "Un son aigu",
+  "Chant d'oiseau": "Un son aigu",
+};
+/**
+ * Un son a une force, une hauteur et une durée : un appariement ne garde qu'une étiquette défendable par son. Jamais « fort » avec
+ * « grave » (le tonnerre et le tambour sont les deux), aucune étiquette de durée (une cloche dure et sonne fort, un sifflet est court et fort).
+ */
+const checkSoundLinks: Check = (exo) => {
+  const labels = pairsOf(exo).map((pair) => pair.right);
+  return (
+    checkLinks(SOUND_LINK_T)(exo) ??
+    ok(!(labels.includes("Un son fort") && labels.includes("Un son grave")), `« fort » et « grave » ensemble : ${labels.join(" | ")}`) ??
+    ok(labels.every((label) => ["Un son fort", "Un son faible", "Un son grave", "Un son aigu"].includes(label)), `étiquette de durée : ${labels.join(" | ")}`)
+  );
 };
 const SOUND_ZONES: readonly [string, string] = ["Son fort", "Son faible"];
 const SOUND_SORT_T: Record<string, string> = {
@@ -687,7 +702,7 @@ const CHECKS: Record<string, Check> = {
   "ce1-pli-symetrie": checkQuestions(FOLD_SYMMETRY_Q),
 
   // --- Sons, instruments, mimes ---
-  "ce1-son-relier": checkLinks(SOUND_LINK_T),
+  "ce1-son-relier": checkSoundLinks,
   "ce1-son-glisser": checkSort(SOUND_ZONES, SOUND_SORT_T),
   "ce1-instru-geste": checkQuestions(INSTRUMENT_HOW_Q),
   "ce1-instru-quel": checkQuestions(INSTRUMENT_WHICH_Q),

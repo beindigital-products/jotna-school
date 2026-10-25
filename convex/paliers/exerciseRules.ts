@@ -208,26 +208,44 @@ export function judgeShortAnswer(submitted: string, payload: ShortAnswerPayload)
   // « 18 m » vaut « 18 », « 60% » vaut « 0,6 » : deux formes numériques qui
   // disent le même nombre (`numericallyEqual`). Une fraction, elle, se
   // compare à l'identique : « 1/2 » n'accepte pas « 0,5 ».
+  const exact = payload?.exactSpelling === true;
   const norm = canonicalAnswer(submitted);
-  if (accepted.some((a) => canonicalAnswer(a) === norm || numericallyEqual(a, submitted))) {
+  // « le maire » et « maire » disent la même chose : l'article de tête ne compte pas, sauf quand l'orthographe est la question.
+  const sameAnswer = (a: string) => canonicalAnswer(a) === norm || (!exact && withoutArticle(canonicalAnswer(a)) === withoutArticle(norm));
+  if (accepted.some((a) => sameAnswer(a) || numericallyEqual(a, submitted))) {
     return { correct: true, spelling: null };
   }
-  if (payload?.exactSpelling === true) return { correct: false, spelling: null };
+  if (exact) return { correct: false, spelling: null };
 
-  const typed = foldSpelling(submitted);
-  if (typed.length < 2) return { correct: false, spelling: null };
+  const typedForms = [foldSpelling(submitted), foldSpelling(withoutArticle(norm))];
+  if (typedForms[0].length < 2) return { correct: false, spelling: null };
   let best: { answer: string; distance: number } | null = null;
   for (const answer of accepted) {
     if (/\d/.test(answer)) continue;
-    const expected = foldSpelling(answer);
-    if (expected.length < 4) continue;
-    const distance = editDistance(typed, expected);
-    const allowed = expected.length >= 8 ? 2 : 1;
-    if (distance <= allowed && (!best || distance < best.distance)) {
-      best = { answer: answer.trim(), distance };
+    for (const expected of [foldSpelling(answer), foldSpelling(withoutArticle(canonicalAnswer(answer)))]) {
+      if (expected.length < 4) continue;
+      const allowed = expected.length >= 8 ? 2 : 1;
+      for (const typed of typedForms) {
+        const distance = editDistance(typed, expected);
+        if (distance <= allowed && (!best || distance < best.distance)) {
+          best = { answer: answer.trim(), distance };
+        }
+      }
     }
   }
   return best ? { correct: true, spelling: best.answer } : { correct: false, spelling: null };
+}
+
+/** L'article ou la préposition-article qui ouvre une réponse : « le », « la », « l' », « un », « une », « des », « du », « de la », « au », « aux », « à la ». */
+const LEADING_ARTICLE = /^(?:à la |à l['’]\s*|au |aux |les |le |la |l['’]\s*|un |une |des |du |de la |de l['’]\s*|d['’]\s*)/;
+
+/**
+ * La réponse sans son article de tête, pour comparer « le maire » à « maire ». Un mot qui ne serait plus que de une ou deux lettres une
+ * fois l'article ôté reste intact (« l'a », « la » : les homophones se jugent à l'identique).
+ */
+function withoutArticle(canonical: string): string {
+  const stripped = canonical.replace(LEADING_ARTICLE, "");
+  return stripped.replace(/[^\p{L}]/gu, "").length >= 3 ? stripped : canonical;
 }
 
 /** La graphie à montrer quand la réponse est juste mais mal écrite, sinon `null`. */

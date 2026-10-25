@@ -15,8 +15,9 @@
  * - Instruments : la kora (on pince ses cordes), le balafon (on frappe ses lames de bois), le tama (petit tambour qu'on serre sous le bras),
  *   le sabar et le djembé (tambours qu'on frappe), le riti (vièle à une corde jouée avec un archet), les maracas (on les secoue), la flûte
  *   (on souffle). Le tama n'est jamais rangé parmi ce qu'on frappe : la fiche dit seulement qu'on le serre sous le bras.
- * - Sons : la hauteur, la durée et l'intensité. HORS FICHE, À FAIRE RELIRE : la flûte est aiguë et le tambour grave, une sirène est un son
- *   fort et un chuchotement un son faible, un coup de sifflet est court et une cloche dure.
+ * - Sons : la hauteur, la durée et l'intensité. HORS FICHE, À FAIRE RELIRE : la flûte est aiguë et le tambour grave, une sirène ou le tonnerre
+ *   sont des sons forts et un chuchotement un son faible. Les sons à relier vont par trios choisis à la main (`SOUND_TRIOS`) : chaque son
+ *   n'y a qu'une étiquette qui lui convienne.
  * - Mimes : la joie, la peur, la colère, la fatigue, la honte ; ce que disent le visage, les mains, la façon de marcher. Aucune posture ne
  *   sert à deux sentiments : « se cacher le visage » (peur ou honte) et « crier fort » (colère ou joie) n'y sont pas.
  *   HORS FICHE, À FAIRE RELIRE : chaque posture et le sentiment qui lui est donné.
@@ -45,8 +46,8 @@ import {
   type Steps,
   type WriteFact,
 } from "./ce1SciencesOutils";
-import { pickFresh, type GameContext, type GeneratedGame } from "./shared";
-import type { Hints } from "./tableaux";
+import { pickFresh, shuffle, type GameContext, type GeneratedGame } from "./shared";
+import { linkGame, type Hints } from "./tableaux";
 
 // ===========================================================================
 // DESSINER ET REPRODUIRE (ar-ce1-dessin)
@@ -284,12 +285,16 @@ const CLAY_LONG: Steps = {
 };
 const CUT_SHORT: Steps = {
   prompt: "Pour découper une forme, mets ces gestes du premier au dernier.",
-  sequence: ["Je dessine un trait", "Je prends les ciseaux", "Je découpe sur le trait"],
+  sequence: ["Je dessine un trait", "Je découpe sur le trait", "Je range les ciseaux"],
   hints: GESTURE_STEP_HINTS,
 };
+/**
+ * « Je prends les ciseaux » n'a pas de place forcée (avant le crayon, avant ou après le trait) : la suite finit donc par « Je range les
+ * ciseaux », qui ne peut venir qu'après la découpe.
+ */
 const CUT_LONG: Steps = {
   prompt: "Pour découper une forme, mets ces gestes du premier au dernier.",
-  sequence: ["Je prends un crayon", "Je dessine un trait", "Je prends les ciseaux", "Je découpe sur le trait"],
+  sequence: ["Je prends un crayon", "Je dessine un trait", "Je découpe sur le trait", "Je range les ciseaux"],
   hints: GESTURE_STEP_HINTS,
 };
 
@@ -372,22 +377,45 @@ export function makeCe1FoldSymmetry(ctx: GameContext): GeneratedGame {
 // ÉCOUTER ET COMPARER LES SONS (ar-ce1-sons)
 // ===========================================================================
 
-const SOUND_PAIRS: readonly (readonly [string, string])[] = [
-  ["Chuchotement", "Un son faible"],
-  ["Sirène", "Un son fort"],
-  ["Coup de sifflet", "Un son court"],
-  ["Cloche", "Un son qui dure"],
-  ["Tambour", "Un son grave"],
-  ["Flûte", "Un son aigu"],
+/**
+ * Les sons à relier, par trios choisis à la main, un par palier. Un son a toujours une force, une hauteur et une durée : trois étiquettes
+ * prises au hasard sur trois axes se recoupent (une sirène est forte, aiguë et longue ; une cloche dure et sonne fort ; un tambour est grave
+ * et fort). Dans chaque trio, chaque son n'a qu'une étiquette qui lui convienne : jamais « fort » avec « grave » (le tonnerre et le tambour
+ * sont les deux), aucune étiquette de durée (une cloche ou un sifflet sont aussi forts).
+ */
+const SOUND_TRIOS: readonly (readonly (readonly [string, string])[])[] = [
+  [
+    ["Tonnerre", "Un son fort"],
+    ["Chuchotement", "Un son faible"],
+    ["Flûte", "Un son aigu"],
+  ],
+  [
+    ["Tambour", "Un son grave"],
+    ["Flûte", "Un son aigu"],
+    ["Chuchotement", "Un son faible"],
+  ],
+  [
+    ["Pétard", "Un son fort"],
+    ["Murmure", "Un son faible"],
+    ["Chant d'oiseau", "Un son aigu"],
+  ],
+  [
+    ["Tambour", "Un son grave"],
+    ["Sifflet", "Un son aigu"],
+    ["Pas de chat", "Un son faible"],
+  ],
 ];
 
 /** « Relie chaque son à ce qui le décrit. » */
 export function makeCe1SoundLink(ctx: GameContext): GeneratedGame {
-  return pickPairs(ctx, "ce1-son-relier", "relier un son à ce qui le décrit", "Relie chaque son à ce qui le décrit.", SOUND_PAIRS, [
-    "Imagine chaque son dans ta tête.",
-    "Certains sons sont forts ou faibles, d'autres longs, courts, graves ou aigus.",
-    "Commence par le son que tu connais le mieux.",
-  ]);
+  return linkGame(ctx, "ce1-son-relier", "relier un son à ce qui le décrit", () => {
+    const trio = pickFresh(ctx, quarter(SOUND_TRIOS, ctx.level, 1), (candidate) => `ce1-son-relier:${candidate.map((pair) => pair[0]).join("|")}`);
+    return {
+      prompt: "Relie chaque son à ce qui le décrit.",
+      pairs: shuffle(ctx.rng, trio).map(([left, right]) => ({ left, right })),
+      hints: ["Imagine chaque son dans ta tête.", "Certains sons sont forts ou faibles, d'autres graves ou aigus.", "Commence par le son que tu connais le mieux."],
+    };
+  });
 }
 
 /** « Glisse chaque son dans la bonne case » : un son fort, un son faible. */

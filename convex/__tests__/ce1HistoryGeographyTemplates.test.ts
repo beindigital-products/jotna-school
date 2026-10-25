@@ -150,6 +150,14 @@ const NEED_T: [string, string, string, string, string][] = [
   ["avoir de l'eau à la maison", "Puits", "Robinet", "un puits", "un robinet"],
 ];
 const needRow = (need: string) => NEED_T.find((row) => row[0] === need);
+/** Ce qui sert AUSSI un autre besoin : un feu de bois éclaire, un téléphone portable aussi. Jamais un mauvais choix pour ce besoin-là. */
+const ALSO_SERVES: Record<string, string> = {
+  "Feu de bois": "avoir de la lumière",
+  "un feu de bois": "avoir de la lumière",
+  "Téléphone portable": "avoir de la lumière",
+  "un téléphone portable": "avoir de la lumière",
+};
+const servesToo = (thing: string, need: string) => ALSO_SERVES[thing] === need;
 const THEN_TILES = NEED_T.map((row) => row[1]);
 const NOW_TILES = NEED_T.map((row) => row[2]);
 
@@ -635,6 +643,7 @@ const CHECKS: Record<string, Check> = {
     return all(
       ok(rightOption(exo) === expected, `« ${match[1]} » ${then ? "autrefois" : "de nos jours"} : « ${expected} », la bonne option est « ${rightOption(exo)} »`),
       ok(wrongOf(exo).length === 2 && wrongOf(exo).every((option) => pool.includes(option)), `mauvais choix ${wrongOf(exo).join(" | ")} (ils doivent être de la même époque, d'autres besoins)`),
+      ok(wrongOf(exo).every((option) => !servesToo(option, match[1])), `un mauvais choix sert aussi à ${match[1]} : ${wrongOf(exo).join(" | ")}`),
     );
   },
   "ce1-autrefois-relier": (exo) => {
@@ -672,6 +681,7 @@ const CHECKS: Record<string, Check> = {
     return all(
       ok(blankOf(exo).answer === expected, `la phrase veut « ${expected} », le trou dit « ${blankOf(exo).answer} »`),
       ok(blankOf(exo).options.length === 3 && blankOf(exo).options.filter((option) => option !== expected).every((option) => pool.includes(option)), `les choix : ${blankOf(exo).options.join(" | ")}`),
+      ok(blankOf(exo).options.every((option) => !servesToo(option, match[2])), `un mauvais choix sert aussi à ${match[2]} : ${blankOf(exo).options.join(" | ")}`),
     );
   },
 
@@ -1311,6 +1321,13 @@ describe("tous les gabarits de l'histoire et de la géographie du CE1", () => {
         const hintWords = fold(hint).split(/[^a-z]+/);
         for (const word of words) expect(hintWords, `${kind} : « ${hint} » écrit « ${word} »`).not.toContain(word);
       }
+    }
+  });
+
+  it("ne font jamais comparer des années par le seul chiffre des centaines (1960 et 2000 : les centaines trompent)", () => {
+    for (const { kind, exo } of exos) {
+      if (!/\b\d{4}\b/.test(exo.prompt)) continue;
+      for (const hint of exo.hints) if (/chiffre des centaines/.test(hint)) expect(hint, `${kind} : « ${hint} »`).toMatch(/milliers/);
     }
   });
 

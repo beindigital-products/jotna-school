@@ -290,7 +290,9 @@ function rhythmPattern(ctx: GameContext): GeneratedGame {
   const variants = new Set<string>([correct]);
   for (let i = 0; i < 30 && variants.size < 3; i++) {
     const copy = [...pattern];
-    const flip = randomInt(ctx.rng, 0, copy.length - 1);
+    // Jamais le dernier coup : il n'est suivi d'aucun silence, donc ni long ni court à l'oreille, et deux options qui ne diffèrent que par lui
+    // sonnent pareil (relevé à la relecture de la production : une réponse juste à l'oreille était refusée).
+    const flip = randomInt(ctx.rng, 0, copy.length - 2);
     copy[flip] = copy[flip] === "L" ? "S" : "L";
     variants.add(rhythmText(copy));
   }
@@ -363,7 +365,11 @@ export function makeMelody(ctx: GameContext): GeneratedGame {
     hints: [
       LISTEN_HINTS_GENERIC,
       "Monte ta main quand la note devient plus aiguë, descends-la quand elle devient plus grave.",
-      "Compare la première note et la dernière : laquelle est la plus aiguë ?",
+      // Comparer la première et la dernière note ne tranche qu'entre monter et descendre : une mélodie qui monte puis
+      // descend finit plus bas qu'elle ne part (ou au même endroit), et cet indice pousserait vers « Elle descend ».
+      allowArch
+        ? "Cherche la note la plus aiguë : est-elle au début, à la fin, ou au milieu ?"
+        : "Compare la première note et la dernière : laquelle est la plus aiguë ?",
     ],
   };
 }

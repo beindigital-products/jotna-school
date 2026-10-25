@@ -340,6 +340,12 @@ const checkError: Check = (exo) => {
   return all(
     ok(isValid(rests[rightIndex]), `la bonne forme n'est pas valide : ${rests[rightIndex]}`),
     ok(rests.every((rest, index) => index === rightIndex || (rest !== "" && !isValid(rest))), `un mauvais choix est une forme valide : ${options.join(" | ")}`),
+    // L'énoncé demande « bien conjugué », pas « au bon temps » : un mauvais choix n'est une forme juste à AUCUN temps pour ce sujet (« vous écrivez » après « À cette époque »).
+    // (« nous avons fais » se lit « avons » au présent : l'auxiliaire seul d'un passé composé raté ne compte pas.)
+    ok(
+      rests.every((rest, index) => index === rightIndex || readVerb(rest, split.person).filter((f) => !(read.some((r) => r.tense === "passé composé") && ["avoir", "être"].includes(f.inf) && f.tense === "présent")).length === 0),
+      `un mauvais choix est bien conjugué à un autre temps : ${options.join(" | ")}`,
+    ),
     ok(exo.prompt === "Dans quelle phrase le verbe est-il bien conjugué ?", "énoncé inattendu"),
   );
 };
@@ -415,6 +421,8 @@ describe("les vérifications de conjugaison voient un énoncé abîmé", () => {
     expect(checkError(qcm("Dans quelle phrase le verbe est-il bien conjugué ?", ["Autrefois, nous mangions du riz.", "Autrefois, nous mangeions du riz.", "Autrefois, nous mangons du riz."], 0))).toBeNull();
     expect(checkError(qcm("Dans quelle phrase le verbe est-il bien conjugué ?", ["Autrefois, nous mangions du riz.", "Autrefois, nous mangeions du riz.", "Autrefois, nous mangons du riz."], 1))).not.toBeNull();
     expect(checkError(qcm("Dans quelle phrase le verbe est-il bien conjugué ?", ["Autrefois, nous mangions du riz.", "Autrefois, nous mangeons du riz.", "Autrefois, nous mangions du riz."], 0))).not.toBeNull();
+    // « nous mangeons » est bien conjugué (au présent) : l'énoncé « bien conjugué » aurait deux réponses.
+    expect(checkError(qcm("Dans quelle phrase le verbe est-il bien conjugué ?", ["Autrefois, nous mangions du riz.", "Autrefois, nous mangeons du riz.", "Autrefois, nous mangons du riz."], 0))).not.toBeNull();
   });
 
   it("le groupe : aller est du troisième, finir du deuxième, nager du premier", () => {

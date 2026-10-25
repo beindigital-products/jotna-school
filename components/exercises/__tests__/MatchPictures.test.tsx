@@ -71,7 +71,7 @@ describe("association : la porte fermée ne change rien", () => {
     expect(closed.container.innerHTML).toBe(before);
     const word = tile("le chat").querySelector("span.inline-block");
     expect(word?.textContent).toBe("le chat");
-    expect(word?.className).toBe("inline-block hyphens-auto [overflow-wrap:anywhere]");
+    expect(word?.className).toBe("inline-block [overflow-wrap:anywhere]");
   });
 
   it("un émoji de tête reste dans le texte de la tuile quand la porte est fermée", () => {

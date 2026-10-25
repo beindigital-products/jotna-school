@@ -205,18 +205,23 @@ const DICTIONARY_HINTS = hints("C'est un gros livre qui explique les mots.", "On
 const HOMONYM_WRITE_HINTS = hints("Ces mots se disent pareil mais ne s'écrivent pas pareil.", "Le nom de ces mots commence par h.", "Écris seulement le mot.");
 const COLOUR_WRITE_HINTS = hints("Ce mot se dit comme « verre » mais s'écrit autrement.", "C'est la couleur de l'herbe.", "Écris seulement le mot.");
 const SYNONYM_WRITE_HINTS = hints("Ces mots veulent dire presque la même chose.", "Le nom de ces mots commence par s.", "Écris seulement le mot.");
-const FAMILY_WRITE_HINTS = hints("Ces termes viennent du même terme de départ.", "Ils se ressemblent par leur début.", "Écris les trois termes de la réponse.");
+const FAMILY_WRITE_HINTS = hints("Ces termes viennent du même terme de départ.", "Ils se ressemblent par leur début.", "Écris un seul terme, celui du trou.");
+/**
+ * « Comment appelle-t-on dent, dentiste et dentier ? Écris les trois mots. » se lisait « recopie ces trois mots » (défaut relevé en production le
+ * 25 octobre 2026) : la phrase a un trou d'un seul mot, et le juge ignore l'article de tête (« une famille »).
+ */
+const familyWrite = (words: string): WriteRow => wr(`Des mots comme ${words} forment une ___ de mots. Écris le mot qui manque.`, ["famille", "famille de mots"], FAMILY_WRITE_HINTS);
 const ORDER_WRITE_HINTS = hints("Les mots du dictionnaire sont rangés comme les lettres de l'alphabet.", "A est la première lettre, z la dernière.", "Écris les deux mots.");
 const SPELLING_WRITE_HINTS = hints("Ces mots se disent pareil mais ne s'écrivent pas pareil.", "Pense au petit mot qui commence par m et finit par e.", "Écris seulement le mot.");
 export const VOCAB_WRITE_ROWS: readonly WriteRow[] = [
   wr("Dans quel livre cherche-t-on le sens d'un mot ? Écris le mot.", ["dictionnaire", "le dictionnaire"], DICTIONARY_HINTS),
   wr("Comment appelle-t-on deux mots qui se disent pareil mais s'écrivent autrement ? Écris le mot.", ["homonymes", "des homonymes"], HOMONYM_WRITE_HINTS),
   wr("Comment appelle-t-on des mots de sens proche, comme heureux et content ? Écris le mot.", ["synonymes", "des synonymes"], SYNONYM_WRITE_HINTS),
-  wr("Comment appelle-t-on terre, terrain et enterrer ? Écris les trois mots.", ["famille de mots", "une famille de mots"], FAMILY_WRITE_HINTS),
+  familyWrite("terre, terrain et enterrer"),
   wr("Quel livre explique les mots dans l'ordre alphabétique ? Écris le mot.", ["dictionnaire", "le dictionnaire"], DICTIONARY_HINTS),
   wr("Comment appelle-t-on vert, verre et vers, qui se disent pareil ? Écris le mot.", ["homonymes", "des homonymes"], HOMONYM_WRITE_HINTS),
   wr("Comment appelle-t-on joli et beau, qui veulent dire presque la même chose ? Écris le mot.", ["synonymes", "des synonymes"], SYNONYM_WRITE_HINTS),
-  wr("Comment appelle-t-on dent, dentiste et dentier ? Écris les trois mots.", ["famille de mots", "une famille de mots"], FAMILY_WRITE_HINTS),
+  familyWrite("dent, dentiste et dentier"),
   wr("Dans quel ordre les mots du dictionnaire sont-ils rangés ? Écris les deux mots.", ["ordre alphabétique", "l'ordre alphabétique", "alphabétique"], ORDER_WRITE_HINTS),
   wr("Les mots d'un dictionnaire se suivent selon quel ordre ? Écris les deux mots.", ["ordre alphabétique", "l'ordre alphabétique", "alphabétique"], ORDER_WRITE_HINTS),
   wr("Quel homonyme de « mer » désigne la maman ? Écris le mot.", ["mère"], SPELLING_WRITE_HINTS),

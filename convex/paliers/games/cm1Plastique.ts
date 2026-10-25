@@ -69,8 +69,11 @@ const MEM_VERBES: Pool = {
     },
     {
       id: "cacher",
-      q: ["Que fait-on du modèle pour dessiner vraiment de mémoire ?", "Que fait-on du modèle quand on commence à dessiner de mémoire ?"],
+      q: ["Que fait-on du modèle pour dessiner vraiment de mémoire ?", "Que fait-on du modèle juste avant de redessiner de mémoire ?"],
       a: "Cacher le modèle",
+      // Observer le modèle et retenir ce qu'on a vu sont aussi des étapes du dessin de mémoire, et effacer un modèle tracé au tableau
+      // le cache : aucun des trois n'est un mauvais choix.
+      not: ["Observer le modèle", "Retenir ce qu'on a vu", "Effacer le modèle"],
       noWrite: true,
       hint: "Il ne doit plus rester sous les yeux.",
     },

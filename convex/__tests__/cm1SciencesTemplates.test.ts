@@ -1,4 +1,7 @@
+import { describe, expect, it } from "vitest";
 import { defineTemplateTests } from "@/lib/test-support/cm1TestKit";
+import { allProgrammeEntries } from "../programme";
+import { generateGames } from "../paliers/games";
 
 /**
  * LES SCIENCES DU CM1 : six thématiques, trente-six gabarits (`cm1Sciences.ts`).
@@ -109,7 +112,7 @@ const ASSOC: Record<string, string[]> = {
   ampoule: ["produit la lumiere", "de la lampe s allume", "lumiere de la lampe torche vient", "brille*"],
   joint: ["empeche l eau de fuir", "caoutchouc", "etancheite", "robinet goutte"],
   manette: ["ouvrir et a fermer l eau", "tourne-t-on pour faire couler l eau", "ouvre l eau en tournant", "main tourne*"],
-  pile: ["fournit l energie", "s use et se change", "son energie", "lumiere faiblit"],
+  pile: ["fournit l energie", "donne l energie", "son energie", "lumiere faiblit"],
   interrupteur: ["allumer et a eteindre", "coupe ou laisse passer le courant", "allume et on eteint"],
   tuyau: [],
   bec: [],
@@ -125,7 +128,8 @@ const ASSOC: Record<string, string[]> = {
   // L'hygiène du milieu
   insalubrite: ["ordures et des eaux usees", "ordures et de flaques sales", "lieu sale", "lieu malsain", "quartier plein de dechets"],
   promiscuite: ["trop nombreux dans un petit espace", "tres serres", "entassee", "logement trop petit"],
-  pollution: [],
+  // Pas « pollution » dans les choix : un lieu plein d'ordures est aussi pollué.
+  secheresse: [],
   epidemie: [],
   "hygiene individuelle": ["gestes de proprete que chacun fait", "proprete de son propre corps", "proprete de chacun"],
   individuelle: ["gestes de proprete que chacun fait", "proprete de son propre corps", "proprete de chacun", "se doucher releve"],
@@ -259,7 +263,7 @@ const PAIRS: [string, string][] = [
   ["Évaporation", "A besoin de chaleur"],
   ["Chaleur", "Fait fondre la glace"],
   ["Froid", "Fait geler l'eau"],
-  ["Soleil", "Sèche le linge"],
+  ["Eau et air", "Font rouiller le fer"],
   ["Buée", "Gaz devenu liquide"],
   ["Glaçon", "Solide"],
   ["Vapeur", "Gaz"],
@@ -297,9 +301,9 @@ const PAIRS: [string, string][] = [
   ["Peigne prêté", "Ne pas le prêter"],
   ["Eau sale", "L'évacuer"],
   ["Ordures", "À la poubelle"],
-  ["Insalubrité", "Cause de maladies"],
+  ["Insalubrité", "Ordures et eaux sales partout"],
   ["Propreté", "Protège la santé"],
-  ["Promiscuité", "Aide les microbes à passer"],
+  ["Promiscuité", "Trop de monde dans un petit espace"],
 ];
 
 const MEMBERS: Record<string, string[]> = {
@@ -358,4 +362,35 @@ defineTemplateTests({
     ["Maladie de la peau", "Maladie des poumons"],
     ["Bon geste", "Mauvais geste"],
   ],
+});
+
+describe("l'indice de la première lettre ne trompe pas", () => {
+  const initial = (text: string) =>
+    text
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/^(le |la |les |l'|un |une |des |du |de la |de l')/i, "")
+      .charAt(0)
+      .toUpperCase();
+
+  it("ne nomme jamais A, B ou C dans un QCM (ses choix portent ces lettres), ni une lettre que porte aussi un mauvais choix", () => {
+    for (const entry of allProgrammeEntries()) {
+      if (!(entry.topic.key in TOPIC_KINDS)) continue;
+      for (let n = 0; n < 10; n++)
+        for (let palier = 1; palier <= 5; palier++) {
+          const games = generateGames(entry.topic.games ?? [], { klass: "CM1", palierIndex: palier, palierCount: 5, seed: `lettre:${entry.topic.key}:${n}:${palier}` });
+          for (const game of games) {
+            const letter = game.hints.map((hint) => /^La réponse commence par la lettre ([A-Z])\.$/.exec(hint)?.[1]).find((found) => found !== undefined);
+            if (letter === undefined) continue;
+            const qcm = game.type === "qcm";
+            const blank = (game.payload.blanks as { options: string[]; answer: string }[] | undefined)?.[0];
+            const options = qcm ? (game.payload.options as string[]) : (blank?.options ?? []);
+            const answer = qcm ? options[game.payload.correctIndex as number] : blank?.answer;
+            const wrong = options.filter((option) => option !== answer);
+            expect(qcm && ["A", "B", "C"].includes(letter), `${game.prompt} : « lettre ${letter} » sur un QCM`).toBe(false);
+            expect(wrong.filter((option) => initial(option) === letter), `${game.prompt} : la lettre ${letter} ne départage rien`).toEqual([]);
+          }
+        }
+    }
+  });
 });

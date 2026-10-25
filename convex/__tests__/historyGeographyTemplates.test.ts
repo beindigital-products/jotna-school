@@ -791,6 +791,8 @@ describe("les gabarits de repères recalculent juste", () => {
       const odds = fixed.length === 1 ? fixed : mobile.length === 1 ? mobile : [];
       expect(odds, options.join()).toHaveLength(1);
       expect(rightOption(exo)).toBe(odds[0]);
+      // Le critère est dit : « ne bouge jamais » quand l'intrus est fixe, « peut bouger » quand il est mobile.
+      expect(exo.prompt).toBe(FIXED.includes(odds[0]) ? "Un seul de ces dessins ne bouge jamais. Lequel ?" : "Un seul de ces dessins peut bouger. Lequel ?");
     }
   });
 

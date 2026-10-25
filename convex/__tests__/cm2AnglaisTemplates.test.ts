@@ -542,13 +542,13 @@ const GAP_TRUTHS: [number, string][] = [
 ];
 GAP_TRUTHS.forEach(([i, sentence]) => RD_TRUE[READING[i].text].add(sentence));
 const RD_DIALOGUES = new Set<string>([
-  "Hello, Moussa.|Hello, Awa. How are you?|I am fine, thank you.",
-  "Hello, Modou.|Hello, Fatou. How are you?|I am fine, thank you.",
-  "How much is the book?|It is two hundred francs.|I would like the book, please.",
-  "How much is the bag?|It is five hundred francs.|I would like the bag, please.",
-  "Where are you going?|I am going to the market.|What are you going to buy?|I am going to buy rice.",
+  "Hello, Awa. How are you?|I am fine, thank you. And you?|I am fine too, thank you.",
+  "Hello, Fatou. How are you?|I am fine, thank you. And you?|I am fine too, thank you.",
+  "How much is the book?|It is two hundred francs.|Thank you. I would like the book, please.",
+  "How much is the bag?|It is five hundred francs.|Thank you. I would like the bag, please.",
+  "Where are you going?|I am going to the market.|What are you going to buy there?|I am going to buy rice.",
   "Excuse me, where is the post office?|It is opposite the bank.|Thank you.",
-  "Hello, Fatou.|Hello, Modou. What are you going to do tomorrow?|I am going to visit my grandmother.",
+  "Hello, Fatou. What are you going to do tomorrow?|I am going to visit my grandmother. And you?|I am going to help my father too.",
   "Why are you sad?|Because I am tired.|Go to bed, then.",
 ]);
 
@@ -753,7 +753,10 @@ const checkOrder = (exo: Exo): string | null => {
   const tiles = sequenceOf(exo);
   if (exo.prompt === "Remets ce dialogue dans l'ordre, de la première à la dernière phrase.") {
     const key = tiles.join("|");
-    return ok(DR_DIALOGUES.has(key) || RD_DIALOGUES.has(key), `dialogue inconnu : ${key}`);
+    // Chaque réplique n'a qu'une place : un bonjour n'est jamais une réplique à part (il pourrait passer devant ou derrière), et une réplique qui ne vient pas en
+    // premier est soit une réponse (aucun « ? »), soit une question qui reprend la précédente (« And you? », « there »).
+    const anchored = tiles.slice(1).every((line) => !/^Hello/.test(line) && (!line.endsWith("?") || / there\?$/.test(line) || /And you\?$/.test(line)));
+    return all(ok(DR_DIALOGUES.has(key) || RD_DIALOGUES.has(key), `dialogue inconnu : ${key}`), ok(anchored, `une réplique peut passer devant : ${key}`));
   }
   const sentence = tiles.join(" ");
   const isQuestion = sentence.endsWith("?");
@@ -779,7 +782,10 @@ const checkLink = (exo: Exo): string | null => {
     "Relie chaque verbe à sa forme du passé.": (right) => PASTS.has(right),
   };
   const only = wanted[exo.prompt];
+  const lefts = pairsOf(exo).map((pair) => pair.left);
   return all(
+    // « tall » et « big » se traduisent tous deux par « grand » : jamais opposés dans un même « relier » des sens.
+    ok(exo.prompt !== "Relie chaque mot anglais à son sens en français." || !(lefts.includes("tall") && lefts.includes("big")), `tall et big ensemble : ${lefts.join(", ")}`),
     ...(only ? pairsOf(exo).map((pair) => ok(only(pair.right), `« ${pair.right} » n'est pas ce que demande « ${exo.prompt} »`)) : []),
     ...pairsOf(exo).map((pair) => {
       if (QS_ANSWER.has(pair.left)) return ok(QS_ANSWER.get(pair.left) === pair.right, `réponse fausse : ${pair.left} ~ ${pair.right}`);

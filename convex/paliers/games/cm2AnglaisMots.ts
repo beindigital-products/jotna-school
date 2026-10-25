@@ -208,10 +208,20 @@ const CP_ORDRE: OrderRow[] = cm2EnInterleave(
   CP_SUP.map((r) => ordr(CM2_EN_SENTENCE_PROMPT, cm2EnWordsOf(cpSupSentence(r)), CM2_EN_SENTENCE_HINTS, r.key)),
 );
 
+/**
+ * Les sens en français d'un « relier » : « tall » et « big » se traduisent tous deux par « grand » (a big house, une grande maison). On ne les oppose donc jamais
+ * (tall ~ grand ET big ~ gros) : quand les deux sont dans le même groupe, « big » cède sa place à « small », qui n'a qu'un sens en français.
+ */
+function cpSens(group: readonly CpAdj[]): (readonly [string, string])[] {
+  const small = CP_ADJ.find((a) => a.en === "small") as CpAdj;
+  const clash = group.some((a) => a.en === "tall") && group.some((a) => a.en === "big") && !group.includes(small);
+  return group.map((a) => (clash && a.en === "big" ? small : a)).map((a) => [a.en, a.fr] as const);
+}
+
 const CP_RELIER: LinkRow[] = cm2EnInterleave(
   CP_ADJ.map((_, i) => cm2EnLink("Relie chaque mot à sa forme pour comparer.", [0, 1, 2, 3].map((k) => CP_ADJ[(i + 2 * k) % 8]).map((a) => [a.en, a.comp] as const), `cp-comp:${i}`)),
   CP_ADJ.map((_, i) => cm2EnLink("Relie chaque mot à sa forme pour dire le plus.", [0, 1, 2, 3].map((k) => CP_ADJ[(i + 2 * k + 1) % 8]).map((a) => [a.en, a.sup] as const), `cp-sup:${i}`)),
-  CP_ADJ.map((_, i) => cm2EnLink("Relie chaque mot anglais à son sens en français.", [0, 1, 2, 3].map((k) => CP_ADJ[(i + 2 * k) % 8]).map((a) => [a.en, a.fr] as const), `cp-sens:${i}`)),
+  CP_ADJ.map((_, i) => cm2EnLink("Relie chaque mot anglais à son sens en français.", cpSens([0, 1, 2, 3].map((k) => CP_ADJ[(i + 2 * k) % 8])), `cp-sens:${i}`)),
 );
 
 const CP_GLISSER = [
@@ -774,14 +784,18 @@ const RD_TEXTS: readonly RdText[] = [
   },
 ];
 
+/**
+ * Chaque réplique n'a qu'UNE place : le bonjour et la première question sont dans la même réplique (sinon « Hello, Awa. How are you? » pourrait ouvrir le dialogue),
+ * et une réplique qui reprend la précédente le dit (« And you? », « too », « there », « Thank you. ») pour ne pas pouvoir passer devant.
+ */
 const RD_DIALOGUES: readonly (readonly string[])[] = [
-  ["Hello, Moussa.", "Hello, Awa. How are you?", "I am fine, thank you."],
-  ["Hello, Modou.", "Hello, Fatou. How are you?", "I am fine, thank you."],
-  ["How much is the book?", "It is two hundred francs.", "I would like the book, please."],
-  ["How much is the bag?", "It is five hundred francs.", "I would like the bag, please."],
-  ["Where are you going?", "I am going to the market.", "What are you going to buy?", "I am going to buy rice."],
+  ["Hello, Awa. How are you?", "I am fine, thank you. And you?", "I am fine too, thank you."],
+  ["Hello, Fatou. How are you?", "I am fine, thank you. And you?", "I am fine too, thank you."],
+  ["How much is the book?", "It is two hundred francs.", "Thank you. I would like the book, please."],
+  ["How much is the bag?", "It is five hundred francs.", "Thank you. I would like the bag, please."],
+  ["Where are you going?", "I am going to the market.", "What are you going to buy there?", "I am going to buy rice."],
   ["Excuse me, where is the post office?", "It is opposite the bank.", "Thank you."],
-  ["Hello, Fatou.", "Hello, Modou. What are you going to do tomorrow?", "I am going to visit my grandmother."],
+  ["Hello, Fatou. What are you going to do tomorrow?", "I am going to visit my grandmother. And you?", "I am going to help my father too."],
   ["Why are you sad?", "Because I am tired.", "Go to bed, then."],
 ];
 
@@ -809,7 +823,7 @@ const RD_ECRIRE: WriteRow[] = RD_TEXTS.flatMap((t, ti) =>
   })),
 );
 const RD_ORDRE: OrderRow[] = RD_DIALOGUES.map((lines, i) =>
-  ordr("Remets ce dialogue dans l'ordre, de la première à la dernière phrase.", lines, hints("Un dialogue commence par une question ou un bonjour.", "La réponse vient juste après la question.", "La dernière phrase répond ou remercie."), `rd:dialogue:${i}`),
+  ordr("Remets ce dialogue dans l'ordre, de la première à la dernière phrase.", lines, hints("Cherche la phrase qui ouvre la conversation.", "La réponse vient juste après la question.", "La dernière phrase répond ou remercie."), `rd:dialogue:${i}`),
 );
 const RD_RELIER: LinkRow[] = RD_TEXTS.map((t, ti) => ({
   fact: `rd:${ti}:pairs`,

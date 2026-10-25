@@ -20,7 +20,7 @@ const BY_PROMPT: Record<string, number> = {
   "un triangle équilatéral": 3,
   "un losange sans angle droit": 2,
   "un triangle qui a deux côtés égaux et un troisième plus long": 1,
-  "un parallélogramme sans angle droit": 0,
+  "un parallélogramme quelconque (ni losange, ni rectangle)": 0,
   "un triangle aux trois côtés inégaux": 0,
   "un pentagone régulier": 5,
   "un hexagone régulier": 6,
@@ -41,7 +41,7 @@ const BY_TILE: Record<string, number> = {
   "Un triangle équilatéral": 3,
   "Un losange sans angle droit": 2,
   "Un triangle à deux côtés égaux": 1,
-  "Un parallélogramme sans angle droit": 0,
+  "Un parallélogramme quelconque (ni losange, ni rectangle)": 0,
   "Un triangle aux trois côtés inégaux": 0,
   "Un pentagone régulier": 5,
   "Un hexagone régulier": 6,
@@ -56,7 +56,7 @@ const BY_TILE: Record<string, number> = {
   "La lettre N": 0,
 };
 const LETTERS = ["La lettre H", "La lettre X", "La lettre A", "La lettre T", "La lettre M", "La lettre F", "La lettre R", "La lettre Z", "La lettre N"];
-const SIMPLE = ["Un carré", "Un rectangle de 6 cm sur 4 cm", "Un triangle équilatéral", "Un parallélogramme sans angle droit", "Un triangle aux trois côtés inégaux"];
+const SIMPLE = ["Un carré", "Un rectangle de 6 cm sur 4 cm", "Un triangle équilatéral", "Un parallélogramme quelconque (ni losange, ni rectangle)", "Un triangle aux trois côtés inégaux"];
 const MORE = [...SIMPLE, "Un losange sans angle droit", "Un triangle à deux côtés égaux"];
 /** Les figures de chaque niveau (tuiles) : le niveau 2 réunit les paliers 2 et 3, qui servent les lettres au palier 3. */
 const TILES_BY_LEVEL: Record<GameLevel, readonly string[]> = {

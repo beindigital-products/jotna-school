@@ -197,10 +197,12 @@ const INS_NOMS: Pool = {
     },
     {
       id: "nom-sabar",
-      q: ["Quel tambour du Sénégal se joue avec une main et une baguette ?", "Quel tambour se frappe avec une main et une baguette ?"],
+      // Le tama se frappe aussi d'une main et d'une baguette courbe : le sabar est le GRAND tambour, et le tama n'est jamais un mauvais choix.
+      q: ["Quel grand tambour du Sénégal se joue avec une main et une baguette ?", "Quel grand tambour se frappe avec une main et une baguette ?"],
       a: "Sabar",
       also: ["Le sabar"],
-      s: ["Ce tambour joué avec une main et une baguette s'appelle ___.", "Le tambour à une main et une baguette est ___."],
+      not: ["Tama", "le tama"],
+      s: ["Ce grand tambour joué avec une main et une baguette s'appelle ___.", "Le grand tambour à une main et une baguette est ___."],
       ga: "le sabar",
       hint: "Il est joué pendant les fêtes sénégalaises.",
     },

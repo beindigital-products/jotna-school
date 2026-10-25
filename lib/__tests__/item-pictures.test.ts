@@ -1187,3 +1187,33 @@ describe("explainTilePictures : ce qui s'est passé", () => {
     expect(resolveTilePictures(tiles, ctx)).toEqual(explainTilePictures(tiles, ctx).pictures);
   });
 });
+
+describe("la phrase d'un texte à trous (`sentence`)", () => {
+  const TOOLS = ["le balai", "les ciseaux", "l'arrosoir"];
+
+  it("sans émoji, la phrase ne retire rien : les trois outils ont leur image", () => {
+    const result = explainTilePictures(TOOLS, { prompt: "Complète la phrase.", choice: true, sentence: "Pour balayer la cour, je prends ___." });
+    expect(result.guard).toBeNull();
+    expect(result.pictures.map((picture) => picture?.id)).toEqual(["balai", "ciseaux", "arrosoir"]);
+  });
+
+  it("l'émoji de la chose dans la phrase la trahit : aucune image (garde-fou b)", () => {
+    const result = explainTilePictures(TOOLS, { prompt: "Complète la phrase.", choice: true, sentence: "Pour balayer la cour 🧹, je prends ___." });
+    expect(result.guard).toBe("b");
+    expect(result.pictures).toEqual([null, null, null]);
+  });
+
+  it("les mots de la phrase ne comptent pas pour le garde-fou a : parler de lire n'est pas demander de lire", () => {
+    const tiles = ["le balai", "les ciseaux", "le marteau"];
+    expect(promptForbidsPictures("Je lis ___ avec maman.")).toBe(true);
+    const result = explainTilePictures(tiles, { prompt: "Complète la phrase.", choice: true, sentence: "Je lis ___ avec maman." });
+    expect(result.guard).toBeNull();
+    expect(result.pictures.every((picture) => picture !== null)).toBe(true);
+  });
+
+  it("une option sans image au milieu des autres les retire toutes (garde-fou d) : « Je dors dans mon ___. »", () => {
+    const result = explainTilePictures(["papa", "lit", "toto"], { prompt: "Complète la phrase.", choice: true, sentence: "Je dors dans mon ___." });
+    expect(result.recognized.map((picture) => picture?.id ?? null)).toEqual([null, "lit", null]);
+    expect(result.guard).toBe("d");
+  });
+});

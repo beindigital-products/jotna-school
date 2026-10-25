@@ -123,7 +123,6 @@ const AXES: Record<string, number> = {
   "un triangle équilatéral": 3,
   "un losange sans angle droit": 2,
   "un triangle qui a deux côtés égaux et un troisième plus long": 1,
-  "un parallélogramme sans angle droit": 0,
   "un triangle aux trois côtés inégaux": 0,
   "la lettre H": 2,
   "la lettre X": 2,
@@ -139,7 +138,7 @@ const LETTER_FIGURES = Object.keys(AXES).filter((name) => name.startsWith("la le
 const SIMPLE_FIGURES = ["un carré", "un rectangle de 6 cm sur 4 cm", "un triangle équilatéral"];
 const AXES_BY_LEVEL: Record<GameLevel, string[]> = {
   1: SIMPLE_FIGURES,
-  2: [...SIMPLE_FIGURES, "un losange sans angle droit", "un triangle qui a deux côtés égaux et un troisième plus long", "un parallélogramme sans angle droit"],
+  2: [...SIMPLE_FIGURES, "un losange sans angle droit", "un triangle qui a deux côtés égaux et un troisième plus long"],
   3: ["un rectangle de 6 cm sur 4 cm", "un losange sans angle droit", ...LETTER_FIGURES],
   4: Object.keys(AXES),
 };
@@ -346,7 +345,7 @@ const SYM_WRITE: Record<string, [number, GameLevel]> = {
   "Combien de sommets a un cylindre ?": [0, 4],
   "Combien de faces, d'arêtes et de sommets a un pavé droit en tout ?": [6 + 12 + 8, 4],
   "Combien d'axes de symétrie a un losange sans angle droit ?": [2, 4],
-  "Combien d'axes de symétrie a un parallélogramme sans angle droit ?": [0, 4],
+  "Combien d'axes de symétrie a la lettre Z ?": [0, 4],
 };
 
 const checkSymWrite: Check = (exo) => {

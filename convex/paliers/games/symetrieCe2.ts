@@ -11,9 +11,9 @@
  * - Un cube est un pavé droit particulier : quand la bonne réponse est « le cube » ou « le pavé droit », l'autre ne se propose pas dans les choix. Le
  *   cube et le pavé droit ont les mêmes nombres (six faces, douze arêtes, huit sommets) : aucune question ne demande lequel des deux a tant de faces.
  * - Le cylindre n'est compté que par ses sommets (aucun) : ses faces et ses arêtes se comptent de plusieurs façons, la fiche ne tranche pas.
- * - Les axes de symétrie sont ceux des figures simples (carré, rectangle de 6 cm sur 4 cm, triangle équilatéral, losange sans angle droit, parallélogramme
- *   sans angle droit, triangle aux côtés inégaux) et de quelques lettres capitales sans empattement (H, X, A, T, M, F, R, Z, N). Jamais le cercle, qui en a une
- *   infinité. Un rectangle est toujours donné avec ses mesures : un carré est un rectangle, et il a quatre axes.
+ * - Les axes de symétrie sont ceux des figures simples (carré, rectangle de 6 cm sur 4 cm, triangle équilatéral, losange sans angle droit, triangle aux côtés
+ *   inégaux) et de quelques lettres capitales sans empattement (H, X, A, T, M, F, R, Z, N). Jamais le cercle, qui en a une
+ *   infinité, ni le parallélogramme : « sans angle droit » ne l'écarte pas du losange (qui a deux axes), et la fiche du CE2 ne le nomme pas. Un rectangle est toujours donné avec ses mesures : un carré est un rectangle, et il a quatre axes.
  * - Un symétrique se compte en carreaux, en colonnes ou en lignes d'un quadrillage : un point à la même distance de la ligne de symétrie, de l'autre côté.
  * - Un énoncé n'a qu'une apostrophe droite : « A' » ne s'écrit pas, le symétrique s'appelle B.
  * - Aucun indice n'écrit un chiffre ni le mot de la bonne réponse.
@@ -40,7 +40,6 @@ const RECTANGLE = figure("un rectangle de 6 cm sur 4 cm", "Le rectangle de 6 cm 
 const EQUILATERAL = figure("un triangle équilatéral", "Le triangle équilatéral", 3);
 const RHOMBUS = figure("un losange sans angle droit", "Le losange sans angle droit", 2);
 const TWO_EQUAL = figure("un triangle qui a deux côtés égaux et un troisième plus long", "Le triangle à deux côtés égaux", 1);
-const PARALLELOGRAM = figure("un parallélogramme sans angle droit", "Le parallélogramme sans angle droit", 0);
 const UNEQUAL = figure("un triangle aux trois côtés inégaux", "Le triangle aux côtés inégaux", 0);
 
 export const LETTERS: readonly Figure[] = [letter("H", 2), letter("X", 2), letter("A", 1), letter("T", 1), letter("M", 1), letter("F", 0), letter("R", 0), letter("Z", 0), letter("N", 0)];
@@ -49,9 +48,9 @@ const [H, , A, , , F] = LETTERS;
 /** Les figures dont on compte les axes, selon le palier : trois figures simples, puis six, puis des lettres, puis tout. */
 export const FIGURES_BY_LEVEL: Record<GameLevel, readonly Figure[]> = {
   1: [SQUARE, RECTANGLE, EQUILATERAL],
-  2: [SQUARE, RECTANGLE, EQUILATERAL, RHOMBUS, TWO_EQUAL, PARALLELOGRAM],
+  2: [SQUARE, RECTANGLE, EQUILATERAL, RHOMBUS, TWO_EQUAL],
   3: [RECTANGLE, RHOMBUS, ...LETTERS],
-  4: [SQUARE, RECTANGLE, EQUILATERAL, RHOMBUS, TWO_EQUAL, PARALLELOGRAM, UNEQUAL, ...LETTERS],
+  4: [SQUARE, RECTANGLE, EQUILATERAL, RHOMBUS, TWO_EQUAL, UNEQUAL, ...LETTERS],
 };
 
 /** Les choix de « lequel a exactement… axes » : des figures dont le nom n'est pas ambigu (jamais « le rectangle » sans mesures), au plus vingt-trois caractères. */
@@ -304,7 +303,7 @@ export function makeCe2SymLinks(ctx: GameContext): GeneratedGame {
 export const FLAT_FIGURES = ["Le carré", "Le rectangle", "Le triangle", "Le cercle"] as const;
 export const SOLID_NAMES = ["Le cube", "Le pavé droit", "Le cylindre", "La boule", "La pyramide"] as const;
 export const WITH_AXIS = ["Un carré", "Un rectangle de 6 cm sur 4 cm", "Un triangle équilatéral", "La lettre H", "La lettre A", "La lettre T"] as const;
-export const WITHOUT_AXIS = ["Un parallélogramme sans angle droit", "Un triangle aux trois côtés inégaux", "La lettre F", "La lettre R", "La lettre Z"] as const;
+export const WITHOUT_AXIS = ["Un triangle aux trois côtés inégaux", "La lettre F", "La lettre R", "La lettre Z", "La lettre N"] as const;
 
 /** Seize glissés : huit « figure plate ou solide » (paliers 1 et 2), huit « au moins un axe ou aucun » (paliers 3 et 4). */
 export const SORT_ROWS = [
@@ -394,7 +393,7 @@ export const WRITE_ROWS = [
   write("Combien de sommets a un cylindre ?", 0),
   write("Combien de faces, d'arêtes et de sommets a un pavé droit en tout ?", 26),
   write("Combien d'axes de symétrie a un losange sans angle droit ?", 2),
-  write("Combien d'axes de symétrie a un parallélogramme sans angle droit ?", 0),
+  write("Combien d'axes de symétrie a la lettre Z ?", 0),
 ];
 
 /** « Combien d'arêtes a un cube ? Écris le nombre. » : une réponse courte. */

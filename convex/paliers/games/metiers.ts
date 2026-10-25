@@ -183,37 +183,37 @@ export function makeJobOrder(ctx: GameContext): GeneratedGame {
 export const JOB_WORDS: readonly { prompt: string; accepted: readonly string[]; hint: string }[] = [
   {
     prompt: "Dans un jeu de rôles, tu lances un filet à la mer pour attraper des poissons. Quel métier joues-tu ? Écris le mot.",
-    accepted: ["pêcheur", "un pêcheur", "le pêcheur"],
+    accepted: ["pêcheur", "un pêcheur", "le pêcheur", "pêcheuse", "une pêcheuse", "la pêcheuse"],
     hint: "Il va sur l'eau, en pirogue.",
   },
   {
     prompt: "Dans un jeu de rôles, tu pèses des mangues et tu les vends au marché. Quel métier joues-tu ? Écris le mot.",
-    accepted: ["vendeur", "un vendeur", "le vendeur", "vendeuse", "une vendeuse", "marchand", "un marchand", "le marchand"],
+    accepted: ["vendeur", "un vendeur", "le vendeur", "vendeuse", "une vendeuse", "la vendeuse", "marchand", "un marchand", "le marchand", "marchande", "une marchande", "la marchande"],
     hint: "Il crie le prix de ses fruits.",
   },
   {
     prompt: "Dans un jeu de rôles, tu fais cuire du pain dans un four. Quel métier joues-tu ? Écris le mot.",
-    accepted: ["boulanger", "un boulanger", "le boulanger"],
+    accepted: ["boulanger", "un boulanger", "le boulanger", "boulangère", "une boulangère", "la boulangère"],
     hint: "Il se lève très tôt pour que le pain soit chaud.",
   },
   {
     prompt: "Dans un jeu de rôles, tu couds des habits avec du fil et une aiguille. Quel métier joues-tu ? Écris le mot.",
-    accepted: ["tailleur", "un tailleur", "le tailleur", "couturier", "un couturier", "le couturier"],
+    accepted: ["tailleur", "un tailleur", "le tailleur", "tailleuse", "une tailleuse", "la tailleuse", "couturier", "un couturier", "le couturier", "couturière", "une couturière", "la couturière"],
     hint: "Il prend les mesures de ses clients.",
   },
   {
     prompt: "Dans un jeu de rôles, tu tiens un volant et tu conduis le car. Quel métier joues-tu ? Écris le mot.",
-    accepted: ["chauffeur", "un chauffeur", "le chauffeur", "conducteur", "un conducteur", "le conducteur"],
+    accepted: ["chauffeur", "un chauffeur", "le chauffeur", "chauffeuse", "une chauffeuse", "la chauffeuse", "conducteur", "un conducteur", "le conducteur", "conductrice", "une conductrice", "la conductrice"],
     hint: "Il emmène les gens d'une ville à l'autre.",
   },
   {
     prompt: "Dans un jeu de rôles, tu travailles la terre du champ avec une daba. Quel métier joues-tu ? Écris le mot.",
-    accepted: ["cultivateur", "un cultivateur", "le cultivateur", "paysan", "un paysan", "le paysan"],
+    accepted: ["cultivateur", "un cultivateur", "le cultivateur", "cultivatrice", "une cultivatrice", "la cultivatrice", "paysan", "un paysan", "le paysan", "paysanne", "une paysanne", "la paysanne", "agriculteur", "un agriculteur", "l'agriculteur", "agricultrice", "une agricultrice", "l'agricultrice"],
     hint: "Il sème le mil et attend la pluie.",
   },
   {
     prompt: "Dans un jeu de rôles, tu écris au tableau et tu apprends à lire aux élèves. Quel métier joues-tu ? Écris le mot.",
-    accepted: ["maître", "un maître", "le maître", "maîtresse", "une maîtresse", "la maîtresse", "instituteur", "un instituteur", "institutrice", "une institutrice"],
+    accepted: ["maître", "un maître", "le maître", "maîtresse", "une maîtresse", "la maîtresse", "instituteur", "un instituteur", "l'instituteur", "institutrice", "une institutrice", "l'institutrice"],
     hint: "Il travaille dans la classe, devant les élèves.",
   },
   {

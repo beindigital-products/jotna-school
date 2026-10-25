@@ -239,8 +239,13 @@ export const IMPARFAIT_WRITE_ROWS: readonly WriteRow[] = [
   composeWrite("prendre", "vous", "avez pris"),
 ];
 
+/**
+ * L'énoncé nomme le temps : un mauvais choix est au présent, et « Tous les soirs, Awa raconte une histoire » est juste au présent d'habitude
+ * quand l'énoncé dit seulement « Complète la phrase » (défaut relevé en production le 25 octobre 2026).
+ */
+export const IMPARFAIT_GAP_PROMPT = "Complète la phrase avec le verbe à l'imparfait.";
 export function makeCe2ImparfaitGap(ctx: GameContext): GeneratedGame {
-  return ce2Gap(ctx, "ce2-imparfait-forme", IMPARFAIT, IMPARFAIT_GAP_ROWS, 2);
+  return ce2Gap(ctx, "ce2-imparfait-forme", IMPARFAIT, IMPARFAIT_GAP_ROWS, 2, 0, IMPARFAIT_GAP_PROMPT);
 }
 export function makeCe2TenseChoice(ctx: GameContext): GeneratedGame {
   return ce2Question(ctx, "ce2-imparfait-choisir", IMPARFAIT, TENSE_CHOICE_ROWS, 1, (row) => `${row.prompt}|${row.answer}`);
@@ -424,8 +429,10 @@ export const IMPERATIF_WRITE_ROWS: readonly WriteRow[] = [
 export function makeCe2ImperatifGap(ctx: GameContext): GeneratedGame {
   return ce2Gap(ctx, "ce2-imperatif-forme", IMPERATIF, IMPERATIF_GAP_ROWS, 2);
 }
+/** L'énoncé nomme le temps : « Demain, je vais au marché » (présent à valeur de futur) est juste, et un mauvais choix est au présent. */
+export const FUTUR_GAP_PROMPT = "Complète la phrase avec le verbe au futur.";
 export function makeCe2FuturGap(ctx: GameContext): GeneratedGame {
-  return ce2Gap(ctx, "ce2-futur-forme", IMPERATIF, FUTUR_GAP_ROWS, 2);
+  return ce2Gap(ctx, "ce2-futur-forme", IMPERATIF, FUTUR_GAP_ROWS, 2, 0, FUTUR_GAP_PROMPT);
 }
 export function makeCe2ImperatifChoice(ctx: GameContext): GeneratedGame {
   return ce2Question(ctx, "ce2-imperatif-choisir", IMPERATIF, IMPERATIF_CHOICE_ROWS, 1, (row) => row.answer);

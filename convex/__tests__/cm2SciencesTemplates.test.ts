@@ -109,6 +109,9 @@ const ASSOC: Record<string, string[]> = {
   "recoltes plus petites": ["conséquence a un sol épuisé", "récoltes quand le sol est épuisé", "sol fatigué sur les récoltes"],
   "moins de poissons a vendre": ["rapportent les pêcheurs au port", "surpêche pour les familles de pêcheurs", "prises des pêcheurs"],
   "plantes qui sechent": ["plantes quand l'eau manque", "long manque d'eau", "cultures quand il ne pleut presque plus"],
+  // Des intrus sans lien avec le sol, la pêche ou la sécheresse : « des récoltes plus petites » était aussi juste pour un manque d'eau.
+  "rivieres plus pleines": [],
+  "arbres plus nombreux": [],
   // ---------------------------------------------------------------------------------------------------------------- SANTÉ
   "consultation prenatale": ["visite de santé d'une femme enceinte", "visite au centre de santé suit la grossesse", "rendez-vous de santé aide la mère", "visite de santé avant la naissance", "femme enceinte va au centre de santé"],
   vaccination: ["protège l'enfant contre des maladies grâce à un vaccin", "geste fait au centre de santé protège les enfants", "bébé au centre de santé pour ne pas tomber", "protège l'enfant grâce à un vaccin", "bébé qui reçoit son vaccin"],
@@ -149,7 +152,7 @@ const CHAINS: { when: RegExp; chain: string[] }[] = [
   { when: /repas de la journee/, chain: ["Petit-déjeuner", "Déjeuner", "Goûter", "Dîner"] },
   { when: /preparer un repas/, chain: ["Acheter les aliments", "Laver les légumes", "Cuire le repas", "Servir le repas"] },
   { when: /etapes de la jachere/, chain: ["On cultive le champ", "Le sol s'épuise", "On laisse le champ au repos", "Le sol retrouve sa richesse"] },
-  { when: /pecheur responsable/, chain: ["Jeter le filet", "Remonter le filet", "Rejeter les petits poissons", "Garder les gros poissons"] },
+  { when: /pecheur responsable/, chain: ["Jeter le filet", "Remonter le filet", "Rejeter les petits poissons", "Vendre les gros poissons au marché"] },
   { when: /laver les mains sans gaspiller/, chain: ["Mouiller les mains", "Fermer le robinet", "Se savonner", "Rouvrir pour rincer"] },
   { when: /refaire un petit bois/, chain: ["Choisir un terrain", "Planter les jeunes arbres", "Arroser les jeunes arbres", "Attendre que les arbres grandissent"] },
   { when: /arroser un jardin/, chain: ["Remplir l'arrosoir", "Porter l'arrosoir au jardin", "Arroser au pied des plantes", "Replacer l'arrosoir"] },
@@ -157,7 +160,7 @@ const CHAINS: { when: RegExp; chain: string[] }[] = [
   { when: /moments de la vie d un bebe/, chain: ["Consultation prénatale", "Naissance", "Premier vaccin"] },
   { when: /moments de la vie d un enfant/, chain: ["Naissance", "Premier anniversaire", "Entrée à l'école"] },
   { when: /visite de vaccination/, chain: ["Aller au centre de santé", "Montrer le carnet", "Recevoir le vaccin", "Noter le vaccin dans le carnet"] },
-  { when: /gestes d une consultation prenatale/, chain: ["Arriver au centre de santé", "Se faire peser", "Parler avec la sage-femme", "Prendre le prochain rendez-vous"] },
+  { when: /gestes d une consultation prenatale/, chain: ["Prendre le carnet de santé", "Arriver au centre de santé", "Être examinée par la sage-femme", "Prendre le prochain rendez-vous"] },
 ];
 
 const PAIRS: [string, string][] = [
@@ -190,7 +193,7 @@ const PAIRS: [string, string][] = [
   ["Carnet de santé", "Noter les vaccins"], ["Centre de santé", "Soigner et vacciner"], ["Lait maternel", "Nourrir et protéger"],
   ["VIH", "Virus"], ["Sida", "Maladie"], ["Vaccin", "Protection"],
   ["Sage-femme", "Suit la grossesse"], ["Infirmier", "Vaccine l'enfant"], ["Mère", "Allaite son bébé"],
-  ["Femme enceinte", "Consultation prénatale"], ["Bébé", "Lait maternel"], ["Enfant", "Vaccins"],
+  ["Femme enceinte", "Consultation prénatale"], ["Bébé", "Lait maternel"], ["Personne séropositive", "Traitement chaque jour"],
 ];
 
 const MEMBERS: Record<string, string[]> = {
@@ -273,6 +276,37 @@ describe("les vérifications voient un énoncé abîmé", () => {
     const san = checkOf("cm2-san-qcm");
     expect(san(qcm("Quel virus cause le sida ?", ["VIH", "Paludisme", "Rougeole"], 0))).toBeNull();
     expect(san(qcm("Quel virus cause le sida ?", ["Sida", "Paludisme", "Rougeole"], 0))).not.toBeNull();
+  });
+});
+
+describe("l'indice de la première lettre ne trompe pas", () => {
+  const initial = (text: string) =>
+    text
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/^(le |la |les |l'|un |une |des |du |de la |de l')/i, "")
+      .charAt(0)
+      .toUpperCase();
+
+  it("ne nomme jamais A, B ou C dans un QCM (ses choix portent ces lettres), ni une lettre que porte aussi un mauvais choix", () => {
+    for (const entry of allProgrammeEntries()) {
+      if (!(entry.topic.key in TOPIC_KINDS)) continue;
+      for (let n = 0; n < 10; n++)
+        for (let palier = 1; palier <= 5; palier++) {
+          const games = generateGames(entry.topic.games ?? [], { klass: "CM2", palierIndex: palier, palierCount: 5, seed: `lettre:${entry.topic.key}:${n}:${palier}` });
+          for (const game of games) {
+            const letter = game.hints.map((hint) => /^La réponse commence par la lettre ([A-Z])\.$/.exec(hint)?.[1]).find((found) => found !== undefined);
+            if (letter === undefined) continue;
+            const qcm = game.type === "qcm";
+            const blank = (game.payload.blanks as { options: string[]; answer: string }[] | undefined)?.[0];
+            const options = qcm ? (game.payload.options as string[]) : (blank?.options ?? []);
+            const answer = qcm ? options[game.payload.correctIndex as number] : blank?.answer;
+            const wrong = options.filter((option) => option !== answer);
+            expect(qcm && ["A", "B", "C"].includes(letter), `${game.prompt} : « lettre ${letter} » sur un QCM`).toBe(false);
+            expect(wrong.filter((option) => initial(option) === letter), `${game.prompt} : la lettre ${letter} ne départage rien`).toEqual([]);
+          }
+        }
+    }
   });
 });
 

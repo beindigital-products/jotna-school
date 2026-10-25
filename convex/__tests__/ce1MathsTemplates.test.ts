@@ -291,6 +291,13 @@ const checkBracket: Check = (exo) => {
     ok(rightOption(exo) === `${fmt(low)} et ${fmt(low + unit)}`, `${n} est entre ${low} et ${low + unit}, pas ${rightOption(exo)}`),
     ok(pairs.every(([a, b]) => b - a === unit && a % unit === 0 && b <= cap && a >= 0), `des bornes qui ne se suivent pas : ${optionsOf(exo).join(" | ")}`),
     ok(n >= LO[cap] && n <= TOP[cap][level], `${n} sort de la plage`),
+    // Les indices s'accordent comme l'énoncé : « le millier … le plus petit », « la centaine … la plus petite ».
+    ok(
+      unit === 1000
+        ? /^Cherche le millier /u.test(exo.hints[0]) && /le plus petit et plus petit que le plus grand\./u.test(exo.hints[1])
+        : /^Cherche la (dizaine|centaine) /u.test(exo.hints[0]) && /la plus petite et plus petit que la plus grande\./u.test(exo.hints[1]),
+      `l'accord des indices : ${exo.hints.slice(0, 2).join(" | ")}`,
+    ),
   );
 };
 
@@ -978,8 +985,10 @@ describe("les vérifications voient une bonne réponse abîmée", () => {
   });
 
   it("voient un mauvais accord de « quel » : « quels milliers », mais « quelles dizaines » et « quelles centaines »", () => {
+    const masculine = ["Cherche le millier juste en dessous du nombre.", "Le nombre est plus grand que le plus petit et plus petit que le plus grand."];
+    const feminine = ["Cherche la centaine juste en dessous du nombre.", "Le nombre est plus grand que la plus petite et plus petit que la plus grande."];
     const bracket = (prompt: string, options: string[], meta: { level: number; vocabulary?: string }) =>
-      ({ type: "qcm", prompt, answerKey: options[0], hints: [], payload: { options, correctIndex: 0, game: { kind: "ce1-nb-encadrer", ...meta } } }) as Exo;
+      ({ type: "qcm", prompt, answerKey: options[0], hints: meta.level === 3 ? masculine : feminine, payload: { options, correctIndex: 0, game: { kind: "ce1-nb-encadrer", ...meta } } }) as Exo;
     const thousands = (prompt: string) => bracket(prompt, ["2 000 et 3 000", "1 000 et 2 000", "3 000 et 4 000"], { level: 3, vocabulary: "nombres-10000" });
     expect(CHECKS["ce1-nb-encadrer"](thousands("Entre quels milliers se trouve 2 209 ?"))).toBeNull();
     expect(CHECKS["ce1-nb-encadrer"](thousands("Entre quelles milliers se trouve 2 209 ?"))).not.toBeNull();
@@ -988,6 +997,9 @@ describe("les vérifications voient une bonne réponse abîmée", () => {
     expect(CHECKS["ce1-nb-encadrer"](hundreds("Entre quels centaines se trouve 345 ?"))).not.toBeNull();
     const tens = bracket("Entre quels dizaines se trouve 345 ?", ["340 et 350", "330 et 340", "350 et 360"], { level: 1, vocabulary: "nombres-1000" });
     expect(CHECKS["ce1-nb-encadrer"](tens)).not.toBeNull();
+    // Les indices s'accordent aussi : « la millier » et « la plus petite » devant un millier sont des fautes.
+    const wrongGender = { ...thousands("Entre quels milliers se trouve 2 209 ?"), hints: feminine };
+    expect(CHECKS["ce1-nb-encadrer"](wrongGender)).not.toBeNull();
   });
 
   it("écrivent « quels milliers » et « quelles » devant les dizaines et les centaines, aux deux plafonds et à quatre niveaux", () => {

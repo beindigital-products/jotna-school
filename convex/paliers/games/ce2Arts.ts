@@ -188,10 +188,20 @@ function changedSteps(ctx: GameContext, steps: readonly number[], position: numb
   return next;
 }
 
+/** Le trou n'oppose que « monte » et « descend » sur une mélodie toujours dans un seul sens : la première et la dernière note suffisent. */
 const MELODY_HINTS = hints(
   "Compare la première note avec la dernière.",
   "Les notes vont de do à si dans cet ordre : do, ré, mi, fa, sol, la, si.",
   "Une dernière note plus loin que la première fait aller la mélodie vers le haut.",
+);
+/**
+ * Le QCM a un mauvais choix qui change de sens en route, et sa dernière note peut être plus loin que la première : comparer les deux
+ * bouts le désignerait. Les indices font suivre les notes une à une.
+ */
+const MELODY_CHOICE_HINTS = hints(
+  "Suis les notes une à une, sans en sauter.",
+  "Les notes vont de do à si dans cet ordre : do, ré, mi, fa, sol, la, si.",
+  "Une mélodie qui change de sens en route ne va ni toujours vers le haut ni toujours vers le bas.",
 );
 const SAME_HINTS = hints("Compare les deux mélodies note par note.", "Deux mélodies pareilles ont toutes leurs notes pareilles.", "Une seule note changée suffit à les rendre différentes.");
 
@@ -215,7 +225,7 @@ export function makeCe2MelodyChoice(ctx: GameContext): GeneratedGame {
     const right = rising ? base : [...base].reverse();
     const opposite = rising ? [...base].reverse() : base;
     const wrong = [spell(opposite), spell(zigzagSteps(ctx, count))];
-    return { prompt: rising ? "Quelle mélodie monte ?" : "Quelle mélodie descend ?", answer: spell(right), wrong, hints: MELODY_HINTS };
+    return { prompt: rising ? "Quelle mélodie monte ?" : "Quelle mélodie descend ?", answer: spell(right), wrong, hints: MELODY_CHOICE_HINTS };
   });
 }
 
@@ -259,10 +269,14 @@ const ANTHEM_ROWS: readonly QuestionRow[] = inFactOrder(
   ANTHEM_FACTS,
 );
 
-const ANTHEM_DO = ["Se tenir debout", "Se tenir droit", "Chanter avec les autres", "Écouter en silence"] as const;
+/**
+ * Ce qu'on fait pendant l'hymne : tout le monde le chante, donc « Écouter en silence » n'y est pas (un élève qui a retenu qu'on chante
+ * en chœur la rangerait dans l'autre case). L'énoncé dit « pendant l'hymne » : hors de la cérémonie, jouer avec ses amis est normal.
+ */
+const ANTHEM_DO = ["Se tenir debout", "Se tenir droit", "Chanter avec les autres", "Rester immobile"] as const;
 const ANTHEM_DONT = ["Bavarder", "S'asseoir par terre", "Jouer avec ses amis", "Rire fort"] as const;
 const ANTHEM_SORT_ROWS: readonly SortRow[] = sortRows(
-  "Glisse chaque geste dans la bonne case.",
+  "Pendant l'hymne national, glisse chaque geste dans la bonne case.",
   ["On le fait", "On ne le fait pas"],
   ANTHEM_DO,
   ANTHEM_DONT,
@@ -286,7 +300,7 @@ const ANTHEM_LINK_ROWS: readonly LinkRow[] = combinations(ANTHEM_LINK_POOL, 3)
   }));
 
 const ANTHEM_ORDER_ROWS: readonly OrderRow[] = [
-  ordr("Mets ces étapes dans l'ordre du temps pour composer un petit chant.", ["Choisir un thème", "Trouver les paroles", "Inventer la mélodie", "Chanter devant la classe"], hints("Tout commence par une idée.", "Les mots viennent avant la musique.", "Le chant se montre à la fin."), "hymne:composer"),
+  ordr("Mets ces étapes dans l'ordre du temps pour composer un petit chant.", ["Choisir un thème", "Inventer les paroles et la mélodie", "Répéter plusieurs fois", "Chanter devant la classe"], hints("Tout commence par une idée.", "On crée avant de s'entraîner.", "Le public écoute à la fin."), "hymne:composer"),
   ordr("Mets ces gestes dans l'ordre du temps au lever des couleurs.", ["Les élèves se rangent", "On se tient droit", "On chante l'hymne"], hints("Il faut d'abord se mettre en place.", "Ensuite on adopte une bonne posture.", "Le chant vient à la fin."), "hymne:quand"),
   ordr("Mets ces étapes dans l'ordre du temps pour accompagner un chant.", ["On apprend le chant", "On choisit des gestes et un instrument", "On répète ensemble", "On chante avec l'accompagnement"], hints("Il faut d'abord se familiariser un peu.", "Ensuite on prépare de quoi embellir.", "Le résultat se montre à la fin."), "hymne:accompagner"),
   ordr("Mets ces étapes dans l'ordre du temps pour apprendre un chant.", ["On écoute le chant", "On le chante phrase par phrase", "On le chante en entier"], hints("Il faut d'abord l'entendre.", "On avance par petits morceaux.", "Le résultat final vient à la fin."), "hymne:chanter"),
@@ -302,7 +316,7 @@ const ANTHEM_GAP_ROWS: readonly GapRow[] = inFactOrder(
     gr("Le Lion rouge est notre hymne ___.", "national", ["familial", "étranger"], hints("Pense à tout le pays.", "Il est chanté par tous les Sénégalais.", "Le mot commence par la lettre n."), "hymne:titre"),
     gr("Dans un chant, les mots s'appellent les ___.", "paroles", ["notes", "gestes"], hints("Pense à ce qu'on chante.", "Ce sont les mots du chant.", "Le mot commence par la lettre p."), "hymne:composer"),
     gr("Pour chanter ensemble, on suit la même ___.", "mélodie", ["recette", "route"], hints("Pense à la musique du chant.", "Elle monte ou descend.", "Le mot commence par la lettre m."), "hymne:chanter"),
-    gr("Au lever des couleurs, tous les élèves chantent ___.", "ensemble", ["seuls", "dehors"], hints("Pense à ceux qui sont rangés.", "Personne ne chante tout seul.", "Le mot commence par la lettre e."), "hymne:chanter"),
+    gr("Au lever des couleurs, tous les élèves chantent ___.", "ensemble", ["seuls", "couchés"], hints("Pense à ceux qui sont rangés.", "Personne ne chante tout seul.", "Le mot commence par la lettre e."), "hymne:chanter"),
     gr("Quand on invente un petit chant, on le ___.", "compose", ["mange", "vend"], hints("Pense à ce qu'on fait avec des mots et des notes.", "On l'invente.", "Le verbe commence par la lettre c."), "hymne:composer"),
     gr("On chante l'hymne avec ___ et respect.", "sérieux", ["colère", "paresse"], hints("Pense à une cérémonie importante.", "On ne rit pas.", "Le mot commence par la lettre s."), "hymne:respect"),
     gr("Pour mettre un chant en valeur, on peut ajouter des ___.", "gestes", ["devoirs", "légumes"], hints("Pense à ce que font les mains.", "On bouge en chantant.", "Le mot commence par la lettre g."), "hymne:accompagner"),
@@ -314,7 +328,7 @@ const ANTHEM_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
   [
     wr("Quel est le titre de l'hymne national ? Écris les trois mots.", ["le lion rouge", "Le Lion rouge"], hints("Pense à un animal et à une couleur.", "C'est le nom de notre hymne.", "Le premier mot est un article."), "hymne:titre"),
     wr("Qui a écrit les paroles de l'hymne national ? Écris son nom de famille.", ["senghor", "Senghor"], hints("Pense à un grand poète sénégalais.", "Il a aussi dirigé le pays.", "Son nom commence par la lettre S."), "hymne:auteur"),
-    wr("Au lever de quoi chante-t-on l'hymne ? Écris le mot.", ["couleurs", "des couleurs"], hints("Pense au drapeau qui monte.", "C'est une cérémonie du matin.", "Le mot commence par la lettre c."), "hymne:quand"),
+    wr("Au lever de quoi chante-t-on l'hymne ? Écris le mot.", ["couleurs", "des couleurs", "drapeau", "du drapeau", "le drapeau"], hints("Pense à ce qui monte au mât le matin.", "C'est une cérémonie du matin.", "Le mot commence par la lettre c."), "hymne:quand"),
     wr("Comment se tient-on pendant l'hymne ? Écris le mot.", ["debout"], hints("Pense à une posture respectueuse.", "On ne bouge pas.", "Le mot commence par la lettre d."), "hymne:tenue"),
     wr("Avec quoi accompagne-t-on un chant, en plus des gestes ? Écris le mot.", ["instruments", "instrument", "un instrument"], hints("Pense à ce qui fait de la musique.", "Il y en a de toutes sortes.", "Le mot commence par la lettre i."), "hymne:accompagner"),
     wr("Comment appelle-t-on les mots d'un chant ? Écris le mot.", ["paroles", "les paroles"], hints("Pense à ce qu'on chante.", "Ce sont les mots du chant.", "Le mot commence par la lettre p."), "hymne:composer"),
@@ -422,7 +436,7 @@ const STAGE_LINK_ROWS: readonly LinkRow[] = combinations(STAGE_LINK_POOL, 3)
   }));
 
 const STAGE_ORDER_ROWS: readonly OrderRow[] = [
-  ordr("Mets ces étapes dans l'ordre du temps pour préparer une saynète.", ["Choisir le sujet", "Écrire les répliques", "Distribuer les rôles", "Répéter la scène", "Jouer devant le public"], hints("Tout commence par une idée.", "Les mots et les personnages se préparent avant l'entraînement.", "Les spectateurs viennent à la fin."), "mot:saynète"),
+  ordr("Mets ces étapes dans l'ordre du temps pour préparer une saynète.", ["Choisir le sujet", "Écrire les répliques", "Répéter la scène", "Jouer devant le public"], hints("Tout commence par une idée.", "Les mots se préparent avant l'entraînement.", "Les spectateurs viennent à la fin."), "mot:saynète"),
   ordr("Mets ces étapes dans l'ordre du temps.", ["Distribuer les rôles", "Apprendre ses répliques", "Répéter ensemble", "Jouer la saynète"], hints("Chacun reçoit d'abord son personnage.", "Il faut connaître ses mots.", "Le spectacle vient après l'entraînement."), "mot:répéter"),
   ordr("Mets ces événements dans l'ordre du temps.", ["Le vendeur installe ses mangues", "Le client demande le prix", "Ils discutent et se mettent d'accord", "Le client paie et repart"], hints("Tout commence par l'installation de l'étal.", "L'acheteur pose une question.", "La vente se termine par un paiement."), "scène:marché"),
   ordr("Mets ces événements dans l'ordre du temps.", ["Un malade arrive", "L'infirmière l'examine", "Elle lui donne un médicament"], hints("Tout commence par l'arrivée de quelqu'un.", "L'examen vient avant les soins.", "Les soins se terminent par un remède."), "scène:dispensaire"),

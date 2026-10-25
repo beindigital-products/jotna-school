@@ -99,7 +99,8 @@ function valid(family: Family, c: Context): string[] {
     case "ce/se":
       add(next !== undefined && REFLEXIVE.has(next), "se");
       add(adjectiveThenNoun(isMasculineSingular), "ce");
-      add(c.first === "je" && next !== undefined && VERB.has(next) && next !== "connais", "me");
+      // « ceux » ne va que devant « qui », « que », « de » ou « dont » (« ceux qui jouent ») : jamais devant un nom ni devant un verbe.
+      add(next !== undefined && ["qui", "que", "de", "dont"].includes(next), "ceux");
       break;
     case "leur/leurs":
       add(adjectiveThenNoun(isPluralNoun), "leurs");
@@ -197,6 +198,20 @@ const checkError: Check = (exo) => {
   );
 };
 
+/** Les mots que l'énoncé du mot à écrire doit nommer : les homophones de la famille, sans le troisième mot plausible. */
+const NAMED: Record<Family, readonly string[]> = {
+  "a/à": ["a", "à"],
+  "et/est": ["et", "est"],
+  "on/ont": ["on", "ont"],
+  "son/sont": ["son", "sont"],
+  "ou/où": ["ou", "où"],
+  "ces/ses": ["ces", "ses"],
+  "ce/se": ["ce", "se"],
+  "leur/leurs": ["leur", "leurs"],
+  "mais/mes": ["mais", "mes"],
+  "la/l'a/là": ["la", "l'a", "là"],
+};
+
 const checkWrite: Check = (exo) => {
   const sentence = exo.prompt.match(/« (.+) »/u)?.[1] ?? "";
   const answer = exo.answerKey;
@@ -204,7 +219,14 @@ const checkWrite: Check = (exo) => {
     const found = validForGap(sentence, family);
     return found.length === 1 && found[0] === answer;
   });
-  return all(ok(fitting.length > 0, `aucune famille de « ${answer} » n'a ce seul mot pour « ${sentence} »`), ok(acceptedOf(exo)[0] === answer, "réponse admise"));
+  // Un trou libre a plusieurs réponses justes (« Je connais ___ garçon » : le, mon, ton) : l'énoncé nomme toujours le choix, entre parenthèses, avant la phrase.
+  const named = exo.prompt.match(/^[^«]*\(([^)]+)\)/u)?.[1]?.split(/, | ou /u) ?? [];
+  const namesFamily = fitting.some((family) => [...named].sort().join("|") === [...NAMED[family]].sort().join("|"));
+  return all(
+    ok(fitting.length > 0, `aucune famille de « ${answer} » n'a ce seul mot pour « ${sentence} »`),
+    ok(acceptedOf(exo)[0] === answer, "réponse admise"),
+    ok(namesFamily, `l'énoncé ne nomme pas la paire d'homophones : ${exo.prompt}`),
+  );
 };
 
 const checkSort: Check = (exo) => {
@@ -344,6 +366,18 @@ describe("les vérifications des homophones voient un énoncé abîmé", () => {
     expect(checkPhrase(qcm("Quelle phrase est bien écrite ?", ["Moussa va à Dakar.", "Moussa va a Dakar.", "Moussa va as Dakar."], 1))).not.toBeNull();
     expect(checkError(qcm("Quel mot est mal écrit dans la phrase « Awa à un beau livre. » ?", ["à", "Awa", "livre"], 0))).toBeNull();
     expect(checkError(qcm("Quel mot est mal écrit dans la phrase « Awa a un beau livre. » ?", ["a", "Awa", "livre"], 0))).not.toBeNull();
+  });
+
+  it("le mot à écrire : l'énoncé nomme la paire, sinon le trou est libre", () => {
+    const write = (prompt: string, answer: string) => ({ type: "short-answer", prompt, answerKey: answer, hints: [], payload: { acceptedAnswers: [answer] } }) as Exo;
+    expect(checkWrite(write("Écris le mot qui manque (ce ou se) dans la phrase « Je connais ___ garçon. ».", "ce"))).toBeNull();
+    expect(checkWrite(write("Écris le mot qui manque dans la phrase « Je connais ___ garçon. ».", "ce"))).not.toBeNull();
+    expect(checkWrite(write("Écris le mot qui manque (a ou à) dans la phrase « Je connais ___ garçon. ».", "ce"))).not.toBeNull();
+    expect(checkWrite(write("Écris le mot qui manque (la, l'a ou là) dans la phrase « Le livre ? Il est ___ ! ».", "là"))).toBeNull();
+  });
+
+  it("« me » n'est pas un faux choix de ce/se : « Il me lave les mains » est juste", () => {
+    expect(FAMILIES["ce/se"]).not.toContain("me");
   });
 
   it("l'astuce de remplacement", () => {

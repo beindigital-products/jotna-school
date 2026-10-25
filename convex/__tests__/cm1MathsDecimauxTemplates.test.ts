@@ -102,6 +102,8 @@ const checkDigits: Check = (exo) => {
     ok(hundredths(rightOption(exo)) === expected, `${exo.prompt} : ${rightOption(exo)}, pas ${expected / 100}`),
     ok(wrongOf(exo).every((option) => hundredths(option) !== expected), "un mauvais choix égal à la valeur"),
     ok(level >= 2, "la valeur d'un chiffre au premier palier"),
+    // Le fait d'un indice est vrai : un chiffre vaut dix fois plus quand il avance d'un rang vers la gauche (jamais « un dixième de plus »).
+    ok(exo.hints[2] === "Un chiffre vaut dix fois plus quand il avance d'un rang vers la gauche." && exo.hints.every((hint) => !/de plus/.test(hint)), `l'indice du rang : ${exo.hints.join(" | ")}`),
     ok(distinct(target) && shape(target), `${target} hors de la plage du niveau ${level}`),
     cleanNumbers(exo),
   );

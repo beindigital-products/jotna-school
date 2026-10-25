@@ -17,7 +17,7 @@
  * MODULE PUR (voir `types.ts`).
  */
 import { ce2Gap, ce2Link, ce2Order, ce2Question, ce2Sort, ce2Write, sortRows, type LinkRow, type OrderRow } from "./ce2Outils";
-import { SORT_HINTS, gapRows, link, order, questionRows, writeRows, type Pool } from "./cm1Faits";
+import { SORT_HINTS, gapRows, link, order, questionRows, withUsefulLetter, writeRows, type Pool } from "./cm1Faits";
 import type { GameContext, GeneratedGame } from "./shared";
 
 type Make = (ctx: GameContext) => GeneratedGame;
@@ -169,21 +169,22 @@ const MLI_MILIEU: Pool = {
   items: [
     {
       id: "milieu-aquatique",
-      q: ["Comment appelle-t-on l'endroit où vivent le poisson et la crevette ?", "Dans quel type de lieu vit le nénuphar ?", "Où vivent les êtres vivants qui passent leur vie dans l'eau ?"],
+      // Pas « Où vivent les êtres qui passent leur vie dans l'eau ? » : la question donne sa réponse (« dans l'eau »).
+      q: ["Comment appelle-t-on l'endroit où vivent le poisson et la crevette ?", "Dans quel type de lieu vit le nénuphar ?", "Comment appelle-t-on le milieu des êtres qui passent leur vie dans l'eau ?"],
       a: "Milieu aquatique",
-      also: ["Aquatique", "Le milieu aquatique"],
+      also: ["Aquatique", "Le milieu aquatique", "Dans le milieu aquatique", "Un milieu aquatique"],
       ga: "aquatique",
       s: ["Le poisson vit dans un milieu ___.", "Le nénuphar pousse dans un milieu ___."],
       hint: "Tout s'y passe sous l'eau ou à sa surface.",
     },
     {
       id: "milieu-terrestre",
-      q: ["Comment appelle-t-on l'endroit où vivent la chèvre et le baobab ?", "Dans quel type de lieu vit la chèvre ?", "Où vivent les êtres vivants qui passent leur vie sur la terre ferme ?"],
+      q: ["Comment appelle-t-on l'endroit où vivent la chèvre et le baobab ?", "Dans quel type de lieu vit la chèvre ?", "Comment appelle-t-on le milieu des êtres qui passent leur vie sur la terre ferme ?"],
       a: "Milieu terrestre",
-      also: ["Terrestre", "Le milieu terrestre"],
+      also: ["Terrestre", "Le milieu terrestre", "Dans le milieu terrestre", "Un milieu terrestre"],
       ga: "terrestre",
       s: ["La chèvre vit dans un milieu ___.", "Le baobab pousse dans un milieu ___."],
-      hint: "Tout s'y passe sur le sol et dans l'air.",
+      hint: "Tout s'y passe sur le sol ou en plein air.",
     },
   ],
   extras: ["Milieu polaire"],
@@ -191,8 +192,8 @@ const MLI_MILIEU: Pool = {
 };
 
 const MLI_POOLS = [MLI_ORGANE, MLI_AQUA, MLI_TERRE, MLI_PLANTE, MLI_MILIEU] as const;
-const MLI_QCM = questionRows("sc-cm2-milieux", MLI_POOLS);
-const MLI_TROU = gapRows("sc-cm2-milieux", MLI_POOLS);
+const MLI_QCM = withUsefulLetter(questionRows("sc-cm2-milieux", MLI_POOLS), true);
+const MLI_TROU = withUsefulLetter(gapRows("sc-cm2-milieux", MLI_POOLS), false);
 const MLI_ECRIRE = writeRows("sc-cm2-milieux", MLI_POOLS);
 
 const MLI_RELIER: readonly LinkRow[] = [
@@ -327,7 +328,19 @@ const APR_ENERGIE: Pool = {
       id: "eco-frigo",
       q: ["Que faire de la porte du réfrigérateur pour qu'il consomme moins ?", "Quel geste garde le froid dans le réfrigérateur ?", "Comment limiter l'électricité utilisée par un réfrigérateur ?"],
       a: "Ouvrir la porte le moins possible",
-      also: ["Ouvrir peu la porte", "Fermer la porte"],
+      // Question ouverte à écrire : toutes les façons justes de dire « garder la porte fermée ».
+      also: [
+        "Ouvrir peu la porte",
+        "Fermer la porte",
+        "Bien fermer la porte",
+        "Ne pas laisser la porte ouverte",
+        "Ne pas ouvrir souvent la porte",
+        "Ouvrir rarement la porte",
+        "Refermer la porte",
+        "Fermer vite la porte",
+        "Garder la porte fermée",
+        "Ouvrir la porte le moins souvent possible",
+      ],
       ga: "ouvrir la porte le moins possible",
       s: ["Pour que le réfrigérateur consomme moins, il faut ___.", "Pour garder le froid, on doit ___."],
       hint: "Chaque ouverture laisse entrer de la chaleur.",
@@ -373,8 +386,8 @@ const APR_ENTRETIEN: Pool = {
 };
 
 const APR_POOLS = [APR_USAGE, APR_SECU, APR_ENERGIE, APR_ENTRETIEN] as const;
-const APR_QCM = questionRows("sc-cm2-appareils", APR_POOLS);
-const APR_TROU = gapRows("sc-cm2-appareils", APR_POOLS);
+const APR_QCM = withUsefulLetter(questionRows("sc-cm2-appareils", APR_POOLS), true);
+const APR_TROU = withUsefulLetter(gapRows("sc-cm2-appareils", APR_POOLS), false);
 const APR_ECRIRE = writeRows("sc-cm2-appareils", APR_POOLS);
 
 const APR_ORDRE: readonly OrderRow[] = [
@@ -550,7 +563,24 @@ const NUT_EQUIL: Pool = {
       id: "equilibre",
       q: ["Que contient un repas équilibré ?", "Comment est composé un repas équilibré ?", "Que doit-on trouver dans un repas qui fait grandir sainement ?"],
       a: "Des aliments des trois groupes",
-      also: ["Les trois groupes d'aliments", "Aliments des trois groupes"],
+      // Question ouverte à écrire : toutes les façons justes de dire « un peu de chaque groupe ».
+      also: [
+        "Les trois groupes d'aliments",
+        "Aliments des trois groupes",
+        "Des trois groupes",
+        "Les trois groupes",
+        "Trois groupes d'aliments",
+        "Des aliments des 3 groupes",
+        "Les 3 groupes",
+        "Des aliments de chaque groupe",
+        "Un aliment de chaque groupe",
+        "De chaque groupe",
+        "Un peu de chaque groupe",
+        "Des aliments variés",
+        "Des aliments énergétiques, de construction et de protection",
+        "Énergie, construction et protection",
+        "Énergétiques, construction et protection",
+      ],
       ga: "des aliments des trois groupes",
       s: ["Un repas équilibré contient ___.", "Pour bien grandir, un repas doit contenir ___."],
       hint: "Il mélange de la force, de quoi grandir et de quoi se défendre.",
@@ -597,8 +627,8 @@ const NUT_TROUBLE: Pool = {
 };
 
 const NUT_POOLS = [NUT_GROUPE, NUT_ALIMENT, NUT_PLAT, NUT_EQUIL, NUT_TROUBLE] as const;
-const NUT_QCM = questionRows("sc-cm2-nutrition", NUT_POOLS);
-const NUT_TROU = gapRows("sc-cm2-nutrition", NUT_POOLS);
+const NUT_QCM = withUsefulLetter(questionRows("sc-cm2-nutrition", NUT_POOLS), true);
+const NUT_TROU = withUsefulLetter(gapRows("sc-cm2-nutrition", NUT_POOLS), false);
 const NUT_ECRIRE = writeRows("sc-cm2-nutrition", NUT_POOLS);
 
 const NUT_ORDRE: readonly OrderRow[] = [
@@ -699,7 +729,27 @@ const RSC_GESTE: Pool = {
       id: "jachere",
       q: ["Que faire pour qu'un champ retrouve sa richesse ?", "Quel geste redonne de la force à un sol fatigué ?", "Que faire d'un champ qui ne donne presque plus de récolte ?"],
       a: "Laisser le champ au repos quelques saisons",
-      also: ["Mettre le champ en jachère", "Laisser le champ au repos"],
+      // Question ouverte à écrire : la jachère sous toutes ses formes, et le fumier ou le compost, justes aussi.
+      also: [
+        "Mettre le champ en jachère",
+        "Laisser le champ au repos",
+        "Jachère",
+        "La jachère",
+        "Une jachère",
+        "Faire une jachère",
+        "Mettre en jachère",
+        "Mettre le sol en jachère",
+        "Laisser en jachère",
+        "Laisser le champ en jachère",
+        "Laisser le champ se reposer",
+        "Laisser reposer le champ",
+        "Laisser reposer le sol",
+        "Laisser le sol au repos",
+        "Le fumier",
+        "Mettre du fumier",
+        "Le compost",
+        "Mettre du compost",
+      ],
       ga: "laisser le champ au repos quelques saisons",
       s: ["Pour qu'un sol retrouve sa richesse, il faut ___.", "Quand un champ est fatigué, on peut ___."],
       hint: "La terre se repose avant la prochaine récolte.",
@@ -757,6 +807,7 @@ const RSC_CONSEQ: Pool = {
       q: ["Quelle conséquence a un sol épuisé pour les familles qui cultivent ?", "Que se passe-t-il pour les récoltes quand le sol est épuisé ?", "Quel effet a un sol fatigué sur les récoltes d'une famille ?"],
       a: "Des récoltes plus petites",
       noWrite: true,
+      not: ["Des plantes qui sèchent"],
       hint: "Les greniers restent à moitié vides.",
     },
     {
@@ -771,19 +822,23 @@ const RSC_CONSEQ: Pool = {
       q: ["Que deviennent les plantes quand l'eau manque trop longtemps ?", "Quelle conséquence a un long manque d'eau sur les champs ?", "Que subissent les cultures quand il ne pleut presque plus ?"],
       a: "Des plantes qui sèchent",
       noWrite: true,
+      // Un long manque d'eau fait aussi baisser les récoltes : jamais proposé comme mauvais choix ici.
+      not: ["Des récoltes plus petites"],
       hint: "Leurs feuilles jaunissent puis tombent.",
     },
   ],
+  // Des intrus sans lien avec un sol épuisé, la surpêche ou la sécheresse, pour garder deux mauvais choix à chaque question.
+  extras: ["Des rivières plus pleines", "Des arbres plus nombreux"],
 };
 
 const RSC_POOLS = [RSC_TERME, RSC_GESTE, RSC_CAUSE, RSC_CONSEQ] as const;
-const RSC_QCM = questionRows("sc-cm2-ressources", RSC_POOLS);
-const RSC_TROU = gapRows("sc-cm2-ressources", RSC_POOLS);
+const RSC_QCM = withUsefulLetter(questionRows("sc-cm2-ressources", RSC_POOLS), true);
+const RSC_TROU = withUsefulLetter(gapRows("sc-cm2-ressources", RSC_POOLS), false);
 const RSC_ECRIRE = writeRows("sc-cm2-ressources", RSC_POOLS);
 
 const RSC_ORDRE: readonly OrderRow[] = [
   order("Range les étapes de la jachère, de la première à la dernière.", ["On cultive le champ", "Le sol s'épuise", "On laisse le champ au repos", "Le sol retrouve sa richesse"], "rsc-ordre:jachere"),
-  order("Range les gestes d'un pêcheur responsable, du premier au dernier.", ["Jeter le filet", "Remonter le filet", "Rejeter les petits poissons", "Garder les gros poissons"], "rsc-ordre:pecheur"),
+  order("Range les gestes d'un pêcheur responsable, du premier au dernier.", ["Jeter le filet", "Remonter le filet", "Rejeter les petits poissons", "Vendre les gros poissons au marché"], "rsc-ordre:pecheur"),
   order("Range les gestes pour se laver les mains sans gaspiller l'eau, du premier au dernier.", ["Mouiller les mains", "Fermer le robinet", "Se savonner", "Rouvrir pour rincer"], "rsc-ordre:mains"),
   order("Range les étapes pour refaire un petit bois, de la première à la dernière.", ["Choisir un terrain", "Planter les jeunes arbres", "Arroser les jeunes arbres", "Attendre que les arbres grandissent"], "rsc-ordre:bois"),
   order("Range les gestes pour arroser un jardin, du premier au dernier.", ["Remplir l'arrosoir", "Porter l'arrosoir au jardin", "Arroser au pied des plantes", "Replacer l'arrosoir"], "rsc-ordre:jardin"),
@@ -897,10 +952,11 @@ const SAN_FAMILLE: Pool = {
       id: "naissances",
       q: ["Que permet à la mère l'espacement des naissances ?", "Pourquoi est-il bon d'espacer les naissances pour la santé de la mère ?"],
       a: "Reprendre des forces",
-      also: ["Se reposer", "Reprendre ses forces"],
+      also: ["Se reposer", "Reprendre ses forces", "Récupérer", "Récupérer des forces", "Récupérer ses forces", "Retrouver des forces", "Retrouver ses forces", "Rester en bonne santé"],
       ga: "reprendre des forces",
       s: ["Des naissances espacées permettent à la mère de ___.", "Quand les naissances sont espacées, la mère peut ___."],
-      hint: "Son corps a le temps de récupérer.",
+      // L'indice n'écrit plus « récupérer » : c'est une réponse juste, que l'enfant doit pouvoir écrire.
+      hint: "Son corps a le temps de se remettre entre deux bébés.",
     },
   ],
   extras: ["Travailler davantage", "Manger moins"],
@@ -995,8 +1051,8 @@ const SAN_OBJET: Pool = {
 };
 
 const SAN_POOLS = [SAN_SOINS, SAN_CARNET, SAN_LAIT, SAN_FAMILLE, SAN_VIH, SAN_MODE, SAN_PREVENIR, SAN_OBJET] as const;
-const SAN_QCM = questionRows("sc-cm2-sante", SAN_POOLS);
-const SAN_TROU = gapRows("sc-cm2-sante", SAN_POOLS);
+const SAN_QCM = withUsefulLetter(questionRows("sc-cm2-sante", SAN_POOLS), true);
+const SAN_TROU = withUsefulLetter(gapRows("sc-cm2-sante", SAN_POOLS), false);
 const SAN_ECRIRE = writeRows("sc-cm2-sante", SAN_POOLS);
 
 const SAN_ORDRE: readonly OrderRow[] = [
@@ -1004,7 +1060,8 @@ const SAN_ORDRE: readonly OrderRow[] = [
   order("Range ces moments de la vie d'un bébé, du premier au dernier.", ["Consultation prénatale", "Naissance", "Premier vaccin"], "san-ordre:vaccin"),
   order("Range ces moments de la vie d'un enfant, du premier au dernier.", ["Naissance", "Premier anniversaire", "Entrée à l'école"], "san-ordre:enfant"),
   order("Range les gestes d'une visite de vaccination, du premier au dernier.", ["Aller au centre de santé", "Montrer le carnet", "Recevoir le vaccin", "Noter le vaccin dans le carnet"], "san-ordre:visite"),
-  order("Range les gestes d'une consultation prénatale, du premier au dernier.", ["Arriver au centre de santé", "Se faire peser", "Parler avec la sage-femme", "Prendre le prochain rendez-vous"], "san-ordre:consultation"),
+  // Des étapes à ordre obligé : « se faire peser » et « parler avec la sage-femme » se faisaient dans les deux sens.
+  order("Range les gestes d'une consultation prénatale, du premier au dernier.", ["Prendre le carnet de santé", "Arriver au centre de santé", "Être examinée par la sage-femme", "Prendre le prochain rendez-vous"], "san-ordre:consultation"),
 ];
 
 const SAN_RELIER: readonly LinkRow[] = [
@@ -1012,7 +1069,8 @@ const SAN_RELIER: readonly LinkRow[] = [
   link("Relie chaque mot à son usage.", [["Carnet de santé", "Noter les vaccins"], ["Centre de santé", "Soigner et vacciner"], ["Lait maternel", "Nourrir et protéger"]]),
   link("Relie chaque mot à ce qu'il désigne.", [["VIH", "Virus"], ["Sida", "Maladie"], ["Vaccin", "Protection"]]),
   link("Relie chaque personne à son rôle.", [["Sage-femme", "Suit la grossesse"], ["Infirmier", "Vaccine l'enfant"], ["Mère", "Allaite son bébé"]]),
-  link("Relie chaque personne à ce dont elle a besoin.", [["Femme enceinte", "Consultation prénatale"], ["Bébé", "Lait maternel"], ["Enfant", "Vaccins"]]),
+  // Pas « Enfant ~ Vaccins » à côté de « Bébé » : le bébé reçoit aussi ses vaccins, deux appariements étaient justes.
+  link("Relie chaque personne à ce dont elle a besoin.", [["Femme enceinte", "Consultation prénatale"], ["Bébé", "Lait maternel"], ["Personne séropositive", "Traitement chaque jour"]]),
 ];
 
 const SAN_GLISSER = [

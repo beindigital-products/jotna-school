@@ -344,6 +344,8 @@ function checkConjugated(exo: Exo, kind: "imparfait" | "pc" | "pc-recit"): strin
     ok(answer === expected, `la forme de « ${infinitive} » à la personne ${person} est « ${expected} », le trou dit « ${answer} »`),
     ok(wrongs.length === 2 && wrongs.every((option) => allowed.has(option) && option !== expected), `mauvais choix ${wrongs.join(" | ")}`),
     ok(kind !== "imparfait" || /autrefois|petit|petite|petits|chaque|tous les|avant|soir|pleuvait|jour/iu.test(text), "rien dans la phrase n'impose l'imparfait"),
+    // « Tous les soirs, Awa raconte une histoire » est juste au présent d'habitude : un mauvais choix au présent demande un énoncé qui nomme le temps.
+    ok(kind !== "imparfait" || !wrongs.includes(verb.present[personIndex(person)]) || exo.prompt === "Complète la phrase avec le verbe à l'imparfait.", `un choix au présent sans que l'énoncé demande l'imparfait : ${exo.prompt}`),
     ok(kind === "imparfait" || /hier|ce matin|soudain|tout à coup/iu.test(text), "rien dans la phrase n'impose le passé composé"),
   );
 }
@@ -522,20 +524,31 @@ const CHECKS: Record<string, Check> = {
   // ----- Les possessifs et les démonstratifs -----
   "ce2-poss-trou": (exo) => {
     const text = textOf(exo);
-    const expected = possessiveFor(possessorOf(text), nounOf(text.split("___ ")[1].split(/[ .]/)[0]));
-    return all(ok(blankOf(exo).answer === expected, `le possessif est « ${expected} », le trou dit « ${blankOf(exo).answer} »`), ok(blankOf(exo).options.every((option) => option in POSSESSIVE_PERSON), "les choix sont des possessifs"));
+    const target = nounOf(text.split("___ ")[1].split(/[ .]/)[0]);
+    const expected = possessiveFor(possessorOf(text), target);
+    // « Nous aimons votre village » est juste (le village de ceux à qui l'on parle) : un mauvais choix ne s'accorde avec le nom pour AUCUN possesseur.
+    const agreeing = PERSONS.map((person) => possessiveFor(person, target));
+    const wrong = blankOf(exo).options.filter((option) => option !== blankOf(exo).answer);
+    return all(
+      ok(blankOf(exo).answer === expected, `le possessif est « ${expected} », le trou dit « ${blankOf(exo).answer} »`),
+      ok(blankOf(exo).options.every((option) => option in POSSESSIVE_PERSON), "les choix sont des possessifs"),
+      ok(wrong.every((option) => !agreeing.includes(option)), `un mauvais choix s'accorde avec le nom pour un autre possesseur : ${text} (${wrong.join(", ")})`),
+    );
   },
   "ce2-poss-choisir": (exo) => {
     const check = (sentence: string) => {
       const words = wordsOf(sentence);
       const at = words.findIndex((word) => word in POSSESSIVE_PERSON);
-      return { word: words[at], expected: possessiveFor(possessorOf(sentence), nounOf(words[at + 1])) };
+      const target = nounOf(words[at + 1]);
+      return { word: words[at], expected: possessiveFor(possessorOf(sentence), target), agreeing: PERSONS.map((person) => possessiveFor(person, target)) };
     };
     const right = check(rightOption(exo));
     return all(
       ok(exo.prompt === "Quelle phrase est écrite correctement ?", `énoncé inconnu : ${exo.prompt}`),
       ok(right.word === right.expected, `la bonne option écrit « ${right.word} » au lieu de « ${right.expected} »`),
       ...wrongOf(exo).map((option) => ok(check(option).word !== check(option).expected, `un mauvais choix est bien écrit : ${option}`)),
+      // « Omar et Pape cherchent son ballon » est bien écrit (le ballon d'un autre) : un mauvais choix porte une faute d'accord, pas un autre possesseur.
+      ...wrongOf(exo).map((option) => ok(!check(option).agreeing.includes(check(option).word), `un mauvais choix est juste pour un autre possesseur : ${option}`)),
     );
   },
   "ce2-dem-trou": (exo) => {
@@ -657,6 +670,8 @@ const CHECKS: Record<string, Check> = {
     return all(
       ok(blankOf(exo).answer === expected, `le futur de « ${infinitive} » à la personne ${person} est « ${expected} », le trou dit « ${blankOf(exo).answer} »`),
       ok(wrongs.length === 2 && wrongs.every((option) => (verb.futur.includes(option) && option !== expected) || option === verb.present[personIndex(person)]), `mauvais choix ${wrongs.join(" | ")}`),
+      // « Demain, je vais au marché » est juste (présent à valeur de futur) : un mauvais choix au présent demande un énoncé qui nomme le futur.
+      ok(!wrongs.includes(verb.present[personIndex(person)]) || exo.prompt === "Complète la phrase avec le verbe au futur.", `un choix au présent sans que l'énoncé demande le futur : ${exo.prompt}`),
     );
   },
   "ce2-imperatif-choisir": (exo) => {

@@ -130,14 +130,14 @@ const RIGHT_GAP_ROWS: readonly GapRow[] = inFactOrder(
 
 const RIGHT_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
   [
-    wr("Quel droit permet à un enfant malade d'aller chez le médecin ? Écris le mot.", ["soigné", "être soigné", "soins"], hints("Pense à ce que fait le médecin.", "L'enfant reçoit des médicaments.", "Le mot est un participe."), "droit:soins"),
+    wr("Chez le médecin, un enfant malade a le droit d'être ___. Écris le mot.", ["soigné", "soignée", "soignés", "guéri", "guérie"], hints("Pense à ce que fait le médecin.", "L'enfant reçoit des médicaments.", "Le mot commence par la lettre s."), "droit:soins"),
     wr("Comment appelle-t-on ce que l'enfant reçoit, comme avoir un nom ? Écris le mot.", ["droit", "un droit"], hints("C'est ce qui est donné à tous.", "Personne ne peut le retirer.", "Le mot est plus court que son contraire."), "droit:mot"),
     wr("Comment appelle-t-on ce que l'enfant doit faire, comme aider à la maison ? Écris le mot.", ["devoir", "un devoir"], hints("C'est ce qu'on attend de l'enfant.", "On doit le faire.", "Le mot est plus long que son contraire."), "devoir:mot"),
     wr("Quel verbe veut dire s'amuser, comme à la récréation ? Écris le verbe.", ["jouer"], hints("Pense à la récréation.", "On le fait avec ses amis.", "Le verbe rime avec nouer."), "droit:jeu"),
-    wr("Que doit faire l'enfant pour sa mère à la maison ? Écris le verbe.", ["aider"], hints("Pense à rendre service.", "On porte, on balaie, on range.", "Le verbe commence par la lettre a."), "devoir:aider"),
-    wr("Que fait un élève en classe pour apprendre ? Écris le verbe.", ["travailler", "apprendre", "étudier"], hints("Pense à ce que fait un élève.", "Il fait des efforts.", "Le verbe commence par la lettre t."), "devoir:travailler"),
-    wr("Le prénom d'un enfant est son ___. Écris le mot.", ["nom"], hints("Pense à ce qu'on écrit sur un cahier.", "On l'utilise pour appeler l'enfant.", "Le mot a trois lettres."), "droit:nom"),
-    wr("Que doit faire l'enfant avec ses camarades ? Écris le verbe.", ["respecter"], hints("Pense à la politesse.", "On ne blesse personne.", "Le verbe commence par la lettre r."), "devoir:respecter"),
+    wr("Balayer la cour et ranger la chambre, c'est ___ sa mère. Écris le verbe.", ["aider"], hints("Pense à rendre service.", "Ces gestes soulagent la famille.", "Le verbe commence par la lettre a."), "devoir:aider"),
+    wr("Faire ses exercices et apprendre ses leçons, c'est ___ en classe. Écris le verbe.", ["travailler", "étudier"], hints("Pense au devoir de chaque élève.", "Il fait des efforts.", "Le verbe commence par la lettre t."), "devoir:travailler"),
+    wr("Chaque enfant a le droit d'avoir un ___ dès sa naissance. Écris le mot.", ["nom", "prénom", "nom de famille"], hints("Pense à ce qu'on écrit sur un cahier.", "On l'utilise pour appeler l'enfant.", "Le mot a trois lettres."), "droit:nom"),
+    wr("Être poli et ne pas se moquer, c'est ___ les autres. Écris le verbe.", ["respecter"], hints("Pense à la politesse.", "On ne blesse personne.", "Le verbe commence par la lettre r."), "devoir:respecter"),
   ],
   RIGHT_FACTS,
 );
@@ -259,7 +259,7 @@ const PEACE_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
     wr("Que demande-t-on quand on a fait de la peine à quelqu'un ? Écris le mot.", ["pardon", "des excuses", "excuses"], hints("Pense à un mot qui répare.", "On dit qu'on regrette.", "Le mot a six lettres."), "paix:pardon"),
     wr("Rire de quelqu'un pour faire de la peine est une ___. Écris le mot.", ["moquerie", "une moquerie"], hints("Pense à des rires qui blessent.", "On la refuse toujours.", "Le mot commence par la lettre m."), "mot:moquerie"),
     wr("Quand on a un problème avec un ami, il faut en ___. Écris le verbe.", ["parler", "discuter"], hints("Pense à ce qu'on fait avec des mots.", "On n'utilise pas les poings.", "Le verbe commence par la lettre p."), "paix:dialogue"),
-    wr("Que fait un médiateur avec les deux amis ? Écris le verbe.", ["écouter", "ecouter"], hints("Pense à ce qu'il fait avant de parler.", "Il est attentif.", "Le verbe commence par la lettre é."), "paix:médiation"),
+    wr("Le médiateur se tait et prête l'oreille aux deux amis. Que fait-il ? Écris le verbe.", ["écouter", "ecouter", "entendre"], hints("Pense à ce qu'il fait avant de parler.", "Il est attentif.", "Le verbe commence par la lettre é."), "paix:médiation"),
   ],
   PEACE_FACTS,
 );
@@ -364,7 +364,7 @@ const VALUE_ORDER_ROWS: readonly OrderRow[] = [
   ordr("Mets ces gestes dans l'ordre du temps pour accueillir un invité.", ["On salue l'invité", "On lui offre à boire", "On partage le repas"], hints("Tout commence par un mot de bienvenue.", "Ensuite on pense à sa soif.", "Le dernier geste se fait à table."), "val:teranga"),
   ordr("Mets ces étapes dans l'ordre du temps.", ["On fait une promesse", "On pense à la tenir", "On fait ce qu'on a promis"], hints("Tout commence par un engagement.", "Il faut ensuite s'en souvenir.", "La dernière étape est l'action."), "val:parole"),
   ordr("Mets ces gestes dans l'ordre du temps pour rendre un objet trouvé.", ["On trouve un objet", "On cherche à qui il est", "On le rend à son propriétaire"], hints("Tout commence par une découverte.", "Il faut savoir qui l'a perdu.", "La remise vient à la fin."), "val:honnêteté"),
-  ordr("Mets ces étapes dans l'ordre du temps pour aider un voisin.", ["On demande ce dont il a besoin", "On va chez lui", "On l'aide"], hints("Il faut d'abord savoir ce qu'il lui faut.", "Ensuite on se déplace.", "Le coup de main vient à la fin."), "val:solidarité"),
+  ordr("Mets ces étapes dans l'ordre du temps pour aider un voisin.", ["On apprend que le voisin est malade", "On va chez lui", "On l'aide"], hints("Il faut d'abord savoir ce qui se passe.", "Ensuite on se déplace.", "Le coup de main vient à la fin."), "val:solidarité"),
 ];
 
 const VALUE_GAP_ROWS: readonly GapRow[] = inFactOrder(
@@ -391,7 +391,7 @@ const VALUE_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
     wr("Quelle valeur montre celui qui aide ses voisins ? Écris le mot.", ["solidarité", "solidarite", "la solidarité"], hints("Pense à ceux qui s'entraident.", "On partage les problèmes.", "Le mot commence par la lettre s."), "val:solidarité"),
     wr("Quelle valeur montre celui qui agit malgré sa peur ? Écris le mot.", ["courage", "le courage"], hints("Pense à ce qu'on ressent avant d'agir.", "La crainte existe, mais on agit.", "Le mot commence par la lettre c."), "val:courage"),
     wr("Comment appelle-t-on l'accueil des invités au Sénégal ? Écris le mot.", ["teranga", "la teranga"], hints("Pense à un mot wolof bien connu.", "Il veut dire bien recevoir.", "Le mot commence par la lettre t."), "val:teranga"),
-    wr("Que doit-on faire de sa promesse ? Écris le verbe.", ["tenir"], hints("Pense à ce qu'on fait d'une promesse.", "On ne l'oublie pas.", "Le verbe commence par la lettre t."), "val:parole"),
+    wr("Que doit-on faire de sa promesse ? Écris le verbe.", ["tenir", "garder", "respecter"], hints("Pense à ce qu'on fait d'une promesse.", "On ne l'oublie pas.", "Le verbe commence par la lettre t."), "val:parole"),
     wr("Que fait-on d'un objet trouvé ? Écris le verbe.", ["rendre", "rapporter"], hints("Pense à ce qui n'est pas à nous.", "On le redonne à son propriétaire.", "Le verbe commence par la lettre r."), "val:honnêteté"),
     wr("Quand on tient sa promesse, on tient sa ___. Écris le mot.", ["parole", "sa parole"], hints("Pense à ce qu'on donne quand on promet.", "On la donne et on la tient.", "Le mot commence par la lettre p."), "val:mot:parole"),
     wr("Celui qui partage avec les autres est ___. Écris le mot.", ["solidaire", "généreux"], hints("Pense à ceux qui donnent un peu de leur bien.", "On pense aux autres.", "Le mot commence par la lettre s."), "val:mot:solidarité"),
@@ -485,11 +485,13 @@ const COMMUNITY_SORT_ROWS: readonly SortRow[] = sortRows(
 );
 
 const COMMUNITY_LINK_POOL = [
+  // Chaque geste ne va qu'avec UN lieu ou UNE personne : « Ne pas jeter de déchets » ou « Respecter les règles de tous » valaient
+  // pour le puits, le marché et le quartier à la fois, et un échange défendable était refusé.
   { left: "Puits", right: "Garder l'eau propre" },
-  { left: "Marché", right: "Ne pas jeter de déchets" },
+  { left: "Marché", right: "Payer ce qu'on achète" },
   { left: "Terrain de sport", right: "Jouer chacun son tour" },
-  { left: "Voisin", right: "L'aider quand il a un problème" },
-  { left: "Quartier", right: "Respecter les règles de tous" },
+  { left: "Voisin malade", right: "Lui apporter à manger" },
+  { left: "Nouvel habitant", right: "Lui expliquer les règles" },
 ] as const;
 const COMMUNITY_LINK_ROWS: readonly LinkRow[] = combinations(COMMUNITY_LINK_POOL, 3)
   .slice(0, 8)
@@ -500,7 +502,7 @@ const COMMUNITY_LINK_ROWS: readonly LinkRow[] = combinations(COMMUNITY_LINK_POOL
   }));
 
 const COMMUNITY_ORDER_ROWS: readonly OrderRow[] = [
-  ordr("Mets ces étapes dans l'ordre du temps pour aider un voisin.", ["Demander ce dont il a besoin", "Aller chez lui", "L'aider", "Lui dire au revoir"], hints("Il faut d'abord savoir ce qu'il lui faut.", "On se déplace ensuite.", "On termine par une politesse."), "comm:voisin:aide"),
+  ordr("Mets ces étapes dans l'ordre du temps pour aider un voisin.", ["Apprendre que le voisin est malade", "Aller chez lui demander ce qui lui manque", "L'aider", "Lui dire au revoir"], hints("Il faut d'abord savoir qu'il a un problème.", "On se déplace ensuite.", "On termine par une politesse."), "comm:voisin:aide"),
   ordr("Mets ces gestes dans l'ordre du temps pour nettoyer le puits.", ["On prend des seaux et des balais", "On enlève les déchets", "On rince le bord du puits"], hints("Il faut d'abord préparer le matériel.", "On commence par le plus gros.", "Le rinçage vient à la fin."), "comm:puits"),
   ordr("Mets ces gestes dans l'ordre du temps pour bien utiliser le terrain de sport.", ["On attend son tour", "On joue", "On range le ballon"], hints("Il faut d'abord patienter.", "Le jeu vient ensuite.", "On ne laisse rien en désordre."), "comm:terrain"),
   ordr("Mets ces événements dans l'ordre du temps.", ["Un nouvel habitant arrive", "On lui explique les règles", "Il les respecte avec les autres"], hints("Tout commence par une arrivée.", "On le renseigne ensuite.", "Il vit comme tout le monde."), "comm:nouveau"),

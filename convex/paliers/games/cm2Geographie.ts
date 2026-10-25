@@ -465,7 +465,7 @@ const DEG_GLISSER = [
   ),
   ...sortRows(
     "Glisse chaque problème dans la bonne case.",
-    ["Problème de la terre", "Problème de la mer"],
+    ["Problème dans les terres", "Problème en mer ou sur la côte"],
     ["Déforestation", "Feux de brousse", "Avancée du désert"],
     ["Surpêche", "Érosion côtière"],
     SORT_HINTS,

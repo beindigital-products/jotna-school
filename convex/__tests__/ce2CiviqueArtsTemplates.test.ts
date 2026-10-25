@@ -156,10 +156,10 @@ const COMMON_T = ["Puits", "Marché", "Terrain de sport"];
 const PERSONAL_T = ["Mon cahier", "Mon ballon", "Ma chambre", "Ma natte"];
 const COMMUNITY_LINK_T: Record<string, string> = {
   Puits: "Garder l'eau propre",
-  Marché: "Ne pas jeter de déchets",
+  Marché: "Payer ce qu'on achète",
   "Terrain de sport": "Jouer chacun son tour",
-  Voisin: "L'aider quand il a un problème",
-  Quartier: "Respecter les règles de tous",
+  "Voisin malade": "Lui apporter à manger",
+  "Nouvel habitant": "Lui expliquer les règles",
 };
 
 // ===== Le coloriage magique et reproduire un modèle =====
@@ -181,7 +181,7 @@ const rising = (steps: readonly number[]) => steps.length >= 3 && steps.every((s
 const falling = (steps: readonly number[]) => steps.length >= 3 && steps.every((step, i) => i === 0 || step < steps[i - 1]);
 
 // ===== L'hymne national et les chants =====
-const ANTHEM_DO_T = ["Se tenir debout", "Se tenir droit", "Chanter avec les autres", "Écouter en silence"];
+const ANTHEM_DO_T = ["Se tenir debout", "Se tenir droit", "Chanter avec les autres", "Rester immobile"];
 const ANTHEM_DONT_T = ["Bavarder", "S'asseoir par terre", "Jouer avec ses amis", "Rire fort"];
 const ANTHEM_LINK_T: Record<string, string> = {
   Titre: "Le Lion rouge",
@@ -247,12 +247,12 @@ const DROIT_TROU_T: [string, string, string[]][] = [
 const DROIT_ECRIRE_T: [string, string[]][] = [
   ["Comment appelle-t-on ce que l'enfant doit faire, comme aider à la maison ? Écris le mot.", ["devoir", "un devoir"]],
   ["Comment appelle-t-on ce que l'enfant reçoit, comme avoir un nom ? Écris le mot.", ["droit", "un droit"]],
-  ["Le prénom d'un enfant est son ___. Écris le mot.", ["nom"]],
-  ["Que doit faire l'enfant pour sa mère à la maison ? Écris le verbe.", ["aider"]],
-  ["Que fait un élève en classe pour apprendre ? Écris le verbe.", ["travailler", "apprendre", "étudier"]],
-  ["Quel droit permet à un enfant malade d'aller chez le médecin ? Écris le mot.", ["soigné", "être soigné", "soins"]],
+  ["Chaque enfant a le droit d'avoir un ___ dès sa naissance. Écris le mot.", ["nom", "prénom", "nom de famille"]],
+  ["Balayer la cour et ranger la chambre, c'est ___ sa mère. Écris le verbe.", ["aider"]],
+  ["Faire ses exercices et apprendre ses leçons, c'est ___ en classe. Écris le verbe.", ["travailler", "étudier"]],
+  ["Chez le médecin, un enfant malade a le droit d'être ___. Écris le mot.", ["soigné", "soignée", "soignés", "guéri", "guérie"]],
   ["Quel verbe veut dire s'amuser, comme à la récréation ? Écris le verbe.", ["jouer"]],
-  ["Que doit faire l'enfant avec ses camarades ? Écris le verbe.", ["respecter"]],
+  ["Être poli et ne pas se moquer, c'est ___ les autres. Écris le verbe.", ["respecter"]],
 ];
 const PAIX_SITUATION_T: [string, string, string[]][] = [
   ["Un grand veut forcer un petit à donner son goûter. Que faire ?", "Refuser la force et appeler un adulte", ["Donner le goûter et se taire", "Frapper le grand en retour"]],
@@ -304,7 +304,7 @@ const PAIX_ECRIRE_T: [string, string[]][] = [
   ["Que doit-on refuser pour vivre en paix ? Écris le mot.", ["violence", "la violence"]],
   ["Rire de quelqu'un pour faire de la peine est une ___. Écris le mot.", ["moquerie", "une moquerie"]],
   ["Quel mot veut dire se parler pour se comprendre ? Écris le mot.", ["dialogue", "le dialogue"]],
-  ["Que fait un médiateur avec les deux amis ? Écris le verbe.", ["écouter", "ecouter"]],
+  ["Le médiateur se tait et prête l'oreille aux deux amis. Que fait-il ? Écris le verbe.", ["écouter", "ecouter", "entendre"]],
   ["Quel mot veut dire accepter les différences ? Écris le mot.", ["tolérance", "tolerance", "la tolérance"]],
   ["Quand on a un problème avec un ami, il faut en ___. Écris le verbe.", ["parler", "discuter"]],
 ];
@@ -334,7 +334,7 @@ const VALEUR_DEFINITION_T: [string, string, string[]][] = [
 ];
 const VALEUR_ORDRE_T: [string, string[]][] = [
   ["Mets ces gestes dans l'ordre du temps pour rendre un objet trouvé.", ["On trouve un objet", "On cherche à qui il est", "On le rend à son propriétaire"]],
-  ["Mets ces étapes dans l'ordre du temps pour aider un voisin.", ["On demande ce dont il a besoin", "On va chez lui", "On l'aide"]],
+  ["Mets ces étapes dans l'ordre du temps pour aider un voisin.", ["On apprend que le voisin est malade", "On va chez lui", "On l'aide"]],
   ["Mets ces gestes dans l'ordre du temps pour accueillir un invité.", ["On salue l'invité", "On lui offre à boire", "On partage le repas"]],
   ["Mets ces étapes dans l'ordre du temps.", ["On fait une promesse", "On pense à la tenir", "On fait ce qu'on a promis"]],
 ];
@@ -358,7 +358,7 @@ const VALEUR_ECRIRE_T: [string, string[]][] = [
   ["Quelle valeur montre celui qui dit toujours la vérité ? Écris le mot.", ["honnêteté", "honnetete", "l'honnêteté"]],
   ["Celui qui partage avec les autres est ___. Écris le mot.", ["solidaire", "généreux"]],
   ["Quelle valeur montre celui qui agit malgré sa peur ? Écris le mot.", ["courage", "le courage"]],
-  ["Que doit-on faire de sa promesse ? Écris le verbe.", ["tenir"]],
+  ["Que doit-on faire de sa promesse ? Écris le verbe.", ["tenir", "garder", "respecter"]],
   ["Comment appelle-t-on l'accueil des invités au Sénégal ? Écris le mot.", ["teranga", "la teranga"]],
   ["Quelle valeur montre celui qui aide ses voisins ? Écris le mot.", ["solidarité", "solidarite", "la solidarité"]],
 ];
@@ -397,7 +397,7 @@ const COMMUN_VOISIN_T: [string, string, string[]][] = [
   ["La maison d'un voisin a brûlé. Que peut-on faire ?", "Lui donner des habits et un repas", ["Fermer sa porte", "Se moquer de sa maison"]],
 ];
 const COMMUN_ORDRE_T: [string, string[]][] = [
-  ["Mets ces étapes dans l'ordre du temps pour aider un voisin.", ["Demander ce dont il a besoin", "Aller chez lui", "L'aider", "Lui dire au revoir"]],
+  ["Mets ces étapes dans l'ordre du temps pour aider un voisin.", ["Apprendre que le voisin est malade", "Aller chez lui demander ce qui lui manque", "L'aider", "Lui dire au revoir"]],
   ["Mets ces gestes dans l'ordre du temps pour nettoyer le puits.", ["On prend des seaux et des balais", "On enlève les déchets", "On rince le bord du puits"]],
   ["Mets ces gestes dans l'ordre du temps pour bien utiliser le terrain de sport.", ["On attend son tour", "On joue", "On range le ballon"]],
   ["Mets ces événements dans l'ordre du temps.", ["Un nouvel habitant arrive", "On lui explique les règles", "Il les respecte avec les autres"]],
@@ -479,7 +479,7 @@ const HYMNE_QCM_T: [string, string, string[]][] = [
   ["Que doit-on faire pendant le chant de l'hymne ?", "Rester sérieux et attentif", ["Bavarder avec son voisin", "Faire des grimaces"]],
 ];
 const HYMNE_ORDRE_T: [string, string[]][] = [
-  ["Mets ces étapes dans l'ordre du temps pour composer un petit chant.", ["Choisir un thème", "Trouver les paroles", "Inventer la mélodie", "Chanter devant la classe"]],
+  ["Mets ces étapes dans l'ordre du temps pour composer un petit chant.", ["Choisir un thème", "Inventer les paroles et la mélodie", "Répéter plusieurs fois", "Chanter devant la classe"]],
   ["Mets ces gestes dans l'ordre du temps au lever des couleurs.", ["Les élèves se rangent", "On se tient droit", "On chante l'hymne"]],
   ["Mets ces étapes dans l'ordre du temps pour accompagner un chant.", ["On apprend le chant", "On choisit des gestes et un instrument", "On répète ensemble", "On chante avec l'accompagnement"]],
   ["Mets ces étapes dans l'ordre du temps pour apprendre un chant.", ["On écoute le chant", "On le chante phrase par phrase", "On le chante en entier"]],
@@ -491,7 +491,7 @@ const HYMNE_TROU_T: [string, string, string[]][] = [
   ["Pour chanter ensemble, on suit la même ___.", "mélodie", ["recette", "route"]],
   ["On chante l'hymne avec ___ et respect.", "sérieux", ["colère", "paresse"]],
   ["Le Lion rouge est notre hymne ___.", "national", ["familial", "étranger"]],
-  ["Au lever des couleurs, tous les élèves chantent ___.", "ensemble", ["dehors", "seuls"]],
+  ["Au lever des couleurs, tous les élèves chantent ___.", "ensemble", ["couchés", "seuls"]],
   ["Pour mettre un chant en valeur, on peut ajouter des ___.", "gestes", ["devoirs", "légumes"]],
   ["Quand on invente un petit chant, on le ___.", "compose", ["mange", "vend"]],
   ["On chante l'hymne au lever des ___.", "couleurs", ["repas", "tambours"]],
@@ -501,7 +501,7 @@ const HYMNE_TROU_T: [string, string, string[]][] = [
 const HYMNE_ECRIRE_T: [string, string[]][] = [
   ["Que fait-on ensemble au lever des couleurs ? Écris le verbe.", ["chanter"]],
   ["Quel verbe veut dire inventer un petit chant ? Écris le verbe.", ["composer"]],
-  ["Au lever de quoi chante-t-on l'hymne ? Écris le mot.", ["couleurs", "des couleurs"]],
+  ["Au lever de quoi chante-t-on l'hymne ? Écris le mot.", ["couleurs", "des couleurs", "drapeau", "du drapeau", "le drapeau"]],
   ["Quel est le titre de l'hymne national ? Écris les trois mots.", ["le lion rouge", "Le Lion rouge"]],
   ["Comment se tient-on pendant l'hymne ? Écris le mot.", ["debout"]],
   ["Qui a écrit les paroles de l'hymne national ? Écris son nom de famille.", ["senghor", "Senghor"]],
@@ -546,7 +546,7 @@ const THEATRE_ORDRE_T: [string, string[]][] = [
   ["Mets ces étapes dans l'ordre du temps.", ["Distribuer les rôles", "Apprendre ses répliques", "Répéter ensemble", "Jouer la saynète"]],
   ["Mets ces événements dans l'ordre du temps.", ["Le vendeur installe ses mangues", "Le client demande le prix", "Ils discutent et se mettent d'accord", "Le client paie et repart"]],
   ["Mets ces événements dans l'ordre du temps.", ["Un malade arrive", "L'infirmière l'examine", "Elle lui donne un médicament"]],
-  ["Mets ces étapes dans l'ordre du temps pour préparer une saynète.", ["Choisir le sujet", "Écrire les répliques", "Distribuer les rôles", "Répéter la scène", "Jouer devant le public"]],
+  ["Mets ces étapes dans l'ordre du temps pour préparer une saynète.", ["Choisir le sujet", "Écrire les répliques", "Répéter la scène", "Jouer devant le public"]],
 ];
 const THEATRE_TROU_T: [string, string, string[]][] = [
   ["Avant le spectacle, on doit ___ la scène.", "répéter", ["oublier", "vendre"]],
@@ -653,6 +653,8 @@ const CHECKS: Record<string, Check> = {
       ok(all3.every((steps) => steps.length === count && steps.every((step) => step >= 0)), `mélodies mal écrites : ${optionsOf(exo).join(" | ")}`),
       ok(all3.filter(direction).length === 1, `une seule mélodie doit ${up ? "monter" : "descendre"} : ${optionsOf(exo).join(" | ")}`),
       ok(direction(stepsOf(rightOption(exo))), `« ${rightOption(exo)} » ne ${up ? "monte" : "descend"} pas`),
+      // Le mauvais choix qui change de sens peut finir plus loin que son départ : comparer les deux bouts le désignerait.
+      ok(!exo.hints.some((hint) => /premi[eè]re/u.test(hint) && /derni[eè]re/u.test(hint)), `un indice compare la première et la dernière note : ${exo.hints.join(" | ")}`),
     );
   },
   "ce2-melodie-trou": (exo) => {
@@ -670,7 +672,10 @@ const CHECKS: Record<string, Check> = {
 
   // ----- L'hymne national et les chants -----
   "ce2-hymne-qcm": checkQuestion(HYMNE_QCM_T),
-  "ce2-hymne-glisser": checkSort(zoneMap([[ANTHEM_DO_T, "On le fait"], [ANTHEM_DONT_T, "On ne le fait pas"]]), [["On le fait", "On ne le fait pas"]]),
+  // L'énoncé dit « pendant l'hymne » : hors de la cérémonie, jouer avec ses amis est normal.
+  "ce2-hymne-glisser": (exo) =>
+    ok(exo.prompt === "Pendant l'hymne national, glisse chaque geste dans la bonne case.", `énoncé sans le moment de l'hymne : ${exo.prompt}`) ??
+    checkSort(zoneMap([[ANTHEM_DO_T, "On le fait"], [ANTHEM_DONT_T, "On ne le fait pas"]]), [["On le fait", "On ne le fait pas"]])(exo),
   "ce2-hymne-relier": checkLink({ "Relie chaque mot à ce qui lui correspond.": ANTHEM_LINK_T }),
   "ce2-hymne-ordre": checkOrder(HYMNE_ORDRE_T),
   "ce2-hymne-trou": checkGap(HYMNE_TROU_T),

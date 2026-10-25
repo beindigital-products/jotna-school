@@ -922,9 +922,10 @@ const PRO_INVENT: Pool = {
     },
     {
       id: "radio",
-      q: ["Quelle invention fait entendre des nouvelles et de la musique venues de loin, sans images ?", "Quel appareil permet d'écouter une émission sans pouvoir répondre ?", "Quelle invention permet à tout un village d'écouter les mêmes nouvelles en même temps ?"],
+      q: ["Quelle invention fait entendre des nouvelles et de la musique venues de loin, sans images ?", "Quel appareil fait écouter une émission, sans images et sans pouvoir répondre ?", "Quelle invention permet à tout un village d'écouter les mêmes nouvelles en même temps ?"],
       a: "Radio",
-      also: ["La radio"],
+      // « Poste de radio », « transistor » : les noms que l'enfant entend à la maison.
+      also: ["La radio", "Poste de radio", "Poste radio", "Transistor"],
       ga: "la radio",
       s: ["Pour écouter les nouvelles sans voir d'images, on utilise ___.", "On écoute de la musique et des nouvelles venues de loin avec ___."],
       hint: "Les voix et la musique arrivent par les ondes.",

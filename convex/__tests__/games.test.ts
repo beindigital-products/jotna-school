@@ -334,6 +334,27 @@ describe("l'écoute", () => {
       expect(new Set(p.options).size).toBe(p.options.length);
     }
   });
+
+  it("un mauvais choix de rythme ne diffère jamais de la bonne réponse par le seul dernier coup", () => {
+    // Le dernier coup n'a aucun silence derrière lui : on ne l'entend ni long ni court. Deux options qui ne diffèrent que par lui sonnent pareil.
+    for (let n = 0; n < 300; n++) {
+      const [game] = generateGames([{ kind: "ecoute-motif-rythmique", count: 1 }], {
+        klass: ["CE2", "CM1", "CM2"][n % 3] as "CE2",
+        palierIndex: (n % 5) + 1,
+        palierCount: 5,
+        seed: `d${n}`,
+      });
+      const p = game.payload as unknown as ListenPayload;
+      const right = p.options[p.correctIndex].split(" · ");
+      expect(right.length).toBeGreaterThanOrEqual(3);
+      p.options.forEach((option, i) => {
+        if (i === p.correctIndex) return;
+        const beats = option.split(" · ");
+        expect(beats.length).toBe(right.length);
+        expect(beats.slice(0, -1).join(" · "), `${option} contre ${right.join(" · ")}`).not.toBe(right.slice(0, -1).join(" · "));
+      });
+    }
+  });
 });
 
 describe("l'atelier des couleurs", () => {

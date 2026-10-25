@@ -257,9 +257,10 @@ export function makeCe1NutritionChainOrder(ctx: GameContext): GeneratedGame {
     prompt: "Range cette chaîne alimentaire, de ce qui est mangé en premier à celui qui mange en dernier.",
     sequence: chain.map((link) => link.tile),
     hints: [
-      "Une chaîne alimentaire commence par un être vivant qui n'est mangé que par un autre.",
+      // Jamais « qui mange le plus termine la chaîne » : c'est faux (la vache mange plus que l'homme).
+      "La chaîne commence par une plante ou un morceau de plante, qui ne mange personne.",
       "Chaque maillon est mangé par celui qui vient juste après.",
-      "Cherche d'abord qui mange le plus, il termine la chaîne.",
+      "Le dernier mange celui qui le précède, et personne ne le mange dans la chaîne.",
     ],
   }));
   return stepsOrder(ctx, "ce1-nutri-chaine-ordre", "ranger une chaîne alimentaire", steps);
@@ -409,7 +410,8 @@ export function makeCe1PlantNeedSort(ctx: GameContext): GeneratedGame {
     [
       "Pense à ce qu'une graine reçoit pour pousser.",
       "Il faut boire, recevoir de la clarté et s'enfoncer dans quelque chose.",
-      "Ce qui ne vit pas ou n'est pas naturel ne nourrit pas une graine.",
+      // Pas « ce qui ne vit pas ne la nourrit pas » : la lumière et la terre ne vivent pas, et elles l'aident.
+      "Une graine ne mange pas comme un animal, et les pierres ou les objets fabriqués ne la font pas pousser.",
     ],
   );
 }
@@ -544,29 +546,37 @@ export function makeCe1BreathFactChoice(ctx: GameContext): GeneratedGame {
 }
 
 const POLLUTERS = ["Fumée", "Poussière", "Déchets brûlés"] as const;
-const CLEAN = ["Vent", "Pluie", "Arbres"] as const;
+/**
+ * Ce qui ne salit pas l'air, et le garde propre. Pas le vent : l'harmattan soulève la poussière, donc
+ * « le vent garde l'air propre » se discute.
+ */
+const CLEAN = ["Pluie", "Arbres", "Plantes"] as const;
+
+/** Les indices quand la bonne réponse salit l'air (« Quelle chose pollue l'air ? »). */
+const POLLUTER_HINTS = [
+  "Pense à ce qui rend l'air difficile à respirer.",
+  "Cela se voit parfois dans l'air et fait tousser.",
+  "Les deux autres choix ne salissent pas l'air.",
+] as const;
+/** Les indices quand la bonne réponse ne salit pas l'air : les deux autres choix, eux, le salissent. */
+const CLEAN_HINTS = [
+  "Pense à ce qui rend l'air bon à respirer.",
+  "Cette chose tombe du ciel ou pousse dans la terre.",
+  "Les deux autres choix salissent l'air.",
+] as const;
 
 /** « Qu'est-ce qui pollue l'air ? » ou « Qu'est-ce qui ne pollue pas l'air ? » : la fumée et la poussière parmi ce qui ne salit pas. */
 export function makeCe1AirChoice(ctx: GameContext): GeneratedGame {
-  type Entry = { question: string; answer: string; wrong: readonly string[] };
+  type Entry = { question: string; answer: string; wrong: readonly string[]; hints: readonly [string, string, string] };
   const entries: Entry[] = [
-    ...POLLUTERS.map((answer) => ({ question: "Quelle chose pollue l'air ?", answer, wrong: shuffle(ctx.rng, CLEAN).slice(0, 2) })),
-    ...CLEAN.map((answer) => ({ question: "Quelle chose ne pollue pas l'air ?", answer, wrong: shuffle(ctx.rng, POLLUTERS).slice(0, 2) })),
-    ...POLLUTERS.map((answer) => ({ question: "Quelle chose rend l'air sale ?", answer, wrong: shuffle(ctx.rng, CLEAN).slice(0, 2) })),
-    ...CLEAN.map((answer) => ({ question: "Quelle chose garde l'air propre ?", answer, wrong: shuffle(ctx.rng, POLLUTERS).slice(0, 2) })),
+    ...POLLUTERS.map((answer) => ({ question: "Quelle chose pollue l'air ?", answer, wrong: shuffle(ctx.rng, CLEAN).slice(0, 2), hints: POLLUTER_HINTS })),
+    ...CLEAN.map((answer) => ({ question: "Quelle chose ne pollue pas l'air ?", answer, wrong: shuffle(ctx.rng, POLLUTERS).slice(0, 2), hints: CLEAN_HINTS })),
+    ...POLLUTERS.map((answer) => ({ question: "Quelle chose rend l'air sale ?", answer, wrong: shuffle(ctx.rng, CLEAN).slice(0, 2), hints: POLLUTER_HINTS })),
+    ...CLEAN.map((answer) => ({ question: "Quelle chose garde l'air propre ?", answer, wrong: shuffle(ctx.rng, POLLUTERS).slice(0, 2), hints: CLEAN_HINTS })),
   ];
   return choiceGame(ctx, "ce1-resp-air-qcm", "air pur et air pollué", () => {
     const entry = pickFresh(ctx, quarter(entries, ctx.level, 1), (candidate) => `ce1-resp-air-qcm:${candidate.question}:${candidate.answer}`);
-    return {
-      prompt: entry.question,
-      answer: entry.answer,
-      wrong: entry.wrong,
-      hints: [
-        "Pense à ce qui rend l'air difficile à respirer.",
-        "On la voit parfois en l'air, et elle fait tousser.",
-        "Les deux autres choix ne salissent pas l'air.",
-      ],
-    };
+    return { prompt: entry.question, answer: entry.answer, wrong: entry.wrong, hints: [...entry.hints] };
   });
 }
 
@@ -868,7 +878,9 @@ export function makeCe1MalariaSort(ctx: GameContext): GeneratedGame {
     },
     {
       zone: "Expose au paludisme",
-      tiles: ["Dormir sans moustiquaire", "Laisser l'eau stagner", "Garder des seaux pleins", "Laisser des flaques", "Laisser un pneu plein"],
+      // Pas « Garder des seaux pleins » ni « un pneu plein » : un seau plein et couvert ne risque rien
+      // (le thème de l'eau potable l'enseigne), et « pneu plein » peut se lire « pneu gonflé ».
+      tiles: ["Dormir sans moustiquaire", "Laisser l'eau stagner", "Laisser des seaux ouverts dehors", "Laisser des flaques", "Laisser de l'eau dans un pneu"],
     },
     [
       "Pense à ce qui éloigne les insectes qui piquent.",

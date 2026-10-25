@@ -217,7 +217,7 @@ const PROGRESS_WRITE_T: [string, string[]][] = [
   ["Avant l'électricité, une lampe brûlait du ___. Écris le mot.", ["pétrole", "petrole"]],
   ["Un téléphone à emporter partout est un téléphone ___. Écris le mot.", ["portable"]],
   ["Un message écrit sur du papier et glissé dans une enveloppe est une ___. Écris le mot.", ["lettre", "une lettre"]],
-  ["Pour cuire le riz sans gaz, on allume un feu avec du ___. Écris le mot.", ["bois"]],
+  ["Pour cuire le riz sans gaz, on allume un feu avec du ___. Écris le mot.", ["bois", "charbon", "charbon de bois"]],
   ["Pour aller loin sur la route, on prend un car ___. Écris le mot.", ["rapide"]],
   ["Une lampe qui marche avec le courant est une lampe ___. Écris le mot.", ["électrique", "electrique"]],
   ["Pour cuisiner sans feu de bois, on peut utiliser une cuisinière à ___. Écris le mot.", ["gaz"]],

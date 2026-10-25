@@ -85,7 +85,7 @@ const ASSOC: Record<string, string[]> = {
   applaudissement: [],
   cuisinier: [],
   berger: [],
-  interpreter: ["comédien qui joue un personnage devant le public", "verbe dit que le comédien donne vie à un personnage", "Jouer un personnage devant le public, c'est", "comédien va"],
+  interpreter: ["verbe veut dire tenir un rôle devant le public", "verbe dit que le comédien donne vie à un personnage", "Jouer un personnage devant le public, c'est", "comédien va"],
   regarder: [],
 };
 

@@ -298,13 +298,13 @@ const JOB_ORDER: [string, string[]][] = [
 ];
 /** [énoncé, métier attendu, réponses admises] : le métier est désigné par ses gestes, jamais par son nom. */
 const JOB_WORD: [string, string, string[]][] = [
-  ["Dans un jeu de rôles, tu lances un filet à la mer pour attraper des poissons. Quel métier joues-tu ? Écris le mot.", "pêcheur", ["pêcheur", "un pêcheur", "le pêcheur"]],
-  ["Dans un jeu de rôles, tu pèses des mangues et tu les vends au marché. Quel métier joues-tu ? Écris le mot.", "vendeur", ["vendeur", "un vendeur", "le vendeur", "vendeuse", "une vendeuse", "marchand", "un marchand", "le marchand"]],
-  ["Dans un jeu de rôles, tu fais cuire du pain dans un four. Quel métier joues-tu ? Écris le mot.", "boulanger", ["boulanger", "un boulanger", "le boulanger"]],
-  ["Dans un jeu de rôles, tu couds des habits avec du fil et une aiguille. Quel métier joues-tu ? Écris le mot.", "tailleur", ["tailleur", "un tailleur", "le tailleur", "couturier", "un couturier", "le couturier"]],
-  ["Dans un jeu de rôles, tu tiens un volant et tu conduis le car. Quel métier joues-tu ? Écris le mot.", "chauffeur", ["chauffeur", "un chauffeur", "le chauffeur", "conducteur", "un conducteur", "le conducteur"]],
-  ["Dans un jeu de rôles, tu travailles la terre du champ avec une daba. Quel métier joues-tu ? Écris le mot.", "cultivateur", ["cultivateur", "un cultivateur", "le cultivateur", "paysan", "un paysan", "le paysan"]],
-  ["Dans un jeu de rôles, tu écris au tableau et tu apprends à lire aux élèves. Quel métier joues-tu ? Écris le mot.", "maître", ["maître", "un maître", "le maître", "maîtresse", "une maîtresse", "la maîtresse", "instituteur", "un instituteur", "institutrice", "une institutrice"]],
+  ["Dans un jeu de rôles, tu lances un filet à la mer pour attraper des poissons. Quel métier joues-tu ? Écris le mot.", "pêcheur", ["pêcheur", "un pêcheur", "le pêcheur", "pêcheuse", "une pêcheuse", "la pêcheuse"]],
+  ["Dans un jeu de rôles, tu pèses des mangues et tu les vends au marché. Quel métier joues-tu ? Écris le mot.", "vendeur", ["vendeur", "un vendeur", "le vendeur", "vendeuse", "une vendeuse", "la vendeuse", "marchand", "un marchand", "le marchand", "marchande", "une marchande", "la marchande"]],
+  ["Dans un jeu de rôles, tu fais cuire du pain dans un four. Quel métier joues-tu ? Écris le mot.", "boulanger", ["boulanger", "un boulanger", "le boulanger", "boulangère", "une boulangère", "la boulangère"]],
+  ["Dans un jeu de rôles, tu couds des habits avec du fil et une aiguille. Quel métier joues-tu ? Écris le mot.", "tailleur", ["tailleur", "un tailleur", "le tailleur", "tailleuse", "une tailleuse", "la tailleuse", "couturier", "un couturier", "le couturier", "couturière", "une couturière", "la couturière"]],
+  ["Dans un jeu de rôles, tu tiens un volant et tu conduis le car. Quel métier joues-tu ? Écris le mot.", "chauffeur", ["chauffeur", "un chauffeur", "le chauffeur", "chauffeuse", "une chauffeuse", "la chauffeuse", "conducteur", "un conducteur", "le conducteur", "conductrice", "une conductrice", "la conductrice"]],
+  ["Dans un jeu de rôles, tu travailles la terre du champ avec une daba. Quel métier joues-tu ? Écris le mot.", "cultivateur", ["cultivateur", "un cultivateur", "le cultivateur", "cultivatrice", "une cultivatrice", "la cultivatrice", "paysan", "un paysan", "le paysan", "paysanne", "une paysanne", "la paysanne", "agriculteur", "un agriculteur", "l'agriculteur", "agricultrice", "une agricultrice", "l'agricultrice"]],
+  ["Dans un jeu de rôles, tu écris au tableau et tu apprends à lire aux élèves. Quel métier joues-tu ? Écris le mot.", "maître", ["maître", "un maître", "le maître", "maîtresse", "une maîtresse", "la maîtresse", "instituteur", "un instituteur", "l'instituteur", "institutrice", "une institutrice", "l'institutrice"]],
   ["Dans un jeu de rôles, tu prends la température d'un malade et tu le soignes. Quel métier joues-tu ? Écris le mot.", "infirmière", ["infirmière", "une infirmière", "l'infirmière", "infirmier", "un infirmier", "l'infirmier"]],
 ];
 const CRY_OF: Record<string, string> = {

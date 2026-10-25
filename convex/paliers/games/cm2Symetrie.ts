@@ -7,8 +7,8 @@
  * coordonnées, la somme des arêtes d'un cube est douze fois son arête.
  *
  * CE QUE CE FICHIER NE FAIT PAS SORTIR DE LA FICHE
- * - Les figures sont celles du CE2 (carré, rectangle de 6 cm sur 4 cm, triangle équilatéral, losange sans angle droit, parallélogramme sans angle droit, triangle
- *   aux trois côtés inégaux, triangle à deux côtés égaux, quelques lettres) et, au dernier palier, le pentagone et l'hexagone réguliers (cinq et six axes). Jamais
+ * - Les figures sont celles du CE2 (carré, rectangle de 6 cm sur 4 cm, triangle équilatéral, losange sans angle droit, parallélogramme quelconque (ni losange, ni rectangle),
+ *   triangle aux trois côtés inégaux, triangle à deux côtés égaux, quelques lettres) et, au dernier palier, le pentagone et l'hexagone réguliers (cinq et six axes). Jamais
  *   le cercle, qui en a une infinité. Un rectangle est toujours donné avec ses mesures : un carré est un rectangle, et il a quatre axes.
  * - Un symétrique se compte en colonnes ou en lignes d'un quadrillage : le point et son symétrique sont à la même distance de l'axe, de part et d'autre.
  * - Une translation se lit dans des coordonnées « (4 ; 3) » : le premier nombre compte les carreaux vers la droite, le second vers le haut. Les mots « abscisse » et
@@ -38,7 +38,8 @@ const RECTANGLE = figure("un rectangle de 6 cm sur 4 cm", "Un rectangle de 6 cm 
 const EQUILATERAL = figure("un triangle équilatéral", "Un triangle équilatéral", 3);
 const RHOMBUS = figure("un losange sans angle droit", "Un losange sans angle droit", 2);
 const TWO_EQUAL = figure("un triangle qui a deux côtés égaux et un troisième plus long", "Un triangle à deux côtés égaux", 1);
-const PARALLELOGRAM = figure("un parallélogramme sans angle droit", "Un parallélogramme sans angle droit", 0);
+// Jamais « un parallélogramme sans angle droit » : un losange non carré en est un et il a deux axes. Seul le parallélogramme quelconque n'en a aucun.
+const PARALLELOGRAM = figure("un parallélogramme quelconque (ni losange, ni rectangle)", "Un parallélogramme quelconque (ni losange, ni rectangle)", 0);
 const UNEQUAL = figure("un triangle aux trois côtés inégaux", "Un triangle aux trois côtés inégaux", 0);
 const PENTAGON = figure("un pentagone régulier", "Un pentagone régulier", 5);
 const HEXAGON = figure("un hexagone régulier", "Un hexagone régulier", 6);

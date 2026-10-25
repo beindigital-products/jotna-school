@@ -816,6 +816,16 @@ describe("auditExercise : ce qui ne doit pas être pris pour un défaut", () => 
     expect(codesOf(twin)).toContain("dragdrop_zones_few");
   });
 
+  it("laisse une réponse courte nommer son choix fermé entre parenthèses (« son ou sont »)", () => {
+    const closed = shortAnswer({ class: "CM1", subject: "Français", prompt: "Écris le mot qui manque (son ou sont) dans la phrase « Ils ___ partis tôt. »." }, { acceptedAnswers: ["sont"] });
+    expect(codesOf(closed)).not.toContain("short_answer_answer_in_prompt");
+    const three = shortAnswer({ class: "CM1", subject: "Français", prompt: "Écris le mot qui manque (la, l'a ou là) dans la phrase « Awa ___ vu hier. »." }, { acceptedAnswers: ["l'a"] });
+    expect(codesOf(three)).not.toContain("short_answer_answer_in_prompt");
+    // Hors parenthèses, la réponse écrite reste un défaut.
+    const open = shortAnswer({ class: "CM1", subject: "Français", prompt: "Écris sont dans la phrase « Ils ___ partis tôt. »." }, { acceptedAnswers: ["sont"] });
+    expect(codesOf(open)).toContain("short_answer_answer_in_prompt");
+  });
+
   it("garde « 1 » et « 1,0 » face à face quand l'énoncé interroge une valeur", () => {
     const input = qcm(
       { class: "Tle", subject: "Mathématiques", prompt: "Quelle est la probabilité de l'union de A et B ?", answerKey: "1,0" },

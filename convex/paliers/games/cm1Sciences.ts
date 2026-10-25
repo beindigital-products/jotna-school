@@ -16,7 +16,7 @@
  * MODULE PUR (voir `types.ts`).
  */
 import { ce2Gap, ce2Link, ce2Order, ce2Question, ce2Sort, ce2Write, sortRows, type LinkRow, type OrderRow } from "./ce2Outils";
-import { RANK_HINTS, SORT_HINTS, gapRows, link, order, questionRows, writeRows, type Pool } from "./cm1Faits";
+import { RANK_HINTS, SORT_HINTS, gapRows, link, order, questionRows, withUsefulLetter, writeRows, type Pool } from "./cm1Faits";
 import type { GameContext, GeneratedGame } from "./shared";
 
 type Make = (ctx: GameContext) => GeneratedGame;
@@ -129,8 +129,8 @@ const DIG_MOUTH: Pool = {
 };
 
 const DIG_POOLS = [DIG_ORGANS, DIG_HABITS, DIG_LIQUID, DIG_MOUTH] as const;
-const DIG_QCM = questionRows("sc-cm1-digestion", DIG_POOLS);
-const DIG_TROU = gapRows("sc-cm1-digestion", DIG_POOLS);
+const DIG_QCM = withUsefulLetter(questionRows("sc-cm1-digestion", DIG_POOLS), true);
+const DIG_TROU = withUsefulLetter(gapRows("sc-cm1-digestion", DIG_POOLS), false);
 const DIG_ECRIRE = writeRows("sc-cm1-digestion", DIG_POOLS);
 
 const DIG_ORDRE: readonly OrderRow[] = [
@@ -222,7 +222,8 @@ const RSP_MOVE: Pool = {
       a: "Inspiration",
       s: ["Quand on ___, l'air entre dans les poumons.", "Pour faire entrer l'air, on gonfle la poitrine, donc on ___."],
       ga: "inspire",
-      hint: "La poitrine se gonfle et le ventre se creuse un peu.",
+      // Pas « le ventre se creuse » : le diaphragme descend et pousse un peu le ventre vers l'avant.
+      hint: "La poitrine se gonfle et l'air entre par le nez.",
     },
     {
       id: "expiration",
@@ -267,7 +268,8 @@ const RSP_DISEASE: Pool = {
       id: "tuberculose",
       q: ["Quelle maladie grave des poumons est causée par un microbe et se soigne avec des médicaments ?", "Quelle maladie des poumons, due à un microbe, doit être soignée longtemps ?"],
       a: "Tuberculose",
-      s: ["Une maladie grave des poumons due à un microbe est ___.", "Contre ___, on prend des médicaments pendant longtemps."],
+      // Le microbe dans la phrase : « des médicaments pendant longtemps » seul vaut aussi pour l'asthme.
+      s: ["Une maladie grave des poumons due à un microbe est ___.", "Contre ___, maladie des poumons due à un microbe, on prend des médicaments pendant des mois."],
       ga: "la tuberculose",
       hint: "Un microbe s'installe dans les poumons et l'on tousse beaucoup.",
     },
@@ -302,8 +304,8 @@ const RSP_PREVENT: Pool = {
 };
 
 const RSP_POOLS = [RSP_PARTS, RSP_MOVE, RSP_DISEASE, RSP_PREVENT] as const;
-const RSP_QCM = questionRows("sc-cm1-respiration", RSP_POOLS);
-const RSP_TROU = gapRows("sc-cm1-respiration", RSP_POOLS);
+const RSP_QCM = withUsefulLetter(questionRows("sc-cm1-respiration", RSP_POOLS), true);
+const RSP_TROU = withUsefulLetter(gapRows("sc-cm1-respiration", RSP_POOLS), false);
 const RSP_ECRIRE = writeRows("sc-cm1-respiration", RSP_POOLS);
 
 const RSP_ORDRE: readonly OrderRow[] = [
@@ -448,8 +450,8 @@ const CIR_WHERE: Pool = {
 };
 
 const CIR_POOLS = [CIR_PARTS, CIR_PULSE, CIR_PLACE, CIR_BLOOD, CIR_WHERE] as const;
-const CIR_QCM = questionRows("sc-cm1-circulation", CIR_POOLS);
-const CIR_TROU = gapRows("sc-cm1-circulation", CIR_POOLS);
+const CIR_QCM = withUsefulLetter(questionRows("sc-cm1-circulation", CIR_POOLS), true);
+const CIR_TROU = withUsefulLetter(gapRows("sc-cm1-circulation", CIR_POOLS), false);
 const CIR_ECRIRE = writeRows("sc-cm1-circulation", CIR_POOLS);
 
 const CIR_ORDRE: readonly OrderRow[] = [
@@ -600,8 +602,8 @@ const PHE_IRON: Pool = {
 };
 
 const PHE_POOLS = [PHE_NAMES, PHE_AIR, PHE_CANDLE, PHE_IRON] as const;
-const PHE_QCM = questionRows("sc-cm1-phenomenes", PHE_POOLS);
-const PHE_TROU = gapRows("sc-cm1-phenomenes", PHE_POOLS);
+const PHE_QCM = withUsefulLetter(questionRows("sc-cm1-phenomenes", PHE_POOLS), true);
+const PHE_TROU = withUsefulLetter(gapRows("sc-cm1-phenomenes", PHE_POOLS), false);
 const PHE_ECRIRE = writeRows("sc-cm1-phenomenes", PHE_POOLS);
 
 const PHE_ORDRE: readonly OrderRow[] = [
@@ -618,7 +620,8 @@ const PHE_RELIER: readonly LinkRow[] = [
   link("Relie chaque scène à son phénomène.", [["Glaçon qui fond", "Fusion"], ["Linge qui sèche", "Évaporation"], ["Buée sur un verre", "Condensation"]]),
   link("Relie chaque scène à son phénomène.", [["Eau qui gèle", "Solidification"], ["Bois qui brûle", "Combustion"], ["Clou orange", "Rouille"]]),
   link("Relie chaque phénomène à ce qu'il demande.", [["Combustion", "A besoin d'air"], ["Rouille", "A besoin d'eau et d'air"], ["Évaporation", "A besoin de chaleur"]]),
-  link("Relie chaque cause à son effet.", [["Chaleur", "Fait fondre la glace"], ["Froid", "Fait geler l'eau"], ["Soleil", "Sèche le linge"]]),
+  // Pas « Soleil ~ Sèche le linge » : le soleil est une chaleur, il fait aussi fondre la glace.
+  link("Relie chaque cause à son effet.", [["Chaleur", "Fait fondre la glace"], ["Froid", "Fait geler l'eau"], ["Eau et air", "Font rouiller le fer"]]),
   link("Relie chaque mot à son état.", [["Buée", "Gaz devenu liquide"], ["Glaçon", "Solide"], ["Vapeur", "Gaz"]]),
 ];
 
@@ -692,7 +695,8 @@ const OBJ_LAMP: Pool = {
   items: [
     {
       id: "pile",
-      q: ["Quelle pièce fournit l'énergie de la lampe torche ?", "Quelle pièce de la lampe torche s'use et se change ?"],
+      // Pas « s'use et se change » seul : l'ampoule grille aussi et se change.
+      q: ["Quelle pièce fournit l'énergie de la lampe torche ?", "Quelle pièce de la lampe torche donne l'énergie et se change quand elle est vide ?"],
       a: "Pile",
       s: ["La lampe torche reçoit son énergie grâce à ___.", "Quand la lumière faiblit, on change ___."],
       ga: "la pile",
@@ -809,8 +813,8 @@ const OBJ_CARE: Pool = {
 };
 
 const OBJ_POOLS = [OBJ_BIKE, OBJ_LAMP, OBJ_TAP, OBJ_WHICH, OBJ_CARE] as const;
-const OBJ_QCM = questionRows("sc-cm1-objets", OBJ_POOLS);
-const OBJ_TROU = gapRows("sc-cm1-objets", OBJ_POOLS);
+const OBJ_QCM = withUsefulLetter(questionRows("sc-cm1-objets", OBJ_POOLS), true);
+const OBJ_TROU = withUsefulLetter(gapRows("sc-cm1-objets", OBJ_POOLS), false);
 const OBJ_ECRIRE = writeRows("sc-cm1-objets", OBJ_POOLS);
 
 const OBJ_ORDRE: readonly OrderRow[] = [
@@ -855,7 +859,7 @@ const HYG_PROBLEM: Pool = {
       q: ["Quel mot désigne un lieu sale, avec des ordures et des eaux usées ?", "Quel mot décrit un lieu malsain, couvert d'ordures et de flaques sales ?"],
       a: "Insalubrité",
       also: ["Insalubrite"],
-      s: ["Des ordures et des eaux usées partout, c'est ___.", "Un quartier plein de déchets est touché par ___."],
+      s: ["Des ordures et des eaux usées partout, c'est ___.", "Le mot qui décrit un quartier plein de déchets et de flaques sales est ___."],
       ga: "l'insalubrité",
       hint: "Le lieu est sale et dangereux pour la santé.",
     },
@@ -869,8 +873,9 @@ const HYG_PROBLEM: Pool = {
       hint: "Il n'y a presque plus de place entre les personnes.",
     },
   ],
-  extras: ["Pollution", "Épidémie"],
-  gextras: ["la pollution", "une épidémie"],
+  // Pas « la pollution » : un lieu plein d'ordures et d'eaux sales est aussi pollué, ce serait une seconde bonne réponse.
+  extras: ["Sécheresse", "Épidémie"],
+  gextras: ["la sécheresse", "une épidémie"],
 };
 
 const HYG_KIND: Pool = {
@@ -946,7 +951,7 @@ const HYG_GESTURES: Pool = {
       q: ["Que fait-on des eaux sales pour éviter les mauvaises odeurs et les moustiques ?", "Quel geste évite que l'eau sale stagne près des maisons ?"],
       a: "Évacuer les eaux usées",
       not: ["Jeter à la poubelle"],
-      s: ["Pour ne pas attirer les moustiques, on doit ___.", "Une eau sale qui stagne se règle en venant ___."],
+      s: ["Pour ne pas attirer les moustiques, on doit ___.", "Pour qu'une eau sale ne stagne pas, il faut ___."],
       ga: "évacuer les eaux usées",
       hint: "L'eau sale doit s'écouler loin des maisons.",
     },
@@ -955,7 +960,7 @@ const HYG_GESTURES: Pool = {
       q: ["Quel geste de propreté du corps se fait tous les jours avec de l'eau et du savon ?", "Comment garde-t-on la peau propre au quotidien ?"],
       a: "Se doucher",
       not: ["Se laver les mains"],
-      s: ["Pour garder la peau propre, on doit ___ chaque jour.", "La propreté du corps se garde en venant ___."],
+      s: ["Pour garder la peau propre, on doit ___ chaque jour.", "La propreté du corps demande de ___ souvent."],
       ga: "se doucher",
       hint: "On se mouille entièrement et on se savonne.",
     },
@@ -980,8 +985,8 @@ const HYG_SHARE: Pool = {
 };
 
 const HYG_POOLS = [HYG_PROBLEM, HYG_KIND, HYG_SKIN, HYG_GESTURES, HYG_SHARE] as const;
-const HYG_QCM = questionRows("sc-cm1-hygiene", HYG_POOLS);
-const HYG_TROU = gapRows("sc-cm1-hygiene", HYG_POOLS);
+const HYG_QCM = withUsefulLetter(questionRows("sc-cm1-hygiene", HYG_POOLS), true);
+const HYG_TROU = withUsefulLetter(gapRows("sc-cm1-hygiene", HYG_POOLS), false);
 const HYG_ECRIRE = writeRows("sc-cm1-hygiene", HYG_POOLS);
 
 const HYG_ORDRE: readonly OrderRow[] = [
@@ -999,7 +1004,8 @@ const HYG_RELIER: readonly LinkRow[] = [
   link("Relie chaque objet à son usage.", [["Savon", "Laver les mains"], ["Poubelle", "Jeter les ordures"], ["Brosse à dents", "Protéger la bouche"]]),
   link("Relie chaque danger à ce qui l'attire.", [["Moustiques", "Eau qui stagne"], ["Mouches", "Ordures entassées"], ["Microbes", "Mains sales"]]),
   link("Relie chaque problème à sa solution.", [["Peigne prêté", "Ne pas le prêter"], ["Eau sale", "L'évacuer"], ["Ordures", "À la poubelle"]]),
-  link("Relie chaque mot à ce qu'il cause ou protège.", [["Insalubrité", "Cause de maladies"], ["Propreté", "Protège la santé"], ["Promiscuité", "Aide les microbes à passer"]]),
+  // Un trait propre à chaque mot : « cause de maladies » et « aide les microbes à passer » valaient pour les deux.
+  link("Relie chaque mot à ce qui le décrit.", [["Insalubrité", "Ordures et eaux sales partout"], ["Propreté", "Protège la santé"], ["Promiscuité", "Trop de monde dans un petit espace"]]),
 ];
 
 const HYG_GLISSER = [

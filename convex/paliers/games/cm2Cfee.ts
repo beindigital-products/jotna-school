@@ -537,7 +537,15 @@ export function makeCm2CfePluralLink(ctx: GameContext): GeneratedGame {
 
 const ZONE_S = "Pluriel en -s";
 const ZONE_X = "Pluriel en -x";
-const SORT_HINTS = hints("Imagine plusieurs de ces choses et regarde la fin du mot écrit.", "Beaucoup de mots en -ou et en -eau se terminent par un x.", "Pour un mot en -al, essaie de le dire à plusieurs : on entend -aux.");
+/**
+ * Des règles justes pour TOUTES les étiquettes : « beaucoup de mots en -ou prennent un x » envoyait trou et verrou dans la mauvaise case, « on entend -aux »
+ * y envoyait chacal et festival (défaut relevé en production le 25 octobre 2026). Aucun mot d'étiquette n'y est écrit.
+ */
+const SORT_HINTS = hints(
+  "Imagine plusieurs de ces choses et regarde la fin du mot écrit.",
+  "Les mots en -eau prennent un x. Presque tous les mots en -ou prennent un s, sauf sept qui prennent un x.",
+  "La plupart des mots en -al font -aux, mais quelques-uns prennent un simple s.",
+);
 const SORT_S = ["trou", "clou", "sou", "fou", "verrou", "écrou", "cou", "kangourou", "bal", "carnaval", "festival", "récital", "chacal", "régal", "pneu", "bleu", "landau", "détail", "chandail", "éventail", "épouvantail"];
 const SORT_X = ["cheval", "journal", "animal", "bateau", "gâteau", "oiseau", "feu", "jeu", "hôpital", "canal", "chapeau", "tuyau", "cheveu", "neveu", "bijou", "chou", "genou", "caillou", "hibou", "pou", "signal", "métal", "rideau", "tableau", "corail", "vitrail", "émail", "général", "local", "couteau", "drapeau", "morceau", "vœu", "joujou"];
 export const PLURAL_SORT_ROWS: readonly SortRow[] = [0, 1, 2, 3, 4].flatMap((rank) => sortRows("Glisse chaque mot dans la bonne case.", [ZONE_S, ZONE_X], SORT_S.slice(rank * 4, rank * 4 + 5), SORT_X.slice(rank * 7, rank * 7 + 7), SORT_HINTS, 6));

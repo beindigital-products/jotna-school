@@ -124,6 +124,7 @@ const SIT_RELIEF: Pool = {
       id: "relief",
       q: ["Comment est le relief du Sénégal ?", "Quel est le relief le plus répandu au Sénégal ?"],
       a: "Surtout plat",
+      also: ["plat", "Il est plat", "Il est surtout plat", "Le relief est plat", "Le relief est surtout plat", "Plutôt plat", "Très plat"],
       ga: "plat",
       s: ["Le relief du Sénégal est surtout ___.", "Au Sénégal, on voit de grandes étendues, car le relief est ___."],
       hint: "On y voit de grandes étendues, avec peu de hauteurs.",
@@ -710,16 +711,19 @@ const COM_MEDIA: Pool = {
       also: ["radio"],
       ga: "la radio",
       s: ["Pour écouter les nouvelles sans images, on utilise ___.", "Pour entendre la voix d'un journaliste sans image, on écoute ___."],
+      // Un téléphone fait aussi entendre une voix sans image : il n'est jamais un mauvais choix ici.
+      not: ["Téléphone"],
       hint: "On l'écoute avec des oreilles, souvent en cuisinant.",
     },
     {
       id: "television",
-      q: ["Quel moyen de communication montre des images et des sons sur un écran ?", "Quel moyen de communication permet de regarder un journal à la maison ?"],
+      q: ["Quel moyen de communication fait voir des images et entendre des sons sur un écran ?", "Quel moyen de communication permet de regarder un journal à la maison ?"],
       a: "Télévision",
       also: ["télévision", "television", "télé"],
       ga: "la télévision",
-      s: ["Pour regarder des images et des sons sur un écran, on utilise ___.", "Pour voir un journal avec des images, on regarde ___."],
-      not: ["Internet"],
+      s: ["Pour voir des images et entendre des sons sur un écran, on utilise ___.", "Pour voir un journal avec des images, on regarde ___."],
+      // Un téléphone portable montre lui aussi des images et des sons sur un écran.
+      not: ["Internet", "Téléphone"],
       hint: "Un poste posé dans le salon affiche des images animées.",
     },
     {
@@ -739,9 +743,13 @@ const COM_MEDIA: Pool = {
       also: ["internet"],
       ga: "le réseau Internet",
       s: ["Pour chercher une information dans le monde entier, on utilise ___.", "Pour envoyer un message dans le monde entier, on utilise ___."],
+      // Un téléphone (un SMS, un appel) ou une carte postale envoient aussi un message au loin : jamais de mauvais choix ici.
+      not: ["Téléphone", "Carte postale"],
       hint: "C'est une toile mondiale qui relie les machines.",
     },
   ],
+  extras: ["Carte postale"],
+  gextras: ["une carte postale"],
 };
 
 const COM_POOLS = [COM_ROAD, COM_RAIL, COM_PORT, COM_AIRPORT, COM_MEDIA] as const;
@@ -752,8 +760,9 @@ const COM_ECRIRE = writeRows("ge-cm1-communication", COM_POOLS);
 const COM_ORDRE: readonly OrderRow[] = [
   order("Range ces déplacements du plus lent au plus rapide.", ["À pied", "À vélo", "En voiture", "En avion"], "com-ordre:deplacements", RANK_HINTS),
   order("Range ces moyens de transport du plus lent au plus rapide.", ["Charrette", "Voiture", "Avion"], "com-ordre:transports", RANK_HINTS),
-  order("Range ces bateaux du plus lent au plus rapide.", ["Pirogue à rames", "Bateau à moteur", "Avion"], "com-ordre:bateaux", RANK_HINTS),
-  order("Range ces moyens d'envoyer un message du plus lent au plus rapide.", ["Lettre", "Téléphone", "Internet"], "com-ordre:messages", RANK_HINTS),
+  order("Range ces moyens de voyager du plus lent au plus rapide.", ["Pirogue à rames", "Bateau à moteur", "Avion"], "com-ordre:bateaux", RANK_HINTS),
+  // Un appel et un courriel arrivent tous deux en un instant : la suite ne garde que des vitesses nettement différentes.
+  order("Range ces moyens de porter un message très loin du plus lent au plus rapide.", ["Messager à pied", "Lettre par avion", "Appel au téléphone"], "com-ordre:messages", RANK_HINTS),
   order("Range ces façons d'avancer du plus lent au plus rapide.", ["Marcher", "Courir", "Rouler en voiture"], "com-ordre:avancer", RANK_HINTS),
 ];
 
