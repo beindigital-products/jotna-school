@@ -225,7 +225,7 @@ export function makeCm2SymShift(ctx: GameContext): GeneratedGame {
       const nx = x + dx;
       const ny = y + dy;
       if (nx < 0 || ny < 0) continue;
-      const side = (n: number, positive: string, negative: string, first: boolean) => `de ${Math.abs(n)} ${first ? "carreaux " : ""}vers ${n > 0 ? positive : negative}`;
+      const side = (n: number, positive: string, negative: string, first: boolean) => `de ${Math.abs(n)} ${first ? (Math.abs(n) > 1 ? "carreaux " : "carreau ") : ""}vers ${n > 0 ? positive : negative}`;
       const parts: string[] = [];
       if (dx !== 0) parts.push(side(dx, "la droite", "la gauche", true));
       if (dy !== 0) parts.push(side(dy, "le haut", "le bas", parts.length === 0));

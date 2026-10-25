@@ -12,7 +12,8 @@
  *   Trois scénarios de démarche régressive : de l'argent dépensé puis reçu, un stock de sacs vendu puis reçu, des mangues dont on vend la moitié puis quelques-unes.
  * - Les prix sont des multiples de vingt-cinq FCFA ; la monnaie se rend sur un billet de deux mille, cinq mille, dix mille ou vingt mille FCFA. Les prix unitaires
  *   restent plausibles (un pagne de deux mille à cinq mille FCFA) ; ce sont les quantités qui grandissent d'un palier à l'autre.
- * - Les calculs n'utilisent que des entiers : une division tombe toujours juste, un reste, une monnaie ou un stock n'est jamais négatif.
+ * - Les calculs n'utilisent que des entiers : une division tombe toujours juste, un reste, une monnaie ou un stock n'est jamais négatif. En démarche régressive,
+ *   l'histoire ne dépense ni ne vend jamais plus qu'il n'y avait : ce qui reste avant de recevoir couvre toujours ce qui a été dépensé ou vendu.
  * - La question intermédiaire ne se demande que pour les scénarios dont le premier calcul est imposé par l'histoire : jamais pour l'achat de deux sortes d'objets ni
  *   pour le trajet en deux étapes, où l'on peut commencer par l'un ou l'autre. Pour la même raison, l'ordre des étapes ne se demande pas pour eux.
  * - Une donnée inutile est un âge, une place ou le temps qu'il fait : elle ne change jamais la réponse. Un calcul de vérification retrouve toujours un des nombres.
@@ -330,7 +331,8 @@ function drawMoney(ctx: GameContext): Problem {
     const received = randomInt(ctx.rng, 1, 9) * unit;
     const end = randomInt(ctx.rng, 2, 14) * unit;
     const start = end + spent - received;
-    if (start < unit || [spent, received, end].includes(start) || end === received) continue;
+    // Ce qu'il lui reste avant de recevoir (end - received) doit couvrir ce qu'il a dépensé : sinon il dépenserait plus qu'il n'a.
+    if (start < unit || [spent, received, end].includes(start) || end - received < unit) continue;
     return {
       scenario: "argent",
       story: `${person.name} avait de l'argent. ${capital(person.pronoun)} dépense ${fcfa(spent)}, puis reçoit ${fcfa(received)} de sa tante. ${capital(person.pronoun)} a maintenant ${fcfa(end)}.`,
@@ -362,7 +364,8 @@ function drawStock(ctx: GameContext): Problem {
     const received = randomInt(ctx.rng, 1, 9) * unit;
     const end = randomInt(ctx.rng, 2, 12) * unit;
     const start = end + sold - received;
-    if (start < unit || [sold, received, end].includes(start) || end === received) continue;
+    // Ce qui lui reste avant la livraison (end - received) doit couvrir ce qu'il a vendu : sinon il vendrait plus de sacs qu'il n'en a.
+    if (start < unit || [sold, received, end].includes(start) || end - received < unit) continue;
     return {
       scenario: "stock",
       story: `Un commerçant a des sacs de riz. Le matin il en vend ${show(sold)}, l'après-midi il en reçoit ${show(received)}. Il en a maintenant ${show(end)}.`,

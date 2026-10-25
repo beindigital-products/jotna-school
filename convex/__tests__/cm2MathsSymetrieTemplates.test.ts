@@ -117,7 +117,7 @@ const checkShift: Check = (exo) => {
   const m = /^Le point A\((\d+) ; (\d+)\) est translaté (.+)\. Quelles sont ses nouvelles coordonnées \?$/.exec(exo.prompt);
   if (!m) return `énoncé inconnu : ${exo.prompt}`;
   const [x, y] = [Number(m[1]), Number(m[2])];
-  const moves = /^de (\d+) (?:carreaux )?vers (la droite|la gauche|le haut|le bas)(?: et de (\d+) vers (le haut|le bas))?$/.exec(m[3]);
+  const moves = /^de (\d+) (?:carreaux? )?vers (la droite|la gauche|le haut|le bas)(?: et de (\d+) vers (le haut|le bas))?$/.exec(m[3]);
   if (!moves) return `déplacements inconnus : ${m[3]}`;
   const sign = (word: string) => (word === "la droite" || word === "le haut" ? 1 : -1);
   const first = Number(moves[1]) * sign(moves[2]);
@@ -134,6 +134,7 @@ const checkShift: Check = (exo) => {
     ok(level !== 1 || (dx > 0 && dy === 0), "le premier palier ne sert qu'un déplacement vers la droite"),
     ok(level > 2 || (dx >= 0 && dy >= 0), "un déplacement vers la gauche ou vers le bas avant le palier 4"),
     ok(!moves[3] || horizontal, "un second déplacement après un déplacement vertical"),
+    ok(/carreau/.test(m[3]) && /carreaux/.test(m[3]) === (Number(moves[1]) > 1), `l'accord de « carreau » : ${m[3]}`),
     ok(nx >= 0 && ny >= 0, "des coordonnées négatives"),
     ok(rightOption(exo) === `(${nx} ; ${ny})`, `${exo.prompt} : ${rightOption(exo)}, pas (${nx} ; ${ny})`),
     ok(wrongs.every((option) => POINT.test(option) && option !== `(${nx} ; ${ny})` && option !== `(${x} ; ${y})`), `un mauvais choix égal à la bonne réponse ou au point de départ : ${wrongs.join(" ; ")}`),

@@ -3007,6 +3007,10 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
     prix). (5) Un énoncé de problème n'a qu'une apostrophe : les prénoms commencent par une consonne et le test vérifie l'accord de « il » et « elle ». (6) Un mauvais choix plus de trois fois plus grand que
     la bonne réponse se récuse tout seul (1 080 km/h) : il est écarté. (7) Les minutes d'une durée (« 30 » dans « 5 h 30 min ») sont des nombres de l'énoncé et ne sont jamais un mauvais choix.
     (8) « à 1 carreaux » : une distance d'un seul carreau n'est pas servie, parce que le pluriel serait faux.
+    Trouvés à la relecture des 185 lignes en production (24 octobre 2026), que ni les tests ni le contrôleur n'avaient vus : (9) en démarche régressive, une histoire qui dépense ou vend plus qu'il n'y avait
+    (« il vend 55 sacs » alors qu'il en avait 25) : ce qui reste avant de recevoir doit couvrir la dépense, `end - received >= unit`, et le test le vérifie sur chaque histoire ; (10) « de 1 carreaux » :
+    le premier déplacement s'accorde (« 1 carreau »), le second n'a pas le mot ; (11) un mauvais choix du trou absurde (« 57 600 h » pour 4 h) : plafonné à dix fois la bonne réponse. Une même question peut
+    revenir d'un palier à l'autre aux deux premiers paliers, où les plages sont petites (le trou « colonne 5, colonne 7 »).
   - **HORS FICHE, À FAIRE RELIRE.** Les coordonnées `(4 ; 3)` pour la translation, sans les mots « abscisse » et « ordonnée » ; le pentagone et l'hexagone réguliers (cinq et six axes) ; la somme des
     longueurs des arêtes ; le litre égal au décimètre cube et les conversions de mille en mille ; les angles aigu, droit, obtus et plat ; les vitesses d'un marcheur (4 à 6), d'un cycliste (10 à 20), d'un
     camion (40 à 70), d'un car (50 à 90) et d'un train (80 à 120) ; les villes qui nomment un départ ; les horaires en vingt-quatre heures ; les prix des pagnes, seaux, sacs de charbon et cartons de savon ;
