@@ -32,7 +32,7 @@ import type { Id } from "../_generated/dataModel";
 import { visibleClassValidator, type VisibleClassName } from "../curriculum";
 import { assertTargetedDeployment } from "../testSeedsSchool";
 import { clipCacheKey, synthesize, voiceConfig, voiceFor } from "./elevenlabs";
-import { estimatedCostUsd, spokenTextsOf } from "./warmTexts";
+import { estimatedCostUsd, spokenClipsOf, type WarmClip } from "./warmTexts";
 
 /** Paliers lus par appel : cent paliers et leurs exercices tiennent largement dans une requête. */
 const PAGE = 100;
@@ -45,7 +45,7 @@ const MAX_LIMIT = 400;
 const PARALLEL = 3;
 const DEFAULT_CLASSES: VisibleClassName[] = ["CI"];
 
-type TextsPage = { texts: string[]; paliers: number; exercises: number; isDone: boolean; cursor: string };
+type TextsPage = { clips: WarmClip[]; paliers: number; exercises: number; isDone: boolean; cursor: string };
 
 export type WarmSummary = {
   dryRun: boolean;
@@ -85,7 +85,7 @@ export const textsPage = internalQuery({
     const keys = args.programmeKeys ? new Set(args.programmeKeys) : null;
     const programmeKeyOf = new Map<Id<"topics">, string | null>();
     const subjectNameOf = new Map<Id<"subjects">, string | null>();
-    const texts = new Set<string>();
+    const clips = new Map<string, WarmClip>();
     let paliers = 0;
     let exercises = 0;
 
@@ -109,16 +109,16 @@ export const textsPage = internalQuery({
       for (const row of rows) {
         if (row.status !== "published" || row.personalizedFor || row.palierAttemptId || row.needsManualReview) continue;
         exercises += 1;
-        const spoken = spokenTextsOf({
+        const spoken = spokenClipsOf({
           learnerClass: palier.class,
           topic: { programmeKey, subjectName },
           exercise: { type: row.type, prompt: row.prompt, payload: row.payload },
           withPrompt: args.withPrompts,
         });
-        for (const text of spoken) texts.add(text);
+        for (const clip of spoken) clips.set(`${clip.lang}|${clip.text}`, clip);
       }
     }
-    return { texts: [...texts], paliers, exercises, isDone: page.isDone, cursor: page.continueCursor };
+    return { clips: [...clips.values()], paliers, exercises, isDone: page.isDone, cursor: page.continueCursor };
   },
 });
 
@@ -153,12 +153,11 @@ export const warmTileVoice = internalAction({
     if (!config) {
       throw new Error("ELEVENLABS_API_KEY n'est pas réglée sur ce déploiement : la voix est éteinte, rien à préchauffer.");
     }
-    const voice = voiceFor(config, "fr");
     const dryRun = args.dryRun === true;
     const limit = Math.min(MAX_LIMIT, Math.max(0, Math.floor(args.limit ?? DEFAULT_LIMIT)));
 
     // Ce que la voix dirait. Les paliers se lisent par pages : la table n'est pas bornée.
-    const texts = new Set<string>();
+    const found = new Map<string, WarmClip>();
     let paliers = 0;
     let exercises = 0;
     let cursor: string | null = null;
@@ -170,7 +169,7 @@ export const warmTileVoice = internalAction({
         ...(args.programmeKeys ? { programmeKeys: args.programmeKeys } : {}),
         withPrompts: args.withPrompts === true,
       });
-      for (const text of page.texts) texts.add(text);
+      for (const clip of page.clips) found.set(`${clip.lang}|${clip.text}`, clip);
       paliers += page.paliers;
       exercises += page.exercises;
       if (page.isDone) break;
@@ -178,17 +177,20 @@ export const warmTileVoice = internalAction({
     }
 
     // Ce que le cache a déjà : la clé porte la voix ET le modèle, comme à la demande.
-    const all = [...texts].sort();
-    const keyOf = (text: string) => clipCacheKey(voice.voiceId, voice.modelId, text);
+    const all = [...found.values()].sort((a, b) => a.text.localeCompare(b.text) || a.lang.localeCompare(b.lang));
+    const keyOf = (clip: WarmClip) => {
+      const voice = voiceFor(config, clip.lang);
+      return clipCacheKey(voice.voiceId, voice.modelId, clip.text);
+    };
     const cached = new Set<string>();
     for (let i = 0; i < all.length; i += LOOKUP_CHUNK) {
-      const found: string[] = await ctx.runQuery(internal.voice.warm.cachedKeys, {
+      const hits: string[] = await ctx.runQuery(internal.voice.warm.cachedKeys, {
         cacheKeys: all.slice(i, i + LOOKUP_CHUNK).map(keyOf),
       });
-      for (const key of found) cached.add(key);
+      for (const key of hits) cached.add(key);
     }
-    const missing = all.filter((text) => !cached.has(keyOf(text)));
-    const missingChars = missing.reduce((sum, text) => sum + text.length, 0);
+    const missing = all.filter((clip) => !cached.has(keyOf(clip)));
+    const missingChars = missing.reduce((sum, clip) => sum + clip.text.length, 0);
 
     const summary: WarmSummary = {
       dryRun,
@@ -209,12 +211,14 @@ export const warmTileVoice = internalAction({
     const todo = missing.slice(0, limit);
     for (let i = 0; i < todo.length; i += PARALLEL) {
       const results = await Promise.all(
-        todo.slice(i, i + PARALLEL).map(async (text) => {
+        todo.slice(i, i + PARALLEL).map(async (clip) => {
+          const { text } = clip;
+          const voice = voiceFor(config, clip.lang);
           try {
             const audio = await synthesize(text, config, voice);
             const storageId = await ctx.storage.store(audio);
             await ctx.runMutation(internal.arabic.db.saveClip, {
-              cacheKey: keyOf(text),
+              cacheKey: keyOf(clip),
               text,
               voiceId: voice.voiceId,
               modelId: voice.modelId,

@@ -1,4 +1,5 @@
 import UIKit
+import AVFoundation
 import Capacitor
 
 @UIApplicationMain
@@ -7,7 +8,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // La voix de Pio (consignes, tuiles) est un son que l'enfant doit entendre :
+        // catégorie « lecture », pas « ambiante », sans quoi l'interrupteur
+        // silencieux de l'iPhone coupe la voix de la webview (« la consigne ne se
+        // lit pas » une fois sur deux, selon la position de l'interrupteur).
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
         return true
     }
 

@@ -256,7 +256,7 @@ export default function OrderExercise({
   // La voix des tuiles (CI) : toucher ou saisir une étiquette la dit, et l'anneau
   // la suit où qu'elle aille. Les rangs sont ceux de l'énoncé (`origin`), pas ceux
   // de l'escalier. Pas de file automatique (voir `useTileVoice`).
-  const tileVoice = useTileVoice(source, prompt);
+  const tileVoice = useTileVoice(source, prompt, { autoRead: true });
   // Les images des étiquettes (CI), dans l'ordre où elles sont rangées : une
   // pastille suit son texte, où qu'il aille. Calculées avant le retour anticipé.
   const pictures = useTilePictures(

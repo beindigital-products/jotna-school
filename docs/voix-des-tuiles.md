@@ -1,4 +1,4 @@
-# La voix des tuiles (CI)
+# La voix des tuiles (CI et CP)
 
 Au CI, l'enfant ne lit pas encore les réponses. Le lecteur de consignes lui dit
 déjà l'énoncé (`docs/paliers-et-exercices.md`, « Le lecteur de consignes »),
@@ -9,7 +9,8 @@ l'enfant entend, ce que Pio ne dit jamais, et où se trouve chaque pièce.
 
 ## Ce que l'enfant entend
 
-- **Le QCM et la phrase à trous disent leurs propositions.** Après la
+- **Tous les écrans disent leurs propositions** (depuis le 26 octobre 2026) :
+  QCM, association, mise en ordre, glisser-déposer, phrase à trous. Après la
   consigne, Pio dit les propositions une à une, dans l'ordre de l'écran. La
   tuile qui parle s'entoure d'un anneau ciel qui respire, pour que l'enfant
   relie ce qu'il entend à ce qu'il voit. À la phrase à trous, Pio dit d'abord
@@ -20,9 +21,14 @@ l'enfant entend, ce que Pio ne dit jamais, et où se trouve chaque pièce.
   saisir une étiquette la dit aussi, et toucher une case quand aucune étiquette
   n'est en main dit son nom. À la mise en ordre, saisir une étiquette par sa
   poignée la dit. À la phrase à trous, toucher la carte de la phrase la redit.
-- **Pas de file automatique pour l'association, la mise en ordre et le
-  glisser-déposer.** Six à dix mots à la suite, après un mode d'emploi de sept
-  secondes, feraient attendre l'enfant. Il entend chaque mot en le touchant.
+- **L'anglais se dit aussi** (CI et CP). Chaque tuile est dite dans SA langue
+  (`tileLanguage`, `convex/voice/tiles.ts`) : un mot anglais avec la voix
+  anglaise (`voiceFor(config, "en")`), l'étiquette française d'une case ou la
+  colonne française d'une association avec la voix française. Un signe de calcul
+  se dit en anglais pour une tuile anglaise (« eight equals », pas « eight
+  égale »). La voix anglaise est, par défaut, celle des consignes avec le modèle
+  multilingue ; `ELEVENLABS_EN_VOICE_ID` et `ELEVENLABS_EN_MODEL_ID` la changent.
+  **Elle n'a pas été écoutée** : à auditionner avant de s'y fier.
 - **Un toucher coupe la file.** L'enfant n'attend jamais la fin de la lecture
   pour répondre. Elle se tait dès qu'il a répondu, ou quand une fenêtre s'ouvre.
 - **« Écouter » et Pio redisent tout**, la consigne puis les propositions ; un
@@ -45,11 +51,11 @@ l'enfant entend, ce que Pio ne dit jamais, et où se trouve chaque pièce.
 | Cas | Pourquoi |
 | --- | --- |
 | Un énoncé qui demande de lire ou de décoder (`READING_PROMPT`, `DECODING_PROMPT`, `lib/item-pictures.ts`) | Dire la tuile, c'est lire à la place de l'enfant. |
-| Un énoncé qui demande une traduction, ou une thématique d'anglais | La voix française dirait faux un mot anglais. |
+| Un énoncé qui demande une traduction, HORS d'une thématique d'anglais | Les tuiles seraient des mots anglais, et la voix française les dirait faux. Dans une thématique d'anglais, elles se disent avec la voix anglaise. |
 | Une tuile d'une seule lettre | C'est du déchiffrage, même quand l'énoncé ne le dit pas (« Complète le mot : ba_ane »). |
 | Un exercice qui fait compléter un mot : un trou collé à des lettres (« ba___ne », « ___ngue »), dans l'énoncé ou dans la phrase à trous | Les tuiles sont des lettres, des syllabes ou des sons : les dire, c'est déchiffrer à la place de l'enfant. Un trou entre deux espaces (« Le ___ miaule ») complète une phrase : il se dit. |
 | Une tuile qui n'est que des émojis ou des signes | Il n'y a rien à dire. |
-| Une autre classe que le CI | `TILE_VOICE_CLASSES`. Pour le CP, y écrire « CP ». |
+| Une autre classe que le CI et le CP | `TILE_VOICE_CLASSES`. |
 
 Les images de tuile ont la même porte (`PICTURE_TILE_CLASSES`). Les trois
 listes, avec celle de la voix des consignes (`READING_LEARNER_CLASSES`), sont

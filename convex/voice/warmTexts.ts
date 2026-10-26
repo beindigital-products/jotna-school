@@ -13,33 +13,42 @@
  */
 import { isReadingLearnerClass } from "../curriculum";
 import { speakableExercise } from "./speakable";
-import { readableTextsOf, tileClipVerdict } from "./tiles";
+import { readableTextsOf, tileClipVerdict, type TileLang } from "./tiles";
 
 export type WarmExercise = { type: string; prompt: string; payload: unknown };
 export type WarmTopic = { programmeKey?: string | null; subjectName?: string | null };
 
+/** Un son à préchauffer : le texte et la voix qui le dit (la clé de cache porte la voix). */
+export type WarmClip = { text: string; lang: TileLang };
+
 /**
- * Les textes dits pour cet exercice, sans doublon : chaque tuile (et la phrase à
- * trous) que le serveur accepte de dire et, si on le demande, la consigne, que
- * `offline/voice:prepareClips` dit à tout enfant qui apprend à lire.
+ * Les sons dits pour cet exercice, sans doublon : chaque tuile (et la phrase à
+ * trous) que le serveur accepte de dire, avec sa langue, et, si on le demande,
+ * la consigne, que `offline/voice:prepareClips` dit à tout enfant qui apprend à lire.
  */
-export function spokenTextsOf(args: {
+export function spokenClipsOf(args: {
   /** La classe du palier : l'enfant du CI y joue. */
   learnerClass: string;
   topic: WarmTopic;
   exercise: WarmExercise;
   withPrompt: boolean;
-}): string[] {
-  const spoken = new Set<string>();
+}): WarmClip[] {
+  const spoken = new Map<string, WarmClip>();
+  const add = (clip: WarmClip) => spoken.set(`${clip.lang}|${clip.text}`, clip);
   for (const text of readableTextsOf(args.exercise.type, args.exercise.payload)) {
     const verdict = tileClipVerdict({ learnerClass: args.learnerClass, topic: args.topic, exercise: args.exercise, text });
-    if (verdict.ok) spoken.add(verdict.text);
+    if (verdict.ok) add({ text: verdict.text, lang: verdict.lang });
   }
   if (args.withPrompt && isReadingLearnerClass(args.learnerClass)) {
     const prompt = speakableExercise(args.exercise.type, args.exercise.prompt);
-    if (prompt) spoken.add(prompt);
+    if (prompt) add({ text: prompt, lang: "fr" });
   }
-  return [...spoken];
+  return [...spoken.values()];
+}
+
+/** Les textes seuls de `spokenClipsOf`, sans doublon (la langue ne compte pas ici). */
+export function spokenTextsOf(args: Parameters<typeof spokenClipsOf>[0]): string[] {
+  return [...new Set(spokenClipsOf(args).map((clip) => clip.text))];
 }
 
 /**

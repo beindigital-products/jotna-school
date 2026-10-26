@@ -35,7 +35,16 @@
  * IL NE LÈVE JAMAIS. Sans clé, ou sans réseau pour un son jamais téléchargé,
  * le bouton passe en « muet » et l'exercice reste jouable ; un toucher réessaie.
  *
- * LA VOIX DES TUILES (CI SEULEMENT, `convex/voice/tiles.ts`). Une consigne
+ * UN SON TROUVÉ MAIS QUI NE SE JOUE PAS NE RESTE PAS EN CACHE. L'adresse d'une
+ * consigne est gardée pour la page ; si elle est morte (fichier du téléphone
+ * abîmé, lien périmé, son qui ne démarre jamais : `playUrl` le dit par
+ * `onFail`), chaque toucher sur « Écouter » rejouait le même silence, et la
+ * consigne restait muette pour tout l'exercice. Le lecteur oublie alors cette
+ * adresse, redemande un son neuf au serveur (`fresh`, qui saute le sac du
+ * téléphone et le répare) et rejoue UNE fois, tout seul. Si cela échoue encore,
+ * le bouton passe en « muet » : il le dit, et un toucher réessaie.
+ *
+ * LA VOIX DES TUILES (CI ET CP, ANGLAIS COMPRIS, `convex/voice/tiles.ts`). Une consigne
  * entendue ne sert à rien si les réponses restent écrites : « le chat », « la
  * girafe » sont des tuiles que l'enfant de six ans regarde sans les lire. Avec
  * `tileVoice`, le lecteur dit donc AUSSI les propositions :
@@ -118,8 +127,13 @@ export type PromptReader = {
   read: () => void;
   /** Coupe la lecture en cours (ou celle qui attendait son son) et se repose. */
   stop: () => void;
-  /** Vrai quand les propositions se disent aussi (CI, hors anglais). Absent : non. */
+  /** Vrai quand les propositions se disent aussi (CI et CP). Absent : non. */
   tileVoice?: boolean;
+  /**
+   * Vrai dans une thématique d'anglais : les propositions se disent dans leur langue
+   * (le serveur choisit la voix), et un énoncé de traduction ne les interdit plus.
+   */
+  englishTopic?: boolean;
   /** Le rang de la tuile (ou `SENTENCE_INDEX`) que Pio dit maintenant, ou `null`. */
   speaking?: number | null;
   /** Vrai pendant la consigne seule : le halo derrière l'énoncé ne brille pas pour une proposition. */
@@ -164,10 +178,9 @@ export type TileVoice = {
  * `tiles` est dans l'ordre de l'écran. Options :
  *   - `sentence` : la phrase à trous d'une phrase à compléter ;
  *   - `autoRead` : la file dit les tuiles (et la phrase) toute seule après la
- *     consigne. Pour un choix (QCM, mot d'un trou) : les propositions SONT la
- *     question. Pas pour des tuiles qu'on manipule (association, mise en ordre,
- *     glisser-déposer) : six à dix mots à la suite, après un mode d'emploi, font
- *     attendre l'enfant ; il les entend en les touchant.
+ *     consigne. Tous les écrans le demandent depuis le 26 octobre 2026 : la
+ *     lecture de l'énoncé prend en compte les propositions, à chaque exercice.
+ *     Un enfant qui n'attend pas touche une tuile ou répond : un toucher coupe la file.
  * À appeler AVANT tout retour anticipé (l'ordre des hooks).
  */
 export function useTileVoice(
@@ -179,7 +192,9 @@ export function useTileVoice(
   // Éteinte aussi quand la phrase à trous fait compléter un mot (« ba___ne ») : les tuiles
   // sont des lettres ou des syllabes, les dire serait déchiffrer à la place de l'enfant.
   const enabled =
-    reader?.tileVoice === true && !promptForbidsTileVoice(prompt) && !completesAWord(options.sentence);
+    reader?.tileVoice === true &&
+    !promptForbidsTileVoice(prompt, reader.englishTopic === true) &&
+    !completesAWord(options.sentence);
   const register = reader?.registerTiles;
   // La clé est le contenu : les écrans passent un tableau neuf à chaque rendu.
   const key = JSON.stringify([tiles, options.sentence ?? null, options.autoRead === true]);
@@ -250,6 +265,7 @@ export function PromptReaderProvider({
   silenced = false,
   clipUrl,
   tileVoice = false,
+  englishTopic = false,
   children,
 }: {
   exerciseId: string;
@@ -266,9 +282,11 @@ export function PromptReaderProvider({
   clipUrl?: string;
   /**
    * Les propositions se disent aussi (`isTileVoiceClass`, `convex/voice/tiles.ts` :
-   * le CI, hors anglais). Faux : le lecteur ne dit que la consigne, comme avant.
+   * le CI et le CP, anglais compris). Faux : le lecteur ne dit que la consigne, comme avant.
    */
   tileVoice?: boolean;
+  /** La thématique est d'anglais : voir `PromptReader.englishTopic`. */
+  englishTopic?: boolean;
   children: ReactNode;
 }) {
   const findClip = useClipSource();
@@ -285,31 +303,38 @@ export function PromptReaderProvider({
   // Les tuiles de l'écran, rangées par `useTileVoice`.
   const tilesRef = useRef<ReaderTiles | null>(null);
 
-  const urlFor = useCallback((): Promise<string | null> => {
-    if (clipUrl) return Promise.resolve(clipUrl);
-    const cached = urlByExercise.get(exerciseId);
-    if (cached) return cached;
-    const pending = findClip({ kind: "prompt", exerciseId: exerciseId as Id<"exercises"> })
-      .then((url) => (url && url !== "not_configured" ? url : null))
-      .catch(() => null);
-    urlByExercise.set(exerciseId, pending);
-    void pending.then((url) => {
-      if (!url) urlByExercise.delete(exerciseId);
-    });
-    return pending;
-  }, [exerciseId, findClip, clipUrl]);
+  const urlFor = useCallback(
+    (fresh = false): Promise<string | null> => {
+      if (clipUrl) return Promise.resolve(clipUrl);
+      if (fresh) urlByExercise.delete(exerciseId);
+      const cached = urlByExercise.get(exerciseId);
+      if (cached) return cached;
+      const request = { kind: "prompt", exerciseId: exerciseId as Id<"exercises"> } as const;
+      const pending = (fresh ? findClip(request, { fresh }) : findClip(request))
+        .then((url) => (url && url !== "not_configured" ? url : null))
+        .catch(() => null);
+      urlByExercise.set(exerciseId, pending);
+      void pending.then((url) => {
+        if (!url && urlByExercise.get(exerciseId) === pending) urlByExercise.delete(exerciseId);
+      });
+      return pending;
+    },
+    [exerciseId, findClip, clipUrl],
+  );
 
   const urlForTile = useCallback(
-    (text: string): Promise<string | null> => {
+    (text: string, fresh = false): Promise<string | null> => {
       if (clipUrl) return Promise.resolve(clipUrl);
+      if (fresh) urlByTile.delete(text);
       const cached = urlByTile.get(text);
       if (cached) return cached;
-      const pending = findClip({ kind: "tile", exerciseId: exerciseId as Id<"exercises">, text })
+      const request = { kind: "tile", exerciseId: exerciseId as Id<"exercises">, text } as const;
+      const pending = (fresh ? findClip(request, { fresh }) : findClip(request))
         .then((url) => (url && url !== "not_configured" ? url : null))
         .catch(() => null);
       urlByTile.set(text, pending);
       void pending.then((url) => {
-        if (!url) urlByTile.delete(text);
+        if (!url && urlByTile.get(text) === pending) urlByTile.delete(text);
       });
       return pending;
     },
@@ -339,6 +364,15 @@ export function PromptReaderProvider({
     setPlayingTile(false);
     setTurn(null);
     setStatus("idle");
+  }, []);
+
+  /** Tout au repos, et le bouton dit que le son manque : un toucher réessaie. */
+  const muted = useCallback(() => {
+    setSpeaking(null);
+    setPromptPlaying(false);
+    setPlayingTile(false);
+    setTurn(null);
+    setStatus("unavailable");
   }, []);
 
   const read = useCallback(async () => {
@@ -380,13 +414,38 @@ export function PromptReaderProvider({
     autoDone.current = true;
     setPromptPlaying(true);
     // Rend la main quand le son finit OU qu'on le coupe (`stopPlaying`).
-    const spoken = await playUrl(url, owner, 1);
+    let failed = false;
+    let spoken = await playUrl(url, owner, 1, () => {
+      failed = true;
+    });
     if (tokenRef.current !== token) return;
+    if (!spoken && failed && !silencedRef.current) {
+      // Le son trouvé ne se joue pas : on oublie son adresse, on en demande un
+      // neuf, et on rejoue une fois.
+      setPromptPlaying(false);
+      setStatus("loading");
+      const fresh = await urlFor(true);
+      if (tokenRef.current !== token) return;
+      if (!fresh || silencedRef.current) {
+        if (fresh) rest();
+        else muted();
+        return;
+      }
+      setStatus("playing");
+      setPromptPlaying(true);
+      failed = false;
+      spoken = await playUrl(fresh, owner, 1, () => {
+        failed = true;
+      });
+      if (tokenRef.current !== token) return;
+    }
     setPromptPlaying(false);
     // Coupée (le silence, ou une autre voix qui prend la place) : la file ne
-    // reprend pas la parole par-dessus.
+    // reprend pas la parole par-dessus. Un son qui ne se joue pas deux fois de
+    // suite, lui, se dit : le bouton passe en « muet ».
     if (!spoken) {
-      rest();
+      if (failed) muted();
+      else rest();
       return;
     }
 
@@ -419,13 +478,22 @@ export function PromptReaderProvider({
       if (silencedRef.current) break;
       if (!tileUrl) continue;
       setSpeaking(item.index);
-      const finished = await playUrl(tileUrl, owner, 1);
+      let tileFailed = false;
+      const finished = await playUrl(tileUrl, owner, 1, () => {
+        tileFailed = true;
+      });
       if (tokenRef.current !== token) return;
       setSpeaking(null);
+      // Un son de tuile mort est oublié (le toucher suivant en redemande un) et
+      // la file passe à la suivante ; seule une coupure l'arrête.
+      if (tileFailed) {
+        urlByTile.delete(item.text);
+        continue;
+      }
       if (!finished) break;
     }
     rest();
-  }, [owner, urlFor, urlForTile, tileVoice, rest]);
+  }, [owner, urlFor, urlForTile, tileVoice, rest, muted]);
 
   // L'enfant touche une tuile : Pio la dit, et coupe ce qui jouait (la consigne,
   // la file). Le rang s'allume tout de suite : le toucher est pris, même si le
@@ -453,7 +521,12 @@ export function PromptReaderProvider({
           return;
         }
         setStatus("playing");
-        await playUrl(url, owner, 1);
+        let failed = false;
+        await playUrl(url, owner, 1, () => {
+          failed = true;
+        });
+        // Le son de la tuile est mort : on l'oublie, le toucher suivant en redemande un.
+        if (failed) urlByTile.delete(text);
         if (tokenRef.current === token) rest();
       })();
     },
@@ -510,6 +583,7 @@ export function PromptReaderProvider({
       read: () => void read(),
       stop,
       tileVoice,
+      englishTopic,
       speaking,
       promptPlaying,
       playingTile,
@@ -518,7 +592,7 @@ export function PromptReaderProvider({
       turn,
       registerMedia,
     }),
-    [status, read, stop, tileVoice, speaking, promptPlaying, playingTile, hearTile, registerTiles, turn, registerMedia],
+    [status, read, stop, tileVoice, englishTopic, speaking, promptPlaying, playingTile, hearTile, registerTiles, turn, registerMedia],
   );
 
   // Publié avant la peinture (`useLayoutEffect`) : la coque sait dès la

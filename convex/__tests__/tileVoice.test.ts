@@ -37,10 +37,10 @@ const FILL = {
 const TOPIC = { programmeKey: "ci-civique", subjectName: "Français" };
 
 describe("isTileVoiceClass — pour qui les tuiles se disent", () => {
-  it("vaut pour le CI seulement", () => {
-    expect(TILE_VOICE_CLASSES).toEqual(["CI"]);
+  it("vaut pour le CI et le CP : la lecture de l'énoncé prend en compte les propositions", () => {
+    expect(TILE_VOICE_CLASSES).toEqual(["CI", "CP"]);
     expect(isTileVoiceClass("CI")).toBe(true);
-    expect(isTileVoiceClass("CP")).toBe(false);
+    expect(isTileVoiceClass("CP")).toBe(true);
     expect(isTileVoiceClass("CE1")).toBe(false);
     expect(isTileVoiceClass(undefined)).toBe(false);
     expect(isTileVoiceClass(null)).toBe(false);
@@ -260,11 +260,11 @@ describe("tileClipVerdict — ce que le serveur accepte de dire", () => {
   };
 
   it("dit la tuile d'un exercice du CI", () => {
-    expect(tileClipVerdict(base)).toEqual({ ok: true, text: "le chat" });
+    expect(tileClipVerdict(base)).toEqual({ ok: true, text: "le chat", lang: "fr" });
   });
 
   it("dit aussi la bonne réponse, comme les autres : la voix ne désigne rien", () => {
-    expect(tileClipVerdict({ ...base, text: "le chien" })).toEqual({ ok: true, text: "le chien" });
+    expect(tileClipVerdict({ ...base, text: "le chien" })).toEqual({ ok: true, text: "le chien", lang: "fr" });
   });
 
   it("dit la phrase à trous avec une pause, et un mot proposé", () => {
@@ -272,34 +272,50 @@ describe("tileClipVerdict — ce que le serveur accepte de dire", () => {
     expect(tileClipVerdict({ ...base, exercise, text: "Le ___ miaule." })).toEqual({
       ok: true,
       text: "Le … miaule.",
+      lang: "fr",
     });
-    expect(tileClipVerdict({ ...base, exercise, text: "cheval" })).toEqual({ ok: true, text: "cheval" });
+    expect(tileClipVerdict({ ...base, exercise, text: "cheval" })).toEqual({ ok: true, text: "cheval", lang: "fr" });
   });
 
-  it("refuse les autres classes, le CP compris, et l'enfant sans classe", () => {
-    for (const learnerClass of ["CP", "CE1", "CM2", undefined, null]) {
+  it("dit aussi les tuiles d'un enfant de CP", () => {
+    expect(tileClipVerdict({ ...base, learnerClass: "CP" })).toEqual({ ok: true, text: "le chat", lang: "fr" });
+  });
+
+  it("refuse les classes plus grandes et l'enfant sans classe", () => {
+    for (const learnerClass of ["CE1", "CM2", undefined, null]) {
       expect(tileClipVerdict({ ...base, learnerClass })).toEqual({ ok: false, reason: "not_allowed" });
     }
   });
 
-  it("refuse l'anglais, par la fiche du programme ou par la matière", () => {
-    expect(tileClipVerdict({ ...base, topic: { programmeKey: "an-ci-animals" } })).toEqual({
-      ok: false,
-      reason: "not_allowed",
-    });
-    expect(tileClipVerdict({ ...base, topic: { subjectName: "Anglais" } })).toEqual({
-      ok: false,
-      reason: "not_allowed",
-    });
+  it("dit une thématique d'anglais, par la fiche du programme ou par la matière, dans la voix anglaise", () => {
+    const english = { type: "qcm", prompt: "Quel mot va avec ce dessin ?", payload: { options: ["dog", "cat", "bird"] } };
+    for (const topic of [{ programmeKey: "an-ci-animals" }, { subjectName: "Anglais" }]) {
+      expect(tileClipVerdict({ ...base, topic, exercise: english, text: "dog" })).toEqual({
+        ok: true,
+        text: "dog",
+        lang: "en",
+      });
+    }
   });
 
-  it("refuse un énoncé qui demande de lire, de décoder ou de traduire", () => {
-    for (const prompt of ["Lis le mot.", "Quel mot commence par la syllabe « chat » ?", "Comment dit-on « chat » en anglais ?"]) {
+  it("refuse un énoncé qui demande de lire ou de décoder", () => {
+    for (const prompt of ["Lis le mot.", "Quel mot commence par la syllabe « chat » ?"]) {
       expect(tileClipVerdict({ ...base, exercise: { ...base.exercise, prompt } })).toEqual({
         ok: false,
         reason: "not_allowed",
       });
     }
+  });
+
+  it("refuse un énoncé de traduction hors d'une thématique d'anglais, le dit dedans", () => {
+    const prompt = "Comment dit-on « le chat » en anglais ?";
+    const exercise = { type: "qcm", prompt, payload: { options: ["cat", "dog", "bird"] } };
+    expect(tileClipVerdict({ ...base, exercise, text: "cat" })).toEqual({ ok: false, reason: "not_allowed" });
+    expect(tileClipVerdict({ ...base, exercise, topic: { programmeKey: "an-ci-animals" }, text: "cat" })).toEqual({
+      ok: true,
+      text: "cat",
+      lang: "en",
+    });
   });
 
   it("refuse une phrase à trous qui fait compléter un mot, quel que soit l'énoncé", () => {

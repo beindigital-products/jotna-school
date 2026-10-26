@@ -618,14 +618,13 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   const learnerClass = model.profile.class ?? topic.class;
   const readsAloud = isReadingLearnerClass(learnerClass);
   const showsPictures = isPictureTileClass(learnerClass);
-  // LA VOIX DES TUILES (CI, hors anglais), comme la séance en ligne : les sons
-  // sont dans l'appareil (`lib/offline/sync.ts`, `neededTileClips`).
-  const speaksTiles =
-    isTileVoiceClass(learnerClass) &&
-    !isEnglishTopic({
-      programmeKey: topic.programmeKey,
-      subjectName: model.subjectsById.get(topic.subjectId as string)?.name,
-    });
+  // LA VOIX DES TUILES (CI et CP, anglais compris), comme la séance en ligne : les
+  // sons sont dans l'appareil (`lib/offline/sync.ts`, `neededTileClips`).
+  const speaksTiles = isTileVoiceClass(learnerClass);
+  const englishTopic = isEnglishTopic({
+    programmeKey: topic.programmeKey,
+    subjectName: model.subjectsById.get(topic.subjectId as string)?.name,
+  });
   const exerciseRenderer = (
     <ExerciseRenderer
       exo={exo}
@@ -707,6 +706,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
               exerciseId={exo._id}
               silenced={feedback !== null || explainOpen || sceneAlert !== null}
               tileVoice={speaksTiles}
+              englishTopic={englishTopic}
             >
               {exerciseRenderer}
             </PromptReaderProvider>

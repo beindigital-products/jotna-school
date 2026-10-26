@@ -19,6 +19,10 @@
  *
  * Le stockage de l'appareil se charge à la demande, dans l'application
  * seulement : le web ne le télécharge pas.
+ *
+ * `fresh` saute le sac (étape 1) : le lecteur le demande quand le fichier du
+ * téléphone n'a pas pu se jouer (abîmé, à moitié écrit). Le son revient du
+ * serveur, et l'application le range par-dessus l'ancien : le sac se répare.
  */
 
 import { useCallback } from "react";
@@ -66,19 +70,23 @@ async function prepareWithRetry(prepare: PrepareClips, request: ClipRequest) {
   }
 }
 
-export function useClipSource(): (request: ClipRequest) => Promise<ClipLookup> {
+export type FindClip = (request: ClipRequest, options?: { fresh?: boolean }) => Promise<ClipLookup>;
+
+export function useClipSource(): FindClip {
   const prepare = useAction(api.offline.voice.prepareClips);
   const { enabled, connected } = useOffline();
 
   return useCallback(
-    async (request: ClipRequest): Promise<ClipLookup> => {
+    async (request: ClipRequest, options?: { fresh?: boolean }): Promise<ClipLookup> => {
       const key = clipRequestKey(request);
       if (enabled) {
-        try {
-          const local = await (await loadClips()).clipUrl(key);
-          if (local) return local;
-        } catch {
-          // Stockage illisible : on tente le réseau.
+        if (!options?.fresh) {
+          try {
+            const local = await (await loadClips()).clipUrl(key);
+            if (local) return local;
+          } catch {
+            // Stockage illisible : on tente le réseau.
+          }
         }
         if (!connected) return null;
       }
