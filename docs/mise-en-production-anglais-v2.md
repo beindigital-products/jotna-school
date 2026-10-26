@@ -16,7 +16,7 @@ Le code de l'anglais v2 est dans `main` depuis la PR 182. Il n'est pas visible d
 | Thématiques à créer (étape 2) | 13 |
 | Thématiques d'anglais après | 51 |
 | Paliers à générer (étape 4) | 36, tous sans le modèle, coût 0 |
-| Sons de voix des 6 thématiques d'alphabet (étape 5) | environ 120 textes pour un tirage, 300 pour tous les tirages possibles |
+| Sons de voix des 6 thématiques d'alphabet (étape 5) | 127 textes, 1 166 caractères, 0,35 dollar (tuiles seules) ; 154 textes, 2 739 caractères, 0,82 dollar avec les consignes. Chiffres mesurés sur un backend local qui a joué toute la procédure. |
 
 Les 36 paliers : CI alphabet 3 fois 2, CP alphabet, sons et prénom 3 fois 3, CE1 épeler, pluriel et possessifs 3 fois 3, CE2 nombres et école 2 fois 3, CM1 loisirs et « il y a » 2 fois 3. Si le premier essai à blanc de l'étape 4 annonce plus de 36, c'est qu'un palier existant a expiré : il sera refait lui aussi, sans le modèle.
 
@@ -72,7 +72,7 @@ La voix des lettres n'a jamais été écoutée. Avant de payer toute la synthès
 1. Préchauffer une seule thématique, par exemple la première partie de l'alphabet du CI :
 
 ```bash
-npx convex run --prod voice/warm:warmTileVoice '{"confirmDeployment":"calculating-guineapig-512","programmeKeys":["an-ci-abc-1"],"dryRun":true}'
+npx convex run --prod voice/warm:warmTileVoice '{"confirmDeployment":"calculating-guineapig-512","programmeKeys":["an-ci-abc-1"],"classes":["CI"],"dryRun":true}'
 ```
 
    puis avec `"limit":10`, puis sans `limit`.
@@ -81,12 +81,24 @@ npx convex run --prod voice/warm:warmTileVoice '{"confirmDeployment":"calculatin
 4. Quand tout est bon, préchauffer les six thématiques d'alphabet :
 
 ```bash
-npx convex run --prod voice/warm:warmTileVoice '{"confirmDeployment":"calculating-guineapig-512","programmeKeys":["an-ci-abc-1","an-ci-abc-2","an-ci-abc-3","an-cp-abc","an-cp-sounds","an-cp-name"],"dryRun":true}'
+npx convex run --prod voice/warm:warmTileVoice '{"confirmDeployment":"calculating-guineapig-512","programmeKeys":["an-ci-abc-1","an-ci-abc-2","an-ci-abc-3","an-cp-abc","an-cp-sounds","an-cp-name"],"classes":["CI","CP"],"dryRun":true}'
 ```
 
-   Estimation faite en local : environ 120 textes et 1 100 caractères pour un tirage de chaque palier (environ 0,33 dollar) ; environ 300 textes et 4 400 caractères pour tous les tirages possibles (environ 1,35 dollar) ; avec les consignes (`"withPrompts":true`), environ 150 textes et 2 700 caractères pour un tirage (environ 0,80 dollar). L'outil est sans danger à rejouer : un texte déjà en cache ne coûte rien. Il faut `ELEVENLABS_API_KEY` sur le déploiement.
+   **Piège : sans `"classes"`, l'outil ne traite que le CI.** Les trois thématiques du CP seraient ignorées sans le dire (l'essai à blanc annonce 6 paliers au lieu de 15). Attendu avec `"classes":["CI","CP"]` : 15 paliers, 150 exercices, 127 textes, 1 166 caractères, 0,35 dollar ; avec `"withPrompts":true`, 154 textes, 2 739 caractères, 0,82 dollar. Ces chiffres sont ceux d'un essai à blanc sur un backend local. L'outil est sans danger à rejouer : un texte déjà en cache ne coûte rien. Il faut `ELEVENLABS_API_KEY` sur le déploiement.
 
 Les thématiques du CE1 et au-delà n'ont pas de voix des tuiles : rien à préchauffer pour elles.
+
+## Ce qui a déjà été rejoué en local (26 octobre 2026)
+
+La procédure des étapes 2 à 5 a été jouée sur un backend Convex local anonyme, de bout en bout, avec la base dans l'état d'avant la v2 (38 thématiques, les 13 nouvelles ajoutées à la suite) :
+
+- `seed:run` : 51 thématiques créées en dix lignes d'essai à blanc, puis chargées.
+- `reorder:run` : 51 thématiques déplacées (`CI an-ci-abc-1 : 39 -> 1`, `CI an-ci-hello : 1 -> 4`…), 51 rangs uniques ensuite, rejeu à `toMove: 0`.
+- `pregen:run` : 145 paliers, 1 450 exercices, 0 échec, 0 dollar, aucun appel au modèle ; tous publiés, `auto_ok`, dix par palier, aucun à relire.
+- `voice/warm:warmTileVoice` en essai à blanc : les chiffres de l'étape 5.
+- Dans l'application, des élèves de chaque classe ont joué les paliers dans le navigateur (voir `docs/programme-anglais-v2.md`, section 15).
+
+Ce qui n'a PAS été rejoué : la production elle-même. Onze textes ont été synthétisés avec la vraie voix puis relus par reconnaissance vocale, mais personne ne les a écoutés : `ay`, `ar`, `aitch` seuls et le trou `___` sont douteux (voir `docs/programme-anglais-v2.md`, section 15). Écouter avant l'étape 5.
 
 ## Étape 6. Vérifier
 

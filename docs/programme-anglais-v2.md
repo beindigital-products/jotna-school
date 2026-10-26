@@ -378,3 +378,44 @@ Le pas à pas, avec les commandes, les chiffres attendus et le retour en arrièr
    stylo et le cerf-volant.
 5. **Voix au CE1 et au-delà** : elle s'arrête au CP. Les exercices d'écoute
    (« écoute et choisis ») manquent à tout le programme.
+
+## 15. Test en vrai, sur un backend local (26 octobre 2026)
+
+Ce qui a été joué : un backend Convex local anonyme (jamais la production ni le développement partagé), avec la base remise dans l'état d'avant la v2, puis la procédure de `docs/mise-en-production-anglais-v2.md`, puis les paliers dans un vrai navigateur (Chromium sans écran, format téléphone, un élève par classe).
+
+| Étape | Résultat |
+| --- | --- |
+| `programme/seed:run` | 51 thématiques créées |
+| Ancien état simulé | 38 thématiques dans l'ancien ordre, les 13 nouvelles à la suite : l'alphabet est au rang 39 à 41, « Hello! » au rang 1 |
+| `programme/reorder:run` | 51 thématiques déplacées (`CI an-ci-abc-1 : 39 -> 1`), 51 rangs uniques, rejeu à `toMove: 0` |
+| `paliers/pregen:run` | 145 paliers en quatre exécutions de 40, 0 échec, 0 dollar, aucun appel au modèle |
+| Base | 145 paliers `cached` / `auto_ok`, 1 450 exercices `published`, dix par palier, aucun à relire |
+| Voix, essai à blanc | 6 thématiques d'alphabet, CI et CP : 127 textes, 1 166 caractères, 0,35 dollar (0,82 avec les consignes) |
+| Application | L'accueil du CI propose « Anglais · L'alphabet, de A à I » en premier. Les 13 thématiques sont jouées jusqu'au dernier palier : chaque réponse juste est acceptée, chaque palier est validé, le suivant s'ouvre, le serveur refuse un palier dont le précédent n'est pas validé |
+
+Les types d'exercices rejoués avec la bonne réponse : choix, association, phrase à trous, ordre (par poignée), glisser-déposer (deux touchers), réponse écrite.
+
+Ce que l'application demande à la voix, vu dans les échanges avec le serveur : les lettres seules (`C`, `H`, `B`), les mots (`apple`, `🍌 banana`), les phrases (`H is for ___.`, `D, E, ___, G`), les cases françaises (`Voyelles`, `Consonnes`).
+
+**Ce que ce test ne prouve pas.** La voix : aucune clé ElevenLabs en local, donc aucun son n'a été synthétisé ni écouté. La production. L'application native (iPhone), le hors-ligne. Les défauts de mon script ont coûté du temps (réponse trop courte, flèches du clavier approximatives) : aucun n'était un défaut de l'application.
+
+**Deux détails de l'interface vus sur les captures.**
+- Au-dessus des lettres d'un exercice « Quelle lettre manque ? », l'écran affiche « Choisis le bon mot. » : le libellé de la phrase à trous est le même pour des mots et des lettres.
+- Rien d'autre à signaler : lettres et mots lisibles, dessins affichés, cases bien nommées.
+
+### Essai de la vraie voix (26 octobre 2026, après le test local)
+
+Le propriétaire a fourni une clé ElevenLabs. Onze textes ont été synthétisés avec la voix par défaut du code (« Cyp », `eleven_multilingual_v2`, réglages de l'anglais) et relus par la reconnaissance vocale d'ElevenLabs. **Personne n'a encore écouté ces sons** : la relecture automatique est un indice, pas une preuve (elle écrit « Gee » pour `G`, « Oh » pour `O`, qui sont justes).
+
+| Texte envoyé | Relu | Lecture |
+| --- | --- | --- |
+| `ay, bee, see, dee, ee, eff, jee, aitch, eye` | « A, B, C, D, E, F, G, H, I » | bon : une suite se dit bien |
+| `bee`, `ell`, `double you`, `eye` | « B », « L », « W », « I » | bon |
+| `bee is for banana` | « B is for banana » | bon |
+| `ay` | « I, uh » | douteux |
+| `ar` | « Uh » | douteux |
+| `aitch` | « Aichi » | douteux |
+| `ay, bee, ___, dee` | « AP, no, it's D » | mauvais : le trou `___` est mal dit |
+| `eff, ay, tee, oh, you` | « F-I-T-O-U » | douteux (`ay`) |
+
+À faire avant de payer tout le préchauffage : écouter `a-single-ay`, `r-single-ar`, `h-single-aitch`, `gap-seq` et `name-fatou`. Si un nom est mal dit, corriger `LETTER_NAMES` (`convex/voice/tiles.ts`). Piste pour le trou : dire « blank » à la place de `___` (« A, B, blank, D » est relu juste). Une autre écriture change la clé de cache audio, donc il faut la fixer avant le préchauffage.
