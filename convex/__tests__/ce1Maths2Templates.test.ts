@@ -1243,9 +1243,9 @@ describe("les quatre thématiques de mathématiques du CE1 (seconde moitié)", (
     expect(TOPIC_KEYS).toHaveLength(4);
   });
 
-  it("font des quarante-quatre thématiques du CE1 des thématiques fabriquées par le code, sans appel au modèle", () => {
+  it("font des quarante-sept thématiques du CE1 des thématiques fabriquées par le code, sans appel au modèle", () => {
     const ce1 = allProgrammeEntries().filter((entry) => entry.klass === "CE1");
-    expect(ce1).toHaveLength(44);
+    expect(ce1).toHaveLength(47);
     expect(ce1.filter((entry) => topicUsesModel(entry.topic.key)).map((entry) => entry.topic.key)).toEqual([]);
   });
 

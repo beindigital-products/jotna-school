@@ -236,7 +236,7 @@ describe("generateGames : les jeux d'une thématique reçoivent chacun un décal
 
 describe("les thématiques du CI", () => {
   it("toutes partagent leurs variantes entre leurs paliers", () => {
-    expect(ci.length).toBe(43);
+    expect(ci.length).toBe(46);
     const without = ci.filter((entry) => entry.topic.byLevel !== true).map((entry) => entry.topic.key);
     expect(without).toEqual([]);
   });

@@ -85,6 +85,9 @@ export function isEnglishTopic(topic: { programmeKey?: string | null; subjectNam
   return name === "anglais" || name === "english";
 }
 
+/** Les mots de l'alphabet, qui ne sont pas du déchiffrage dans une thématique d'anglais (voir `promptForbidsTileVoice`). */
+const ALPHABET_WORDS = /(?<![\p{L}])(?:lettres?|majuscules?|minuscules?|[eé]pel\p{L}*|commence(?:nt)?\s+par)(?![\p{L}])/giu;
+
 /** Les énoncés qui interdisent la voix des tuiles : lire, décoder. */
 const FORBIDDEN_PROMPTS: readonly RegExp[] = [READING_PROMPT, DECODING_PROMPT];
 
@@ -109,7 +112,12 @@ export function completesAWord(text: unknown): boolean {
 export function promptForbidsTileVoice(prompt: unknown, english = false): boolean {
   if (typeof prompt !== "string" || !prompt) return false;
   const text = prompt.normalize("NFC").replace(/[‘’ʼ′]/g, "'");
-  if (completesAWord(text) || FORBIDDEN_PROMPTS.some((pattern) => pattern.test(text))) return true;
+  if (completesAWord(text)) return true;
+  // Dans une thématique d'anglais, « lettre », « majuscule », « épeler » et « commence par » ne demandent pas de
+  // déchiffrer du français : les tuiles sont les noms anglais des lettres, et les entendre est la leçon (l'alphabet
+  // du CI et du CP). « Lis le mot » et « la syllabe » restent interdits.
+  const asked = english ? text.replace(ALPHABET_WORDS, " ") : text;
+  if (FORBIDDEN_PROMPTS.some((pattern) => pattern.test(asked))) return true;
   // Une traduction fait proposer des mots anglais : seule la voix anglaise d'une
   // thématique d'anglais sait les dire (voir l'en-tête).
   return !english && TRANSLATION_PROMPT.test(text);
@@ -177,13 +185,47 @@ export function readableTextsOf(type: string, payload: unknown): string[] {
 }
 
 /**
+ * Les noms anglais des lettres, écrits comme un mot : une synthèse vocale qui lit un « B » seul le dit parfois
+ * « bé » ou « be ». « bee » ne se lit que d'une façon. Le W se dit en deux mots, le Z « zed » (anglais britannique).
+ * Ce texte est aussi la clé du cache audio : un fichier par lettre, pour tous les exercices.
+ */
+export const LETTER_NAMES: Readonly<Record<string, string>> = {
+  A: "ay", B: "bee", C: "see", D: "dee", E: "ee", F: "eff", G: "jee", H: "aitch", I: "eye", J: "jay", K: "kay", L: "ell", M: "em",
+  N: "en", O: "oh", P: "pee", Q: "cue", R: "ar", S: "ess", T: "tee", U: "you", V: "vee", W: "double you", X: "ex", Y: "why", Z: "zed",
+};
+
+/**
+ * Le texte anglais d'une tuile qui est une ou des lettres, ou `null` quand ce n'en est pas une :
+ *   - « B » : « bee » ;
+ *   - « F-A-T-O-U », un prénom épelé : « eff, ay, tee, oh, you » ;
+ *   - « A, B, ___, D », une suite de lettres : « ay, bee, ___, dee » ;
+ *   - « B is for ___. » : « bee is for ___. ».
+ * Seules les MAJUSCULES comptent : « a », sans majuscule, est l'article de « a dog ».
+ */
+export function englishLetters(text: string): string | null {
+  if (typeof text !== "string") return null;
+  const t = text.normalize("NFC").trim();
+  if (/^[A-Z]$/.test(t)) return LETTER_NAMES[t];
+  if (/^[A-Z](?:-[A-Z])+$/.test(t)) return t.split("-").map((letter) => LETTER_NAMES[letter]).join(", ");
+  if (/^(?:[A-Z]|_{3})(?:, (?:[A-Z]|_{3}))+$/.test(t)) return t.split(", ").map((part) => LETTER_NAMES[part] ?? part).join(", ");
+  const sentence = /^([A-Z]) is for (.+)$/.exec(t);
+  return sentence ? `${LETTER_NAMES[sentence[1]]} is for ${sentence[2]}` : null;
+}
+
+/**
  * Le texte à faire dire pour une tuile, ou `null` s'il n'y a rien à dire (que
  * des émojis, des signes), trop (ce n'est plus une tuile) ou une lettre seule
  * (voir l'en-tête). C'est `speakablePrompt`, donc aussi la clé du cache audio.
  * L'écran s'en sert aussi : il ne demande jamais un son que le serveur refuserait.
  */
-export function speakableTile(text: string, lang: TileLang = "fr"): string | null {
+export function speakableTile(text: string, lang: TileLang = "fr", english = false): string | null {
   if (typeof text !== "string") return null;
+  // L'alphabet anglais : une majuscule seule, un prénom épelé, une suite de lettres se disent avec le nom anglais
+  // de chaque lettre (voir `englishLetters`). Ailleurs, une lettre seule reste muette.
+  if (english && lang === "en") {
+    const letters = englishLetters(text);
+    if (letters !== null) return speakablePrompt(letters, "en");
+  }
   const spoken = speakablePrompt(text, lang);
   if (spoken === null || /^\p{L}$/u.test(spoken)) return null;
   return spoken;
@@ -204,6 +246,7 @@ const FRENCH_WORDS: ReadonlySet<string> = new Set([
   "le", "la", "les", "un", "une", "des", "du", "de", "d", "l", "et", "ou", "je", "tu", "il", "elle",
   "femme", "homme", "fille", "garçon", "visage", "bras", "jambes", "petit", "grand", "objet",
   "mange", "bois", "moins", "plus", "animaux", "sauvages", "ferme", "pour", "dire", "au", "aux", "revoir", "bonjour",
+  "voyelles", "consonnes",
 ]);
 const FRENCH_LETTERS = /[àâçéèêëîïôûùüœ]/i;
 
@@ -233,6 +276,8 @@ export function tileLanguage(args: {
     const left = Array.isArray(p.pairs) ? strings(p.pairs.map((pair) => pair?.left)) : strings(p.left);
     if (left.includes(args.text)) return "fr";
   }
+  // Une lettre, un prénom épelé : de l'anglais, même quand la lettre est un mot français (D, L).
+  if (englishLetters(args.text) !== null) return "en";
   return looksFrench(args.text) ? "fr" : "en";
 }
 
@@ -270,6 +315,6 @@ export function tileClipVerdict(args: {
     return { ok: false, reason: "unknown_text" };
   }
   const lang = tileLanguage({ topic: args.topic, exercise: args.exercise, text: args.text });
-  const spoken = speakableTile(args.text, lang);
+  const spoken = speakableTile(args.text, lang, isEnglishTopic(args.topic));
   return spoken ? { ok: true, text: spoken, lang } : { ok: false, reason: "unknown_text" };
 }

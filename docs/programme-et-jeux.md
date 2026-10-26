@@ -46,8 +46,9 @@ simples sur soi, ses goûts, ce qu'on sait faire), A1+ au CM1 (sa journée, ce
 qu'on fait en ce moment), A2 au CM2 (raconter hier, dire demain, comparer,
 demander son chemin, lire un petit texte), la porte de la 6e.
 
-38 thématiques, 109 paliers, 1 090 exercices quand tout est généré. Avec les
-sept autres matières : 267 thématiques, 1 028 paliers, 10 280 exercices.
+51 thématiques, 145 paliers, 1 450 exercices quand tout est généré. Avec les
+sept autres matières : 280 thématiques, 1 064 paliers, 10 640 exercices. Le
+CI et le CP s'ouvrent sur l'alphabet (`docs/programme-anglais-v2.md`).
 
 Comment la génération s'y prend (`SUBJECT_RULES` dans `paliers/prompts.ts`) :
 
@@ -66,16 +67,19 @@ Comment la génération s'y prend (`SUBJECT_RULES` dans `paliers/prompts.ts`) :
 
 Ce qui manque :
 
-- **L'oral.** L'application n'a pas de voix anglaise : aucun exercice
-  d'écoute ni de prononciation. C'est le principal manque d'un cours de
-  langue. Il se comblera avec des clips audio, comme pour l'arabe.
+- **L'oral.** La voix anglaise dit les tuiles du CI et du CP (le nom des
+  lettres, les mots, les phrases : `docs/voix-des-tuiles.md`). Il n'y a pas
+  encore d'exercice d'écoute pur ni de prononciation à répéter, et rien n'est
+  dit à partir du CE1.
 - **Les jeux.** Leurs consignes et leurs étiquettes sont en français
   (`paliers/games`). Aucune thématique d'anglais ne mêle de jeu d'écoute. Les
-  cinq thématiques du CP sont fabriquées tout entières par le code
-  (`paliers/games/anglais.ts`) : mots de la fiche, dessins, phrases à
-  remettre dans l'ordre, nombres de 11 à 20. Il en va de même des cinq
-  thématiques du CI (`paliers/games/anglaisCi.ts`) : les salutations, les
-  couleurs, les nombres de 0 à 10, les animaux et les fruits.
+  huit thématiques du CP sont fabriquées tout entières par le code
+  (`paliers/games/anglais.ts` et `anglaisAlphabet.ts`) : l'alphabet, les
+  premiers sons, le prénom épelé, mots de la fiche, dessins, phrases à
+  remettre dans l'ordre, nombres de 11 à 20. Il en va de même des huit
+  thématiques du CI (`paliers/games/anglaisCi.ts` et `anglaisAlphabet.ts`) :
+  l'alphabet en trois parties, les salutations, les couleurs, les nombres de
+  0 à 10, les animaux et les fruits.
 - **Un essai sur le vrai modèle.** Les exercices d'anglais n'ont pas encore
   été générés : relire un échantillon dans l'administration après la
   première pré-génération, avant d'ouvrir la matière.
@@ -437,9 +441,9 @@ arrivent plus tard.
 
 | Classe | Thématiques |
 | --- | --- |
-| CI | Hello! Goodbye! · Les couleurs en anglais · Compter jusqu'à 10 en anglais · Les animaux en anglais · Les fruits en anglais |
-| CP | Ma famille en anglais 🧩 · Mon corps en anglais 🧩 · Dans ma classe en anglais 🧩 · Les nombres de 11 à 20 en anglais 🧩 · Manger et boire en anglais 🧩 |
-| CE1 | Se présenter en anglais 🧩 · Les jours de la semaine 🧩 · A ou an ? 🧩 · Les vêtements en anglais 🧩 · J'aime, je n'aime pas 🧩 · Les ordres de la classe 🧩 |
-| CE2 | Être en anglais : am, is, are · J'ai : have got, has got · Je peux, je sais : can · La maison et où c'est · Les mois de l'année · Le temps qu'il fait · L'heure en anglais |
-| CM1 | Ce que je fais : le présent 🧩 · He, she, it : le s du verbe 🧩 · Ma journée en anglais 🧩 · En ce moment : le -ing 🧩 · Les métiers en anglais 🧩 · Au marché en anglais 🧩 · Décrire une personne ou un objet 🧩 |
+| CI | L'alphabet de A à I 🧩 · L'alphabet de J à R 🧩 · L'alphabet de S à Z 🧩 · Hello! Goodbye! · Les couleurs en anglais · Compter jusqu'à 10 en anglais · Les animaux en anglais · Les fruits en anglais |
+| CP | L'alphabet de A à Z 🧩 · Les premiers sons 🧩 · Je me présente 🧩 · Ma famille en anglais 🧩 · Mon corps en anglais 🧩 · Dans ma classe en anglais 🧩 · Les nombres de 11 à 20 en anglais 🧩 · Manger et boire en anglais 🧩 |
+| CE1 | Épeler des mots 🧩 · Se présenter en anglais 🧩 · Les jours de la semaine 🧩 · A ou an ? 🧩 · Un ou plusieurs ? 🧩 · Mon, ton, son 🧩 · Les vêtements en anglais 🧩 · J'aime, je n'aime pas 🧩 · Les ordres de la classe 🧩 |
+| CE2 | Les nombres de 20 à 100 🧩 · Être en anglais : am, is, are · J'ai : have got, has got · Je peux, je sais : can · La maison et où c'est · Les mois de l'année · Le temps qu'il fait · L'heure en anglais · L'école et mon emploi du temps 🧩 |
+| CM1 | Ce que je fais : le présent 🧩 · He, she, it : le s du verbe 🧩 · Ma journée en anglais 🧩 · En ce moment : le -ing 🧩 · Mes loisirs 🧩 · Les métiers en anglais 🧩 · Au marché en anglais 🧩 · Décrire une personne ou un objet 🧩 · Il y a : there is, there are 🧩 |
 | CM2 | Hier : was et were 🧩 · Raconter hier : verbes en -ed 🧩 · Raconter hier : verbes irréguliers 🧩 · Demain : être going to 🧩 · Comparer : plus grand, le plus grand 🧩 · Demander son chemin 🧩 · Poser des questions 🧩 · Lire un petit texte 🧩 |

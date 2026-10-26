@@ -25,12 +25,14 @@
  * sont dans `SUBJECT_RULES`, au même endroit.
  *
  * LIMITES ASSUMÉES
- * - Pas d'oral. L'application n'a pas de voix anglaise : aucun exercice
- *   d'écoute ni de prononciation. C'est le gros manque d'un cours de langue ;
- *   il se comblera avec des clips audio, comme pour l'arabe.
- * - Les jeux fabriqués par le code (`paliers/games/anglaisCi.ts` au CI,
+ * - L'oral est partiel. Depuis le 26 octobre 2026 la voix anglaise dit les tuiles du CI et du CP (`voice/tiles.ts`) :
+ *   le nom des lettres, les mots, les phrases. Il n'y a toujours aucun exercice d'écoute pur ni de prononciation
+ *   à répéter, et rien n'est dit au CE1 et au-delà. Les énoncés restent en français.
+ * - Les jeux fabriqués par le code (`paliers/games/anglaisAlphabet.ts`, `anglaisCi.ts` au CI,
  *   `paliers/games/anglais.ts` au CP) ont leurs consignes en français : seuls
  *   les mots que l'enfant apprend sont en anglais. Aucun n'est un jeu d'écoute.
+ * - L'ORDRE DU PROGRAMME (`docs/programme-anglais-v2.md`) : l'alphabet d'abord. Le CI et le CP commencent par les
+ *   lettres, avant « hello » et avant tout mot à lire. Le propriétaire l'a demandé le 26 octobre 2026.
  * - L'anglais est écrit à la britannique (colour, grey, trousers, have got).
  */
 import type { ProgrammeSubject } from "./types";
@@ -45,6 +47,54 @@ export const ANGLAIS: ProgrammeSubject = {
   domain: "Langue vivante étrangère (hors guide officiel)",
   classes: {
     CI: [
+      {
+        key: "an-ci-abc-1",
+        name: "L'alphabet, de A à I",
+        palierCount: 2,
+        description:
+          "Anglais, niveau pré-A1 : les neuf premières lettres de l'alphabet, A B C D E F G H I, à l'oral et à l'image. Vocabulaire fermé : les noms des lettres (dits par la voix anglaise) et un mot-image par lettre, dont l'initiale est cette lettre : apple, banana, cat, dog, egg, fish, goat, house, ice cream (🍎 🍌 🐱 🐶 🥚 🐟 🐐 🏠 🍦). L'enfant touche une lettre pour l'entendre, la relie au mot qui commence par elle, la reconnaît en grande et en petite lettre, retrouve la lettre qui manque dans une suite. Aucune phrase, aucun autre mot ; l'énoncé ne contient aucune lettre.",
+        games: [
+          { kind: "abc-mot-dessin", count: 2, vocabulary: "a-i" },
+          { kind: "abc-relier-mot", count: 2, vocabulary: "a-i" },
+          { kind: "abc-pour", count: 2, vocabulary: "a-i" },
+          { kind: "abc-ordre", count: 1, vocabulary: "a-i" },
+          { kind: "abc-manquante", count: 1, vocabulary: "a-i" },
+          { kind: "abc-majuscule", count: 2, vocabulary: "a-i" },
+        ],
+        byLevel: true,
+      },
+      {
+        key: "an-ci-abc-2",
+        name: "L'alphabet, de J à R",
+        palierCount: 2,
+        description:
+          "Anglais, niveau pré-A1 : les lettres J K L M N O P Q R, à l'oral et à l'image. Vocabulaire fermé : les noms des lettres et un mot-image par lettre : jeans, key, lion, mango, nose, orange, pig, queen, rice (👖 🔑 🦁 🥭 👃 🍊 🐷 👸 🍚). L'enfant touche une lettre pour l'entendre, la relie au mot qui commence par elle, la reconnaît en grande et en petite lettre, retrouve la lettre qui manque dans une suite. Aucune phrase, aucun autre mot ; l'énoncé ne contient aucune lettre.",
+        games: [
+          { kind: "abc-mot-dessin", count: 2, vocabulary: "j-r" },
+          { kind: "abc-relier-mot", count: 2, vocabulary: "j-r" },
+          { kind: "abc-pour", count: 2, vocabulary: "j-r" },
+          { kind: "abc-ordre", count: 1, vocabulary: "j-r" },
+          { kind: "abc-manquante", count: 1, vocabulary: "j-r" },
+          { kind: "abc-majuscule", count: 2, vocabulary: "j-r" },
+        ],
+        byLevel: true,
+      },
+      {
+        key: "an-ci-abc-3",
+        name: "L'alphabet, de S à Z",
+        palierCount: 2,
+        description:
+          "Anglais, niveau pré-A1 : les lettres S T U V W X Y Z, à l'oral et à l'image. Vocabulaire fermé : les noms des lettres et un mot-image par lettre, sauf X : sun, tree, umbrella, van, water, yam, zebra (🌞 🌳 🌂 🚐 💧 🍠 🦓). Le X se dit « ex » et n'a pas de mot : il s'apprend dans la suite des lettres. L'enfant touche une lettre pour l'entendre, la relie au mot qui commence par elle, la reconnaît en grande et en petite lettre, retrouve la lettre qui manque dans une suite. Aucune phrase, aucun autre mot ; l'énoncé ne contient aucune lettre.",
+        games: [
+          { kind: "abc-mot-dessin", count: 2, vocabulary: "s-z" },
+          { kind: "abc-relier-mot", count: 2, vocabulary: "s-z" },
+          { kind: "abc-pour", count: 2, vocabulary: "s-z" },
+          { kind: "abc-ordre", count: 1, vocabulary: "s-z" },
+          { kind: "abc-manquante", count: 1, vocabulary: "s-z" },
+          { kind: "abc-majuscule", count: 2, vocabulary: "s-z" },
+        ],
+        byLevel: true,
+      },
       {
         key: "an-ci-hello",
         name: "Hello! Goodbye!",
@@ -130,6 +180,52 @@ export const ANGLAIS: ProgrammeSubject = {
     ],
     CP: [
       {
+        key: "an-cp-abc",
+        name: "L'alphabet de A à Z",
+        palierCount: 3,
+        description:
+          "Anglais, niveau pré-A1 : les vingt-six lettres. Vocabulaire fermé : les noms des lettres, A à Z, dits par la voix anglaise ; les vingt-cinq mots-images du CI (apple, banana, cat, dog, egg, fish, goat, house, ice cream, jeans, key, lion, mango, nose, orange, pig, queen, rice, sun, tree, umbrella, van, water, yam, zebra). L'enfant remet des lettres dans l'ordre de la chanson, trouve la lettre qui manque, relie la grande et la petite lettre, range trois ou quatre mots dans l'ordre alphabétique, complète « B is for ___. ». Pas d'autre phrase.",
+        games: [
+          { kind: "abc-ordre", count: 2, vocabulary: "a-z" },
+          { kind: "abc-manquante", count: 2, vocabulary: "a-z" },
+          { kind: "abc-majuscule", count: 2, vocabulary: "a-z" },
+          { kind: "abc-relier-mot", count: 1, vocabulary: "a-z" },
+          { kind: "abc-mots-ordre", count: 1, vocabulary: "a-z" },
+          { kind: "abc-pour", count: 2, vocabulary: "a-z" },
+        ],
+      },
+      {
+        key: "an-cp-sounds",
+        name: "Les premiers sons",
+        palierCount: 3,
+        description:
+          "Anglais, niveau pré-A1 : la première lettre d'un mot et les voyelles. Vocabulaire fermé : les mots-images de l'alphabet (apple, banana, cat, dog, egg, fish, goat, house, ice cream, jeans, key, lion, mango, nose, orange, pig, queen, rice, sun, tree, umbrella, van, water, yam, zebra) et six mots de trois lettres à lire avec leur dessin : cat, dog, sun, pig, key, box. L'enfant trouve la lettre par laquelle commence le mot d'un dessin, classe les lettres en voyelles (a, e, i, o, u) et consonnes, relie un mot de trois lettres à son dessin. Le Y ne sert à aucun tri. Pas de phrase, sauf « B is for ___. ».",
+        games: [
+          { kind: "abc-premiere", count: 3, vocabulary: "a-z" },
+          { kind: "abc-pour", count: 1, vocabulary: "a-z" },
+          { kind: "abc-relier-mot", count: 1, vocabulary: "a-z" },
+          { kind: "abc-voyelle", count: 2, vocabulary: "a-z" },
+          { kind: "abc-mots-courts", count: 2 },
+          { kind: "abc-mot-dessin", count: 1, vocabulary: "a-z" },
+        ],
+      },
+      {
+        key: "an-cp-name",
+        name: "Je me présente",
+        palierCount: 3,
+        description:
+          "Anglais, niveau pré-A1 : dire et épeler son prénom. Vocabulaire fermé : hello, goodbye, thank you, sorry, please, yes, no, good morning, good night (vus au CI) ; des prénoms de trois à six lettres sans lettre répétée (Idy, Sow, Omar, Diop, Gaye, Binta, Khady, Demba, Salif, Fatou, Aliou, Mbaye, Thiam, Seydou, Lamine, Ndiaye). Structures : « I am Awa. », « My name is Modou. ». L'enfant remet dans l'ordre les lettres d'un prénom, choisit la bonne épellation, remet « I am … » ou « My name is … » dans l'ordre ; pas de question « How old are you? » ici (elle est avec les nombres).",
+        games: [
+          { kind: "abc-epeler", count: 2 },
+          { kind: "abc-epeler-choix", count: 2 },
+          { kind: "salut-prenom", count: 2 },
+          { kind: "salut-trou", count: 1 },
+          { kind: "salut-rencontre", count: 1 },
+          { kind: "salut-francais", count: 1 },
+          { kind: "salut-relier", count: 1 },
+        ],
+      },
+      {
         key: "an-cp-family",
         name: "Ma famille en anglais",
         palierCount: 2,
@@ -211,6 +307,22 @@ export const ANGLAIS: ProgrammeSubject = {
     ],
     CE1: [
       {
+        key: "an-ce1-spell",
+        name: "Épeler des mots",
+        palierCount: 3,
+        description:
+          "Anglais, niveau A1 : écrire et épeler des mots. Vocabulaire fermé, tout vu au CI et au CP, sans lettre répétée : cat, dog, red, sun, rice, milk, blue, fish, mango, house, lemon, horse. Le mot est toujours montré par son dessin (🐱 🐶 🔴 🌞 🍚 🥛 🔵 🐟 🥭 🏠 🍋 🐴). L'enfant remet les lettres d'un mot dans l'ordre, écrit le mot d'un dessin, complète la lettre qui manque, choisit la bonne écriture (les fautes ne sont jamais un autre mot), relie un mot à son épellation (C-A-T), compte les lettres. Pas de phrase.",
+        games: [
+          { kind: "ce1-en-sp-ordre", count: 2 },
+          { kind: "ce1-en-sp-ecrire", count: 2 },
+          { kind: "ce1-en-sp-trou", count: 2 },
+          { kind: "ce1-en-sp-choix", count: 1 },
+          { kind: "ce1-en-sp-relier", count: 1 },
+          { kind: "ce1-en-sp-glisser", count: 1 },
+          { kind: "ce1-en-sp-compter", count: 1 },
+        ],
+      },
+      {
         key: "an-ce1-who",
         name: "Se présenter en anglais",
         palierCount: 3,
@@ -256,6 +368,36 @@ export const ANGLAIS: ProgrammeSubject = {
         ],
         description:
           "Anglais, niveau A1 : l'article a / an. « a » devant un mot qui commence par une consonne (a dog, a banana, a mango, a book), « an » devant une voyelle (an apple, an orange, an egg, an elephant). Structure : « What is it? / It is a dog. » Mots des thématiques déjà vues, au singulier ; jamais de mot comme hour ou university, pas de pluriel, pas de « the ».",
+      },
+      {
+        key: "an-ce1-plural",
+        name: "Un ou plusieurs ?",
+        palierCount: 3,
+        description:
+          "Anglais, niveau A1 : un ou plusieurs. Le pluriel en -s. Vocabulaire fermé : cat, dog, book, banana, bag, apple, egg, bird, goat, lion, fish, sheep ; les nombres one à five. Règle : un seul, le nom ne change pas (« one cat ») ; plusieurs, il prend un s (« three cats »). Fish et sheep ne changent pas (« two fish », « three sheep ») : ils sont au troisième palier. Pas de -es (mangoes est au CM1). Le dessin est répété autant de fois que le nombre. L'enfant choisit la bonne écriture, complète « three ___ », écrit le pluriel, relie un groupe de dessins à sa phrase, remet « I like cats. » dans l'ordre.",
+        games: [
+          { kind: "ce1-en-pl-choix", count: 3 },
+          { kind: "ce1-en-pl-trou", count: 3 },
+          { kind: "ce1-en-pl-ecrire", count: 1 },
+          { kind: "ce1-en-pl-relier", count: 1 },
+          { kind: "ce1-en-pl-glisser", count: 1 },
+          { kind: "ce1-en-pl-phrase", count: 1 },
+        ],
+      },
+      {
+        key: "an-ce1-possessives",
+        name: "Mon, ton, son",
+        palierCount: 3,
+        description:
+          "Anglais, niveau A1 : my, your, his, her. Vocabulaire fermé : I, you, he, she ; my, your, his, her ; bag, book, dog, cat, house, pen, mother, father, brother, sister ; les couleurs red, blue, brown, black, white, green. Structures : « This is my mother. », « He is Omar. His dog is brown. » L'énoncé nomme le sujet (« Le mot va avec « he ». ») ; jamais de « son » ni de « sa » en français (his ou her ?), seulement « le sac d'Awa » ou « le sac d'Omar ». L'enfant complète la phrase, relie I à my, you à your, range his d'un côté et her de l'autre, remet « This is my bag. » dans l'ordre.",
+        games: [
+          { kind: "ce1-en-poss-trou", count: 3 },
+          { kind: "ce1-en-poss-choix", count: 2 },
+          { kind: "ce1-en-poss-ecrire", count: 1 },
+          { kind: "ce1-en-poss-relier", count: 1 },
+          { kind: "ce1-en-poss-phrase", count: 2 },
+          { kind: "ce1-en-poss-glisser", count: 1 },
+        ],
       },
       {
         key: "an-ce1-clothes",
@@ -306,6 +448,22 @@ export const ANGLAIS: ProgrammeSubject = {
       },
     ],
     CE2: [
+      {
+        key: "an-ce2-numbers-100",
+        name: "Les nombres de 20 à 100",
+        palierCount: 3,
+        description:
+          "Anglais, niveau A1 : les nombres de 20 à 100. Vocabulaire fermé : twenty, thirty, forty, fifty, sixty, seventy, eighty, ninety, one hundred ; les nombres composés avec un trait d'union (twenty-one, thirty-six, fifty-eight, seventy-three, ninety-nine) ; thirteen à nineteen pour les confondre avec les dizaines. Palier 1 : les dizaines ; palier 2 : de 21 à 59 ; palier 3 : de 62 à 99. L'enfant lit un nombre en anglais et donne ses chiffres, écrit un nombre en anglais, range trois nombres, complète une suite, relie un nombre à ses chiffres, distingue -teen et -ty (thirteen et thirty). Pas d'autre mot.",
+        games: [
+          { kind: "ce2-en-num-mot", count: 1 },
+          { kind: "ce2-en-num-chiffre", count: 2 },
+          { kind: "ce2-en-num-ecrire", count: 2 },
+          { kind: "ce2-en-num-relier", count: 1 },
+          { kind: "ce2-en-num-ordre", count: 1 },
+          { kind: "ce2-en-num-suite", count: 2 },
+          { kind: "ce2-en-num-glisser", count: 1 },
+        ],
+      },
       {
         key: "an-ce2-be",
         games: [
@@ -425,6 +583,23 @@ export const ANGLAIS: ProgrammeSubject = {
         description:
           "Anglais, niveau A1 : l'heure pile et la demie. « What time is it? / It is seven o'clock. », « It is half past seven. » Nombres de one à twelve. L'enfant choisit la bonne phrase pour une heure écrite en chiffres (7:00, 7:30), associe une heure à son horloge décrite en mots, remet des moments de la journée dans l'ordre ; pas de « quarter past », pas de « to ».",
       },
+      {
+        key: "an-ce2-school",
+        name: "L'école et mon emploi du temps",
+        palierCount: 3,
+        description:
+          "Anglais, niveau A1 : les matières et l'emploi du temps. Vocabulaire fermé : French, Maths, English, Science, Art, Music, PE (📚 🔢 💬 🔬 🎨 🎵 ⚽) ; les jours Monday à Friday. Structures : « I have Maths on Monday. », « My favourite subject is Art. » L'enfant lit un emploi du temps de trois jours (un dessin par matière) et choisit la phrase juste, complète « On Monday I have ___. », écrit la matière d'un jour, relie un dessin à sa matière, remet « I have Art on Tuesday. » dans l'ordre, distingue les langues (French, English) des autres matières. Pas d'autre verbe que have.",
+        games: [
+          { kind: "ce2-en-sc-mot", count: 1 },
+          { kind: "ce2-en-sc-emploi", count: 2 },
+          { kind: "ce2-en-sc-trou", count: 2 },
+          { kind: "ce2-en-sc-phrase", count: 1 },
+          { kind: "ce2-en-sc-ecrire", count: 1 },
+          { kind: "ce2-en-sc-relier", count: 1 },
+          { kind: "ce2-en-sc-prefere", count: 1 },
+          { kind: "ce2-en-sc-glisser", count: 1 },
+        ],
+      },
     ],
     CM1: [
       {
@@ -488,6 +663,22 @@ export const ANGLAIS: ProgrammeSubject = {
           "Anglais, niveau A1+ : le présent continu. « I am reading. », « She is cooking. », « They are playing football. », « What are you doing? » Verbes : read, cook, play, eat, drink, write, run, swim, dance, sleep. Orthographe : read → reading, play → playing, write → writing, dance → dancing, run → running, swim → swimming. L'enfant choisit am, is ou are + verbe en -ing, et distingue « I play football every day » (une habitude) de « I am playing football now » (en ce moment).",
       },
       {
+        key: "an-cm1-hobbies",
+        name: "Mes loisirs",
+        palierCount: 3,
+        description:
+          "Anglais, niveau A1+ : les loisirs. Vocabulaire fermé : play football, play basketball, read, draw, sing, cook, dance, swim, run (⚽ 🏀 📖 🎨 🎤 🍳 💃 🏊 🏃) ; I like, She likes. Règle : après like, le verbe prend -ing (« I like playing football. », « She likes swimming. ») ; le e de dance tombe (dancing), la dernière lettre de swim et de run double (swimming, running). Le présent simple répond à « What do you do on Saturday? » (« I swim. »). L'enfant complète le verbe en -ing, choisit la bonne phrase pour un dessin, écrit le -ing d'un verbe, relie un verbe à sa forme en -ing, classe les verbes qui doublent leur lettre. Pas de forme négative.",
+        games: [
+          { kind: "cm1-hb-trou", count: 3 },
+          { kind: "cm1-hb-phrase", count: 1 },
+          { kind: "cm1-hb-reponse", count: 1 },
+          { kind: "cm1-hb-ordre", count: 1 },
+          { kind: "cm1-hb-ecrire", count: 2 },
+          { kind: "cm1-hb-relier", count: 1 },
+          { kind: "cm1-hb-glisser", count: 1 },
+        ],
+      },
+      {
         key: "an-cm1-jobs",
         games: [
           { kind: "cm1-en-jb-phrase", count: 3 },
@@ -532,8 +723,69 @@ export const ANGLAIS: ProgrammeSubject = {
         description:
           "Anglais, niveau A1+ : décrire. Adjectifs fermés : tall, short, big, small, old, young, new, happy, sad, strong, beautiful. « He is tall. », « She has got long black hair. », « It is a big red ball. » En anglais l'adjectif se place AVANT le nom et ne s'accorde jamais (« two small dogs », pas « two smalls dogs »). Cheveux : long, short, black, brown ; yeux : brown, black, green, blue.",
       },
+      {
+        key: "an-cm1-there-is",
+        name: "Il y a : there is, there are",
+        palierCount: 3,
+        description:
+          "Anglais, niveau A1+ : il y a. Vocabulaire fermé : school, shop, mosque, hospital, bank, post office, bus station, market ; les nombres one à three ; in my town. Structures : « There is a school in my town. », « There are two shops. », « Is there a bank? / Yes, there is. / No, there is not. » (les formes longues, jamais isn't). Un seul lieu : is et a ; plusieurs : are et le s du pluriel. Tous les lieux prennent a, jamais an. L'enfant complète is ou are, choisit la phrase qui va avec un dessin, répond oui ou non à « Is there a bank? » sur une rue dessinée, remet une phrase dans l'ordre, relie une phrase à ses dessins. Prépare les itinéraires du CM2.",
+        games: [
+          { kind: "cm1-th-trou", count: 2 },
+          { kind: "cm1-th-phrase", count: 2 },
+          { kind: "cm1-th-rue", count: 1 },
+          { kind: "cm1-th-ordre", count: 2 },
+          { kind: "cm1-th-ecrire", count: 1 },
+          { kind: "cm1-th-relier", count: 1 },
+          { kind: "cm1-th-glisser", count: 1 },
+        ],
+      },
     ],
     CM2: [
+      {
+        key: "an-cm2-questions",
+        games: [
+          { kind: "cm2-en-qs-phrase", count: 3 },
+          { kind: "cm2-en-qs-trou", count: 2 },
+          { kind: "cm2-en-qs-ecrire", count: 1 },
+          { kind: "cm2-en-qs-ordre", count: 1 },
+          { kind: "cm2-en-qs-relier", count: 1 },
+          { kind: "cm2-en-qs-glisser", count: 2 },
+        ],
+        name: "Poser des questions",
+        palierCount: 3,
+        description:
+          "Anglais, niveau A2 : les mots interrogatifs : what, where, who, when, why, how, how many, how much ; « Because… » pour répondre à why. Exemples : « Who is he? / He is my brother. », « When is your birthday? / It is in May. », « Why are you sad? / Because I am tired. », « How many books have you got? » L'enfant associe chaque question au type de réponse (une personne, un lieu, un moment, une raison, un nombre, un prix) et complète des questions avec le bon mot.",
+      },
+      {
+        key: "an-cm2-directions",
+        games: [
+          { kind: "cm2-en-dr-phrase", count: 3 },
+          { kind: "cm2-en-dr-trou", count: 2 },
+          { kind: "cm2-en-dr-ecrire", count: 1 },
+          { kind: "cm2-en-dr-ordre", count: 1 },
+          { kind: "cm2-en-dr-relier", count: 1 },
+          { kind: "cm2-en-dr-glisser", count: 2 },
+        ],
+        name: "Demander son chemin",
+        palierCount: 3,
+        description:
+          "Anglais, niveau A2 : s'orienter en ville. Lieux : school, market, mosque, hospital, shop, bank, post office, bus station. Indications : go straight on, turn left, turn right, next to, opposite, between. Structures : « Excuse me, where is the market? », « Go straight on and turn left. », « It is next to the bank. » L'enfant suit un itinéraire décrit en anglais, choisit la bonne indication, remet un dialogue dans l'ordre.",
+      },
+      {
+        key: "an-cm2-comparatives",
+        games: [
+          { kind: "cm2-en-cp-phrase", count: 3 },
+          { kind: "cm2-en-cp-trou", count: 2 },
+          { kind: "cm2-en-cp-ecrire", count: 1 },
+          { kind: "cm2-en-cp-ordre", count: 1 },
+          { kind: "cm2-en-cp-relier", count: 1 },
+          { kind: "cm2-en-cp-glisser", count: 2 },
+        ],
+        name: "Comparer : plus grand, le plus grand",
+        palierCount: 4,
+        description:
+          "Anglais, niveau A2 : comparer. Adjectifs courts : tall → taller → the tallest, small → smaller → the smallest, big → bigger → the biggest (consonne doublée), old → older → the oldest, fast → faster → the fastest. Adjectifs longs : beautiful → more beautiful → the most beautiful, expensive → more expensive → the most expensive. Irrégulier : good → better → the best. Structures : « Awa is taller than Modou. », « This mango is the biggest. » Jamais « more taller ».",
+      },
       {
         key: "an-cm2-was-were",
         games: [
@@ -593,51 +845,6 @@ export const ANGLAIS: ProgrammeSubject = {
         palierCount: 3,
         description:
           "Anglais, niveau A2 : dire ce qu'on va faire. « I am going to visit my grandmother. », « She is going to play football tomorrow. », « What are you going to do? » Négation : « I am not going to… ». Repères : tomorrow, tonight, next week, next month. Le verbe après going to reste à l'infinitif, sans s ni -ing (« He is going to eat », jamais « going to eats »). Verbes déjà vus seulement.",
-      },
-      {
-        key: "an-cm2-comparatives",
-        games: [
-          { kind: "cm2-en-cp-phrase", count: 3 },
-          { kind: "cm2-en-cp-trou", count: 2 },
-          { kind: "cm2-en-cp-ecrire", count: 1 },
-          { kind: "cm2-en-cp-ordre", count: 1 },
-          { kind: "cm2-en-cp-relier", count: 1 },
-          { kind: "cm2-en-cp-glisser", count: 2 },
-        ],
-        name: "Comparer : plus grand, le plus grand",
-        palierCount: 4,
-        description:
-          "Anglais, niveau A2 : comparer. Adjectifs courts : tall → taller → the tallest, small → smaller → the smallest, big → bigger → the biggest (consonne doublée), old → older → the oldest, fast → faster → the fastest. Adjectifs longs : beautiful → more beautiful → the most beautiful, expensive → more expensive → the most expensive. Irrégulier : good → better → the best. Structures : « Awa is taller than Modou. », « This mango is the biggest. » Jamais « more taller ».",
-      },
-      {
-        key: "an-cm2-directions",
-        games: [
-          { kind: "cm2-en-dr-phrase", count: 3 },
-          { kind: "cm2-en-dr-trou", count: 2 },
-          { kind: "cm2-en-dr-ecrire", count: 1 },
-          { kind: "cm2-en-dr-ordre", count: 1 },
-          { kind: "cm2-en-dr-relier", count: 1 },
-          { kind: "cm2-en-dr-glisser", count: 2 },
-        ],
-        name: "Demander son chemin",
-        palierCount: 3,
-        description:
-          "Anglais, niveau A2 : s'orienter en ville. Lieux : school, market, mosque, hospital, shop, bank, post office, bus station. Indications : go straight on, turn left, turn right, next to, opposite, between. Structures : « Excuse me, where is the market? », « Go straight on and turn left. », « It is next to the bank. » L'enfant suit un itinéraire décrit en anglais, choisit la bonne indication, remet un dialogue dans l'ordre.",
-      },
-      {
-        key: "an-cm2-questions",
-        games: [
-          { kind: "cm2-en-qs-phrase", count: 3 },
-          { kind: "cm2-en-qs-trou", count: 2 },
-          { kind: "cm2-en-qs-ecrire", count: 1 },
-          { kind: "cm2-en-qs-ordre", count: 1 },
-          { kind: "cm2-en-qs-relier", count: 1 },
-          { kind: "cm2-en-qs-glisser", count: 2 },
-        ],
-        name: "Poser des questions",
-        palierCount: 3,
-        description:
-          "Anglais, niveau A2 : les mots interrogatifs : what, where, who, when, why, how, how many, how much ; « Because… » pour répondre à why. Exemples : « Who is he? / He is my brother. », « When is your birthday? / It is in May. », « Why are you sad? / Because I am tired. », « How many books have you got? » L'enfant associe chaque question au type de réponse (une personne, un lieu, un moment, une raison, un nombre, un prix) et complète des questions avec le bon mot.",
       },
       {
         key: "an-cm2-reading",

@@ -1247,6 +1247,66 @@ classiques : l'écran, la correction et l'audit sont ceux de toujours.
 | `salut-trou` | phrase à trous | `My ___ is Awa.` : `name` |
 | `salut-trou-dessin` | phrase à trous | `🌙 Good ___!` : `night` |
 | `salut-rencontre` | ordre | `Hello! > I am Awa. > Goodbye!` |
+| `abc-mot-dessin` | QCM | « Quel mot va avec ce dessin ? » puis 🍎 : `apple`, parmi deux autres mots-images de la plage |
+| `abc-relier-mot` | association | `B~🍌 banana ; D~🐶 dog ; M~🥭 mango` (la lettre à gauche, dite en anglais ; le mot et son dessin à droite) |
+| `abc-pour` | phrase à trous | « Complète la phrase avec le bon mot. » puis `B is for ___.` : `🍌 banana`, parmi deux mots d'autres initiales |
+| `abc-ordre` | ordre | « Remets les lettres dans l'ordre, comme dans la chanson. » : `E > F > G` (de trois à cinq lettres qui se suivent) |
+| `abc-manquante` | phrase à trous | « Quelle lettre manque dans la suite ? » puis `A, B, ___, D` : `C`, parmi deux lettres absentes de la suite |
+| `abc-majuscule` | association | « Relie chaque grande lettre à sa petite lettre. » : `B~b ; D~d ; G~g` (jamais I et L ensemble) |
+| `abc-premiere` | QCM | « Quelle lettre commence le mot anglais de ce dessin ? » puis 🍌 : `B`, parmi deux autres lettres (CP) |
+| `abc-voyelle` | glisser-déposer | cases `Voyelles` et `Consonnes` : `A` et `O` à gauche, `B` et `T` à droite (jamais le Y) |
+| `abc-mots-courts` | association | `🐱~cat ; 🐶~dog ; 🔑~key` (les six mots de trois lettres de la fiche) |
+| `abc-mots-ordre` | ordre | « Range ces mots dans l'ordre alphabétique. » : `apple > dog > mango` |
+| `abc-epeler` | ordre | « Remets les lettres dans l'ordre pour épeler « Fatou ». » : `F > A > T > O > U` (prénoms sans lettre répétée) |
+| `abc-epeler-choix` | QCM | « Comment épelle-t-on « Fatou » ? » : `F-A-T-O-U`, parmi deux épellations où deux lettres voisines sont échangées |
+| `ce1-en-sp-ordre` | ordre | « Remets les lettres dans l'ordre pour écrire le mot du dessin. » puis 🐱 : `c > a > t` (douze mots sans lettre répétée) |
+| `ce1-en-sp-ecrire` | réponse à écrire | « Écris en anglais le mot de ce dessin. » puis 🔴 : `red` |
+| `ce1-en-sp-trou` | phrase à trous | « Complète le mot du dessin avec la lettre qui manque. » puis `🐶 d___g` : `o`, parmi deux autres voyelles |
+| `ce1-en-sp-choix` | QCM | « Quelle est la bonne écriture du mot de ce dessin ? » puis 🐟 : `fish`, parmi `fsih` et `fich` (une faute n'est jamais un autre mot) |
+| `ce1-en-sp-relier` | association | `cat~C-A-T ; dog~D-O-G ; sun~S-U-N` |
+| `ce1-en-sp-glisser` | glisser-déposer | cases `3 lettres` et `5 lettres` : `cat`, `red` à gauche, `mango`, `house` à droite |
+| `ce1-en-sp-compter` | QCM | « Combien de lettres a le mot anglais de ce dessin ? » puis 🥭 : `5`, parmi `4` et `6` |
+| `ce1-en-pl-choix` | QCM | « Quelle est la bonne écriture pour ce dessin ? » puis 🐱🐱🐱 : `three cats`, parmi `three cat` et `one cats` (fish et sheep ne changent pas, au troisième palier) |
+| `ce1-en-pl-trou` | phrase à trous | « Complète avec le bon mot. » puis `🐶🐶 two ___` : `dogs`, parmi `dog` et `dog's` |
+| `ce1-en-pl-ecrire` | réponse à écrire | « Écris le mot au pluriel, en anglais. » puis `🐱🐱🐱 three ___` : `cats` |
+| `ce1-en-pl-relier` | association | `one cat~🐱 ; three cats~🐱🐱🐱 ; two books~📖📖` |
+| `ce1-en-pl-glisser` | glisser-déposer | cases `Singulier` et `Pluriel` : `one egg` à gauche, `four birds` à droite |
+| `ce1-en-pl-phrase` | ordre | `I > like > cats.` |
+| `ce1-en-poss-trou` | phrase à trous | « Complète la phrase. Le mot va avec « he ». » puis `He is Omar. ___ dog is brown.` : `his` |
+| `ce1-en-poss-choix` | QCM | « Comment dit-on « le sac d'Awa » en anglais ? » : `her bag`, parmi `his bag` et `my bag` (jamais « son » ni « sa » : his ou her ?) |
+| `ce1-en-poss-ecrire` | réponse à écrire | « Écris le mot qui manque. Il va avec « she ». » puis `She is Awa. ___ book is blue.` : `her` |
+| `ce1-en-poss-relier` | association | `I~my ; you~your ; she~her` |
+| `ce1-en-poss-glisser` | glisser-déposer | cases `À un garçon` et `À une fille` : `his bag` à gauche, `her pen` à droite |
+| `ce1-en-poss-phrase` | ordre | `This > is > my > mother.` |
+| `ce2-en-num-mot` | QCM | « Quel est le nombre « forty » en chiffres ? » : `40`, parmi `14` et `50` |
+| `ce2-en-num-chiffre` | QCM | « Comment écrit-on 37 en anglais ? » : `thirty-seven`, parmi `seventy-three` et `forty-seven` |
+| `ce2-en-num-ecrire` | réponse à écrire | « Écris 52 en lettres, en anglais. » : `fifty-two` (ou `fifty two`) |
+| `ce2-en-num-relier` | association | `forty~40 ; sixty-seven~67 ; ninety-nine~99` |
+| `ce2-en-num-ordre` | ordre | « Range ces nombres du plus petit au plus grand. » : `twenty-one > twenty-two > twenty-three` |
+| `ce2-en-num-suite` | phrase à trous | « Complète la suite des nombres. » puis `twenty, thirty, ___, fifty` : `forty` |
+| `ce2-en-num-glisser` | glisser-déposer | cases `Finit par -teen` et `Finit par -ty` : `fourteen` à gauche, `sixty` à droite |
+| `ce2-en-sc-emploi` | QCM | « Lis l'emploi du temps. Quelle phrase est juste ? » puis `lundi 🔢 · mardi 🎨 · jeudi ⚽` : `I have Maths on Monday.`, parmi la même matière un autre jour et un autre jour avec la même matière |
+| `ce2-en-sc-trou` | phrase à trous | l'emploi du temps, puis `On Tuesday I have ___.` : `Art`, parmi deux autres matières |
+| `ce2-en-sc-ecrire` | réponse à écrire | « Lis l'emploi du temps. Écris la matière du jeudi, en anglais. » : `PE` |
+| `ce2-en-sc-mot` | QCM | « Quel mot va avec ce dessin ? » puis 🔬 : `Science` |
+| `ce2-en-sc-phrase` | ordre | `I > have > Maths > on > Monday.` |
+| `ce2-en-sc-relier` | association | `🔢~Maths ; 🎨~Art ; 🎵~Music` |
+| `ce2-en-sc-prefere` | QCM | « Comment dit-on « Ma matière préférée est le dessin. » en anglais ? » : `My favourite subject is Art.` |
+| `ce2-en-sc-glisser` | glisser-déposer | cases `Une langue` et `Pas une langue` : `French`, `English` à gauche, `Maths`, `PE` à droite |
+| `cm1-hb-trou` | phrase à trous | « Regarde le dessin et complète la phrase avec le verbe en -ing. » puis ⚽ et `I like ___ football.` : `playing`, parmi `play` et `plays` ; au troisième palier `dancing`, `swimming`, `running` |
+| `cm1-hb-phrase` | QCM | « Regarde le dessin et choisis la bonne phrase. » puis 🏊 : `I like swimming.`, parmi `I like swim.` et `I likes swimming.` |
+| `cm1-hb-reponse` | QCM | « Choisis la bonne réponse à « What do you do on Saturday? » » puis ⚽ : `I play football.`, parmi `I playing football.` et `I plays football.` |
+| `cm1-hb-ordre` | ordre | `She > likes > swimming.` |
+| `cm1-hb-ecrire` | réponse à écrire | « Écris le verbe de la parenthèse avec -ing. » puis `I like ___ (swim).` : `swimming` |
+| `cm1-hb-relier` | association | `swim~swimming ; dance~dancing ; read~reading` |
+| `cm1-hb-glisser` | glisser-déposer | cases `La lettre double` et `Seulement -ing` : `swim`, `run` à gauche, `read`, `play` à droite |
+| `cm1-th-trou` | phrase à trous | « Complète avec le bon mot. » puis 🕌🕌 et `There ___ two mosques in my town.` : `are`, parmi `is` et `am` |
+| `cm1-th-phrase` | QCM | « Regarde le dessin et choisis la bonne phrase. » puis 🏦 : `There is a bank.`, parmi `There are a bank.` et `There is two banks.` |
+| `cm1-th-rue` | QCM | « Regarde la rue et réponds à « Is there a bank? » » puis `🏫 🏦 🕌` : `Yes, there is.`, parmi `No, there is not.` et `Yes, there are.` (jamais juste) |
+| `cm1-th-ordre` | ordre | `There > are > two > shops > in > my > town.` (le marché compris) |
+| `cm1-th-ecrire` | réponse à écrire | « Écris le mot qui manque, en anglais. » puis `There ___ two schools.` : `are` |
+| `cm1-th-relier` | association | `There is a school.~🏫 ; There are two shops.~🏪🏪` |
+| `cm1-th-glisser` | glisser-déposer | cases `There is` et `There are` : `a bank` à gauche, `two mosques` à droite |
 | `civ-situation` | QCM | « Ta grand-mère te parle. Que fais-tu ? » : `👂 J'écoute ma grand-mère calmement`, parmi deux gestes à éviter de la même scène, sous le clip de la scène (`payload.scene`) |
 | `civ-glisser` | glisser-déposer | cases `✅ À faire` et `❌ À éviter` : `🧼 Je me lave les mains avec du savon` à gauche, `🚯 Je jette le papier par terre` à droite (quatre ou cinq gestes de scènes différentes) |
 | `civ-intrus` | QCM | « Quel geste n'est pas bien ? » : `🚯 Je jette le papier par terre`, parmi deux bons gestes ; ou « Quel geste est bien ? » avec un seul bon geste parmi deux gestes à éviter |

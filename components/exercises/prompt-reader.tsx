@@ -391,11 +391,11 @@ export function PromptReaderProvider({
     if (registered?.autoRead) {
       // Une tuile sans rien à dire (que des émojis, une lettre seule) n'entre pas
       // dans la file : le serveur la refuserait (`speakableTile`).
-      if (registered.sentence && speakableTile(registered.sentence)) {
+      if (registered.sentence && speakableTile(registered.sentence, englishTopic ? "en" : "fr", englishTopic)) {
         queue.push({ index: SENTENCE_INDEX, text: registered.sentence });
       }
       registered.tiles.forEach((text, index) => {
-        if (speakableTile(text)) queue.push({ index, text });
+        if (speakableTile(text, englishTopic ? "en" : "fr", englishTopic)) queue.push({ index, text });
       });
       for (const item of queue) void urlForTile(item.text);
     }
@@ -493,7 +493,7 @@ export function PromptReaderProvider({
       if (!finished) break;
     }
     rest();
-  }, [owner, urlFor, urlForTile, tileVoice, rest, muted]);
+  }, [owner, urlFor, urlForTile, tileVoice, englishTopic, rest, muted]);
 
   // L'enfant touche une tuile : Pio la dit, et coupe ce qui jouait (la consigne,
   // la file). Le rang s'allume tout de suite : le toucher est pris, même si le
@@ -504,7 +504,7 @@ export function PromptReaderProvider({
       const registered = tilesRef.current;
       const text = index === SENTENCE_INDEX ? registered?.sentence : registered?.tiles[index];
       // Rien à dire (que des émojis, une lettre seule) : le toucher ne coupe rien et ne s'allume pas.
-      if (typeof text !== "string" || !speakableTile(text)) return;
+      if (typeof text !== "string" || !speakableTile(text, englishTopic ? "en" : "fr", englishTopic)) return;
       const token = ++tokenRef.current;
       stopPlaying();
       // Un toucher vaut mieux que la lecture automatique : elle n'a plus à repartir.
@@ -530,7 +530,7 @@ export function PromptReaderProvider({
         if (tokenRef.current === token) rest();
       })();
     },
-    [owner, tileVoice, urlForTile, rest],
+    [owner, tileVoice, englishTopic, urlForTile, rest],
   );
 
   // Un toucher pendant la lecture l'arrête : le jeton change, pour qu'une

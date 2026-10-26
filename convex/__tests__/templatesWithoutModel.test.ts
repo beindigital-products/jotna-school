@@ -51,6 +51,9 @@ const WITHOUT_MODEL = [
   "ge-cp-plan",
   "ge-cp-quartier",
   // L'anglais du CP (la famille, le corps, la classe, les nombres de 11 à 20, les aliments), la lecture et l'écriture.
+  "an-cp-abc",
+  "an-cp-sounds",
+  "an-cp-name",
   "an-cp-family",
   "an-cp-body",
   "an-cp-classroom",
@@ -91,6 +94,9 @@ const WITHOUT_MODEL = [
   "ma-cp-problemes",
   "ma-cp-figures",
   // L'anglais du CI : les salutations, les couleurs, les nombres de 0 à 10, les animaux, les fruits.
+  "an-ci-abc-1",
+  "an-ci-abc-2",
+  "an-ci-abc-3",
   "an-ci-hello",
   "an-ci-colours",
   "an-ci-numbers",
