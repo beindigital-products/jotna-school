@@ -344,8 +344,13 @@ const WRITE_EST: Hints = ["Lis la phrase en entier.", "Remplace le trou par éta
 const WRITE_ET: Hints = ["Lis la phrase en entier.", "Remplace le trou par était.", "La phrase devient bizarre avec ce mot, c'est donc le petit mot qui relie deux choses."];
 const WRITE_ONT: Hints = ["Lis la phrase en entier.", "Remplace le trou par avaient.", "La phrase reste juste avec ce mot, c'est donc le verbe avoir."];
 const WRITE_ON: Hints = ["Lis la phrase en entier.", "Remplace le trou par il.", "La phrase reste juste avec ce petit mot, qui parle de quelqu'un sans le nommer."];
+/**
+ * Le choix est nommé dans l'énoncé : sans lui, « Le pain ___ chaud » accepte aussi « était » ou « devient », et « Au marché, ___ vend » accepte « il » ou
+ * « elle » (relevé à la relecture de la production du 25 octobre 2026, comme au CM1). Le contrôleur ne compte pas ce choix fermé comme une réponse donnée.
+ */
+const WRITE_CHOICE: Record<string, string> = { est: "est ou et", et: "est ou et", on: "on ou ont", ont: "on ou ont" };
 const writeWord = (text: string, word: string, hints: Hints): WriteFact => ({
-  prompt: `Écris le mot qui manque dans « ${text} »`,
+  prompt: `Écris le mot qui manque (${WRITE_CHOICE[word]}) dans « ${text} »`,
   accepted: [word],
   hints,
 });
