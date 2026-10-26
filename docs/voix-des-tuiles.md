@@ -29,6 +29,17 @@ l'enfant entend, ce que Pio ne dit jamais, et où se trouve chaque pièce.
   égale »). La voix anglaise est, par défaut, celle des consignes avec le modèle
   multilingue ; `ELEVENLABS_EN_VOICE_ID` et `ELEVENLABS_EN_MODEL_ID` la changent.
   **Elle n'a pas été écoutée** : à auditionner avant de s'y fier.
+- **Les lettres se disent en anglais** (alphabet du CI et du CP, ajouté le 26 octobre 2026).
+  Dans une thématique d'anglais, une majuscule seule (« B »), un prénom épelé
+  (« F-A-T-O-U »), une suite de lettres (« A, B, ___, D ») et « B is for ___. » se
+  disent avec le NOM anglais de chaque lettre (`englishLetters`, `LETTER_NAMES`,
+  `convex/voice/tiles.ts`) : « bee », « eff, ay, tee, oh, you ». Le nom est écrit comme un
+  mot (« bee » et non « B »), parce qu'une synthèse qui lit un « B » seul le dit parfois à la
+  française. Seules les MAJUSCULES comptent : « a », sans majuscule, est l'article de
+  « a dog ». Dans ces thématiques, « lettre », « majuscule », « épeler » et « commence par »
+  ne coupent plus la voix (`ALPHABET_WORDS`) ; « Lis le mot » et « la syllabe » la coupent
+  toujours. **Ces noms n'ont pas été écoutés** : à auditionner avec les 26 lettres avant de
+  s'y fier (`ay`, `eye`, `ar`, `ell` et `double you` sont les plus à risque).
 - **Un toucher coupe la file.** L'enfant n'attend jamais la fin de la lecture
   pour répondre. Elle se tait dès qu'il a répondu, ou quand une fenêtre s'ouvre.
 - **« Écouter » et Pio redisent tout**, la consigne puis les propositions ; un
@@ -52,7 +63,7 @@ l'enfant entend, ce que Pio ne dit jamais, et où se trouve chaque pièce.
 | --- | --- |
 | Un énoncé qui demande de lire ou de décoder (`READING_PROMPT`, `DECODING_PROMPT`, `lib/item-pictures.ts`) | Dire la tuile, c'est lire à la place de l'enfant. |
 | Un énoncé qui demande une traduction, HORS d'une thématique d'anglais | Les tuiles seraient des mots anglais, et la voix française les dirait faux. Dans une thématique d'anglais, elles se disent avec la voix anglaise. |
-| Une tuile d'une seule lettre | C'est du déchiffrage, même quand l'énoncé ne le dit pas (« Complète le mot : ba_ane »). |
+| Une tuile d'une seule lettre, hors d'une thématique d'anglais | C'est du déchiffrage, même quand l'énoncé ne le dit pas (« Complète le mot : ba_ane »). Dans une thématique d'anglais, une MAJUSCULE seule est un nom de lettre : elle se dit en anglais (voir plus bas). |
 | Un exercice qui fait compléter un mot : un trou collé à des lettres (« ba___ne », « ___ngue »), dans l'énoncé ou dans la phrase à trous | Les tuiles sont des lettres, des syllabes ou des sons : les dire, c'est déchiffrer à la place de l'enfant. Un trou entre deux espaces (« Le ___ miaule ») complète une phrase : il se dit. |
 | Une tuile qui n'est que des émojis ou des signes | Il n'y a rien à dire. |
 | Une autre classe que le CI et le CP | `TILE_VOICE_CLASSES`. |

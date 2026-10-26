@@ -28,6 +28,8 @@ const FRENCH_LABELS = new Set([
   "Animaux",
   "Pour dire bonjour",
   "Pour dire au revoir",
+  "Voyelles",
+  "Consonnes",
 ]);
 const FRENCH_LABEL = (text: string) => FRENCH_LABELS.has(text) || /^(Moins|Plus) de \d+$/.test(text);
 

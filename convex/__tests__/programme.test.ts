@@ -33,7 +33,8 @@ describe("le programme CI → CM2", () => {
       for (const klass of VISIBLE_CLASSES) {
         const topics = subject.classes[klass];
         expect(topics.length, `${subject.name} ${klass}`).toBeGreaterThanOrEqual(3);
-        expect(topics.length, `${subject.name} ${klass}`).toBeLessThanOrEqual(8);
+        // Neuf au plus : le programme d'anglais v2 (`docs/programme-anglais-v2.md`) en compte neuf au CE1, au CE2 et au CM1.
+        expect(topics.length, `${subject.name} ${klass}`).toBeLessThanOrEqual(9);
       }
     }
   });

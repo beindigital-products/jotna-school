@@ -164,6 +164,19 @@ const TEMPLATES = [
   "salut-trou",
   "salut-trou-dessin",
   "salut-rencontre",
+  // L'alphabet anglais du CI et du CP (`games/anglaisAlphabet.ts`) : leur matière est « Anglais ».
+  "abc-mot-dessin",
+  "abc-relier-mot",
+  "abc-pour",
+  "abc-ordre",
+  "abc-manquante",
+  "abc-majuscule",
+  "abc-premiere",
+  "abc-voyelle",
+  "abc-mots-courts",
+  "abc-mots-ordre",
+  "abc-epeler",
+  "abc-epeler-choix",
 
   // L'instruction civique du CI (`games/civique.ts`) : leur matière est « Instruction civique ».
   "civ-situation",
@@ -297,6 +310,18 @@ const ENGLISH_KINDS = new Set<string>([
   "salut-trou",
   "salut-trou-dessin",
   "salut-rencontre",
+  "abc-mot-dessin",
+  "abc-relier-mot",
+  "abc-pour",
+  "abc-ordre",
+  "abc-manquante",
+  "abc-majuscule",
+  "abc-premiere",
+  "abc-voyelle",
+  "abc-mots-courts",
+  "abc-mots-ordre",
+  "abc-epeler",
+  "abc-epeler-choix",
 ]);
 
 /** Les gabarits de l'instruction civique du CI (`games/civique.ts`) : leur matière est « Instruction civique ». */
@@ -1187,7 +1212,7 @@ describe("les gabarits dans le programme du CI", () => {
     (e) => e.klass === "CI" && e.topic.games?.some((g) => (TEMPLATES as readonly string[]).includes(g.kind)),
   );
 
-  it("est branché sur trente-deux thématiques du CI", () => {
+  it("est branché sur trente-cinq thématiques du CI", () => {
     expect(entries.map((e) => e.topic.key).sort()).toEqual(
       [
         "fr-ci-alphabet",
@@ -1213,6 +1238,9 @@ describe("les gabarits dans le programme du CI", () => {
         "ge-ci-lateralite",
         "ge-ci-reperes",
         "ge-ci-quadrillage",
+        "an-ci-abc-1",
+        "an-ci-abc-2",
+        "an-ci-abc-3",
         "an-ci-hello",
         "an-ci-colours",
         "an-ci-numbers",
@@ -1251,6 +1279,9 @@ describe("les gabarits dans le programme du CI", () => {
       "ge-ci-lateralite",
       "ge-ci-reperes",
       "ge-ci-quadrillage",
+      "an-ci-abc-1",
+      "an-ci-abc-2",
+      "an-ci-abc-3",
       "an-ci-hello",
       "an-ci-colours",
       "an-ci-numbers",
@@ -1396,6 +1427,9 @@ describe("dix gabarits dans un palier : plus aucun exercice du modèle en lectur
     "ge-ci-lateralite",
     "ge-ci-reperes",
     "ge-ci-quadrillage",
+    "an-ci-abc-1",
+    "an-ci-abc-2",
+    "an-ci-abc-3",
     "an-ci-hello",
     "an-ci-colours",
     "an-ci-numbers",

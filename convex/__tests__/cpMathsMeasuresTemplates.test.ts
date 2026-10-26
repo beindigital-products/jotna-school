@@ -916,9 +916,9 @@ describe("les quatre dernières thématiques de mathématiques du CP : mesures, 
     for (const kind of kindsOf("ma-cp-figures")) expect(allowed, kind).toContain(kind);
   });
 
-  it("achèvent le CP : aucune des quarante-deux thématiques n'appelle plus le modèle", () => {
+  it("achèvent le CP : aucune des quarante-cinq thématiques n'appelle plus le modèle", () => {
     const cp = allProgrammeEntries().filter((e) => e.klass === "CP");
-    expect(cp).toHaveLength(42);
+    expect(cp).toHaveLength(45);
     for (const entry of cp) {
       expect((entry.topic.games ?? []).reduce((sum, spec) => sum + spec.count, 0), entry.topic.key).toBeGreaterThanOrEqual(PALIER_SIZE);
       expect(topicUsesModel(entry.topic.key), entry.topic.key).toBe(false);
