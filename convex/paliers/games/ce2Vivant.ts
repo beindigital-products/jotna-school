@@ -323,7 +323,7 @@ const PLANT_SORT_ROWS: readonly SortRow[] = sortRows(
   ["Il lui faut", "Il ne lui faut pas"],
   NEEDS,
   NOT_NEEDS,
-  hints("Pense à une graine que tu sèmes.", "Trois choses seulement l'aident à germer.", "Les autres choses ne lui servent à rien."),
+  hints("Pense à une graine que tu sèmes.", "Peu de choses aident une graine à germer.", "Les autres choses ne lui servent à rien."),
   16,
 );
 
@@ -520,7 +520,7 @@ const ANIMAL_GAP_ROWS: readonly GapRow[] = inFactOrder(
     gr("La poule, la tortue et le poisson pondent des ___.", "œufs", ["fruits", "graines"], hints("Pense à ce qui a une coquille.", "Les petits en sortent.", "Les poules en pondent chaque jour."), "animal:ovipare"),
   gr("Le mouton met au monde ses ___.", "agneaux", ["œufs", "graines"], hints("Pense au petit du mouton.", "Il tète sa mère.", "Il saute dans le pré."), "animal:Mouton"),
   gr("Le têtard devient une ___.", "grenouille", ["chenille", "poule"], hints("Sa queue disparaît peu à peu.", "Il sort de l'eau.", "Elle saute et coasse."), "cycle:grenouille"),
-  gr("La tortue est un animal ___.", "ovipare", ["vivipare", "aquatique"], hints("Pense à la naissance des bébés tortues.", "Elle pond dans un trou.", "Ses petits sortent d'une coquille."), "animal:Tortue"),
+  gr("La tortue est un animal ___.", "ovipare", ["vivipare", "volant"], hints("Pense à la naissance des bébés tortues.", "Elle pond dans un trou.", "Ses petits sortent d'une coquille."), "animal:Tortue"),
   ],
   ANIMAL_FACTS,
 );

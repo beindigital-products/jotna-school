@@ -558,7 +558,7 @@ export function makeCe1PotableSort(ctx: GameContext): GeneratedGame {
     [
       "Pense à ce qui protège le ventre quand on boit.",
       "Un geste qui nettoie ou qui chauffe aide, un geste qui salit ou qui ajoute n'importe quoi n'aide pas.",
-      "Trois gestes de la maison chassent une partie des dangers de l'eau.",
+      "Quelques gestes de la maison chassent une partie des dangers de l'eau.",
     ],
   );
 }

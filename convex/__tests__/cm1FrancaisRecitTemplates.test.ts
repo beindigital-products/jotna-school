@@ -35,12 +35,17 @@ const TITLES = [
 const titleOf = (text: string) => TITLES.find(([start]) => text.startsWith(start))?.[1];
 /** Les phrases qui décrivent, écrites à part : un être ou un avoir à l'imparfait ou au présent, sans action. */
 const PORTRAITS = new Set([
-  "Le ciel est rose et la brume flotte sur la rivière.", "Le fleuve est large et très calme.", "Sa grand-mère est fatiguée mais souriante.", "Le marché est bruyant et très coloré.", "Il était très vieux et très haut.",
+  "Le ciel est rose et la brume est légère sur la rivière.", "Le fleuve est large et très calme.", "Sa grand-mère est fatiguée mais souriante.", "Le marché est bruyant et très coloré.", "Il était très vieux et très haut.",
   "Son tronc était gris et ses branches étaient larges.", "La rivière était large et profonde.", "Le lion, gros et fier, avait très faim.", "La nuit était chaude et claire.", "Samedi soir, tout le village était en fête.",
   "Le chemin est long et sablonneux.", "Le soleil est déjà brûlant.", "Le voleur était petit et maigre.", "La nuit était sombre et silencieuse.", "Le ciel était gris et lourd.",
-  "Le vent soufflait fort et les vagues étaient grandes.", "Le silence était total dans la classe.", "Après une heure, le concours était terminé.", "La nuit était douce et le village était calme.", "Il était vieux et très doux.",
+  "Le vent était fort et les vagues étaient grandes.", "Le silence était total dans la classe.", "Après une heure, le concours était terminé.", "La nuit était douce et le village était calme.", "Il était vieux et très doux.",
 ]);
 const BE_OR_HAVE = /(?<![\p{L}])(est|sont|était|étaient|avait|avaient)(?![\p{L}])/u;
+/**
+ * Un verbe d'action ou de mouvement dans une description : « la brume flotte », « le vent soufflait » étaient rangés en Description (relecture du 26 octobre 2026),
+ * alors que le troisième indice dit de chercher le verbe être parmi les phrases qui décrivent, et qu'un élève range un verbe qui bouge dans les actions.
+ */
+const MOVING_VERB = /(?<![\p{L}])(flotte|flottait|souffle|soufflait|brille|brillait|coule|coulait|tombe|tombait|danse|dansait|court|courait|vole|volait|bouge|bougeait)(?![\p{L}])/u;
 
 const askOf = (question: string) => STORIES.flatMap((story) => [...story.asks, story.word]).find((entry) => entry.question === question);
 
@@ -152,6 +157,7 @@ const checkSort: Check = (exo) => {
     const portrait = PORTRAITS.has(item.text);
     if (portrait !== (item.correctZone === "Description")) return `« ${item.text} » est ${portrait ? "un portrait" : "une action"}, pas ${item.correctZone}`;
     if (portrait && !BE_OR_HAVE.test(item.text)) return `un portrait sans être ni avoir : ${item.text}`;
+    if (portrait && MOVING_VERB.test(item.text)) return `un portrait avec un verbe d'action : ${item.text}`;
   }
   return all(ok(zones.join("|") === "Action|Description", "cases"), ok(zones.every((zone) => items.filter((item) => item.correctZone === zone).length === 3), "trois phrases par case"));
 };
@@ -244,6 +250,7 @@ describe("les dix récits s'accordent avec les règles écrites à part", () => 
         expect(sentences, portrait).toContain(portrait);
         expect(PORTRAITS.has(portrait), portrait).toBe(true);
         expect(BE_OR_HAVE.test(portrait), portrait).toBe(true);
+        expect(MOVING_VERB.test(portrait), portrait).toBe(false);
       }
     }
     expect(PORTRAITS.size).toBe(20);

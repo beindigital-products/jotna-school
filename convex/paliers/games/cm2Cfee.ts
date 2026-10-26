@@ -24,7 +24,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { ce2Gap, ce2Link, ce2Order, ce2Question, ce2Sort, ce2Write, gr, hints, ordr, qr, sortRows, wr, type GapRow, type LinkRow, type OrderRow, type QuestionRow, type SortRow, type WriteRow } from "./ce2Outils";
+import { ce2Gap, ce2Link, ce2Order, ce2Question, ce2Sort, ce2Write, gr, hints, ordr, qr, sortRows, wr, type GapRow, type Hints, type LinkRow, type OrderRow, type QuestionRow, type SortRow, type WriteRow } from "./ce2Outils";
 import { VERBS, canUse, formOf, type Tense, type Verb } from "./cm1Conjugaison";
 import type { GameContext, GeneratedGame } from "./shared";
 
@@ -678,9 +678,28 @@ function conjugationCells(stage: Stage, count: number, seed: number): Cell[] {
 const conjugationLadder = (seed: number): Cell[] => STAGES.flatMap((stage, rank) => conjugationCells(stage, 6, seed + rank));
 const conjugationFact = (cell: Cell, kind: string) => `cfe-conj:${kind}:${cell.verb.inf}:${cell.tense}:${cell.person}`;
 
-const CONJUGATE_HINTS = hints("Pense à la personne de la phrase.", "Le début du verbe reste presque le même, la fin change.", "Écris seulement le verbe, sans le pronom.");
+/** Le début commun des six formes d'un verbe à un temps : « chant » pour chanter, « » pour avoir au présent (ai, as, a, avons, avez, ont). */
+function commonStart(verb: Verb, tense: Tense): string {
+  const forms = PRONOUN.map((_, person) => formOf(verb, tense, person));
+  let end = 0;
+  while (end < forms[0].length && forms.every((form) => form[end] === forms[0][end])) end++;
+  return forms[0].slice(0, end);
+}
+/**
+ * Le deuxième indice dit ce que le verbe fait vraiment : « le début reste presque le même, la fin change » est faux pour « avoir » au présent (ai, as, a, avons, ont), pour
+ * « aller » (vais, vas, va, allons) ou « être » (suis, es, est), et faux au passé composé, où c'est « avoir » qui change et le participe qui reste (relecture du 26 octobre 2026).
+ */
+function conjugateHints(cell: Cell): Hints {
+  const second =
+    cell.tense === "passé composé"
+      ? "Dans un verbe de deux mots, le verbe avoir change avec la personne et le participe passé reste le même."
+      : commonStart(cell.verb, cell.tense).length < 2
+        ? "Ce verbe est irrégulier. Son début change aussi, récite ses formes à voix basse."
+        : "Le début du verbe reste presque le même, la fin change.";
+  return hints("Pense à la personne de la phrase.", second, "Écris seulement le verbe, sans le pronom.");
+}
 const conjugateRow = (cell: Cell): WriteRow =>
-  wr(`Écris le verbe ${cell.verb.inf} ${IN_TENSE[cell.tense]} avec ${PRONOUN[cell.person]}.`, [formOf(cell.verb, cell.tense, cell.person)], CONJUGATE_HINTS, conjugationFact(cell, "ecrire"));
+  wr(`Écris le verbe ${cell.verb.inf} ${IN_TENSE[cell.tense]} avec ${PRONOUN[cell.person]}.`, [formOf(cell.verb, cell.tense, cell.person)], conjugateHints(cell), conjugationFact(cell, "ecrire"));
 export const CONJUGATE_ROWS: readonly WriteRow[] = conjugationLadder(1).map(conjugateRow);
 export function makeCm2CfeConjugate(ctx: GameContext): GeneratedGame {
   return ce2Write(ctx, "cm2-cfe-conjuguer", CONCEPT_CONJUGATION, CONJUGATE_ROWS);
@@ -697,7 +716,7 @@ const pronounTile = (person: number, form: string) => (person === 0 ? (startsWit
 function orderRow(cell: Cell, index: number): OrderRow {
   const set = cycle(PERSON_SETS, index);
   return ordr(
-    `Range ces formes du verbe ${cell.verb.inf} ${IN_TENSE[cell.tense]} selon la personne, de je à ils.`,
+    `Range ces formes du verbe ${cell.verb.inf} ${IN_TENSE[cell.tense]} selon la personne (je, tu, il, nous, vous, ils).`,
     set.map((person) => pronounTile(person, formOf(cell.verb, cell.tense, person))),
     ORDER_HINTS,
     conjugationFact({ ...cell, person: set[0] }, "ranger"),

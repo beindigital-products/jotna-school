@@ -660,7 +660,7 @@ const CHECKS: Record<string, Check> = {
     return ok(pairsOf(exo).length === 3 && needs.size === 3, "trois besoins différents");
   },
   "ce1-autrefois-glisser": (exo) => {
-    const match = /^Pour (.+) et pour (.+), glisse chaque chose dans la bonne case\.$/u.exec(exo.prompt);
+    const match = /^Pour (.+) et pour (.+), glisse chaque chose dans sa case, la plus ancienne de chaque besoin en Autrefois\.$/u.exec(exo.prompt);
     if (!match) return `énoncé inconnu : ${exo.prompt}`;
     const first = needRow(match[1]);
     const second = needRow(match[2]);

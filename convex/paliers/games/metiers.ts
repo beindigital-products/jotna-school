@@ -41,19 +41,22 @@ type Job = {
   tasks: readonly [string, string];
   /** Son objet, qui n'est à aucun autre métier de la table. */
   tool: string;
-  /** À quoi sert l'objet, sans en écrire le nom. */
-  toolHint: string;
+  /**
+   * À quoi sert l'objet, sans en écrire le nom : « à cuire la pâte ». Il entre dans la question (« Quel objet sert au boulanger à
+   * cuire la pâte ? »), car « Quel objet sert au boulanger ? » laisse la balance, qui pèse la farine, aussi défendable que le four.
+   */
+  use: string;
 };
 
 export const JOBS: readonly Job[] = [
-  { job: "le vendeur", to: "au vendeur", label: "vendeur", tasks: ["vend des mangues au marché", "pèse les fruits sur la balance"], tool: "une balance", toolHint: "Il sert à peser ce qu'on achète." },
-  { job: "le maître", to: "au maître", label: "maître", tasks: ["apprend à lire aux élèves", "écrit au tableau"], tool: "une craie", toolHint: "Il sert à écrire sur le tableau noir." },
-  { job: "l'infirmière", to: "à l'infirmière", label: "infirmière", tasks: ["soigne les malades", "prend la température"], tool: "un thermomètre", toolHint: "Il sert à savoir si l'on a de la fièvre." },
-  { job: "le pêcheur", to: "au pêcheur", label: "pêcheur", tasks: ["attrape des poissons", "répare ses filets"], tool: "un filet", toolHint: "Il sert à prendre les poissons dans l'eau." },
-  { job: "le cultivateur", to: "au cultivateur", label: "cultivateur", tasks: ["cultive le champ", "sème le mil"], tool: "une daba", toolHint: "Il sert à retourner la terre du champ." },
-  { job: "le chauffeur", to: "au chauffeur", label: "chauffeur", tasks: ["conduit le car", "tient le volant"], tool: "un volant", toolHint: "Il sert à tourner pour guider le car." },
-  { job: "le tailleur", to: "au tailleur", label: "tailleur", tasks: ["coud des habits", "prend les mesures d'un client"], tool: "une machine à coudre", toolHint: "Elle sert à assembler le tissu avec du fil." },
-  { job: "le boulanger", to: "au boulanger", label: "boulanger", tasks: ["fait le pain", "fait cuire des baguettes"], tool: "un four", toolHint: "Il sert à cuire la pâte." },
+  { job: "le vendeur", to: "au vendeur", label: "vendeur", tasks: ["vend des mangues au marché", "pèse les fruits sur la balance"], tool: "une balance", use: "à peser ce qu'on achète" },
+  { job: "le maître", to: "au maître", label: "maître", tasks: ["apprend à lire aux élèves", "écrit au tableau"], tool: "une craie", use: "à écrire sur le tableau noir" },
+  { job: "l'infirmière", to: "à l'infirmière", label: "infirmière", tasks: ["soigne les malades", "prend la température"], tool: "un thermomètre", use: "à mesurer la fièvre" },
+  { job: "le pêcheur", to: "au pêcheur", label: "pêcheur", tasks: ["attrape des poissons", "répare ses filets"], tool: "un filet", use: "à prendre les poissons dans l'eau" },
+  { job: "le cultivateur", to: "au cultivateur", label: "cultivateur", tasks: ["cultive le champ", "sème le mil"], tool: "une daba", use: "à retourner la terre du champ" },
+  { job: "le chauffeur", to: "au chauffeur", label: "chauffeur", tasks: ["conduit le car", "tient le volant"], tool: "un volant", use: "à guider le car" },
+  { job: "le tailleur", to: "au tailleur", label: "tailleur", tasks: ["coud des habits", "prend les mesures d'un client"], tool: "une machine à coudre", use: "à assembler le tissu avec du fil" },
+  { job: "le boulanger", to: "au boulanger", label: "boulanger", tasks: ["fait le pain", "fait cuire des baguettes"], tool: "un four", use: "à cuire la pâte" },
 ];
 
 /** Un métier et deux autres, tous différents. */
@@ -78,15 +81,15 @@ export function makeJobWho(ctx: GameContext): GeneratedGame {
   });
 }
 
-/** « Quel objet sert au pêcheur ? » : l'objet de ce métier, parmi trois. */
+/** « Quel objet sert au pêcheur à prendre les poissons dans l'eau ? » : l'objet de ce métier pour ce travail, parmi trois. */
 export function makeJobTool(ctx: GameContext): GeneratedGame {
   return choiceGame(ctx, "metier-outil", "quel objet pour quel rôle", () => {
     const [entry, ...others] = threeJobs(ctx);
     return {
-      prompt: `Quel objet sert ${entry.to} ?`,
+      prompt: `Quel objet sert ${entry.to} ${entry.use} ?`,
       answer: tile(entry.tool),
       wrong: others.map((other) => tile(other.tool)),
-      hints: ["Lis bien la question.", entry.toolHint, "Un objet aide à faire le travail."],
+      hints: ["Lis bien la question.", "Cherche l'objet qui sert à ce travail.", "Un objet aide à faire le travail."],
     };
   });
 }
@@ -178,7 +181,8 @@ export function makeJobOrder(ctx: GameContext): GeneratedGame {
 
 /**
  * Un métier à écrire : le geste ou l'objet qui le désigne, jamais son nom. Les variantes admises sont les noms du même métier
- * (le marchand vend, le couturier coud, le conducteur conduit, le paysan cultive, l'instituteur enseigne).
+ * (le marchand vend, le couturier coud, le conducteur conduit, le paysan cultive, l'instituteur enseigne). Celui qui prend la
+ * température et soigne peut aussi être le médecin ou le docteur.
  */
 export const JOB_WORDS: readonly { prompt: string; accepted: readonly string[]; hint: string }[] = [
   {
@@ -218,7 +222,7 @@ export const JOB_WORDS: readonly { prompt: string; accepted: readonly string[]; 
   },
   {
     prompt: "Dans un jeu de rôles, tu prends la température d'un malade et tu le soignes. Quel métier joues-tu ? Écris le mot.",
-    accepted: ["infirmière", "une infirmière", "l'infirmière", "infirmier", "un infirmier", "l'infirmier"],
+    accepted: ["infirmière", "une infirmière", "l'infirmière", "infirmier", "un infirmier", "l'infirmier", "médecin", "un médecin", "le médecin", "docteur", "un docteur", "le docteur", "docteure", "une docteure", "la docteure"],
     hint: "Elle travaille au dispensaire.",
   },
 ];

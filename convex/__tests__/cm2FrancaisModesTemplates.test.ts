@@ -242,7 +242,7 @@ const checkSubjunctiveSentence: Check = (exo) => {
 };
 
 const checkOrder: Check = (exo) => {
-  const m = /^Range ces formes du verbe (\p{L}+) (au subjonctif présent|au conditionnel présent) selon la personne, de je à ils\.$/u.exec(exo.prompt);
+  const m = /^Range ces formes du verbe (\p{L}+) (au subjonctif présent|au conditionnel présent) selon la personne \(je, tu, il, nous, vous, ils\)\.$/u.exec(exo.prompt);
   if (!m || !(m[1] in TABLE)) return `énoncé inconnu : ${exo.prompt}`;
   const subj = m[2] === "au subjonctif présent";
   const persons: number[] = [];

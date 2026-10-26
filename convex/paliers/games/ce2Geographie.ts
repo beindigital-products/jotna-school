@@ -409,7 +409,10 @@ const NORTH_REGIONS = regionsNamed("Saint-Louis", "Louga", "Matam");
 const SOUTH_REGIONS = regionsNamed("Ziguinchor", "Sédhiou", "Kolda", "Kédougou");
 const WEST_REGIONS = regionsNamed("Dakar", "Thiès", "Saint-Louis");
 const EAST_REGIONS = regionsNamed("Tambacounda", "Matam", "Kédougou");
-const REGION_SORT_HINTS = hints("Imagine la carte du Sénégal posée devant toi.", "Une case est en haut ou à gauche de la carte, l'autre en bas ou à droite.", "Compare la place de chaque région avec celle des autres.");
+// L'indice 2 suit les cases : haut et bas pour Nord et Sud, gauche et droite pour Ouest et Est (il parlait de gauche et de droite à un
+// enfant qui classe en Nord et Sud). Il n'écrit pas le nom des cases.
+const REGION_SORT_NS_HINTS = hints("Imagine la carte du Sénégal posée devant toi.", "Une case est en haut de la carte, l'autre en bas.", "Compare la place de chaque région avec celle des autres.");
+const REGION_SORT_WE_HINTS = hints("Imagine la carte du Sénégal posée devant toi.", "Une case est à gauche de la carte, l'autre à droite.", "Compare la place de chaque région avec celle des autres.");
 const REGION_SORT_ROWS: readonly SortRow[] = [
   ...combinations(NORTH_REGIONS, 2).flatMap((north) =>
     combinations(SOUTH_REGIONS, 2).map(
@@ -417,7 +420,7 @@ const REGION_SORT_ROWS: readonly SortRow[] = [
         prompt: "Glisse chaque région sous sa place sur la carte, nord ou sud.",
         zones: ["Nord", "Sud"],
         items: [...north.map((r) => ({ text: r.name, zone: "Nord" })), ...south.map((r) => ({ text: r.name, zone: "Sud" }))],
-        hints: REGION_SORT_HINTS,
+        hints: REGION_SORT_NS_HINTS,
       }),
     ),
   ),
@@ -427,7 +430,7 @@ const REGION_SORT_ROWS: readonly SortRow[] = [
         prompt: "Glisse chaque région sous sa place sur la carte, ouest ou est.",
         zones: ["Ouest", "Est"],
         items: [...west.map((r) => ({ text: r.name, zone: "Ouest" })), ...east.map((r) => ({ text: r.name, zone: "Est" }))],
-        hints: REGION_SORT_HINTS,
+        hints: REGION_SORT_WE_HINTS,
       }),
     ),
   ),

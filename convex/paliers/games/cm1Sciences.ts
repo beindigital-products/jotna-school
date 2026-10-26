@@ -291,8 +291,10 @@ const RSP_PREVENT: Pool = {
     },
     {
       id: "fumee",
-      q: ["Que faut-il éviter de respirer pour protéger ses poumons ?", "Qu'est-ce qui abîme les poumons quand on en respire beaucoup ?"],
+      q: ["Quel geste protège les poumons de la fumée du tabac et des feux ?", "Quel geste évite d'abîmer ses poumons avec la fumée ?"],
       a: "Éviter la fumée",
+      // On peut aussi répondre par le nom de ce qu'il faut éviter.
+      also: ["La fumée", "Fumée", "Ne pas respirer la fumée", "S'éloigner de la fumée"],
       not: ["Aérer la maison"],
       s: ["Pour protéger ses poumons, il faut ___ du tabac et des feux.", "On protège ses poumons quand on sait ___."],
       ga: "éviter la fumée",
@@ -525,6 +527,8 @@ const PHE_NAMES: Pool = {
       id: "fusion",
       q: ["Quel nom porte le passage de la glace à l'eau liquide ?", "Quel phénomène fait fondre un glaçon au soleil ?", "Quel phénomène change un solide en liquide quand on le chauffe ?"],
       a: "Fusion",
+      // « La fonte » est le nom courant du même phénomène (le glaçon fond).
+      also: ["Fonte"],
       s: ["Un glaçon qui fond au soleil subit ___.", "Un solide qui devient liquide en chauffant subit ___."],
       ga: "la fusion",
       hint: "Le solide devient mou, puis coule.",
@@ -797,6 +801,8 @@ const OBJ_CARE: Pool = {
       id: "changer-joint",
       q: ["Que faire quand un robinet fuit goutte à goutte ?", "Comment arrêter la fuite d'un robinet usé ?"],
       a: "Changer le joint",
+      // Question ouverte à écrire : toutes les façons justes de dire « changer la rondelle usée ».
+      also: ["Changer de joint", "Remplacer le joint", "Remplacer le joint usé", "Changer le joint usé", "Réparer le joint", "Réparer le robinet"],
       s: ["Pour qu'un robinet cesse de fuir, on doit ___.", "Un robinet qui goutte demande de ___."],
       ga: "changer le joint",
       hint: "La petite rondelle souple est usée.",
@@ -858,7 +864,8 @@ const HYG_PROBLEM: Pool = {
       id: "insalubrite",
       q: ["Quel mot désigne un lieu sale, avec des ordures et des eaux usées ?", "Quel mot décrit un lieu malsain, couvert d'ordures et de flaques sales ?"],
       a: "Insalubrité",
-      also: ["Insalubrite"],
+      // Le mot qui « décrit un lieu » peut s'écrire à l'adjectif : « insalubre ».
+      also: ["Insalubrite", "Insalubre"],
       s: ["Des ordures et des eaux usées partout, c'est ___.", "Le mot qui décrit un quartier plein de déchets et de flaques sales est ___."],
       ga: "l'insalubrité",
       hint: "Le lieu est sale et dangereux pour la santé.",
@@ -999,7 +1006,7 @@ const HYG_ORDRE: readonly OrderRow[] = [
 ];
 
 const HYG_RELIER: readonly LinkRow[] = [
-  link("Relie chaque mot à son sens.", [["Insalubrité", "Ordures et eaux usées"], ["Promiscuité", "Trop de monde serré"], ["Hygiène individuelle", "Propreté de son corps"], ["Hygiène collective", "Propreté du quartier"]]),
+  link("Relie chaque mot à son sens.", [["Insalubrité", "Un endroit malsain"], ["Promiscuité", "Trop de monde serré"], ["Hygiène individuelle", "Propreté de son corps"], ["Hygiène collective", "Propreté du quartier"]]),
   link("Relie chaque maladie à son signe.", [["Gale", "Peau qui démange"], ["Teigne", "Plaques dans les cheveux"], ["Rhume", "Nez qui coule"]]),
   link("Relie chaque objet à son usage.", [["Savon", "Laver les mains"], ["Poubelle", "Jeter les ordures"], ["Brosse à dents", "Protéger la bouche"]]),
   link("Relie chaque danger à ce qui l'attire.", [["Moustiques", "Eau qui stagne"], ["Mouches", "Ordures entassées"], ["Microbes", "Mains sales"]]),

@@ -95,8 +95,9 @@ export const SCENES: readonly Scene[] = [
     group: "stop",
     text: "Ton père conduit. Il voit le panneau STOP.",
     label: "Papa voit le panneau STOP",
-    right: "Il s'arrête au panneau STOP.",
-    wrong: ["Il roule plus vite au panneau STOP.", "Il klaxonne et passe sans s'arrêter.", "Il ferme les yeux et continue."],
+    // Chaque geste nomme son sujet : glissé seul dans une case, « Il roule plus vite » n'avait pas de sujet.
+    right: "Papa s'arrête au panneau STOP.",
+    wrong: ["Papa roule plus vite au panneau STOP.", "Papa klaxonne et passe sans s'arrêter.", "Papa ferme les yeux et continue."],
     hint: "Le rouge dit de ne plus avancer.",
   },
   {
@@ -104,8 +105,8 @@ export const SCENES: readonly Scene[] = [
     group: "interdit",
     text: "Ton oncle conduit. Il voit le panneau sens interdit.",
     label: "Oncle voit un sens interdit",
-    right: "Il n'entre pas dans la rue.",
-    wrong: ["Il entre dans la rue en sens interdit.", "Il entre en sens interdit en klaxonnant.", "Il fonce en sens interdit à toute vitesse."],
+    right: "Mon oncle n'entre pas dans la rue.",
+    wrong: ["Mon oncle entre dans la rue en sens interdit.", "Mon oncle entre en sens interdit en klaxonnant.", "Mon oncle fonce en sens interdit à toute vitesse."],
     hint: "Une barre blanche sur un rond rouge ferme le passage.",
   },
   {
@@ -359,8 +360,8 @@ export const SCENES: readonly Scene[] = [
     group: "partage",
     text: "Une fille et un garçon veulent le même livre.",
     label: "Une fille et un garçon veulent le même livre",
-    right: "Ils lisent le livre ensemble.",
-    wrong: ["Le garçon prend le livre parce qu'il est un garçon.", "La fille prend le livre parce qu'elle est une fille.", "Ils se battent pour le livre."],
+    right: "La fille et le garçon lisent le livre ensemble.",
+    wrong: ["Le garçon prend le livre parce qu'il est un garçon.", "La fille prend le livre parce qu'elle est une fille.", "La fille et le garçon se battent pour le livre."],
     hint: "Une histoire peut se lire à deux.",
   },
   {

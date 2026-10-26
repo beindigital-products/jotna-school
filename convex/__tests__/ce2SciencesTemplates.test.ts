@@ -202,7 +202,7 @@ const PROBLEM_LINK_T: Record<string, string> = {
   "Manque d'eau": "Ne pas gaspiller l'eau",
 };
 const NATURE_PROBLEMS_T = ["Sachets plastiques", "Coupe des arbres", "Feux de brousse", "Déchets dans la rue"];
-const PEOPLE_PROBLEMS_T = ["Quartier trop peuplé", "Manque d'eau", "Peu de place pour vivre"];
+const PEOPLE_PROBLEMS_T = ["Quartier trop peuplé", "Pas assez d'eau pour tous", "Peu de place pour vivre"];
 const GOOD_ACTS_T = ["Mettre les déchets à la poubelle", "Planter un arbre", "Fermer le robinet", "Utiliser un sac en tissu", "Ramasser les déchets"];
 const BAD_ACTS_T = ["Jeter un sachet par terre", "Allumer un feu dans la brousse", "Couper des arbres pour rien", "Laisser couler l'eau", "Jeter les déchets dans la rue"];
 
@@ -360,7 +360,7 @@ const CYCLE_QCM_T: [string, string, string[]][] = [
   ["Que sort de l'œuf de la poule ?", "Poussin", ["Chenille", "Têtard"]],
 ];
 const ANIMAL_TROU_T: [string, string, string[]][] = [
-  ["La tortue est un animal ___.", "ovipare", ["aquatique", "vivipare"]],
+  ["La tortue est un animal ___.", "ovipare", ["volant", "vivipare"]],
   ["Avant d'être papillon, il est une ___.", "chenille", ["poule", "tortue"]],
   ["Un animal qui met ses petits au monde est ___.", "vivipare", ["aquatique", "ovipare"]],
   ["Le poussin sort d'un ___.", "œuf", ["caillou", "fruit"]],
@@ -469,7 +469,7 @@ const SANTE_TROU_T: [string, string, string[]][] = [
 ];
 const SANTE_ECRIRE_T: [string, string[]][] = [
   ["Que doit-on faire de l'eau qui ne bouge pas autour de la maison ? Écris le verbe.", ["vider"]],
-  ["Comment s'appelle la maladie transmise par les moustiques ? Écris le mot.", ["paludisme", "le paludisme", "palu"]],
+  ["Comment s'appelle la maladie que donne la piqûre du moustique anophèle ? Écris le mot.", ["paludisme", "le paludisme", "palu", "le palu", "malaria", "la malaria"]],
   ["Quel insecte transmet le paludisme ? Écris le mot.", ["moustique", "le moustique", "un moustique"]],
   ["Quel objet ne faut-il jamais partager pour éviter le VIH ? Écris le mot.", ["lame", "seringue", "une lame", "une seringue", "rasoir", "lame de rasoir", "aiguille"]],
   ["Sous quoi dort-on pour éviter les piqûres de moustique ? Écris le mot.", ["moustiquaire", "une moustiquaire", "la moustiquaire"]],

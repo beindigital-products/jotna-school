@@ -363,14 +363,14 @@ const VALEUR_ECRIRE_T: [string, string[]][] = [
   ["Quelle valeur montre celui qui aide ses voisins ? Écris le mot.", ["solidarité", "solidarite", "la solidarité"]],
 ];
 const COMMUN_BIEN_T: [string, string, string[]][] = [
-  ["Lequel de ces lieux est un bien commun du quartier ?", "Marché", ["Ma natte", "Mon ballon"]],
-  ["Lequel de ces lieux est un bien commun du quartier ?", "Puits", ["Ma chambre", "Mon cahier"]],
-  ["Lequel de ces lieux est un bien commun du quartier ?", "Terrain de sport", ["Ma chambre", "Mon cahier"]],
+  ["Lequel de ces choix est un bien commun du quartier ?","Marché", ["Ma natte", "Mon ballon"]],
+  ["Lequel de ces choix est un bien commun du quartier ?","Puits", ["Ma chambre", "Mon cahier"]],
+  ["Lequel de ces choix est un bien commun du quartier ?","Terrain de sport", ["Ma chambre", "Mon cahier"]],
   ["Qu'est-ce que tout le quartier utilise ensemble ?", "Puits", ["Ma natte", "Mon ballon"]],
   ["Qu'est-ce que tout le quartier utilise ensemble ?", "Marché", ["Ma chambre", "Mon cahier"]],
   ["Qu'est-ce que tout le quartier utilise ensemble ?", "Terrain de sport", ["Ma natte", "Mon ballon"]],
-  ["Quel lieu appartient à tous les habitants du quartier ?", "Puits", ["Ma chambre", "Mon ballon"]],
-  ["Quel lieu appartient à tous les habitants du quartier ?", "Marché", ["Ma natte", "Mon cahier"]],
+  ["Lequel de ces choix appartient à tous les habitants du quartier ?","Puits", ["Ma chambre", "Mon ballon"]],
+  ["Lequel de ces choix appartient à tous les habitants du quartier ?","Marché", ["Ma natte", "Mon cahier"]],
 ];
 const COMMUN_REGLE_T: [string, string, string[]][] = [
   ["Le puits est fermé pour être réparé. Que faire ?", "Attendre qu'il soit réparé", ["Casser le puits", "Forcer la porte"]],
@@ -418,7 +418,7 @@ const COMMUN_TROU_T: [string, string, string[]][] = [
 ];
 const COMMUN_ECRIRE_T: [string, string[]][] = [
   ["Comment s'appellent les gens qui habitent à côté de chez nous ? Écris le mot.", ["voisins", "voisin", "les voisins"]],
-  ["Que doit-on faire des règles du quartier ? Écris le verbe.", ["respecter"]],
+  ["Que doit-on faire des règles du quartier ? Écris le verbe.", ["respecter", "suivre", "appliquer", "obéir", "obeir"]],
   ["Que fait-on pour un voisin qui a besoin d'aide ? Écris le verbe.", ["aider", "s'entraider"]],
   ["Où doit-on mettre ses déchets au marché ? Écris le mot.", ["poubelle", "la poubelle", "dans la poubelle"]],
   ["Quel lieu donne de l'eau à tout le quartier ? Écris le mot.", ["puits", "le puits"]],
@@ -499,7 +499,7 @@ const HYMNE_TROU_T: [string, string, string[]][] = [
   ["Notre hymne national s'appelle Le Lion ___.", "rouge", ["bleu", "vert"]],
 ];
 const HYMNE_ECRIRE_T: [string, string[]][] = [
-  ["Que fait-on ensemble au lever des couleurs ? Écris le verbe.", ["chanter"]],
+  ["Que fait-on avec sa voix, tous ensemble, au lever des couleurs ? Écris le verbe.", ["chanter", "chanter l'hymne", "chanter ensemble"]],
   ["Quel verbe veut dire inventer un petit chant ? Écris le verbe.", ["composer"]],
   ["Au lever de quoi chante-t-on l'hymne ? Écris le mot.", ["couleurs", "des couleurs", "drapeau", "du drapeau", "le drapeau"]],
   ["Quel est le titre de l'hymne national ? Écris les trois mots.", ["le lion rouge", "Le Lion rouge"]],
@@ -564,7 +564,7 @@ const THEATRE_TROU_T: [string, string, string[]][] = [
 ];
 const THEATRE_ECRIRE_T: [string, string[]][] = [
   ["Que fait-on avant le spectacle pour bien jouer ? Écris le verbe.", ["répéter", "repeter"]],
-  ["Comment appelle-t-on les mots que dit chaque acteur ? Écris le mot.", ["répliques", "réplique", "texte"]],
+  ["Comment appelle-t-on les mots que dit chaque acteur ? Écris le mot.", ["répliques", "réplique", "les répliques", "texte", "le texte", "dialogue", "le dialogue", "dialogues", "les dialogues", "paroles", "les paroles"]],
   ["Qui vend des légumes dans la scène du marché ? Écris le mot.", ["vendeur", "vendeuse", "marchand"]],
   ["Comment appelle-t-on une scène où l'on imite en exagérant pour faire rire ? Écris le mot.", ["parodie", "une parodie"]],
   ["Qui prend les mesures d'un client pour lui coudre un boubou ? Écris le mot.", ["tailleur", "le tailleur"]],

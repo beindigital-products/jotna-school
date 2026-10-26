@@ -776,6 +776,9 @@ describe("les gabarits de repères recalculent juste", () => {
       for (const option of optionsOf(exo).filter((o) => o !== rightOption(exo))) expect(fixed ? MOBILE : FIXED, `${exo.prompt} : ${option}`).toContain(option);
       expect(new Set(optionsOf(exo)).size).toBe(3);
       if (d.level === 1) expect(fixed, exo.prompt).toBe(true);
+      // Les deux autres choix sont de la MÊME sorte (la charrette et le bus bougent tous deux) : l'indice 3 ne dit pas le contraire.
+      expect(exo.hints[2], exo.prompt).toBe(fixed ? "Les deux autres dessins peuvent bouger." : "Les deux autres dessins ne bougent jamais.");
+      expect(exo.hints.join(" ")).not.toContain("pas de la même sorte");
     }
   });
 

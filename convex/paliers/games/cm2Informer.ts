@@ -256,7 +256,8 @@ export function makeCm2InfGap(ctx: GameContext): GeneratedGame {
   return ce2Gap(ctx, "cm2-inf-trou", CONCEPT, CLOZE_ROWS, 1, 0, "Complète le texte avec le bon mot.");
 }
 
-const ORDER_HINTS = hints("Cherche la phrase qui annonce le sujet.", "Les phrases s'enchaînent selon les idées du texte.", "Repère la phrase qui conclut.");
+/** La première phrase du texte n'est pas à ranger : elle reste en place, et le premier indice ne la cherche pas (relecture du 26 octobre 2026). */
+const ORDER_HINTS = hints("Relis la première phrase du texte, puis cherche celle qui la suit.", "Les phrases s'enchaînent selon les idées du texte.", "Repère la phrase qui conclut.");
 export const ORDER_ROWS: readonly OrderRow[] = DOCS.map((doc, index) => ordr(withText(doc, "Remets ces phrases dans le même ordre que le texte."), doc.sentences.slice(1), ORDER_HINTS, `inf:${index}:ordre`));
 export function makeCm2InfOrder(ctx: GameContext): GeneratedGame {
   return ce2Order(ctx, "cm2-inf-ordre", CONCEPT, ORDER_ROWS);
@@ -384,12 +385,17 @@ export function makeCm2InfLiaison(ctx: GameContext): GeneratedGame {
 
 const WRITE_HINTS = hints("Lis les deux parties de la phrase.", "Demande-toi si la deuxième partie explique la première, ou si elle en est la suite, ou si elle s'y oppose.", "Écris le petit mot qui les relie.");
 /**
+ * Des mots de liaison justes que le choix multiple ne propose pas, mais qu'une phrase à écrire admet : « par conséquent » et « de ce fait » disent la suite, « cependant »
+ * et « toutefois » l'opposition (« Il a beaucoup plu, par conséquent les routes sont inondées » était refusé, relecture du 26 octobre 2026).
+ */
+const EXTRA_WRITTEN: Record<Relation, readonly string[]> = { cause: [], conséquence: ["par conséquent", "de ce fait"], opposition: ["cependant", "toutefois"] };
+/**
  * Tous les mots du rapport sont admis, la graphie « c'est pourquoi » avec les deux apostrophes ; le mot du tableau est le premier. Pour la cause, « puisque » aussi.
  * Devant une voyelle, « parce qu'il » (avec les deux apostrophes) ET « parce que », la forme du mot de liaison qu'un enfant apprend : l'app n'acceptait que « car »
  * (défaut relevé en production le 25 octobre 2026).
  */
 const accepted = (part: Connected): string[] => {
-  const words = part.relation === "cause" ? [...WORDS.cause, "puisque"] : WORDS[part.relation];
+  const words = part.relation === "cause" ? [...WORDS.cause, "puisque"] : [...WORDS[part.relation], ...EXTRA_WRITTEN[part.relation]];
   const vowel = startsWithVowel(part.after);
   const same = words.flatMap((word) => {
     if (word === "c'est pourquoi") return [word, "c’est pourquoi"];

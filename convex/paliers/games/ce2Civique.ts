@@ -429,14 +429,14 @@ const COMMUNITY_FACTS = ["comm:puits", "comm:voisin:malade", "comm:marché", "co
 
 const COMMON_ROWS: readonly QuestionRow[] = inFactOrder(
   [
-    qr("Lequel de ces lieux est un bien commun du quartier ?", "Puits", ["Ma chambre", "Mon cahier"], hints("Pense à ce qui sert à tous les habitants.", "Ce n'est pas à une seule personne.", "On y puise de l'eau."), "comm:puits"),
-    qr("Lequel de ces lieux est un bien commun du quartier ?", "Marché", ["Ma natte", "Mon ballon"], hints("Pense à ce qui sert à tous les habitants.", "Ce n'est pas à une seule personne.", "On y achète et on y vend."), "comm:marché"),
-    qr("Lequel de ces lieux est un bien commun du quartier ?", "Terrain de sport", ["Ma chambre", "Mon cahier"], hints("Pense à ce qui sert à tous les habitants.", "Ce n'est pas à une seule personne.", "Les enfants y jouent ensemble."), "comm:terrain"),
+    qr("Lequel de ces choix est un bien commun du quartier ?", "Puits", ["Ma chambre", "Mon cahier"], hints("Pense à ce qui sert à tous les habitants.", "Ce n'est pas à une seule personne.", "On y puise de l'eau."), "comm:puits"),
+    qr("Lequel de ces choix est un bien commun du quartier ?", "Marché", ["Ma natte", "Mon ballon"], hints("Pense à ce qui sert à tous les habitants.", "Ce n'est pas à une seule personne.", "On y achète et on y vend."), "comm:marché"),
+    qr("Lequel de ces choix est un bien commun du quartier ?", "Terrain de sport", ["Ma chambre", "Mon cahier"], hints("Pense à ce qui sert à tous les habitants.", "Ce n'est pas à une seule personne.", "Les enfants y jouent ensemble."), "comm:terrain"),
     qr("Qu'est-ce que tout le quartier utilise ensemble ?", "Puits", ["Ma natte", "Mon ballon"], hints("Pense à ce que partagent les habitants.", "Personne ne l'a pour lui seul.", "Il donne de l'eau."), "comm:puits"),
     qr("Qu'est-ce que tout le quartier utilise ensemble ?", "Marché", ["Ma chambre", "Mon cahier"], hints("Pense à ce que partagent les habitants.", "Personne ne l'a pour lui seul.", "On y fait ses courses."), "comm:marché"),
     qr("Qu'est-ce que tout le quartier utilise ensemble ?", "Terrain de sport", ["Ma natte", "Mon ballon"], hints("Pense à ce que partagent les habitants.", "Personne ne l'a pour lui seul.", "On y fait de l'exercice."), "comm:terrain"),
-    qr("Quel lieu appartient à tous les habitants du quartier ?", "Puits", ["Mon ballon", "Ma chambre"], hints("Pense à ce qui n'est à personne en particulier.", "Tout le monde y a droit.", "On y puise de l'eau."), "comm:puits"),
-    qr("Quel lieu appartient à tous les habitants du quartier ?", "Marché", ["Mon cahier", "Ma natte"], hints("Pense à ce qui n'est à personne en particulier.", "Tout le monde y a droit.", "On y vend des légumes."), "comm:marché"),
+    qr("Lequel de ces choix appartient à tous les habitants du quartier ?", "Puits", ["Mon ballon", "Ma chambre"], hints("Pense à ce qui n'est à personne en particulier.", "Tout le monde y a droit.", "On y puise de l'eau."), "comm:puits"),
+    qr("Lequel de ces choix appartient à tous les habitants du quartier ?", "Marché", ["Mon cahier", "Ma natte"], hints("Pense à ce qui n'est à personne en particulier.", "Tout le monde y a droit.", "On y vend des légumes."), "comm:marché"),
   ],
   COMMUNITY_FACTS,
 );
@@ -532,7 +532,8 @@ const COMMUNITY_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
     wr("Où va-t-on acheter et vendre dans le quartier ? Écris le mot.", ["marché", "le marché", "marche"], hints("Pense aux étals.", "On y trouve des légumes.", "Le mot commence par la lettre m."), "comm:marché"),
     wr("Quel bien commun sert à jouer et à faire du sport ? Écris les trois mots.", ["terrain de sport", "le terrain de sport"], hints("Pense à l'endroit où l'on joue au ballon.", "Il est ouvert à tous les enfants.", "Le premier mot commence par la lettre t."), "comm:terrain"),
     wr("Comment appelle-t-on ce qui sert à tous les habitants ? Écris deux mots.", ["bien commun", "biens communs", "un bien commun"], hints("Pense à ce qui n'est à personne seul.", "Le puits en est un.", "Le premier mot commence par la lettre b."), "comm:mot"),
-    wr("Que doit-on faire des règles du quartier ? Écris le verbe.", ["respecter"], hints("Pense à ce qu'on fait d'une règle.", "On donne l'exemple.", "Le verbe commence par la lettre r."), "comm:règle"),
+    // Suivre, appliquer, obéir aux règles sont aussi justes que « respecter » : une réponse défendable ne doit pas être refusée.
+    wr("Que doit-on faire des règles du quartier ? Écris le verbe.", ["respecter", "suivre", "appliquer", "obéir", "obeir"], hints("Pense à ce qu'on fait d'une règle.", "On donne l'exemple.", "Le verbe commence par la lettre r."), "comm:règle"),
     wr("Comment s'appellent les gens qui habitent à côté de chez nous ? Écris le mot.", ["voisins", "voisin", "les voisins"], hints("Pense à ceux qui sont près de chez toi.", "On leur dit bonjour chaque jour.", "Le mot commence par la lettre v."), "comm:voisin:aide"),
     wr("Que fait-on pour un voisin qui a besoin d'aide ? Écris le verbe.", ["aider", "s'entraider"], hints("Pense à rendre service.", "On donne un coup de main.", "Le verbe commence par la lettre a."), "comm:voisin:besoin"),
     wr("Où doit-on mettre ses déchets au marché ? Écris le mot.", ["poubelle", "la poubelle", "dans la poubelle"], hints("Pense à un grand seau.", "On le vide régulièrement.", "Le mot commence par la lettre p."), "comm:marché"),
