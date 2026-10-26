@@ -362,6 +362,8 @@ au futur, et finit par un bilan de lecture.
 
 ## 14. Ce qui reste avant de montrer l'anglais aux élèves
 
+Le pas à pas, avec les commandes, les chiffres attendus et le retour en arrière, est dans `docs/mise-en-production-anglais-v2.md`. Il contient une étape que la première version de ce plan avait oubliée : le chargement du programme ne fait que créer les thématiques à la suite des autres, donc sans la remise en ordre (`programme/reorder:run`) l'alphabet viendrait **après** « Hello! Goodbye! » en production.
+
 1. **Générer les paliers en production** pour les 13 thématiques nouvelles. Les
    paliers des thématiques existantes sont déjà générés ; leur rang a changé, pas
    leur contenu. Avant tout déploiement, comparer le registre de la production

@@ -107,6 +107,8 @@ import type * as programme_histoire from "../programme/histoire.js";
 import type * as programme_index from "../programme/index.js";
 import type * as programme_mathematiques from "../programme/mathematiques.js";
 import type * as programme_sciences from "../programme/sciences.js";
+import type * as programme_reorder from "../programme/reorder.js";
+import type * as programme_reorderPlan from "../programme/reorderPlan.js";
 import type * as programme_seed from "../programme/seed.js";
 import type * as programme_seedPlan from "../programme/seedPlan.js";
 import type * as programme_types from "../programme/types.js";
@@ -253,6 +255,8 @@ declare const fullApi: ApiFromModules<{
   "programme/index": typeof programme_index;
   "programme/mathematiques": typeof programme_mathematiques;
   "programme/sciences": typeof programme_sciences;
+  "programme/reorder": typeof programme_reorder;
+  "programme/reorderPlan": typeof programme_reorderPlan;
   "programme/seed": typeof programme_seed;
   "programme/seedPlan": typeof programme_seedPlan;
   "programme/types": typeof programme_types;
