@@ -76,7 +76,7 @@ npx convex run --prod voice/warm:warmTileVoice '{"confirmDeployment":"calculatin
 ```
 
    puis avec `"limit":10`, puis sans `limit`.
-2. Ouvrir un palier de cette thématique sur un iPhone et écouter chaque lettre (A à I) et chaque mot. Les noms les plus risqués : `ay`, `eye`, `ar`, `ell`, `double you`, et l'exercice « A, B, ___, D ».
+2. Ouvrir un palier de cette thématique sur un iPhone et écouter chaque lettre (A à I) et chaque mot. Les 26 lettres, avec les nouveaux textes, sont déjà synthétisées dans `audition-lettres/elevenlabs/alphabet/` (non suivi par git). Les plus fragiles : `ar` (R), `dee`, `ee`, `jee`, `em`, `en`, `ess`, `tee`, et l'exercice « A, B, ___, D » (dit « ei, bee, blank, dee »).
 3. Si un nom est mal dit, corriger `LETTER_NAMES` dans `convex/voice/tiles.ts` (par exemple une autre écriture du mot), refaire une PR, redéployer. Le texte du son est la clé du cache : un nouveau texte donne un nouveau son, l'ancien reste inutilisé.
 4. Quand tout est bon, préchauffer les six thématiques d'alphabet :
 
