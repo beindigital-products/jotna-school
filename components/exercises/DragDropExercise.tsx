@@ -322,7 +322,7 @@ export default function DragDropExercise({
   // La voix des tuiles (CI) : toucher ou saisir une étiquette la dit, toucher une case
   // (sans étiquette en main) dit son nom. Les rangs : les étiquettes d'abord, puis les
   // cases (`tileTextsOf`). Pas de file automatique (voir `useTileVoice`).
-  const tileVoice = useTileVoice([...itemTexts, ...zones], prompt);
+  const tileVoice = useTileVoice([...itemTexts, ...zones], prompt, { autoRead: true });
   const zoneVoice = (zone: number) => items.length + zone;
 
   if (zones.length < 2 || items.length < 2) {

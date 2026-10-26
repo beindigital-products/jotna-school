@@ -54,7 +54,7 @@ describe("le lecteur de consignes", () => {
     mocks.findClip.mockResolvedValue("https://clip/1.mp3");
     const { container } = render(<Session exerciseId="exercise1" />);
 
-    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/1.mp3", 7, 1));
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/1.mp3", 7, 1, expect.any(Function)));
     expect(mocks.findClip).toHaveBeenCalledWith({ kind: "prompt", exerciseId: "exercise1" });
     expect(ecouter().getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText(PROMPT)).toBeTruthy();
@@ -104,7 +104,7 @@ describe("le lecteur de consignes", () => {
 
     mocks.findClip.mockResolvedValue("https://clip/4.mp3");
     fireEvent.click(ecouter());
-    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/4.mp3", 7, 1));
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/4.mp3", 7, 1, expect.any(Function)));
     expect(mocks.findClip).toHaveBeenCalledTimes(2);
   });
 
@@ -149,7 +149,7 @@ describe("le lecteur de consignes", () => {
         <ExerciseActions />
       </PromptReaderProvider>,
     );
-    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("/sounds/badge.mp3", 7, 1));
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("/sounds/badge.mp3", 7, 1, expect.any(Function)));
     expect(mocks.findClip).not.toHaveBeenCalled();
     expect(ecouter().getAttribute("aria-pressed")).toBe("true");
   });
@@ -179,6 +179,64 @@ describe("le lecteur de consignes", () => {
     // Le réseau revient : la source des sons change, la consigne se dit.
     mocks.source.fn = vi.fn(() => Promise.resolve("https://clip/8.mp3"));
     rerender(<Session exerciseId="exercise8" />);
-    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/8.mp3", 7, 1));
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/8.mp3", 7, 1, expect.any(Function)));
+  });
+  describe("un son trouvé mais qui ne se joue pas", () => {
+    /** Le premier appel échoue (`onFail`), les suivants jouent sans fin. */
+    const failFirst = () => {
+      let calls = 0;
+      mocks.playUrl.mockImplementation((_url: string, _owner: number, _rate: number, onFail?: () => void) => {
+        calls++;
+        if (calls === 1) {
+          onFail?.();
+          return Promise.resolve(false);
+        }
+        return new Promise<boolean>(() => {});
+      });
+    };
+
+    it("oublie l'adresse morte, redemande un son neuf (sans le sac du téléphone) et rejoue", async () => {
+      failFirst();
+      mocks.findClip.mockImplementation((_request: unknown, options?: { fresh?: boolean }) =>
+        Promise.resolve(options?.fresh ? "https://clip/neuf.mp3" : "https://clip/mort.mp3"),
+      );
+      render(<Session exerciseId="exercise-mort" />);
+
+      await waitFor(() =>
+        expect(mocks.playUrl).toHaveBeenLastCalledWith("https://clip/neuf.mp3", 7, 1, expect.any(Function)),
+      );
+      expect(mocks.findClip).toHaveBeenLastCalledWith(
+        { kind: "prompt", exerciseId: "exercise-mort" },
+        { fresh: true },
+      );
+      expect(ecouter().getAttribute("aria-pressed")).toBe("true");
+    });
+
+    it("si le son neuf échoue aussi, le bouton passe en muet et un toucher réessaie", async () => {
+      mocks.playUrl.mockImplementation((_url: string, _owner: number, _rate: number, onFail?: () => void) => {
+        onFail?.();
+        return Promise.resolve(false);
+      });
+      mocks.findClip.mockResolvedValue("https://clip/mort2.mp3");
+      render(<Session exerciseId="exercise-mort2" />);
+
+      await waitFor(() => expect(ecouter().getAttribute("data-listen-status")).toBe("unavailable"));
+      // Une lecture, puis UN seul nouvel essai : pas de boucle.
+      expect(mocks.playUrl).toHaveBeenCalledTimes(2);
+
+      mocks.playUrl.mockImplementation(() => new Promise<boolean>(() => {}));
+      fireEvent.click(ecouter());
+      await waitFor(() => expect(ecouter().getAttribute("aria-pressed")).toBe("true"));
+    });
+
+    it("une coupure voulue n'est pas un échec : pas de nouvelle demande, retour au repos", async () => {
+      mocks.playUrl.mockResolvedValue(false);
+      mocks.findClip.mockResolvedValue("https://clip/coupe.mp3");
+      render(<Session exerciseId="exercise-coupe" />);
+
+      await waitFor(() => expect(ecouter().getAttribute("data-listen-status")).toBe("idle"));
+      expect(mocks.playUrl).toHaveBeenCalledTimes(1);
+      expect(mocks.findClip).toHaveBeenCalledTimes(1);
+    });
   });
 });

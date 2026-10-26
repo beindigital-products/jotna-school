@@ -182,7 +182,7 @@ export default function MatchExercise({
   // (le rang d'une tuile de droite est celui de la gauche plus son indice). Pas de
   // file automatique : six à dix mots à la suite, après le mode d'emploi, feraient
   // attendre l'enfant ; il entend chaque mot en le touchant.
-  const tileVoice = useTileVoice([...left, ...right], prompt);
+  const tileVoice = useTileVoice([...left, ...right], prompt, { autoRead: true });
   const voiceIndex = (side: Side, index: number) => (side === "left" ? index : left.length + index);
 
   // Des INDICES dans `left` et `right`, jamais des textes (voir l'en-tête).

@@ -57,3 +57,79 @@ describe("le lecteur de voix de Pio", () => {
     expect(await playUrl("https://clip/a.mp3", newVoiceOwner(), 1)).toBe(false);
   });
 });
+
+describe("un son qui ne se joue pas (onFail)", () => {
+  it("signale une lecture refusée pour une autre raison que la lecture automatique", async () => {
+    playResult = () => Promise.reject(Object.assign(new Error("décodage"), { name: "NotSupportedError" }));
+    const { playUrl, newVoiceOwner } = await import("../voice-player");
+    const onFail = vi.fn();
+    expect(await playUrl("https://clip/a.mp3", newVoiceOwner(), 1, onFail)).toBe(false);
+    expect(onFail).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne signale PAS un refus de lecture automatique : le toucher suivant jouera", async () => {
+    playResult = () => Promise.reject(Object.assign(new Error("bloqué"), { name: "NotAllowedError" }));
+    const { playUrl, newVoiceOwner } = await import("../voice-player");
+    const onFail = vi.fn();
+    expect(await playUrl("https://clip/a.mp3", newVoiceOwner(), 1, onFail)).toBe(false);
+    expect(onFail).not.toHaveBeenCalled();
+  });
+
+  it("signale une erreur de l'élément (fichier abîmé, adresse morte)", async () => {
+    const { playUrl, newVoiceOwner } = await import("../voice-player");
+    const onFail = vi.fn();
+    const result = playUrl("https://clip/a.mp3", newVoiceOwner(), 1, onFail);
+    // L'élément est partagé et hors du DOM : on l'atteint par le `play` espionné.
+    const audio = vi.mocked(HTMLMediaElement.prototype.play).mock.contexts[0] as HTMLAudioElement;
+    audio.onerror?.(new Event("error"));
+    expect(await result).toBe(false);
+    expect(onFail).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne signale PAS une coupure voulue", async () => {
+    const { playUrl, stopPlaying, newVoiceOwner } = await import("../voice-player");
+    const owner = newVoiceOwner();
+    const onFail = vi.fn();
+    const result = playUrl("https://clip/a.mp3", owner, 1, onFail);
+    stopPlaying(owner);
+    expect(await result).toBe(false);
+    expect(onFail).not.toHaveBeenCalled();
+  });
+
+  it("signale un son qui ne démarre jamais, après le délai, et coupe l'élément", async () => {
+    vi.useFakeTimers();
+    try {
+      const { playUrl, newVoiceOwner, START_TIMEOUT_MS } = await import("../voice-player");
+      const onFail = vi.fn();
+      // `play()` ne rend jamais : le fichier n'arrive pas.
+      playResult = () => new Promise<void>(() => {});
+      const result = playUrl("https://clip/a.mp3", newVoiceOwner(), 1, onFail);
+      await vi.advanceTimersByTimeAsync(START_TIMEOUT_MS - 1);
+      expect(onFail).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(2);
+      expect(await result).toBe(false);
+      expect(onFail).toHaveBeenCalledTimes(1);
+      expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("un son qui démarre (événement playing) n'est plus soumis au délai", async () => {
+    vi.useFakeTimers();
+    try {
+      const { playUrl, newVoiceOwner, START_TIMEOUT_MS } = await import("../voice-player");
+      const onFail = vi.fn();
+      playResult = () => new Promise<void>(() => {});
+      let settled = false;
+      void playUrl("https://clip/a.mp3", newVoiceOwner(), 1, onFail).then(() => (settled = true));
+      const audio = vi.mocked(HTMLMediaElement.prototype.play).mock.contexts[0] as HTMLAudioElement;
+      audio.onplaying?.(new Event("playing"));
+      await vi.advanceTimersByTimeAsync(START_TIMEOUT_MS * 2);
+      expect(settled).toBe(false);
+      expect(onFail).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

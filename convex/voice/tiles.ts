@@ -13,11 +13,13 @@
  * serveur décide (`offline/voice.ts`), l'écran range les tuiles et ne demande que
  * des sons que le serveur accepterait.
  *
- * POUR QUI : le CI seulement (`TILE_VOICE_CLASSES`). Un enfant de CP lit déjà
- * des mots courts, et lui dire chaque tuile le ferait lire moins. Pour l'étendre,
- * il suffit d'y écrire « CP » : même règle que les images de tuile
- * (`PICTURE_TILE_CLASSES`, `lib/item-pictures.ts`), les deux listes sont
- * indépendantes de la voix des consignes (`READING_LEARNER_CLASSES`).
+ * POUR QUI : le CI et le CP (`TILE_VOICE_CLASSES`). Le propriétaire l'a demandé
+ * le 26 octobre 2026 : la lecture de l'énoncé doit prendre en compte les
+ * propositions, à chaque exercice. Les garde-fous ci-dessous protègent ce que
+ * l'enfant du CP apprend à lire : un énoncé qui demande de lire ou de décoder
+ * reste muet sur les tuiles. La liste est indépendante de celle des images de
+ * tuile (`PICTURE_TILE_CLASSES`, `lib/item-pictures.ts`) et de la voix des
+ * consignes (`READING_LEARNER_CLASSES`).
  *
  * CE QUE LA VOIX NE DIT JAMAIS, parce qu'elle donnerait la réponse ou dirait
  * faux :
@@ -26,8 +28,12 @@
  *     « Lis le mot », « Quel mot commence par la syllabe « pou » ? ». Lire la
  *     tuile à l'enfant, c'est lire à sa place ce qu'il doit apprendre à lire ;
  *   - quand l'énoncé demande une TRADUCTION (« Comment dit-on « chat » en
- *     anglais ? ») ou que la thématique est d'ANGLAIS : un mot anglais lu par la
- *     voix française est faux, et l'exercice, lui, fait ENTENDRE l'anglais ;
+ *     anglais ? ») HORS d'une thématique d'anglais : les tuiles seraient des mots
+ *     anglais, et la voix française les lirait faux. DANS une thématique d'anglais,
+ *     elles se disent, chacune dans SA langue (`tileLanguage`) : un mot anglais avec
+ *     la voix anglaise (`voiceFor(config, "en")`), un mot français avec la voix
+ *     française. Avant le 26 octobre 2026 l'anglais restait muet : la voix lisait
+ *     l'énoncé et se taisait devant les propositions ;
  *   - une tuile qui n'est que des émojis ou des signes : il n'y a rien à dire ;
  *   - une tuile d'UNE SEULE LETTRE (« a », « m ») : c'est du déchiffrage, même
  *     quand l'énoncé ne le dit pas (« Complète le mot : ba_ane »). Dire le nom de
@@ -53,8 +59,8 @@
 import { DECODING_PROMPT, READING_PROMPT, TRANSLATION_PROMPT } from "../../lib/item-pictures";
 import { speakablePrompt } from "./speakable";
 
-/** Les classes dont les tuiles se disent : le CI. Pour le CP, ajouter "CP". */
-export const TILE_VOICE_CLASSES = ["CI"] as const;
+/** Les classes dont les tuiles se disent : le CI et le CP. */
+export const TILE_VOICE_CLASSES = ["CI", "CP"] as const;
 
 const TILE_VOICE: ReadonlySet<string> = new Set(TILE_VOICE_CLASSES);
 
@@ -79,8 +85,8 @@ export function isEnglishTopic(topic: { programmeKey?: string | null; subjectNam
   return name === "anglais" || name === "english";
 }
 
-/** Les énoncés qui interdisent la voix des tuiles : lire, décoder, traduire. */
-const FORBIDDEN_PROMPTS: readonly RegExp[] = [READING_PROMPT, DECODING_PROMPT, TRANSLATION_PROMPT];
+/** Les énoncés qui interdisent la voix des tuiles : lire, décoder. */
+const FORBIDDEN_PROMPTS: readonly RegExp[] = [READING_PROMPT, DECODING_PROMPT];
 
 /** Un trou (deux soulignés ou plus, `BLANK_MARK`) collé à une lettre, d'un côté ou de l'autre. */
 const GLUED_BLANK = /(?:\p{L}_{2,}|_{2,}\p{L})/u;
@@ -94,15 +100,19 @@ export function completesAWord(text: unknown): boolean {
 }
 
 /**
- * Vrai quand l'énoncé interdit de dire les tuiles. Même lecture que
+ * Vrai quand l'énoncé interdit de dire les tuiles (`english` : la thématique est
+ * d'anglais, voir `isEnglishTopic`). Même lecture que
  * `promptForbidsPictures` : « NFC » (une lettre accentuée en deux points de code
  * reste reconnue) et l'apostrophe courbe vaut la droite. Un énoncé qui fait
  * compléter un mot (« Complète : ___ngue ») l'interdit aussi (`completesAWord`).
  */
-export function promptForbidsTileVoice(prompt: unknown): boolean {
+export function promptForbidsTileVoice(prompt: unknown, english = false): boolean {
   if (typeof prompt !== "string" || !prompt) return false;
   const text = prompt.normalize("NFC").replace(/[‘’ʼ′]/g, "'");
-  return completesAWord(text) || FORBIDDEN_PROMPTS.some((pattern) => pattern.test(text));
+  if (completesAWord(text) || FORBIDDEN_PROMPTS.some((pattern) => pattern.test(text))) return true;
+  // Une traduction fait proposer des mots anglais : seule la voix anglaise d'une
+  // thématique d'anglais sait les dire (voir l'en-tête).
+  return !english && TRANSLATION_PROMPT.test(text);
 }
 
 function strings(value: unknown): string[] {
@@ -172,15 +182,62 @@ export function readableTextsOf(type: string, payload: unknown): string[] {
  * (voir l'en-tête). C'est `speakablePrompt`, donc aussi la clé du cache audio.
  * L'écran s'en sert aussi : il ne demande jamais un son que le serveur refuserait.
  */
-export function speakableTile(text: string): string | null {
+export function speakableTile(text: string, lang: TileLang = "fr"): string | null {
   if (typeof text !== "string") return null;
-  const spoken = speakablePrompt(text);
+  const spoken = speakablePrompt(text, lang);
   if (spoken === null || /^\p{L}$/u.test(spoken)) return null;
   return spoken;
 }
 
+/** La langue d'un son de tuile : la voix qui le dit. */
+export type TileLang = "fr" | "en";
+
+/**
+ * Les mots FRANÇAIS qui se glissent dans une thématique d'anglais : les étiquettes
+ * de case (« Femme ou fille », « Je mange », « Moins de 5 », « Petit objet »)
+ * et les petits mots qui les lient. Une lettre accentuée vaut aussi pour du
+ * français (« garçon »). Tout le reste d'une thématique d'anglais est de
+ * l'anglais. `convex/__tests__/tileVoice.test.ts` passe tous les gabarits
+ * d'anglais du CI et du CP : un nouveau mot français qui s'y glisse fait casser le test.
+ */
+const FRENCH_WORDS: ReadonlySet<string> = new Set([
+  "le", "la", "les", "un", "une", "des", "du", "de", "d", "l", "et", "ou", "je", "tu", "il", "elle",
+  "femme", "homme", "fille", "garçon", "visage", "bras", "jambes", "petit", "grand", "objet",
+  "mange", "bois", "moins", "plus", "animaux", "sauvages", "ferme", "pour", "dire", "au", "aux", "revoir", "bonjour",
+]);
+const FRENCH_LETTERS = /[àâçéèêëîïôûùüœ]/i;
+
+function looksFrench(text: string): boolean {
+  const plain = text
+    .normalize("NFC")
+    .replace(/\p{Extended_Pictographic}|[\u200d\ufe0e\ufe0f\u20e3]/gu, " ")
+    .toLowerCase();
+  if (FRENCH_LETTERS.test(plain)) return true;
+  return plain.split(/[^\p{L}]+/u).some((word) => FRENCH_WORDS.has(word));
+}
+
+/**
+ * QUELLE VOIX DIT CETTE TUILE. Hors d'une thématique d'anglais : le français.
+ * Dans une thématique d'anglais : l'anglais, sauf
+ *   - la colonne de gauche de « Relie chaque mot français à son mot anglais » ;
+ *   - une étiquette de case ou une tuile qui est du français (`looksFrench`).
+ */
+export function tileLanguage(args: {
+  topic: { programmeKey?: string | null; subjectName?: string | null };
+  exercise: { type: string; prompt: string; payload: unknown };
+  text: string;
+}): TileLang {
+  if (!isEnglishTopic(args.topic)) return "fr";
+  if (args.exercise.type === "match" && /mot fran[cç]ais/i.test(args.exercise.prompt)) {
+    const p = (args.exercise.payload ?? {}) as { pairs?: { left?: unknown }[]; left?: unknown };
+    const left = Array.isArray(p.pairs) ? strings(p.pairs.map((pair) => pair?.left)) : strings(p.left);
+    if (left.includes(args.text)) return "fr";
+  }
+  return looksFrench(args.text) ? "fr" : "en";
+}
+
 export type TileClipVerdict =
-  | { ok: true; text: string }
+  | { ok: true; text: string; lang: TileLang }
   | { ok: false; reason: "not_allowed" | "unknown_text" };
 
 /**
@@ -189,7 +246,7 @@ export type TileClipVerdict =
  * sans base (le dépôt n'a pas de `convex-test`) ; `offline/voice.ts` n'y ajoute
  * que la lecture de la base et l'accès au palier.
  *
- * Dans l'ordre : la classe de l'enfant, l'anglais, l'énoncé qui interdit, puis
+ * Dans l'ordre : la classe de l'enfant, l'énoncé qui interdit, puis
  * que le texte soit bien une tuile de CET exercice, enfin qu'il y ait quelque
  * chose à dire.
  */
@@ -202,8 +259,9 @@ export function tileClipVerdict(args: {
   text: string;
 }): TileClipVerdict {
   if (!isTileVoiceClass(args.learnerClass)) return { ok: false, reason: "not_allowed" };
-  if (isEnglishTopic(args.topic)) return { ok: false, reason: "not_allowed" };
-  if (promptForbidsTileVoice(args.exercise.prompt)) return { ok: false, reason: "not_allowed" };
+  if (promptForbidsTileVoice(args.exercise.prompt, isEnglishTopic(args.topic))) {
+    return { ok: false, reason: "not_allowed" };
+  }
   // Une phrase à trous qui fait compléter un mot : les tuiles sont des lettres ou des syllabes.
   if (completesAWord(sentenceOf(args.exercise.type, args.exercise.payload))) {
     return { ok: false, reason: "not_allowed" };
@@ -211,6 +269,7 @@ export function tileClipVerdict(args: {
   if (!readableTextsOf(args.exercise.type, args.exercise.payload).includes(args.text)) {
     return { ok: false, reason: "unknown_text" };
   }
-  const spoken = speakableTile(args.text);
-  return spoken ? { ok: true, text: spoken } : { ok: false, reason: "unknown_text" };
+  const lang = tileLanguage({ topic: args.topic, exercise: args.exercise, text: args.text });
+  const spoken = speakableTile(args.text, lang);
+  return spoken ? { ok: true, text: spoken, lang } : { ok: false, reason: "unknown_text" };
 }

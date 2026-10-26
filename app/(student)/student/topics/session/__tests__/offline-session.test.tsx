@@ -56,6 +56,12 @@ vi.mock("@/lib/sounds", () => ({
   play: vi.fn(),
   playCorrect: vi.fn(),
 }));
+/** Ce que la sonde dit du lecteur : voix des tuiles éteinte, française ou anglaise. */
+function voiceLabel(reader: { tileVoice?: boolean; englishTopic?: boolean } | null) {
+  if (!reader?.tileVoice) return "sans voix des tuiles";
+  return reader.englishTopic ? "voix des tuiles en anglais" : "voix des tuiles";
+}
+
 // L'écran de l'exercice : une sonde qui dit si la porte des images et celle de la voix des tuiles sont ouvertes.
 vi.mock("@/components/student/game/session-screens", async (importOriginal) => {
   const { useItemPicturesEnabled } = await import("@/components/exercises/item-pictures");
@@ -65,7 +71,7 @@ vi.mock("@/components/student/game/session-screens", async (importOriginal) => {
     ExerciseRenderer: () => (
       <>
         <p data-testid="porte">{useItemPicturesEnabled() ? "images" : "sans images"}</p>
-        <p data-testid="voix">{usePromptReader()?.tileVoice ? "voix des tuiles" : "sans voix des tuiles"}</p>
+        <p data-testid="voix">{voiceLabel(usePromptReader())}</p>
       </>
     ),
   };
@@ -123,7 +129,7 @@ function door(profile: string | undefined, topic: string | undefined = profile) 
   return screen.getByTestId("porte").textContent;
 }
 
-/** La même séance, vue par la porte de la voix des tuiles (`isTileVoiceClass`, hors anglais). */
+/** La même séance, vue par la porte de la voix des tuiles (`isTileVoiceClass`, anglais compris). */
 function voice(
   profile: string | undefined,
   topic: string | undefined = profile,
@@ -168,16 +174,18 @@ describe("la séance sur l'appareil et la voix des tuiles", () => {
     expect(voice("CI")).toBe("voix des tuiles");
   });
 
-  it("l'éteint pour un enfant de CP (qui a pourtant la voix des consignes) et pour les classes plus grandes", () => {
-    expect(voice("CP")).toBe("sans voix des tuiles");
+  it("l'allume pour un enfant de CP aussi, et l'éteint pour les classes plus grandes", () => {
+    expect(voice("CP")).toBe("voix des tuiles");
     for (const klass of ["CE1", "CE2", "CM2"]) {
       cleanup();
       expect(voice(klass), klass).toBe("sans voix des tuiles");
     }
   });
 
-  it("lit la classe de l'enfant d'abord : un CP sur une thématique de CI ne l'entend pas", () => {
-    expect(voice("CP", "CI")).toBe("sans voix des tuiles");
+  it("lit la classe de l'enfant d'abord : un CP sur une thématique de CI l'entend, un CE1 non", () => {
+    expect(voice("CP", "CI")).toBe("voix des tuiles");
+    cleanup();
+    expect(voice("CE1", "CI")).toBe("sans voix des tuiles");
   });
 
   it("à défaut de classe sur le profil, lit celle de la thématique", () => {
@@ -186,12 +194,12 @@ describe("la séance sur l'appareil et la voix des tuiles", () => {
     expect(voice(undefined, "CE1")).toBe("sans voix des tuiles");
   });
 
-  it("l'éteint en anglais : la fiche du programme (« an- ») ou la matière le disent", () => {
-    expect(voice("CI", "CI", { programmeKey: "an-ci-colours" })).toBe("sans voix des tuiles");
+  it("l'allume en anglais : la fiche du programme (« an- ») ou la matière le disent, et le serveur choisit la voix", () => {
+    expect(voice("CI", "CI", { programmeKey: "an-ci-colours" })).toBe("voix des tuiles en anglais");
     cleanup();
-    expect(voice("CI", "CI", { subject: "Anglais" })).toBe("sans voix des tuiles");
+    expect(voice("CI", "CI", { subject: "Anglais" })).toBe("voix des tuiles en anglais");
     cleanup();
-    // Une autre fiche, une autre matière : elle reste allumée.
+    // Une autre fiche, une autre matière : la voix française.
     expect(voice("CI", "CI", { programmeKey: "fr-ci-lettres", subject: "Français" })).toBe("voix des tuiles");
   });
 });

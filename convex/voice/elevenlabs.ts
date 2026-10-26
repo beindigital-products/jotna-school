@@ -119,6 +119,10 @@ export interface VoiceConfig {
   voiceId: string;
   /** La voix des consignes en français : celle du parcours, sauf réglage. */
   frVoiceId: string;
+  /** La voix des mots d'anglais : celle des consignes, sauf réglage (`ELEVENLABS_EN_VOICE_ID`). */
+  enVoiceId: string;
+  /** Le modèle des mots d'anglais : multilingue, distinct de celui du français (clé de cache à part). */
+  enTtsModel: string;
   /** Le modèle de l'arabe du parcours, qui garde les voyelles brèves. */
   ttsModel: string;
   /** Le modèle des phrases en français, plus naturel. */
@@ -149,6 +153,8 @@ export function voiceConfig(): VoiceConfig | null {
     apiKey,
     voiceId,
     frVoiceId: process.env.ELEVENLABS_FR_VOICE_ID ?? voiceId,
+    enVoiceId: process.env.ELEVENLABS_EN_VOICE_ID ?? process.env.ELEVENLABS_FR_VOICE_ID ?? voiceId,
+    enTtsModel: process.env.ELEVENLABS_EN_MODEL_ID ?? DEFAULT_EN_TTS_MODEL,
     ttsModel: process.env.ELEVENLABS_MODEL_ID ?? DEFAULT_TTS_MODEL,
     frTtsModel: process.env.ELEVENLABS_FR_MODEL_ID ?? DEFAULT_FR_TTS_MODEL,
     sttModel: process.env.ELEVENLABS_STT_MODEL_ID ?? DEFAULT_STT_MODEL,
@@ -173,8 +179,15 @@ export function clipCacheKey(voiceId: string, modelId: string, text: string): st
   return `${voiceId}|${modelId}|${text}`;
 }
 
-/** Les deux langues de Pio : le français des consignes, l'arabe du parcours. */
-export type SpeechLang = "fr" | "ar";
+/**
+ * Le modèle des mots d'anglais. Le multilingue lit un texte dans sa langue ; il
+ * est aussi différent du modèle français, donc « six » dit en anglais et « six »
+ * dit en français n'ont pas la même clé de cache.
+ */
+const DEFAULT_EN_TTS_MODEL = "eleven_multilingual_v2";
+
+/** Les trois langues de Pio : le français des consignes, l'arabe du parcours, l'anglais des mots à apprendre. */
+export type SpeechLang = "fr" | "ar" | "en";
 
 /** Qui dit une phrase, et avec quel modèle. */
 export interface Voice {
@@ -190,9 +203,9 @@ export interface Voice {
  * garde toujours la même clé.
  */
 export function voiceFor(config: VoiceConfig, lang: SpeechLang): Voice {
-  return lang === "fr"
-    ? { lang, voiceId: config.frVoiceId, modelId: config.frTtsModel }
-    : { lang, voiceId: config.voiceId, modelId: config.ttsModel };
+  if (lang === "fr") return { lang, voiceId: config.frVoiceId, modelId: config.frTtsModel };
+  if (lang === "en") return { lang, voiceId: config.enVoiceId, modelId: config.enTtsModel };
+  return { lang, voiceId: config.voiceId, modelId: config.ttsModel };
 }
 
 /**
@@ -206,9 +219,13 @@ export function voiceFor(config: VoiceConfig, lang: SpeechLang): Voice {
 const VOICE_SETTINGS: Record<SpeechLang, Record<string, number | boolean>> = {
   ar: { stability: 0.6, similarity_boost: 0.8, style: 0, use_speaker_boost: true },
   fr: { stability: 0.5, similarity_boost: 0.75 },
+  en: { stability: 0.5, similarity_boost: 0.75 },
 };
 
-/** Appelle la synthèse et rend le mp3. Lève si le fournisseur refuse. */
+/** En dessous, ce n'est pas un son : on ne le range pas. */
+export const MIN_AUDIO_BYTES = 1000;
+
+/** Appelle la synthèse et rend le mp3. Lève si le fournisseur refuse ou rend un son vide. */
 export async function synthesize(
   text: string,
   config: VoiceConfig,
@@ -241,5 +258,13 @@ export async function synthesize(
       `elevenlabs tts ${response.status}: ${detail.slice(0, 200)}`,
     );
   }
-  return await response.blob();
+  const audio = await response.blob();
+  // Un « 200 » sans son (corps vide, début de réponse coupé) serait rangé dans le
+  // cache et servi à tous les enfants : la consigne resterait muette pour
+  // toujours. Le plus court mp3 de Pio (un mot) pèse plusieurs ko.
+  if (audio.size < MIN_AUDIO_BYTES) {
+    throw new Error(`elevenlabs tts: son vide ou tronqué (${audio.size} octets)`);
+  }
+  return audio;
 }
+

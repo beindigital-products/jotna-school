@@ -39,6 +39,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
   plays.length = 0;
+  finished.clear();
   mocks.playUrl.mockImplementation(
     (url: string) =>
       new Promise<boolean>((resolve) => {
@@ -71,7 +72,21 @@ function inSession(exerciseId: string, screenNode: React.ReactNode, tileVoice = 
   );
 }
 
-describe("l'association : toucher un mot le dit, sans file automatique", () => {
+/** Termine chaque son de la file l'un après l'autre, jusqu'à ce qu'elle se taise. */
+async function playQueueToTheEnd() {
+  for (let guard = 0; guard < 30; guard++) {
+    await flush(1000);
+    const playing = plays.filter((play) => !finished.has(play));
+    if (playing.length === 0) return;
+    for (const play of playing) {
+      finished.add(play);
+      play.finish();
+    }
+  }
+}
+const finished = new Set<Play>();
+
+describe("l'association : la file lit les mots, et toucher un mot le redit", () => {
   const payload = (tag: string) => ({
     left: [`la vache ${tag}`, `la poule ${tag}`],
     right: [`le lait ${tag}`, `l'œuf ${tag}`],
@@ -94,19 +109,22 @@ describe("l'association : toucher un mot le dit, sans file automatique", () => {
     );
   }
 
-  it("ne lit que la consigne d'office : six mots à la suite feraient attendre l'enfant", async () => {
+  it("lit la consigne, puis chaque mot des deux colonnes, dans l'ordre de l'écran", async () => {
     renderMatch("m1");
-    await flush();
-    plays[0].finish();
-    await flush(5000);
-    expect(urls()).toEqual(["prompt://ex-m1"]);
-    expect(mocks.findClip.mock.calls.filter(([request]) => request.kind === "tile")).toEqual([]);
+    await playQueueToTheEnd();
+    expect(urls()).toEqual([
+      "prompt://ex-m1",
+      "tile://la vache m1",
+      "tile://la poule m1",
+      "tile://le lait m1",
+      "tile://l'œuf m1",
+    ]);
   });
 
   it("dit chaque mot touché, allume sa tuile, et la relie quand même", async () => {
     renderMatch("m2");
     await flush();
-    plays[0].finish();
+    plays[0].finish(false); // un toucher a coupé la file : ce test ne regarde que le toucher
     await flush(500);
 
     fireEvent.click(tile("left", 0));
@@ -151,7 +169,7 @@ describe("l'association : toucher un mot le dit, sans file automatique", () => {
   });
 });
 
-describe("la mise en ordre : toucher une étiquette la dit", () => {
+describe("la mise en ordre : la file lit les étiquettes, et toucher une étiquette la redit", () => {
   const payload = (tag: string) => ({ correctSequence: [`le matin ${tag}`, `le midi ${tag}`, `le soir ${tag}`] });
 
   function renderOrder(tag: string) {
@@ -169,10 +187,17 @@ describe("la mise en ordre : toucher une étiquette la dit", () => {
     );
   }
 
+  it("lit la consigne, puis chaque étiquette à ranger", async () => {
+    renderOrder("o0");
+    await playQueueToTheEnd();
+    expect(urls()[0]).toBe("prompt://ex-o0");
+    expect(tileUrls().sort()).toEqual(["tile://le matin o0", "tile://le midi o0", "tile://le soir o0"]);
+  });
+
   it("dit l'étiquette touchée et allume sa tuile, où qu'elle soit rangée", async () => {
     renderOrder("o1");
     await flush();
-    plays[0].finish();
+    plays[0].finish(false); // un toucher a coupé la file : ce test ne regarde que le toucher
     await flush(5000);
     expect(urls()).toEqual(["prompt://ex-o1"]);
 
@@ -187,7 +212,7 @@ describe("la mise en ordre : toucher une étiquette la dit", () => {
   it("un toucher sur la poignée ne dit rien : saisir l'étiquette la dit (début du glissé)", async () => {
     renderOrder("o2");
     await flush();
-    plays[0].finish();
+    plays[0].finish(false); // un toucher a coupé la file : ce test ne regarde que le toucher
     await flush(500);
     fireEvent.click(screen.getByLabelText("Déplacer « le soir o2 »"));
     await flush();
@@ -197,7 +222,7 @@ describe("la mise en ordre : toucher une étiquette la dit", () => {
   it("saisir une étiquette par sa poignée la dit, et son anneau la suit", async () => {
     renderOrder("o3");
     await flush();
-    plays[0].finish();
+    plays[0].finish(false); // un toucher a coupé la file : ce test ne regarde que le toucher
     await flush(500);
 
     const poignee = screen.getByLabelText("Déplacer « le soir o3 »");
@@ -219,7 +244,7 @@ describe("la mise en ordre : toucher une étiquette la dit", () => {
   });
 });
 
-describe("le glisser-déposer : étiquettes et cases se disent", () => {
+describe("le glisser-déposer : la file lit étiquettes et cases, et un toucher les redit", () => {
   const payload = (tag: string) => ({
     zones: [`la ferme ${tag}`, `la forêt ${tag}`],
     items: [{ text: `la vache ${tag}` }, { text: `le lion ${tag}` }],
@@ -248,10 +273,19 @@ describe("le glisser-déposer : étiquettes et cases se disent", () => {
     );
   }
 
+  it("lit la consigne, puis chaque étiquette et chaque case", async () => {
+    renderDrag("d0");
+    await playQueueToTheEnd();
+    expect(urls()[0]).toBe("prompt://ex-d0");
+    expect(tileUrls().sort()).toEqual(
+      ["tile://la ferme d0", "tile://la forêt d0", "tile://la vache d0", "tile://le lion d0"].sort(),
+    );
+  });
+
   it("dit l'étiquette qu'on choisit, puis la pose dans la case sans rien redire", async () => {
     renderDrag("d1");
     await flush();
-    plays[0].finish();
+    plays[0].finish(false); // un toucher a coupé la file : ce test ne regarde que le toucher
     await flush(5000);
     expect(urls()).toEqual(["prompt://ex-d1"]);
 
@@ -272,7 +306,7 @@ describe("le glisser-déposer : étiquettes et cases se disent", () => {
   it("dit le nom d'une case touchée quand aucune étiquette n'est en main, et allume sa plaque", async () => {
     renderDrag("d2");
     await flush();
-    plays[0].finish();
+    plays[0].finish(false); // un toucher a coupé la file : ce test ne regarde que le toucher
     await flush(500);
 
     fireEvent.click(zone("la forêt d2"));
@@ -285,7 +319,7 @@ describe("le glisser-déposer : étiquettes et cases se disent", () => {
   it("saisir une étiquette au doigt la dit, et l'étiquette en l'air porte l'anneau", async () => {
     renderDrag("d4");
     await flush();
-    plays[0].finish();
+    plays[0].finish(false); // un toucher a coupé la file : ce test ne regarde que le toucher
     await flush(500);
 
     const lion = draggable("le lion d4");
@@ -312,7 +346,7 @@ describe("le glisser-déposer : étiquettes et cases se disent", () => {
   it("redit l'étiquette à chaque toucher, même pour la relâcher", async () => {
     renderDrag("d3");
     await flush();
-    plays[0].finish();
+    plays[0].finish(false); // un toucher a coupé la file : ce test ne regarde que le toucher
     await flush(500);
     fireEvent.click(draggable("le lion d3"));
     await flush();

@@ -574,10 +574,11 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
   const learnerClass = profile?.class ?? topic.class;
   const readsAloud = isReadingLearnerClass(learnerClass);
   const showsPictures = isPictureTileClass(learnerClass);
-  // LA VOIX DES TUILES : un enfant de CI entend aussi les propositions, et la
-  // proposition qu'il touche (`convex/voice/tiles.ts`). Pas en anglais : un mot
-  // anglais lu par la voix française serait faux. Le serveur refuse de toute façon.
-  const speaksTiles = isTileVoiceClass(learnerClass) && !isEnglishTopic({ programmeKey: topic.programmeKey });
+  // LA VOIX DES TUILES : un enfant de CI ou de CP entend aussi les propositions, et
+  // la proposition qu'il touche (`convex/voice/tiles.ts`). En anglais aussi : le
+  // serveur dit chaque mot dans sa langue (`tileLanguage`).
+  const speaksTiles = isTileVoiceClass(learnerClass);
+  const englishTopic = isEnglishTopic({ programmeKey: topic.programmeKey });
   const exerciseRenderer = (
     <ExerciseRenderer
       exo={exo}
@@ -659,6 +660,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
               exerciseId={exo._id}
               silenced={feedback !== null || explainOpen || sceneAlert !== null}
               tileVoice={speaksTiles}
+              englishTopic={englishTopic}
             >
               {exerciseRenderer}
             </PromptReaderProvider>

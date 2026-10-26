@@ -43,7 +43,7 @@ import { moduleAccessForProfile } from "../modules";
 import { resolveSpeech } from "../arabic/speechText";
 import { speakableExercise } from "../voice/speakable";
 import { tileClipVerdict } from "../voice/tiles";
-import { clipCacheKey, synthesize, voiceConfig, voiceFor } from "../voice/elevenlabs";
+import { clipCacheKey, synthesize, voiceConfig, voiceFor, type SpeechLang } from "../voice/elevenlabs";
 import { clipRequestKey, clipRequestValidator, type ClipResult } from "./contract";
 
 /** Une synthèse prend une à deux secondes : douze tiennent largement dans un appel. */
@@ -52,7 +52,7 @@ const MAX_NEW_PER_CALL = 12;
 const MAX_REQUESTS = 400;
 
 type PlannedClip =
-  | { key: string; ok: true; text: string; lang: "fr" | "ar" }
+  | { key: string; ok: true; text: string; lang: SpeechLang }
   | { key: string; ok: false; reason: string };
 
 /** Ce que chaque référence fait dire, si l'appelant a le droit de l'entendre. */
@@ -156,7 +156,9 @@ export const plan = internalQuery({
           exercise: reached.exercise,
           text: request.text,
         });
-        clips.push(verdict.ok ? { key, ok: true, text: verdict.text, lang: "fr" } : { key, ok: false, reason: verdict.reason });
+        clips.push(
+          verdict.ok ? { key, ok: true, text: verdict.text, lang: verdict.lang } : { key, ok: false, reason: verdict.reason },
+        );
         continue;
       }
 

@@ -4,7 +4,14 @@ import { makeContext, type GameLevel } from "../paliers/games/shared";
 import { allProgrammeEntries } from "../programme";
 import { speakableExercise } from "../voice/speakable";
 import { readableTextsOf, speakableTile } from "../voice/tiles";
-import { COST_PER_1000_CHARS_USD, estimatedCostUsd, spokenTextsOf, type WarmExercise, type WarmTopic } from "../voice/warmTexts";
+import {
+  COST_PER_1000_CHARS_USD,
+  estimatedCostUsd,
+  spokenClipsOf,
+  spokenTextsOf,
+  type WarmExercise,
+  type WarmTopic,
+} from "../voice/warmTexts";
 
 const TOPIC: WarmTopic = { programmeKey: "sc-ci-milieu", subjectName: "Éveil scientifique" };
 
@@ -68,11 +75,29 @@ describe("spokenTextsOf — ce que la voix préchauffe", () => {
     expect(spoken(qcm(["chat", "chien", "cheval"], "Lis le mot."))).toEqual([]);
   });
 
-  it("ne dit rien en anglais, ni hors du CI", () => {
-    const exercise = qcm(["le chat", "le chien", "la girafe"]);
-    expect(spoken(exercise, { topic: { programmeKey: "an-ci-animals", subjectName: "Anglais" } })).toEqual([]);
-    expect(spoken(exercise, { learnerClass: "CP" })).toEqual([]);
-    expect(spoken(exercise, { learnerClass: "CE1" })).toEqual([]);
+  it("dit l'anglais avec la voix anglaise, le CP comme le CI, et rien hors d'eux", () => {
+    const exercise = qcm(["dog", "cat", "bird"], "Quel mot va avec ce dessin ?");
+    const english = { programmeKey: "an-ci-animals", subjectName: "Anglais" };
+    expect(spoken(exercise, { topic: english })).toEqual(["dog", "cat", "bird"]);
+    expect(spokenClipsOf({ learnerClass: "CI", topic: english, withPrompt: false, exercise })).toEqual([
+      { text: "dog", lang: "en" },
+      { text: "cat", lang: "en" },
+      { text: "bird", lang: "en" },
+    ]);
+    expect(spoken(qcm(["le chat", "le chien", "la girafe"]), { learnerClass: "CP" })).toEqual([
+      "le chat",
+      "le chien",
+      "la girafe",
+    ]);
+    expect(spoken(qcm(["le chat", "le chien", "la girafe"]), { learnerClass: "CE1" })).toEqual([]);
+  });
+
+  it("garde « six » dit en anglais et « six » dit en français comme deux sons", () => {
+    const english = { programmeKey: "an-ci-numbers", subjectName: "Anglais" };
+    const clips = (topic: WarmTopic) =>
+      spokenClipsOf({ learnerClass: "CI", topic, withPrompt: false, exercise: qcm(["six", "ten"], "Choisis.") });
+    expect(clips(english).map((clip) => clip.lang)).toEqual(["en", "en"]);
+    expect(clips(TOPIC).map((clip) => clip.lang)).toEqual(["fr", "fr"]);
   });
 
   it("ajoute la consigne seulement si on le demande, et la dit même quand les tuiles se taisent", () => {
@@ -82,8 +107,8 @@ describe("spokenTextsOf — ce que la voix préchauffe", () => {
 
     const reading = qcm(["chat", "chien", "cheval"], "Lis le mot.");
     expect(spoken(reading, { withPrompt: true })).toEqual(["Lis le mot."]);
-    // L'anglais ne dit pas ses tuiles à la française, mais la consigne se lit.
-    expect(spoken(exercise, { topic: { programmeKey: "an-ci-animals" }, withPrompt: true })).toEqual(["Quel animal miaule ?"]);
+    // Une consigne de lecture se lit, même en anglais (les propositions se taisent).
+    expect(spoken(reading, { topic: { programmeKey: "an-ci-animals" }, withPrompt: true })).toEqual(["Lis le mot."]);
   });
 
   it("ne dit pas une consigne qui n'a rien à dire", () => {
@@ -91,9 +116,14 @@ describe("spokenTextsOf — ce que la voix préchauffe", () => {
     expect(spoken(exercise, { withPrompt: true })).toEqual(["le chat", "le chien", "la girafe"]);
   });
 
-  it("dit la consigne au CP aussi, jamais les tuiles", () => {
+  it("dit la consigne et les tuiles au CP, la consigne seule hors du CI et du CP : rien", () => {
     const exercise = qcm(["le chat", "le chien", "la girafe"], "Quel animal miaule ?");
-    expect(spoken(exercise, { learnerClass: "CP", withPrompt: true })).toEqual(["Quel animal miaule ?"]);
+    expect(spoken(exercise, { learnerClass: "CP", withPrompt: true })).toEqual([
+      "le chat",
+      "le chien",
+      "la girafe",
+      "Quel animal miaule ?",
+    ]);
     expect(spoken(exercise, { learnerClass: "CE1", withPrompt: true })).toEqual([]);
   });
 
@@ -133,7 +163,7 @@ describe("spokenTextsOf sur les gabarits des sciences du CI", () => {
 
           const expected = new Set(
             readableTextsOf(game.type, game.payload)
-              .map(speakableTile)
+              .map((text) => speakableTile(text))
               .filter((text): text is string => text !== null),
           );
           const label = `${kind} niveau ${level} graine ${n}`;

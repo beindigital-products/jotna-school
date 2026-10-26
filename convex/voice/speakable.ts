@@ -21,11 +21,20 @@ export const MAX_SPOKEN_PROMPT_CHARS = 400;
 const OPERAND = String.raw`(\d|…)`;
 const NEXT_OPERAND = String.raw`(?=\s*(?:\d|…))`;
 
+/** Les mots des signes de calcul, dans la langue de la voix qui les dit. */
+const SIGN_WORDS = {
+  fr: { plus: "plus", minus: "moins", times: "fois", by: "divisé par", lt: "est plus petit que", gt: "est plus grand que", eq: "égale" },
+  en: { plus: "plus", minus: "minus", times: "times", by: "divided by", lt: "is less than", gt: "is greater than", eq: "equals" },
+} as const;
+
 /**
  * Le texte à faire dire, ou `null` s'il n'y a rien à dire (que des émojis)
- * ou trop à dire.
+ * ou trop à dire. `lang` : la voix qui le dira. Une tuile d'anglais passe par la
+ * voix anglaise : « eight = … » se dit « eight equals », pas « eight égale ».
  */
-export function speakablePrompt(prompt: string): string | null {
+export function speakablePrompt(prompt: string, lang: "fr" | "en" = "fr"): string | null {
+  // `=== "en"` et non `SIGN_WORDS[lang]` : `.map(speakablePrompt)` passe l'index en second argument.
+  const w = SIGN_WORDS[lang === "en" ? "en" : "fr"];
   const text = prompt
     // Les pictogrammes, avec leurs jointures et sélecteurs de variante.
     .replace(/\p{Extended_Pictographic}/gu, " ")
@@ -37,14 +46,14 @@ export function speakablePrompt(prompt: string): string | null {
     .replace(/(^|[\s(])\?(?=\s*[,;+\-−–×x*÷:=<>\d])/g, "$1…")
     // Les signes de calcul, entre deux opérandes seulement : le trait
     // d'union de « a-t-il » et les deux-points d'une consigne restent.
-    .replace(new RegExp(`${OPERAND}\\s*\\+\\s*${NEXT_OPERAND}`, "g"), "$1 plus ")
-    .replace(new RegExp(`${OPERAND}\\s*[-−–]\\s*${NEXT_OPERAND}`, "g"), "$1 moins ")
-    .replace(new RegExp(`${OPERAND}\\s*[×x*]\\s*${NEXT_OPERAND}`, "g"), "$1 fois ")
-    .replace(new RegExp(`${OPERAND}\\s*÷\\s*${NEXT_OPERAND}`, "g"), "$1 divisé par ")
-    .replace(new RegExp(`${OPERAND}\\s+:\\s+${NEXT_OPERAND}`, "g"), "$1 divisé par ")
-    .replace(new RegExp(`${OPERAND}\\s*<\\s*${NEXT_OPERAND}`, "g"), "$1 est plus petit que ")
-    .replace(new RegExp(`${OPERAND}\\s*>\\s*${NEXT_OPERAND}`, "g"), "$1 est plus grand que ")
-    .replace(/\s*=\s*/g, " égale ")
+    .replace(new RegExp(`${OPERAND}\\s*\\+\\s*${NEXT_OPERAND}`, "g"), `$1 ${w.plus} `)
+    .replace(new RegExp(`${OPERAND}\\s*[-−–]\\s*${NEXT_OPERAND}`, "g"), `$1 ${w.minus} `)
+    .replace(new RegExp(`${OPERAND}\\s*[×x*]\\s*${NEXT_OPERAND}`, "g"), `$1 ${w.times} `)
+    .replace(new RegExp(`${OPERAND}\\s*÷\\s*${NEXT_OPERAND}`, "g"), `$1 ${w.by} `)
+    .replace(new RegExp(`${OPERAND}\\s+:\\s+${NEXT_OPERAND}`, "g"), `$1 ${w.by} `)
+    .replace(new RegExp(`${OPERAND}\\s*<\\s*${NEXT_OPERAND}`, "g"), `$1 ${w.lt} `)
+    .replace(new RegExp(`${OPERAND}\\s*>\\s*${NEXT_OPERAND}`, "g"), `$1 ${w.gt} `)
+    .replace(/\s*=\s*/g, ` ${w.eq} `)
     // Ce qu'un pictogramme retiré laisse derrière lui : « pommes : . ».
     .replace(/\s+/g, " ")
     .replace(/\s*[:;,]\s*(?=[.!?]|$)/g, "")

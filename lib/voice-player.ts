@@ -21,6 +21,15 @@
  * silence au premier toucher de la page, et toutes les lectures suivantes
  * (changer son `src`, rejouer) passent sans geste. L'application (Capacitor)
  * n'a pas cette restriction ; le déblocage y est sans effet.
+ *
+ * UN SON QUI NE SE JOUE PAS SE DIT (`onFail`). Une adresse morte (fichier du
+ * téléphone abîmé, lien périmé), un fichier qui ne démarre jamais : la lecture
+ * rendait « faux » comme une coupure, et le lecteur de consignes ne savait pas
+ * qu'il fallait réessayer ; il gardait l'adresse morte pour toute la page, et
+ * chaque toucher sur « Écouter » rejouait le même silence. `onFail` n'est
+ * appelé que pour un échec, jamais pour une coupure voulue (`stopPlaying`) ni
+ * pour un refus de lecture automatique (`NotAllowedError` : un toucher
+ * suivant joue).
  */
 
 type Playing = {
@@ -102,28 +111,68 @@ export function stopPlaying(owner?: number) {
   current.done();
 }
 
-/** Joue une URL après avoir coupé le son en cours. Vrai si le son est allé au bout. */
-export function playUrl(url: string, owner: number, rate: number): Promise<boolean> {
+/**
+ * Le plus long qu'on attend qu'un son démarre. Un fichier de consigne pèse
+ * quelques dizaines de ko : passé ce délai, ni le réseau ni le fichier ne
+ * répondront, et l'enfant doit pouvoir réessayer.
+ */
+export const START_TIMEOUT_MS = 15000;
+
+/**
+ * Joue une URL après avoir coupé le son en cours. Vrai si le son est allé au
+ * bout. `onFail` est appelé (avant que la promesse ne rende) quand le son
+ * n'a PAS pu se jouer : erreur du fichier, lecture refusée pour une autre
+ * raison que la lecture automatique, démarrage qui n'arrive pas.
+ */
+export function playUrl(
+  url: string,
+  owner: number,
+  rate: number,
+  onFail?: () => void,
+): Promise<boolean> {
   stopPlaying();
   return new Promise((resolve) => {
     const audio = sharedAudio();
     const id = nextPlay++;
     let settled = false;
+    let startTimer: ReturnType<typeof setTimeout> | null = null;
     const done = (finished = false) => {
       if (settled) return;
       settled = true;
+      if (startTimer) clearTimeout(startTimer);
       audio.onended = null;
       audio.onerror = null;
+      audio.onplaying = null;
       if (playing?.id === id) playing = null;
       resolve(finished);
     };
+    // Un échec seulement si cette lecture vit encore : une coupure a déjà tout réglé.
+    const fail = () => {
+      if (settled) return;
+      onFail?.();
+      done(false);
+    };
     playing = { audio, owner, id, done: () => done(false) };
     audio.onended = () => done(true);
-    audio.onerror = () => done(false);
+    audio.onerror = fail;
+    audio.onplaying = () => {
+      if (startTimer) clearTimeout(startTimer);
+      startTimer = null;
+    };
+    startTimer = setTimeout(() => {
+      if (settled) return;
+      audio.pause();
+      fail();
+    }, START_TIMEOUT_MS);
     audio.src = url;
     // Après `src` : changer de source remet la vitesse à sa valeur par défaut.
     audio.defaultPlaybackRate = rate;
     audio.playbackRate = rate;
-    audio.play().catch(() => done(false));
+    audio.play().catch((error: unknown) => {
+      // Lecture automatique refusée avant tout toucher : pas un son mort, le
+      // toucher sur « Écouter » jouera le même fichier.
+      if ((error as { name?: string } | null)?.name === "NotAllowedError") done(false);
+      else fail();
+    });
   });
 }

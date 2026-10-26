@@ -92,10 +92,10 @@ describe("neededClips : les propositions du CI se téléchargent avec les consig
     ]);
   });
 
-  it("ne demande aucune proposition à un enfant de CP, qui a pourtant la voix des consignes", () => {
+  it("demande les propositions d'un enfant de CP aussi, avec la consigne", () => {
     const needed = syncFor({ profileClass: "CP", contentClass: "CP", exercises: [qcm("e1", ["le chat", "le chien"])] }).neededClips();
     expect(prompts(needed)).toEqual(["e1"]);
-    expect(tiles(needed)).toEqual([]);
+    expect(tiles(needed).map((tile) => tile.text)).toEqual(["le chat", "le chien"]);
   });
 
   it("à défaut de classe sur le profil, lit celle du paquet", () => {
@@ -105,11 +105,13 @@ describe("neededClips : les propositions du CI se téléchargent avec les consig
     expect(tiles(none)).toEqual([]);
   });
 
-  it("ne demande rien d'une thématique d'anglais, par sa fiche ou par sa matière", () => {
+  it("demande les mots d'une thématique d'anglais, par sa fiche ou par sa matière, avec la consigne", () => {
     const exercises = [qcm("e1", ["cat", "dog"])];
-    expect(tiles(syncFor({ programmeKey: "an-ci-animals", exercises }).neededClips())).toEqual([]);
-    expect(tiles(syncFor({ subject: "Anglais", exercises }).neededClips())).toEqual([]);
-    // La consigne, elle, se dit toujours.
+    expect(tiles(syncFor({ programmeKey: "an-ci-animals", exercises }).neededClips()).map((tile) => tile.text)).toEqual([
+      "cat",
+      "dog",
+    ]);
+    expect(tiles(syncFor({ subject: "Anglais", exercises }).neededClips()).map((tile) => tile.text)).toEqual(["cat", "dog"]);
     expect(prompts(syncFor({ programmeKey: "an-ci-animals", exercises }).neededClips())).toEqual(["e1"]);
   });
 
