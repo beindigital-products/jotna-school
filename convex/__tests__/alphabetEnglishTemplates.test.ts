@@ -6,7 +6,7 @@ import { makeContext, type GameLevel } from "../paliers/games/shared";
 import { topicUsesModel } from "../paliers/pregen";
 import { PALIER_SIZE } from "../paliers/scoring";
 import { allProgrammeEntries } from "../programme";
-import { englishLetters, promptForbidsTileVoice, speakableTile, tileClipVerdict, tileLanguage } from "../voice/tiles";
+import { LETTER_NAMES, englishLetters, promptForbidsTileVoice, speakableTile, tileClipVerdict, tileLanguage } from "../voice/tiles";
 
 vi.setConfig({ testTimeout: 30_000 });
 
@@ -466,10 +466,25 @@ describe("la voix des lettres", () => {
     expect(englishLetters("B")).toBe("bee");
     expect(englishLetters("W")).toBe("double you");
     expect(englishLetters("Z")).toBe("zed");
-    expect(englishLetters("F-A-T-O-U")).toBe("eff, ay, tee, oh, you");
-    expect(englishLetters("A, B, ___, D")).toBe("ay, bee, ___, dee");
-    expect(englishLetters("___, B, C")).toBe("___, bee, see");
+    expect(englishLetters("F-A-T-O-U")).toBe("eff, ei, tee, oh, you");
+    expect(englishLetters("A, B, ___, D")).toBe("ei, bee, blank, dee");
+    expect(englishLetters("___, B, C")).toBe("blank, bee, see");
     expect(englishLetters("B is for ___.")).toBe("bee is for ___.");
+  });
+
+  // Essai de la vraie voix du 26 octobre 2026 (voir `LETTER_NAMES`) : ces trois choix ne se défont pas sans refaire l'essai.
+  it("garde les trois écritures que l'essai de la vraie voix a départagées", () => {
+    // « ay » était dit comme la lettre I ; « ei » est dit comme la lettre A.
+    expect(englishLetters("A")).toBe("ei");
+    expect(englishLetters("A, B, C")).toBe("ei, bee, see");
+    expect(Object.values(LETTER_NAMES)).not.toContain("ay");
+    // « aitch » seul était relu « Aichi » : seul, H se dit « Aitch. » ; en suite et dans un prénom, « aitch » passe.
+    expect(englishLetters("H")).toBe("Aitch.");
+    expect(englishLetters("G, H, I")).toBe("jee, aitch, eye");
+    expect(englishLetters("H-A")).toBe("aitch, ei");
+    // La pause « … » est sautée par la voix : le trou d'une suite est dit « blank » (une phrase à trous garde la pause).
+    expect(englishLetters("D, ___, F")).toBe("dee, blank, eff");
+    expect(englishLetters("H is for ___.")).toBe("aitch is for ___.");
   });
 
   it("ne prend pour une lettre ni une minuscule (l'article « a »), ni un mot, ni une phrase", () => {
@@ -481,7 +496,7 @@ describe("la voix des lettres", () => {
     expect(speakableTile("B", "en", false)).toBeNull();
     expect(speakableTile("B", "fr", true)).toBeNull();
     expect(speakableTile("b", "en", true)).toBeNull();
-    expect(speakableTile("F-A-T-O-U", "en", true)).toBe("eff, ay, tee, oh, you");
+    expect(speakableTile("F-A-T-O-U", "en", true)).toBe("eff, ei, tee, oh, you");
     expect(speakableTile("chat")).toBe("chat");
   });
 

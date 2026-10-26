@@ -33,13 +33,23 @@ l'enfant entend, ce que Pio ne dit jamais, et où se trouve chaque pièce.
   Dans une thématique d'anglais, une majuscule seule (« B »), un prénom épelé
   (« F-A-T-O-U »), une suite de lettres (« A, B, ___, D ») et « B is for ___. » se
   disent avec le NOM anglais de chaque lettre (`englishLetters`, `LETTER_NAMES`,
-  `convex/voice/tiles.ts`) : « bee », « eff, ay, tee, oh, you ». Le nom est écrit comme un
+  `convex/voice/tiles.ts`) : « bee », « eff, ei, tee, oh, you ». Le nom est écrit comme un
   mot (« bee » et non « B »), parce qu'une synthèse qui lit un « B » seul le dit parfois à la
   française. Seules les MAJUSCULES comptent : « a », sans majuscule, est l'article de
   « a dog ». Dans ces thématiques, « lettre », « majuscule », « épeler » et « commence par »
   ne coupent plus la voix (`ALPHABET_WORDS`) ; « Lis le mot » et « la syllabe » la coupent
-  toujours. **Ces noms n'ont pas été écoutés** : à auditionner avec les 26 lettres avant de
-  s'y fier (`ay`, `eye`, `ar`, `ell` et `double you` sont les plus à risque).
+  toujours.
+  **Trois écritures ont été départagées par un essai de la vraie voix** (26 octobre 2026,
+  `eleven_multilingual_v2`, voix « Cyp », relu par la reconnaissance vocale, 5 synthèses
+  chacune) : A s'écrit « ei » (« ay » était dit comme la lettre I) ; H seul s'écrit
+  « Aitch. » (« aitch » seul était relu « Aichi », mais passe dans une suite) ; le trou d'une
+  suite de lettres se dit « blank » (la pause « … » est sautée par la voix).
+  **Ces noms n'ont toujours pas été écoutés par une personne** : le R seul reste fragile
+  (« ar » 1 sur 5, « are » 2 sur 5, aucune écriture au-dessus de 3 sur 5) et D, E, G, M, N,
+  S, T seuls sont mal relus (0 à 1 sur 3), peut-être à cause de la relecture sur des clips
+  très courts. À écouter avant le préchauffage : les 26 lettres sont dans
+  `audition-lettres/elevenlabs/alphabet/`. Le texte est la clé du cache audio : le corriger
+  APRÈS le préchauffage laisse les anciens sons inutilisés et coûte une seconde synthèse.
 - **Un toucher coupe la file.** L'enfant n'attend jamais la fin de la lecture
   pour répondre. Elle se tait dès qu'il a répondu, ou quand une fenêtre s'ouvre.
 - **« Écouter » et Pio redisent tout**, la consigne puis les propositions ; un

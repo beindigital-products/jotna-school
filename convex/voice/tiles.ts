@@ -188,26 +188,47 @@ export function readableTextsOf(type: string, payload: unknown): string[] {
  * Les noms anglais des lettres, écrits comme un mot : une synthèse vocale qui lit un « B » seul le dit parfois
  * « bé » ou « be ». « bee » ne se lit que d'une façon. Le W se dit en deux mots, le Z « zed » (anglais britannique).
  * Ce texte est aussi la clé du cache audio : un fichier par lettre, pour tous les exercices.
+ *
+ * ESSAI DE LA VRAIE VOIX (26 octobre 2026, `eleven_multilingual_v2`, relu par la reconnaissance vocale, 5 synthèses par
+ * écriture) : « ay » était dit comme « eye », la lettre I (0 sur 5 seul, 1 sur 5 dans « bee, ay, see »). « ei » est dit
+ * comme la lettre A (5 sur 5 seul, en suite et dans un prénom épelé). Le R seul reste fragile : aucune écriture essayée
+ * ne dépasse 3 sur 5. D, E, G, M, N, S et T seuls sont aussi mal relus (0 à 1 sur 3), mais ce sont des clips très courts
+ * que la relecture déforme : à trancher à l'oreille avant le préchauffage (`docs/programme-anglais-v2.md`, section 15).
  */
 export const LETTER_NAMES: Readonly<Record<string, string>> = {
-  A: "ay", B: "bee", C: "see", D: "dee", E: "ee", F: "eff", G: "jee", H: "aitch", I: "eye", J: "jay", K: "kay", L: "ell", M: "em",
+  A: "ei", B: "bee", C: "see", D: "dee", E: "ee", F: "eff", G: "jee", H: "aitch", I: "eye", J: "jay", K: "kay", L: "ell", M: "em",
   N: "en", O: "oh", P: "pee", Q: "cue", R: "ar", S: "ess", T: "tee", U: "you", V: "vee", W: "double you", X: "ex", Y: "why", Z: "zed",
 };
 
 /**
+ * Le nom d'une lettre dite SEULE, quand `LETTER_NAMES` ne suffit pas hors d'une suite : « aitch » seul était relu
+ * « Aichi » ou « Iche » (1 sur 5), « Aitch. » avec une majuscule et un point, « H » (5 sur 5 puis 3 sur 3). En suite,
+ * « aitch » passe.
+ */
+const SINGLE_LETTER_NAMES: Readonly<Record<string, string>> = { H: "Aitch." };
+
+/**
+ * Le trou d'une suite de lettres, dit. La pause « … » de `speakablePrompt` est sautée par la voix (« A, B, D »), le mot
+ * « blank » est entendu (4 sur 5 dans « ei, bee, blank, dee »).
+ */
+const SPOKEN_GAP = "blank";
+
+/**
  * Le texte anglais d'une tuile qui est une ou des lettres, ou `null` quand ce n'en est pas une :
- *   - « B » : « bee » ;
- *   - « F-A-T-O-U », un prénom épelé : « eff, ay, tee, oh, you » ;
- *   - « A, B, ___, D », une suite de lettres : « ay, bee, ___, dee » ;
+ *   - « B » : « bee » (« H » seul : « Aitch. », voir `SINGLE_LETTER_NAMES`) ;
+ *   - « F-A-T-O-U », un prénom épelé : « eff, ei, tee, oh, you » ;
+ *   - « A, B, ___, D », une suite de lettres : « ei, bee, blank, dee » ;
  *   - « B is for ___. » : « bee is for ___. ».
  * Seules les MAJUSCULES comptent : « a », sans majuscule, est l'article de « a dog ».
  */
 export function englishLetters(text: string): string | null {
   if (typeof text !== "string") return null;
   const t = text.normalize("NFC").trim();
-  if (/^[A-Z]$/.test(t)) return LETTER_NAMES[t];
+  if (/^[A-Z]$/.test(t)) return SINGLE_LETTER_NAMES[t] ?? LETTER_NAMES[t];
   if (/^[A-Z](?:-[A-Z])+$/.test(t)) return t.split("-").map((letter) => LETTER_NAMES[letter]).join(", ");
-  if (/^(?:[A-Z]|_{3})(?:, (?:[A-Z]|_{3}))+$/.test(t)) return t.split(", ").map((part) => LETTER_NAMES[part] ?? part).join(", ");
+  if (/^(?:[A-Z]|_{3})(?:, (?:[A-Z]|_{3}))+$/.test(t)) {
+    return t.split(", ").map((part) => (part === "___" ? SPOKEN_GAP : LETTER_NAMES[part])).join(", ");
+  }
   const sentence = /^([A-Z]) is for (.+)$/.exec(t);
   return sentence ? `${LETTER_NAMES[sentence[1]]} is for ${sentence[2]}` : null;
 }
