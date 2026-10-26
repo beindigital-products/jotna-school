@@ -224,12 +224,16 @@ const WRITE_TABLE: readonly Row[] = [
   ["Elles ___ fini leur travail.", "ont"],
   ["Le soir, ___ rentre à la maison.", "on"],
 ];
+// Le choix nommé dans l'énoncé : deux mots, dont la réponse. Sans lui, d'autres mots conviennent (« était », « il »).
+const WRITE_CHOICES: Record<string, string> = { est: "est ou et", et: "est ou et", on: "on ou ont", ont: "on ou ont" };
 const checkWrite: Check = (exo) => {
-  const match = /^Écris le mot qui manque dans « (.+) »$/u.exec(exo.prompt);
+  const match = /^Écris le mot qui manque \(([^()]+)\) dans « (.+) »$/u.exec(exo.prompt);
   if (!match) return `énoncé inconnu : ${exo.prompt}`;
-  const row = WRITE_TABLE.find(([text]) => text === match[1]);
-  if (!row) return `phrase inconnue : ${match[1]}`;
+  const row = WRITE_TABLE.find(([text]) => text === match[2]);
+  if (!row) return `phrase inconnue : ${match[2]}`;
   return all(
+    ok(match[1] === WRITE_CHOICES[row[1]], `le choix nommé est « ${match[1]} » au lieu de « ${WRITE_CHOICES[row[1]]} »`),
+    ok(match[1].split(" ou ").includes(row[1]), `la réponse « ${row[1]} » n'est pas dans le choix « ${match[1]} »`),
     ok(same(acceptedOf(exo), [row[1]]), `réponses admises : ${acceptedOf(exo).join(" | ")}`),
     ok(exo.answerKey === row[1], exo.answerKey),
     ok(!["a", "à"].includes(row[1]), "a et à ne s'écrivent pas au clavier"),
