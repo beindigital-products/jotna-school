@@ -99,7 +99,7 @@ const WRITES: readonly EnWrite[] = NUMBERS.map((n) => {
   const word = toWords(n);
   return {
     prompt: `Écris ${n} en lettres, en anglais.`,
-    accepted: [...new Set([word, word.replace("-", " "), ...(n === 100 ? ["a hundred"] : [])])],
+    accepted: [...new Set([word, word.replace(/-/g, " "), ...(n === 100 ? ["a hundred"] : [])])],
     hints: numberHints(n, "Une dizaine s'écrit avec un mot qui finit par -ty, et cent s'écrit en deux mots."),
   };
 });

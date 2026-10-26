@@ -78,7 +78,7 @@ const CHECKS: Record<string, Check> = {
     return [
       ...isTrue("dessin inconnu", word !== undefined),
       ...isTrue("un seul trou", shown.split("___").length === 2),
-      ...eq("le mot complété", shown.replace("___", answer), word),
+      ...eq("le mot complété", shown.replace(/___/g, answer), word),
       ...isTrue("trois lettres différentes", options.length === 3 && new Set(options).size === 3),
       ...isTrue("un mauvais choix est la bonne lettre", options.filter((o) => o === answer).length === 1),
       ...isTrue("le trou est la première lettre", !shown.startsWith("___")),

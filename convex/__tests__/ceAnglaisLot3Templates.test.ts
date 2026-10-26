@@ -124,7 +124,7 @@ const PLURAL_CHECKS: Record<string, Check> = {
   ],
   "ce1-en-pl-phrase": (exo) => {
     const sequence = sequenceOf(exo);
-    const noun = sequence[2]?.replace(".", "");
+    const noun = sequence[2]?.replace(/\./g, "");
     const known = Object.values(PLURAL).map((word) => word.plural);
     return [...eq("les deux premiers mots", sequence.slice(0, 2), ["I", "like"]), ...isTrue(`${noun} n'est pas un pluriel de la liste`, known.includes(noun)), ...isTrue("le point", sequence[2]?.endsWith(".") === true)];
   },
@@ -196,7 +196,7 @@ const POSS_CHECKS: Record<string, Check> = {
   ],
   "ce1-en-poss-phrase": (exo) => {
     const sequence = sequenceOf(exo);
-    const noun = sequence[3]?.replace(".", "");
+    const noun = sequence[3]?.replace(/\./g, "");
     return [
       ...eq("This is", sequence.slice(0, 2), ["This", "is"]),
       ...isTrue(`${sequence[2]} n'est pas un possessif`, Object.values(POSSESSIVE_OF).includes(sequence[2])),
@@ -249,7 +249,7 @@ const NUM_CHECKS: Record<string, Check> = {
     const accepted = acceptedOf(exo);
     return [
       ...isTrue("la bonne écriture n'est pas la première", accepted[0] === WORDS[n]),
-      ...isTrue("une écriture admise est fausse", accepted.every((a) => a === WORDS[n] || a === WORDS[n].replace("-", " ") || (n === 100 && a === "a hundred"))),
+      ...isTrue("une écriture admise est fausse", accepted.every((a) => a === WORDS[n] || a === WORDS[n].replace(/-/g, " ") || (n === 100 && a === "a hundred"))),
     ];
   },
   "ce2-en-num-relier": (exo) => [
@@ -315,7 +315,7 @@ describe.each(GROUPS)("les gabarits du lot 3 ($klass)", ({ klass, checks, damage
       for (const d of draws) {
         const exo = make(kind, klass, d);
         const problems = checks[kind](exo);
-        if (problems.length > 0) failures.push(`${kind} niveau ${d.level} : ${exo.prompt.replace("\n", " ")} → ${problems.join(" ; ")}`);
+        if (problems.length > 0) failures.push(`${kind} niveau ${d.level} : ${exo.prompt.replace(/\n/g, " ")} → ${problems.join(" ; ")}`);
       }
     }
     expect([...new Set(failures)].slice(0, 12)).toEqual([]);
