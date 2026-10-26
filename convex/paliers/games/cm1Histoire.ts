@@ -96,7 +96,24 @@ const PRE_DISCOVERIES: Pool = {
       id: "chasse",
       q: ["Avant de cultiver, comment les hommes se procuraient-ils leur nourriture ?", "Quelles activités permettaient de se nourrir sans cultiver ni élever ?", "Comment vivaient les hommes qui poursuivaient le gibier et ramassaient des fruits ?"],
       a: "Chasse et cueillette",
-      also: ["la chasse et la cueillette"],
+      // Sans cultiver ni élever, on pêche aussi : la pêche s'ajoute, et l'ordre des mots ne compte pas.
+      also: [
+        "la chasse et la cueillette",
+        "cueillette et chasse",
+        "la cueillette et la chasse",
+        "chasse, pêche et cueillette",
+        "la chasse, la pêche et la cueillette",
+        "chasse, cueillette et pêche",
+        "la chasse, la cueillette et la pêche",
+        "pêche, chasse et cueillette",
+        "la pêche, la chasse et la cueillette",
+        "pêche, cueillette et chasse",
+        "la pêche, la cueillette et la chasse",
+        "cueillette, chasse et pêche",
+        "la cueillette, la chasse et la pêche",
+        "cueillette, pêche et chasse",
+        "la cueillette, la pêche et la chasse",
+      ],
       ga: "la chasse et la cueillette",
       s: ["Poursuivre le gibier et ramasser des fruits, c'est ___.", "Avant de cultiver, les hommes pratiquaient ___."],
       hint: "Ils suivaient les animaux sauvages et ramassaient des fruits.",
@@ -550,7 +567,7 @@ const RES_YEAR: Pool = {
       q: ["En quelle année Lat Dior est-il mort à Dékheulé ?", "Lat Dior est mort à Dékheulé, mais en quelle année ?"],
       a: "1886",
       s: ["Lat Dior est mort à Dékheulé en ___.", "En ___, Lat Dior est mort à Dékheulé."],
-      hint: "C'est peu avant la fin du XIXe siècle.",
+      hint: "C'est une quinzaine d'années avant la fin du XIXe siècle.",
     },
   ],
   extras: ["1895", "1902", "1960"],
@@ -570,12 +587,12 @@ const RES_TROU = gapRows("hi-cm1-resistants", RES_POOLS);
 const RES_ECRIRE = writeRows("hi-cm1-resistants", RES_POOLS);
 
 const RES_RELIER: readonly LinkRow[] = [
-  link("Relie chaque résistant à son royaume.", [["Lat Dior", "Cayor"], ["Alboury Ndiaye", "Djolof"], ["El Hadji Oumar Tall", "Fouta"]]),
+  link("Relie chaque résistant à son royaume ou à sa région.", [["Lat Dior", "Cayor"], ["Alboury Ndiaye", "Djolof"], ["El Hadji Oumar Tall", "Fouta"]]),
   link("Relie chaque résistant à son titre ou à son peuple.", [["Lat Dior", "Damel du Cayor"], ["Alboury Ndiaye", "Bourba du Djolof"], ["El Hadji Oumar Tall", "Chef religieux toucouleur"]]),
   link("Relie chaque résistant à ce qu'il a fait.", [["Lat Dior", "A défendu le Cayor"], ["El Hadji Oumar Tall", "A fondé un empire sur le fleuve"], ["Maba Diakhou Bâ", "A résisté dans le Rip"], ["Alboury Ndiaye", "A dirigé le Djolof"]]),
   link("Relie chaque résistant à sa région.", [["Lat Dior", "Cayor"], ["Maba Diakhou Bâ", "Rip"], ["Alboury Ndiaye", "Djolof"]]),
   link("Relie chaque résistant à son titre.", [["Lat Dior", "Damel"], ["Alboury Ndiaye", "Bourba"], ["El Hadji Oumar Tall", "Chef religieux"]]),
-  link("Relie chaque royaume à son résistant.", [["Cayor", "Lat Dior"], ["Djolof", "Alboury Ndiaye"], ["Fouta", "El Hadji Oumar Tall"], ["Rip", "Maba Diakhou Bâ"]]),
+  link("Relie chaque royaume ou région à son résistant.", [["Cayor", "Lat Dior"], ["Djolof", "Alboury Ndiaye"], ["Fouta", "El Hadji Oumar Tall"], ["Rip", "Maba Diakhou Bâ"]]),
 ];
 
 const RES_GLISSER = sortRows(

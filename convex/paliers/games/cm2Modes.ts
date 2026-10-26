@@ -310,7 +310,7 @@ function orderRow(cell: Cell, index: number): OrderRow {
   const que = index % 2 === 1;
   const form = (person: number) => (que ? subjunctive(verb, person) : conditional(verb, person));
   return ordr(
-    `Range ces formes du verbe ${verb.inf} ${que ? "au subjonctif présent" : "au conditionnel présent"} selon la personne, de je à ils.`,
+    `Range ces formes du verbe ${verb.inf} ${que ? "au subjonctif présent" : "au conditionnel présent"} selon la personne (je, tu, il, nous, vous, ils).`,
     set.map((person) => pronounTile(person, form(person), que)),
     ORDER_HINTS,
     fact(verb, `ordre-${que ? "subjonctif" : "conditionnel"}`, set[0]),

@@ -632,7 +632,7 @@ const OWNER_KEYS = Object.keys(OWNERS);
 const OWNER_HINTS = hints(
   "Le petit mot dit à qui appartient la chose.",
   "Celui qui parle dit « moi », celui à qui on parle dit « toi ».",
-  "Quand plusieurs personnes possèdent la chose, la fin du mot change.",
+  "Le petit mot n'est pas le même pour une seule personne et pour plusieurs personnes.",
 );
 /** Trois possesseurs différents par ligne, un nom différent à chaque tour. */
 export const DET_LINK_ROWS: readonly LinkRow[] = combinations(OWNER_KEYS, 3)

@@ -248,7 +248,7 @@ const FOLD_PAIRS: readonly (readonly [string, string])[] = [
 export function makeCe1FoldLink(ctx: GameContext): GeneratedGame {
   return pickPairs(ctx, "ce1-pli-relier", "relier un mot du pliage à son sens", "Relie chaque mot à ce qu'il veut dire.", FOLD_PAIRS, [
     "Lis d'abord chaque explication, puis cherche le mot qui lui va.",
-    "Un mot est un outil, un autre une matière, un autre un trait.",
+    "Pense au geste de chaque mot : couper, coller, façonner ou plier.",
     "Commence par la paire dont tu es le plus sûr.",
   ]);
 }

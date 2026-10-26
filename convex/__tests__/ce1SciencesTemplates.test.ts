@@ -231,7 +231,7 @@ const CLEAN_TILES = ["Vent", "Pluie", "Arbres", "Herbe", "Nuage"];
 const BREATH_LINK_T: Record<string, string> = {
   Poumons: "L'homme respire avec eux",
   Branchies: "Le poisson respire avec elles",
-  Nez: "L'air y entre quand on respire",
+  Nez: "Il est au milieu du visage, l'air y entre",
   Fumée: "Elle rend l'air pollué",
   "Air pur": "Il fait du bien quand on respire",
 };

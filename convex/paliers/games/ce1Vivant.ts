@@ -441,12 +441,12 @@ const WITH_GILLS = BREATHERS.filter((breather) => breather.organ === "Branchies"
 
 const ORGAN_HINTS: Record<Breather["organ"], Hints> = {
   Poumons: [
-    "Pense à l'endroit où vit cet animal.",
+    "Pense à l'endroit où il vit.",
     "Les animaux qui vivent sur la terre respirent l'air qui les entoure.",
     "Cet organe se gonfle quand on prend de l'air.",
   ],
   Branchies: [
-    "Pense à l'endroit où vit cet animal.",
+    "Pense à l'endroit où il vit.",
     "Un animal qui vit dans l'eau n'a pas de nez comme le nôtre.",
     "De fines lames de chaque côté de la tête prennent l'air qui est dans l'eau.",
   ],
@@ -601,7 +601,7 @@ export function makeCe1AirSort(ctx: GameContext): GeneratedGame {
 const BREATH_PAIRS: readonly (readonly [string, string])[] = [
   ["Poumons", "L'homme respire avec eux"],
   ["Branchies", "Le poisson respire avec elles"],
-  ["Nez", "L'air y entre quand on respire"],
+  ["Nez", "Il est au milieu du visage, l'air y entre"],
   ["Fumée", "Elle rend l'air pollué"],
   ["Air pur", "Il fait du bien quand on respire"],
 ];
@@ -610,7 +610,7 @@ const BREATH_PAIRS: readonly (readonly [string, string])[] = [
 export function makeCe1BreathLink(ctx: GameContext): GeneratedGame {
   return pickPairs(ctx, "ce1-resp-relier", "relier les mots de la respiration", "Relie chaque mot à ce qu'il veut dire.", BREATH_PAIRS, [
     "Lis d'abord chaque explication, puis cherche le mot qui lui va.",
-    "Un mot parle d'un animal, un autre du corps, un autre de l'air.",
+    "Demande-toi si l'explication parle d'un animal, du corps ou de l'air.",
     "Commence par la paire dont tu es le plus sûr.",
   ]);
 }
@@ -741,7 +741,7 @@ const MALARIA_PROTECT: readonly Fact[] = [
     question: "Que met-on au-dessus du lit pour se protéger des moustiques ?",
     answer: "Moustiquaire",
     wrong: ["Couverture", "Lampe"],
-    hints: ["C'est un grand voile à mailles fines.", "Il empêche les insectes de passer.", "On le règle avant de se coucher."],
+    hints: ["C'est un grand voile à mailles fines.", "Il empêche les insectes de passer.", "On l'installe avant de se coucher."],
   },
   {
     question: "Que faut-il faire des eaux stagnantes ?",
@@ -919,7 +919,7 @@ const MALARIA_PAIRS: readonly (readonly [string, string])[] = [
 export function makeCe1MalariaLink(ctx: GameContext): GeneratedGame {
   return pickPairs(ctx, "ce1-palu-relier", "relier les mots du paludisme", "Relie chaque mot à ce qu'il veut dire.", MALARIA_PAIRS, [
     "Lis d'abord chaque explication, puis cherche le mot qui lui va.",
-    "Un mot parle d'un lieu, un autre d'un objet, un autre d'un animal ou de l'eau.",
+    "Demande-toi si l'explication parle d'un lieu, d'un objet, d'un animal ou de l'eau.",
     "Commence par la paire dont tu es le plus sûr.",
   ]);
 }

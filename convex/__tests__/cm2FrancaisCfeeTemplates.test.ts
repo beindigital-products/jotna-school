@@ -378,14 +378,21 @@ const checkConjugate: Check = (exo) => {
   if (!m || !TABLE[m[1]]) return `énoncé inconnu : ${exo.prompt}`;
   const tense = TENSE_OF[m[2]];
   if (tense === "pc" && AUX_ETRE.includes(m[1])) return `${m[1]} se conjugue avec être au passé composé`;
+  // Le deuxième indice dit « le début reste presque le même, la fin change » : faux pour avoir (ai, as, a, avons), aller (vais, vas, va, allons), être (suis, es, est), et faux au
+  // passé composé, où c'est l'auxiliaire qui change (relecture du 26 octobre 2026). Le début commun des six formes dit si l'indice est vrai.
+  const forms = tense === "pc" ? [] : TABLE[m[1]][tense];
+  let start = 0;
+  while (forms.length > 0 && start < forms[0].length && forms.every((form) => form[start] === forms[0][start])) start++;
+  const claimsSameStart = /reste presque le même/u.test(exo.hints[1]);
   return all(
+    ok(claimsSameStart === (tense !== "pc" && start >= 2), `${exo.prompt} : l'indice « ${exo.hints[1]} » ${claimsSameStart ? "dit que le début ne change pas" : "dit que le début change"} alors que le début commun des formes est « ${forms[0]?.slice(0, start) ?? ""} »`),
     ok(acceptedOf(exo).length === 1, "une seule écriture attendue"),
     ok(acceptedOf(exo)[0] === formOf(m[1], tense, PRONOUN_INDEX[m[3]]), `${exo.prompt} : ${acceptedOf(exo)[0]} au lieu de ${formOf(m[1], tense, PRONOUN_INDEX[m[3]])}`),
   );
 };
 
 const checkOrder: Check = (exo) => {
-  const m = /^Range ces formes du verbe (\p{L}+) (au présent|à l'imparfait|au futur simple|au passé composé) selon la personne, de je à ils\.$/u.exec(exo.prompt);
+  const m = /^Range ces formes du verbe (\p{L}+) (au présent|à l'imparfait|au futur simple|au passé composé) selon la personne \(je, tu, il, nous, vous, ils\)\.$/u.exec(exo.prompt);
   if (!m || !TABLE[m[1]]) return `énoncé inconnu : ${exo.prompt}`;
   const tense = TENSE_OF[m[2]];
   if (tense === "pc" && AUX_ETRE.includes(m[1])) return `${m[1]} se conjugue avec être au passé composé`;

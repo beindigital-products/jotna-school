@@ -306,7 +306,8 @@ const HEALTH_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
     // Question ouverte : tout objet qui coupe ou qui pique la peau est juste, le rasoir et l'aiguille aussi.
     wr("Quel objet ne faut-il jamais partager pour éviter le VIH ? Écris le mot.", ["lame", "seringue", "une lame", "une seringue", "rasoir", "lame de rasoir", "aiguille"], hints("Pense à un objet qui coupe ou qui pique.", "Il peut avoir du sang dessus.", "Les infirmiers et les coiffeurs s'en servent."), "vih:lame"),
     wr("Que ne faut-il pas toucher d'une autre personne pour éviter le VIH ? Écris le mot.", ["sang", "le sang"], hints("Pense à ce qui coule quand on se blesse.", "C'est un liquide rouge.", "Il faut appeler un adulte."), "vih:sang"),
-    wr("Comment s'appelle la maladie transmise par les moustiques ? Écris le mot.", ["paludisme", "le paludisme", "palu"], hints("Elle donne de la fièvre.", "Le mot commence par la lettre p.", "On s'en protège avec une moustiquaire."), "palu:nom"),
+    // « La maladie des moustiques » seule admet aussi la dengue et la fièvre jaune : l'anophèle, appris au CE1, désigne le paludisme.
+    wr("Comment s'appelle la maladie que donne la piqûre du moustique anophèle ? Écris le mot.", ["paludisme", "le paludisme", "palu", "le palu", "malaria", "la malaria"], hints("Elle donne de la fièvre.", "Le mot commence par la lettre p.", "On s'en protège avec une moustiquaire."), "palu:nom"),
     // « Quel liquide », pas « que faut-il vider » : sinon « les pneus », « les pots » ou « les flaques » sont justes et refusés.
     wr("Quel liquide faut-il vider des vieux pots et des pneus pour éviter les moustiques ? Écris le mot.", ["eau", "l'eau", "eau stagnante", "l'eau stagnante"], hints("Pense à ce qui reste au fond après la pluie.", "Les moustiques y pondent.", "On la boit aussi."), "palu:eau"),
     wr("Le soir, on porte des habits ___ pour éviter les piqûres. Écris le mot.", ["longs", "long"], hints("Pense à couvrir les bras et les jambes.", "Le contraire de courts.", "Les moustiques piquent la peau découverte."), "palu:habits"),
@@ -386,7 +387,7 @@ const PROBLEM_LINK_ROWS: readonly LinkRow[] = combinations(PROBLEM_POOL, 3)
 }));
 
 const NATURE_PROBLEMS = ["Sachets plastiques", "Coupe des arbres", "Feux de brousse", "Déchets dans la rue"] as const;
-const PEOPLE_PROBLEMS = ["Quartier trop peuplé", "Manque d'eau", "Peu de place pour vivre"] as const;
+const PEOPLE_PROBLEMS = ["Quartier trop peuplé", "Pas assez d'eau pour tous", "Peu de place pour vivre"] as const;
 const PROBLEM_SORT_ROWS: readonly SortRow[] = sortRows(
   "Glisse chaque problème dans la bonne case.",
   ["Environnement", "Population"],

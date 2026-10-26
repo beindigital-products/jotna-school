@@ -808,7 +808,7 @@ export function makeCe2ProgressGap(ctx: GameContext): GeneratedGame {
 
 const PROGRESS_WRITE_ROWS: readonly WriteRow[] = [
   { prompt: "Avant l'électricité, une lampe brûlait du ___. Écris le mot.", accepted: ["pétrole", "petrole"], hints: hints("Lis bien la phrase.", "On remplissait la lampe de ce liquide.", "Le mot commence par P.") },
-  { prompt: "Un téléphone à emporter partout est un téléphone ___. Écris le mot.", accepted: ["portable"], hints: hints("Lis bien la phrase.", "On peut l'emporter partout avec soi.", "Le mot commence par P.") },
+  { prompt: "Un téléphone à emporter partout est un téléphone ___. Écris le mot.", accepted: ["portable", "mobile"], hints: hints("Lis bien la phrase.", "On peut l'emporter partout avec soi.", "Le mot commence par P.") },
   { prompt: "Un message écrit sur du papier et glissé dans une enveloppe est une ___. Écris le mot.", accepted: ["lettre", "une lettre"], hints: hints("Lis bien la phrase.", "On la glisse dans une enveloppe.", "Le mot commence par L.") },
   { prompt: "Pour cuire le riz sans gaz, on allume un feu avec du ___. Écris le mot.", accepted: ["bois", "charbon", "charbon de bois"], hints: hints("Lis bien la phrase.", "On le ramasse dans la brousse.", "Le mot commence par B.") },
   { prompt: "Pour aller loin sur la route, on prend un car ___. Écris le mot.", accepted: ["rapide"], hints: hints("Lis bien la phrase.", "Ce car est peint de couleurs vives.", "Le mot commence par R.") },

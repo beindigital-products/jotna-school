@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { auditExercise } from "../paliers/exerciseAudit";
 import { GAME_KINDS, generateGames, regenerateGame, type GameKind } from "../paliers/games";
+import { SCENES } from "../paliers/games/gestes";
 import { makeContext, type GameLevel } from "../paliers/games/shared";
 import { topicUsesModel } from "../paliers/pregen";
 import { allProgrammeEntries } from "../programme";
@@ -52,8 +53,8 @@ type Row = [string, string, string, string, string, string, string, string];
 const TABLE: Row[] = [
   ["route", "traverser", "Tu veux traverser la route.", "Tu veux traverser la route", "Je regarde à gauche et à droite avant de traverser.", "Je traverse en courant sans regarder.", "Je traverse la route en jouant au ballon.", "Je traverse les yeux fermés."],
   ["route", "traverser", "Il y a un passage pour piétons devant toi.", "Un passage pour piétons est devant toi", "Je traverse sur le passage pour piétons.", "Je traverse loin du passage, entre les voitures.", "Je marche au milieu de la route.", "Je joue au ballon au milieu de la route."],
-  ["route", "stop", "Ton père conduit. Il voit le panneau STOP.", "Papa voit le panneau STOP", "Il s'arrête au panneau STOP.", "Il roule plus vite au panneau STOP.", "Il klaxonne et passe sans s'arrêter.", "Il ferme les yeux et continue."],
-  ["route", "interdit", "Ton oncle conduit. Il voit le panneau sens interdit.", "Oncle voit un sens interdit", "Il n'entre pas dans la rue.", "Il entre dans la rue en sens interdit.", "Il entre en sens interdit en klaxonnant.", "Il fonce en sens interdit à toute vitesse."],
+  ["route", "stop", "Ton père conduit. Il voit le panneau STOP.", "Papa voit le panneau STOP", "Papa s'arrête au panneau STOP.", "Papa roule plus vite au panneau STOP.", "Papa klaxonne et passe sans s'arrêter.", "Papa ferme les yeux et continue."],
+  ["route", "interdit", "Ton oncle conduit. Il voit le panneau sens interdit.", "Oncle voit un sens interdit", "Mon oncle n'entre pas dans la rue.", "Mon oncle entre dans la rue en sens interdit.", "Mon oncle entre en sens interdit en klaxonnant.", "Mon oncle fonce en sens interdit à toute vitesse."],
   ["route", "voiture", "Tu montes dans la voiture de ta tante.", "Tu montes en voiture", "J'attache ma ceinture de sécurité.", "Je laisse ma ceinture détachée.", "Je me mets debout sur le siège.", "Je penche la tête dehors par la fenêtre."],
   ["route", "moto", "Ton grand frère va t'emmener à moto.", "Tu montes sur une moto", "Je mets un casque sur ma tête.", "Je monte sans casque.", "Je monte à moto avec un chapeau de paille.", "Je monte à moto avec mon cartable sur la tête."],
   ["route", "car", "Le car de l'école arrive devant toi.", "Le car arrive", "J'attends que le car soit arrêté pour monter.", "Je cours vers le car qui roule.", "Je monte avant que le car s'arrête.", "Je pousse les autres pour monter."],
@@ -81,7 +82,7 @@ const TABLE: Row[] = [
   ["genre", "maison", "À la maison, il faut balayer la cour.", "Il faut balayer la cour", "Mon frère et ma sœur balaient la cour ensemble.", "Seules les filles balaient la cour.", "Seuls les garçons balaient la cour.", "Personne ne balaie la cour."],
   ["genre", "chef", "Le maître cherche un chef de classe.", "Le maître cherche un chef", "Une fille ou un garçon peut être chef de classe.", "Seul un garçon peut être chef de classe.", "Seule une fille peut être chef de classe.", "Seul le plus grand peut être chef de classe."],
   ["genre", "maison", "Il faut mettre la table pour le repas.", "Il faut mettre la table pour le repas", "Mon frère et ma sœur mettent la table ensemble.", "Seule ma sœur met la table.", "Seul mon frère met la table.", "Personne n'aide à mettre la table."],
-  ["genre", "partage", "Une fille et un garçon veulent le même livre.", "Une fille et un garçon veulent le même livre", "Ils lisent le livre ensemble.", "Le garçon prend le livre parce qu'il est un garçon.", "La fille prend le livre parce qu'elle est une fille.", "Ils se battent pour le livre."],
+  ["genre", "partage", "Une fille et un garçon veulent le même livre.", "Une fille et un garçon veulent le même livre", "La fille et le garçon lisent le livre ensemble.", "Le garçon prend le livre parce qu'il est un garçon.", "La fille prend le livre parce qu'elle est une fille.", "La fille et le garçon se battent pour le livre."],
   ["genre", "consoler", "Un garçon pleure parce qu'il est tombé.", "Un garçon pleure", "Je le console comme n'importe quel enfant.", "Je lui dis que les garçons ne pleurent jamais.", "Je ris de lui devant tout le monde.", "Je lui dis de partir et de pleurer ailleurs."],
   ["paix", "parole", "Un camarade te pousse sans le faire exprès.", "Un camarade te pousse", "Je lui dis calmement que ça m'a fait mal.", "Je le pousse très fort.", "Je lui donne un coup de poing.", "Je lui crie des gros mots."],
   ["paix", "partage", "Deux enfants veulent le même ballon.", "Deux enfants veulent le même ballon", "Je propose de jouer chacun à notre tour.", "Je prends le ballon de force.", "Je frappe mon camarade.", "Je cache le ballon."],
@@ -331,6 +332,16 @@ describe("la table elle-même est saine", () => {
     const acts = TABLE.flatMap((row) => [row[4], row[5], row[6], row[7]]);
     expect(new Set(acts).size).toBe(acts.length);
     for (const wrong of ALL_WRONG) expect(ALL_RIGHT.has(wrong), wrong).toBe(false);
+  });
+
+  it("donne un sujet à chaque geste : « Il roule plus vite » glissé seul dans une case n'avait pas de sujet", () => {
+    for (const scene of SCENES.filter((entry) => entry.topic === "route")) {
+      for (const act of [scene.right, ...scene.wrong]) expect(act, act).not.toMatch(/^(il|elle|ils|elles|on)\s/iu);
+    }
+    for (const d of draws.filter((_, i) => i % 4 === 0)) {
+      const sort = make("geste-glisser", "route", d) as unknown as Exo;
+      for (const item of itemsOf(sort)) expect(item.text, item.text).not.toMatch(/^(il|elle|ils|elles|on)\s/iu);
+    }
   });
 
   it("n'attribue jamais une tâche à un sexe dans un bon geste, et ne range jamais en cases « Filles » et « Garçons »", () => {

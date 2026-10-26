@@ -333,7 +333,8 @@ const ANTHEM_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
     wr("Avec quoi accompagne-t-on un chant, en plus des gestes ? Écris le mot.", ["instruments", "instrument", "un instrument"], hints("Pense à ce qui fait de la musique.", "Il y en a de toutes sortes.", "Le mot commence par la lettre i."), "hymne:accompagner"),
     wr("Comment appelle-t-on les mots d'un chant ? Écris le mot.", ["paroles", "les paroles"], hints("Pense à ce qu'on chante.", "Ce sont les mots du chant.", "Le mot commence par la lettre p."), "hymne:composer"),
     wr("Quel verbe veut dire inventer un petit chant ? Écris le verbe.", ["composer"], hints("Pense à ce qu'on fait avec des mots et des notes.", "On l'invente.", "Le verbe commence par la lettre c."), "hymne:composer"),
-    wr("Que fait-on ensemble au lever des couleurs ? Écris le verbe.", ["chanter"], hints("Pense à ce qu'on fait avec sa voix.", "On le fait en chœur.", "Le verbe commence par la lettre c."), "hymne:chanter"),
+    // « Que fait-on ensemble au lever des couleurs ? » admettait aussi saluer, se lever, se taire : la voix est dans l'énoncé.
+    wr("Que fait-on avec sa voix, tous ensemble, au lever des couleurs ? Écris le verbe.", ["chanter", "chanter l'hymne", "chanter ensemble"], hints("Pense à la musique de la cérémonie.", "On le fait en chœur.", "Le verbe commence par la lettre c."), "hymne:chanter"),
   ],
   ANTHEM_FACTS,
 );
@@ -469,7 +470,7 @@ const STAGE_WRITE_ROWS: readonly WriteRow[] = inFactOrder(
     wr("Qui vend des légumes dans la scène du marché ? Écris le mot.", ["vendeur", "vendeuse", "marchand"], hints("Pense à celui qui propose sa marchandise.", "Il annonce les prix.", "Le mot commence par la lettre v."), "rôle:vendeur"),
     wr("Qui soigne les malades dans la scène du dispensaire ? Écris le mot.", ["infirmier", "infirmière", "médecin"], hints("Pense à celui qui travaille en blouse.", "Il examine les malades.", "Le mot commence par la lettre i."), "rôle:infirmier"),
     wr("Qui prend les mesures d'un client pour lui coudre un boubou ? Écris le mot.", ["tailleur", "le tailleur"], hints("Pense à l'artisan qui coud.", "Il a un mètre ruban.", "Le mot commence par la lettre t."), "scène:tailleur"),
-    wr("Comment appelle-t-on les mots que dit chaque acteur ? Écris le mot.", ["répliques", "réplique", "texte"], hints("Pense à ce qu'on apprend par cœur.", "Ce sont ses phrases.", "Le mot commence par la lettre r."), "mot:saynète"),
+    wr("Comment appelle-t-on les mots que dit chaque acteur ? Écris le mot.", ["répliques", "réplique", "les répliques", "texte", "le texte", "dialogue", "le dialogue", "dialogues", "les dialogues", "paroles", "les paroles"], hints("Pense à ce qu'on apprend par cœur.", "Ce sont ses phrases.", "Le mot du théâtre commence par la lettre r."), "mot:saynète"),
   ],
   STAGE_FACTS,
 );

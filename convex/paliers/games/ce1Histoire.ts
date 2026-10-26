@@ -313,7 +313,11 @@ export function makeCe1PastLinks(ctx: GameContext): GeneratedGame {
 /** Les couples de besoins que le glissé peut montrer : deux besoins parmi cinq. */
 const NEED_PAIRS = NEEDS.flatMap((first, i) => NEEDS.slice(i + 1).map((second) => [first, second] as const));
 
-/** « Pour avoir de la lumière et pour voyager sur une longue route, glisse chaque chose dans la bonne case. » */
+/**
+ * « Pour avoir de la lumière et pour voyager sur une longue route, glisse chaque chose dans sa case, la plus ancienne de chaque
+ * besoin en Autrefois. » Le critère est dit : la charrette roule encore au Sénégal, un enfant qui la voit chaque jour pouvait la ranger
+ * « Aujourd'hui » (réponse défendable refusée). Ici « Autrefois » veut dire « la plus ancienne des deux choses du besoin ».
+ */
 export function makeCe1PastSort(ctx: GameContext): GeneratedGame {
   return sortGame(ctx, "ce1-autrefois-glisser", "ranger des choses selon leur époque", () => {
     const [first, second] = pickFresh(ctx, windowFor(NEED_PAIRS, ctx.level, 1), (candidate) => `ce1-autrefois-glisser:${candidate[0].need}:${candidate[1].need}`);
@@ -322,7 +326,7 @@ export function makeCe1PastSort(ctx: GameContext): GeneratedGame {
       { text: need.now, zone: "Aujourd'hui" },
     ]);
     return {
-      prompt: `Pour ${first.need} et pour ${second.need}, glisse chaque chose dans la bonne case.`,
+      prompt: `Pour ${first.need} et pour ${second.need}, glisse chaque chose dans sa case, la plus ancienne de chaque besoin en Autrefois.`,
       zones: ["Autrefois", "Aujourd'hui"],
       items,
       hints: [

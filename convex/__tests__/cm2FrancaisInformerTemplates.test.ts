@@ -113,6 +113,8 @@ const checkOrder: Check = (exo) => {
   return all(
     ok(doc.question === "Remets ces phrases dans le même ordre que le texte.", `énoncé inconnu : ${doc.question}`),
     ok(sequence.length === 4 && sequence.every((tile, i) => tile === doc.sentences[i + 1]), `les phrases ne suivent pas le texte : ${sequence.join(" | ")}`),
+    // La première phrase reste en place, elle n'est pas dans la liste : le premier indice ne la cherche pas.
+    ok(!sequence.includes(doc.sentences[0]) && !/annonce le sujet/u.test(exo.hints[0]), `le premier indice cherche une phrase absente de la liste : ${exo.hints[0]}`),
   );
 };
 
@@ -152,8 +154,11 @@ const checkSort: Check = (exo) => {
 
 type Relation = "cause" | "conséquence" | "opposition";
 const CAUSE = new Set(["car", "parce que"]);
-const EFFECT = new Set(["donc", "alors", "c'est pourquoi", "ainsi"]);
-const OPPOSITION = new Set(["mais", "pourtant"]);
+// Les mots d'une phrase à écrire : « par conséquent » et « de ce fait » disent la suite, « cependant » et « toutefois » l'opposition, comme les mots du choix multiple.
+const EFFECT = new Set(["donc", "alors", "c'est pourquoi", "ainsi", "par conséquent", "de ce fait"]);
+const OPPOSITION = new Set(["mais", "pourtant", "cependant", "toutefois"]);
+/** Les mots que le choix multiple propose : les autres ne servent que de réponse écrite. */
+const CHOICE_WORDS = new Set(["car", "parce que", "donc", "alors", "c'est pourquoi", "ainsi", "mais", "pourtant"]);
 const relationOf = (word: string): Relation | null => (CAUSE.has(word) ? "cause" : EFFECT.has(word) ? "conséquence" : OPPOSITION.has(word) ? "opposition" : null);
 const CAUSAL = [
   ["il a beaucoup plu", "les routes sont inondées"], ["fatou a faim", "elle mange une mangue"], ["le taxi est en panne", "nous allons à pied au village"], ["moussa est malade", "il reste à la maison"],
@@ -187,6 +192,7 @@ const checkLiaison: Check = (exo) => {
     ok(!/^(Elle|Il) /u.test(m[1]) || relation !== "cause", `un pronom avant son nom : ${textOf(exo)}`),
     ok(relationOf(blank.answer) === relation, `${textOf(exo)} : ${blank.answer} n'exprime pas ${relation}`),
     ok((m[2] === ",") === (relation !== "cause"), `virgule mal placée : ${textOf(exo)}`),
+    ...blank.options.map((option) => ok(CHOICE_WORDS.has(option), `un choix hors de la liste du choix multiple : ${option}`)),
     ...wrong.map((option) => ok(relationOf(option) !== null && relationOf(option) !== relation, `un mauvais choix exprime le même rapport ou est inconnu : ${option}`)),
     ok(new Set(wrong.map((option) => relationOf(option))).size === 2, "les deux mauvais choix viennent des deux autres rapports"),
   );

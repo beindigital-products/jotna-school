@@ -51,6 +51,8 @@ const wordsOf = (text: string): string[] => text.toLowerCase().replace(/’/g, "
 const capitalise = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 
 type Check = (exo: Exo) => string | null;
+/** « La forme finie du verbe » se lit « l'action finie » pour un élève de CE2 : on dit « avoir conjugué » et « participe passé » (relecture du 26 octobre 2026). */
+const noFiniteForm = (exo: Exo): string | null => exo.hints.map((hint) => (/forme finie/u.test(hint) ? `l'indice parle de « forme finie » : ${hint}` : null)).find((message) => message !== null) ?? null;
 const ok = (condition: boolean, message: string) => (condition ? null : message);
 /** Le premier message d'erreur d'une suite de vérifications. */
 const all = (...results: (string | null)[]) => results.find((result) => result !== null) ?? null;
@@ -573,6 +575,8 @@ const CHECKS: Record<string, Check> = {
   "ce2-det-relier": (exo) =>
     all(
       ok(exo.prompt === "Relie chaque groupe à celui à qui il appartient.", `énoncé inconnu : ${exo.prompt}`),
+      // « votre » et « leur » ne changent pas de fin quand plusieurs personnes possèdent la chose : seul le mot entier n'est pas le même (relecture du 26 octobre 2026).
+      ...exo.hints.map((hint) => ok(!/la fin du mot change/u.test(hint), `l'indice dit que la fin du mot change : ${hint}`)),
       ...pairsOf(exo).map((pair) => {
         const [word, name] = pair.left.split(" ");
         const person = POSSESSIVE_PERSON[word];
@@ -607,7 +611,7 @@ const CHECKS: Record<string, Check> = {
   // ----- L'imparfait et le passé composé -----
   "ce2-imparfait-forme": (exo) => checkConjugated(exo, "imparfait"),
   "ce2-imparfait-recit": (exo) => checkConjugated(exo, "pc-recit"),
-  "ce2-compose-forme": (exo) => checkConjugated(exo, "pc"),
+  "ce2-compose-forme": (exo) => all(checkConjugated(exo, "pc"), noFiniteForm(exo)),
   "ce2-imparfait-choisir": (exo) => {
     const asked = exo.prompt.includes("à l'imparfait") ? "imparfait" : exo.prompt.includes("au passé composé") ? "pc" : null;
     if (asked === null) return `énoncé inconnu : ${exo.prompt}`;
@@ -645,6 +649,7 @@ const CHECKS: Record<string, Check> = {
     if (!match) return `énoncé inconnu : ${exo.prompt}`;
     const person = PERSON_OF_PRONOUN[match[3]];
     const expected = match[2] === "à l'imparfait" ? formOf(match[1], "imparfait", person) : composeOf(match[1], person);
+    if (noFiniteForm(exo)) return noFiniteForm(exo);
     return ok(sameSeq(acceptedOf(exo), [expected]) && exo.answerKey === expected, `la forme est « ${expected} », la clé dit « ${acceptedOf(exo).join(" | ")} »`);
   },
 

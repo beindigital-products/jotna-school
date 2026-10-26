@@ -215,7 +215,7 @@ const PROGRESS_GAP_T: [string, string, string[]][] = [
 ];
 const PROGRESS_WRITE_T: [string, string[]][] = [
   ["Avant l'électricité, une lampe brûlait du ___. Écris le mot.", ["pétrole", "petrole"]],
-  ["Un téléphone à emporter partout est un téléphone ___. Écris le mot.", ["portable"]],
+  ["Un téléphone à emporter partout est un téléphone ___. Écris le mot.", ["portable", "mobile"]],
   ["Un message écrit sur du papier et glissé dans une enveloppe est une ___. Écris le mot.", ["lettre", "une lettre"]],
   ["Pour cuire le riz sans gaz, on allume un feu avec du ___. Écris le mot.", ["bois", "charbon", "charbon de bois"]],
   ["Pour aller loin sur la route, on prend un car ___. Écris le mot.", ["rapide"]],
@@ -753,6 +753,10 @@ const CHECKS: Record<string, Check> = {
       if (!(item.text in COORD)) return `région inconnue : ${item.text}`;
       if (!rule[item.correctZone](item.text)) return `« ${item.text} » est rangé dans « ${item.correctZone} », ses coordonnées disent le contraire`;
     }
+    // L'indice 2 parle des cases : jamais de gauche ni de droite pour Nord et Sud, jamais de haut ni de bas pour Ouest et Est.
+    const hint = exo.hints[1];
+    if (sameSeq(zones, ["Nord", "Sud"]) && (/gauche|droite/iu.test(hint) || !/haut.*bas/iu.test(hint))) return `l'indice 2 ne suit pas Nord et Sud : ${hint}`;
+    if (sameSeq(zones, ["Ouest", "Est"]) && (/haut|bas/iu.test(hint) || !/gauche.*droite/iu.test(hint))) return `l'indice 2 ne suit pas Ouest et Est : ${hint}`;
     return ok(itemsOf(exo).length === 4, "quatre régions");
   },
   "ce2-region-relier": (exo) => {

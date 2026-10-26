@@ -557,7 +557,8 @@ export function makeLandmarkPick(ctx: GameContext): GeneratedGame {
       hints: [
         "Dis le nom de chaque dessin.",
         "Un repère qui ne bouge pas reste toujours au même endroit.",
-        "Les deux autres dessins ne sont pas de la même sorte.",
+        // Les deux autres sont de la même sorte, l'autre sorte que la réponse : « pas de la même sorte » était faux (la charrette et le bus bougent tous deux).
+        fixed ? "Les deux autres dessins peuvent bouger." : "Les deux autres dessins ne bougent jamais.",
       ],
     };
   });

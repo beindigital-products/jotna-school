@@ -11,7 +11,7 @@
  *
  * MODULE PUR (voir `types.ts`).
  */
-import { ce2Gap, ce2Link, ce2Order, ce2Question, ce2Sort, ce2Write, sortRows, type LinkRow, type OrderRow } from "./ce2Outils";
+import { ce2Gap, ce2Link, ce2Order, ce2Question, ce2Sort, ce2Write, hints, sortRows, type LinkRow, type OrderRow } from "./ce2Outils";
 import { RANK_HINTS, SORT_HINTS, gapRows, link, order, questionRows, writeRows, type Pool } from "./cm1Faits";
 import type { GameContext, GeneratedGame } from "./shared";
 
@@ -119,6 +119,8 @@ const CMD_MOTS: Pool = {
       id: "comedien",
       q: ["Comment appelle-t-on la personne qui joue un rôle devant le public ?", "Qui joue un personnage sur une scène ?"],
       a: "Comédien",
+      // L'acteur est un comédien : la réponse écrite l'admet, avec ou sans article.
+      also: ["Le comédien", "Un comédien", "Comédienne", "La comédienne", "Une comédienne", "Acteur", "L'acteur", "Un acteur", "Actrice", "L'actrice", "Une actrice"],
       s: ["La personne qui joue un rôle devant le public est ___.", "Sur une scène, celui qui joue un personnage est ___."],
       ga: "le comédien",
       hint: "Il apprend son texte et monte sur les planches.",
@@ -127,6 +129,8 @@ const CMD_MOTS: Pool = {
       id: "role",
       q: ["Comment appelle-t-on le personnage qu'un comédien joue ?"],
       a: "Rôle",
+      // « Le rôle » et « Un rôle » sont justes aussi : la réponse écrite les admet.
+      also: ["Le rôle", "Un rôle"],
       s: ["Le personnage qu'un comédien joue est ___."],
       ga: "un rôle",
       hint: "Il peut être un roi, une mère ou un marchand.",
@@ -135,6 +139,7 @@ const CMD_MOTS: Pool = {
       id: "jeu-de-role",
       q: ["Comment appelle-t-on le jeu où l'on joue un personnage dans une situation imaginée ?"],
       a: "Jeu de rôle",
+      also: ["Le jeu de rôle", "Un jeu de rôle", "Jeu de rôles", "Un jeu de rôles"],
       s: ["Jouer un personnage dans une situation imaginée, c'est faire ___."],
       ga: "un jeu de rôle",
       hint: "On se met dans la peau de quelqu'un d'autre.",
@@ -165,7 +170,17 @@ const CMD_IMITER: Pool = {
 
 const CMD_POOLS = [CMD_SIGNES, CMD_EMOTIONS, CMD_MOTS, CMD_IMITER] as const;
 const CMD_QCM = questionRows("ar-cm1-comedie", CMD_POOLS);
-const CMD_TROU = gapRows("ar-cm1-comedie", CMD_POOLS);
+/**
+ * Les choix d'un trou se lisent avec leur article : « des épaules basses » commence par le D de « des », pas par le E d'« épaules »
+ * (« La réponse commence par la lettre E » égarait l'élève devant trois choix qui commencent tous par « des »). Quand la réponse a un
+ * article, l'indice dit donc que la lettre vient après lui.
+ */
+const LEADING_ARTICLE = /^(le |la |les |l'|un |une |des |du |de la |de l')/iu;
+const CMD_TROU = gapRows("ar-cm1-comedie", CMD_POOLS).map((row) => {
+  const letter = /^La réponse commence par la lettre ([A-Z])\.$/u.exec(row.hints[2])?.[1];
+  if (letter === undefined || !LEADING_ARTICLE.test(row.answer)) return row;
+  return { ...row, hints: hints(row.hints[0], row.hints[1], `Après l'article, la réponse commence par la lettre ${letter}.`) };
+});
 const CMD_ECRIRE = writeRows("ar-cm1-comedie", CMD_POOLS);
 
 const CMD_ORDRE: readonly OrderRow[] = [

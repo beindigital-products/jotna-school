@@ -263,17 +263,17 @@ const REPAIR: [string, string, string][] = [
 ];
 
 // ===== Jouer un rôle =====
-/** [métier, « à… », étiquette, premier geste, second geste, objet] */
-type Job = [string, string, string, string, string, string];
+/** [métier, « à… », étiquette, premier geste, second geste, objet, à quoi l'objet sert] */
+type Job = [string, string, string, string, string, string, string];
 const JOBS: Job[] = [
-  ["le vendeur", "au vendeur", "vendeur", "vend des mangues au marché", "pèse les fruits sur la balance", "une balance"],
-  ["le maître", "au maître", "maître", "apprend à lire aux élèves", "écrit au tableau", "une craie"],
-  ["l'infirmière", "à l'infirmière", "infirmière", "soigne les malades", "prend la température", "un thermomètre"],
-  ["le pêcheur", "au pêcheur", "pêcheur", "attrape des poissons", "répare ses filets", "un filet"],
-  ["le cultivateur", "au cultivateur", "cultivateur", "cultive le champ", "sème le mil", "une daba"],
-  ["le chauffeur", "au chauffeur", "chauffeur", "conduit le car", "tient le volant", "un volant"],
-  ["le tailleur", "au tailleur", "tailleur", "coud des habits", "prend les mesures d'un client", "une machine à coudre"],
-  ["le boulanger", "au boulanger", "boulanger", "fait le pain", "fait cuire des baguettes", "un four"],
+  ["le vendeur", "au vendeur", "vendeur", "vend des mangues au marché", "pèse les fruits sur la balance", "une balance", "à peser ce qu'on achète"],
+  ["le maître", "au maître", "maître", "apprend à lire aux élèves", "écrit au tableau", "une craie", "à écrire sur le tableau noir"],
+  ["l'infirmière", "à l'infirmière", "infirmière", "soigne les malades", "prend la température", "un thermomètre", "à mesurer la fièvre"],
+  ["le pêcheur", "au pêcheur", "pêcheur", "attrape des poissons", "répare ses filets", "un filet", "à prendre les poissons dans l'eau"],
+  ["le cultivateur", "au cultivateur", "cultivateur", "cultive le champ", "sème le mil", "une daba", "à retourner la terre du champ"],
+  ["le chauffeur", "au chauffeur", "chauffeur", "conduit le car", "tient le volant", "un volant", "à guider le car"],
+  ["le tailleur", "au tailleur", "tailleur", "coud des habits", "prend les mesures d'un client", "une machine à coudre", "à assembler le tissu avec du fil"],
+  ["le boulanger", "au boulanger", "boulanger", "fait le pain", "fait cuire des baguettes", "un four", "à cuire la pâte"],
 ];
 const JOB_NAMES = JOBS.map((job) => tileOf(job[0]));
 const jobOfTask = (task: string) => JOBS.find((job) => job[3] === task || job[4] === task);
@@ -305,7 +305,7 @@ const JOB_WORD: [string, string, string[]][] = [
   ["Dans un jeu de rôles, tu tiens un volant et tu conduis le car. Quel métier joues-tu ? Écris le mot.", "chauffeur", ["chauffeur", "un chauffeur", "le chauffeur", "chauffeuse", "une chauffeuse", "la chauffeuse", "conducteur", "un conducteur", "le conducteur", "conductrice", "une conductrice", "la conductrice"]],
   ["Dans un jeu de rôles, tu travailles la terre du champ avec une daba. Quel métier joues-tu ? Écris le mot.", "cultivateur", ["cultivateur", "un cultivateur", "le cultivateur", "cultivatrice", "une cultivatrice", "la cultivatrice", "paysan", "un paysan", "le paysan", "paysanne", "une paysanne", "la paysanne", "agriculteur", "un agriculteur", "l'agriculteur", "agricultrice", "une agricultrice", "l'agricultrice"]],
   ["Dans un jeu de rôles, tu écris au tableau et tu apprends à lire aux élèves. Quel métier joues-tu ? Écris le mot.", "maître", ["maître", "un maître", "le maître", "maîtresse", "une maîtresse", "la maîtresse", "instituteur", "un instituteur", "l'instituteur", "institutrice", "une institutrice", "l'institutrice"]],
-  ["Dans un jeu de rôles, tu prends la température d'un malade et tu le soignes. Quel métier joues-tu ? Écris le mot.", "infirmière", ["infirmière", "une infirmière", "l'infirmière", "infirmier", "un infirmier", "l'infirmier"]],
+  ["Dans un jeu de rôles, tu prends la température d'un malade et tu le soignes. Quel métier joues-tu ? Écris le mot.", "infirmière", ["infirmière", "une infirmière", "l'infirmière", "infirmier", "un infirmier", "l'infirmier", "médecin", "un médecin", "le médecin", "docteur", "un docteur", "le docteur", "docteure", "une docteure", "la docteure"]],
 ];
 const CRY_OF: Record<string, string> = {
   "le chat": "miaou",
@@ -569,8 +569,9 @@ const CHECKS: Record<string, Check> = {
     return ok(job !== undefined, `travail inconnu : ${task}`) ?? ok(rightOption(exo) === tileOf(job![0]), `${task} : « ${job![0]} », la bonne option est « ${rightOption(exo)} »`) ?? ok(others.length === 2 && others.every((option) => JOB_NAMES.includes(option) && option !== tileOf(job![0])), `mauvais choix ${others.join(" | ")}`);
   },
   "metier-outil": (exo) => {
-    const to = /^Quel objet sert (.+) \?$/u.exec(exo.prompt)?.[1] ?? "";
-    const job = JOBS.find((entry) => entry[1] === to);
+    // La question dit à quoi l'objet sert : « Quel objet sert au boulanger à cuire la pâte ? » (la balance pèse aussi la farine).
+    const job = JOBS.find((entry) => exo.prompt === `Quel objet sert ${entry[1]} ${entry[6]} ?`);
+    const to = exo.prompt;
     const tools = JOBS.map((entry) => tileOf(entry[5]));
     const others = optionsOf(exo).filter((option) => option !== rightOption(exo));
     return ok(job !== undefined, `métier inconnu : ${to}`) ?? ok(rightOption(exo) === tileOf(job![5]), `l'objet ${to} est « ${job![5]} », la bonne option est « ${rightOption(exo)} »`) ?? ok(others.length === 2 && others.every((option) => tools.includes(option) && option !== tileOf(job![5])), `mauvais choix ${others.join(" | ")}`);

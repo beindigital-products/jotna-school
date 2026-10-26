@@ -49,7 +49,7 @@ export const STORIES: readonly Story[] = [
   // Palier 1.
   {
     title: "Une matinée de pêche",
-    text: "Tôt le matin, Mamadou pousse sa pirogue sur le fleuve. Le ciel est rose et la brume flotte sur la rivière. Le fleuve est large et très calme. Il lance son grand filet bleu. Pendant deux heures, rien ne bouge. Soudain, un poisson argenté saute dans la pirogue. Mamadou sourit et rentre vite au village.",
+    text: "Tôt le matin, Mamadou pousse sa pirogue sur le fleuve. Le ciel est rose et la brume est légère sur la rivière. Le fleuve est large et très calme. Il lance son grand filet bleu. Pendant deux heures, rien ne bouge. Soudain, un poisson argenté saute dans la pirogue. Mamadou sourit et rentre vite au village.",
     asks: [
       ask("Qui pousse sa pirogue sur le fleuve ?", "pousse sa pirogue", "Mamadou", "Moussa", "Cheikh"),
       ask("Où Mamadou pousse-t-il sa pirogue ?", "pousse sa pirogue", "sur le fleuve", "sur la plage", "dans la mer"),
@@ -62,7 +62,7 @@ export const STORIES: readonly Story[] = [
     cloze: { word: "pirogue", wrong: ["voiture", "maison"] },
     pairs: [["Mamadou", "pousse sa pirogue sur le fleuve"], ["Le ciel", "est rose"], ["un poisson argenté", "saute dans la pirogue"]],
     actions: ["Il lance son grand filet bleu.", "Soudain, un poisson argenté saute dans la pirogue.", "Mamadou sourit et rentre vite au village."],
-    portraits: ["Le ciel est rose et la brume flotte sur la rivière.", "Le fleuve est large et très calme."],
+    portraits: ["Le ciel est rose et la brume est légère sur la rivière.", "Le fleuve est large et très calme."],
   },
   {
     title: "Fatou au marché",
@@ -171,7 +171,7 @@ export const STORIES: readonly Story[] = [
   },
   {
     title: "La pirogue de Cheikh",
-    text: "Il y a longtemps, Cheikh vivait près de la mer avec son père. Chaque matin, ils partaient pêcher dans une vieille pirogue. Le vent soufflait fort et les vagues étaient grandes. Cheikh restait calme. Son père ramait avec courage dans la pirogue. Le ciel était gris et lourd. Le soir, ils revenaient au village avec des poissons.",
+    text: "Il y a longtemps, Cheikh vivait près de la mer avec son père. Chaque matin, ils partaient pêcher dans une vieille pirogue. Le vent était fort et les vagues étaient grandes. Cheikh restait calme. Son père ramait avec courage dans la pirogue. Le ciel était gris et lourd. Le soir, ils revenaient au village avec des poissons.",
     asks: [
       ask("Qui vivait près de la mer ?", "vivait près de la mer", "Cheikh", "Omar", "Pape"),
       ask("Où Cheikh vivait-il ?", "vivait", "près de la mer", "près du fleuve", "au milieu du désert"),
@@ -182,9 +182,9 @@ export const STORIES: readonly Story[] = [
     verb: ["vivait", "Imparfait"],
     statement: { right: "Le père de Cheikh ramait avec courage.", evidence: "Son père ramait avec courage", wrong: ["Le père de Cheikh avait peur.", "Ils partaient pêcher le soir."], absent: ["avait peur", "pêcher le soir"] },
     cloze: { word: "pirogue", wrong: ["voiture", "charrette"] },
-    pairs: [["Cheikh", "vivait près de la mer avec son père"], ["Le vent", "soufflait fort"], ["Son père", "ramait avec courage dans la pirogue"]],
+    pairs: [["Cheikh", "vivait près de la mer avec son père"], ["Le vent", "était fort"], ["Son père", "ramait avec courage dans la pirogue"]],
     actions: ["Chaque matin, ils partaient pêcher dans une vieille pirogue.", "Son père ramait avec courage dans la pirogue.", "Le soir, ils revenaient au village avec des poissons."],
-    portraits: ["Le ciel était gris et lourd.", "Le vent soufflait fort et les vagues étaient grandes."],
+    portraits: ["Le ciel était gris et lourd.", "Le vent était fort et les vagues étaient grandes."],
   },
   // Palier 5.
   {

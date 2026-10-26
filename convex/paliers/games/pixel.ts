@@ -247,6 +247,16 @@ function finish(
   };
 }
 
+/**
+ * « de » devant le nom d'un motif, avec la contraction qu'exige le français : « de le papillon » s'écrit « du papillon », « de les » devient
+ * « des ». « de la » et « de l' » restent tels quels.
+ */
+export function ofMotif(name: string): string {
+  if (name.startsWith("le ")) return `du ${name.slice(3)}`;
+  if (name.startsWith("les ")) return `des ${name.slice(4)}`;
+  return `de ${name}`;
+}
+
 export function makePixelCopy(ctx: GameContext): GeneratedGame {
   const motif = pickMotif(ctx, false);
   const rows = motif.rows;
@@ -263,7 +273,7 @@ export function makePixelCopy(ctx: GameContext): GeneratedGame {
     COPY_HINTS,
     "pixel-copie",
     "reproduire un modèle",
-    `Le dessin de ${motif.name}, case par case, comme le modèle.`,
+    `Le dessin ${ofMotif(motif.name)}, case par case, comme le modèle.`,
   );
 }
 
@@ -295,7 +305,7 @@ export function makePixelMemory(ctx: GameContext): GeneratedGame {
     MEMORY_HINTS,
     "pixel-memoire",
     "dessin de mémoire",
-    `Le dessin de ${motif.name}, de mémoire.`,
+    `Le dessin ${ofMotif(motif.name)}, de mémoire.`,
   );
 }
 

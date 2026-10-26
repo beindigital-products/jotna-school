@@ -783,7 +783,7 @@ const IND_DAY: Pool = {
       a: "4 avril",
       also: ["Le 4 avril", "4 Avril"],
       s: ["Le Sénégal fête son indépendance le ___.", "La fête nationale de l'indépendance du Sénégal a lieu le ___."],
-      hint: "C'est un jour de printemps, au début du mois.",
+      hint: "Cette fête tombe au quatrième mois de l'année.",
     },
   ],
   extras: ["1er mai", "14 juillet", "20 août"],
@@ -886,11 +886,21 @@ const PRO_INVENT: Pool = {
     },
     {
       id: "electricite",
-      q: ["Quelle invention fait briller une ampoule sans bougie ni pétrole ?", "Quelle invention permet d'éclairer les maisons et les rues le soir ?", "Quelle force invisible circule dans les fils pour allumer une lampe ?"],
+      q: ["Quelle invention fait briller une ampoule sans bougie ni pétrole ?", "Quelle force invisible circule dans les fils pour allumer une lampe ?"],
       a: "Électricité",
       also: ["L'électricité", "Electricité", "Electricite"],
       ga: "l'électricité",
       s: ["Une ampoule s'allume avec ___.", "Pour éclairer les rues le soir, on utilise ___."],
+      hint: "Elle arrive par des fils jusque dans la maison.",
+    },
+    // « Qui permet d'éclairer les maisons et les rues » : l'ampoule et la lampe sont aussi des inventions qui éclairent, donc justes à l'écrit.
+    // Les deux autres questions nomment déjà l'ampoule et la lampe : là, ces mots ne répondent pas, ils sont donc dans un fait à part.
+    {
+      id: "electricite-eclairage",
+      q: ["Quelle invention permet d'éclairer les maisons et les rues le soir ?"],
+      a: "Électricité",
+      also: ["L'électricité", "Electricité", "Electricite", "Ampoule", "L'ampoule", "Une ampoule", "Lampe", "La lampe", "Une lampe", "Ampoule électrique", "Lampe électrique", "Lampe electrique"],
+      ga: "l'électricité",
       hint: "Elle arrive par des fils jusque dans la maison.",
     },
     {

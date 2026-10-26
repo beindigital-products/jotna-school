@@ -491,6 +491,7 @@ const ASO_QUI: Pool = {
       id: "gpf",
       q: ["Quelle organisation réunit des femmes du quartier pour mener des activités ensemble et s'entraider ?"],
       a: "Groupement de femmes",
+      also: ["Le groupement de femmes", "Un groupement de femmes"],
       s: ["Des femmes qui s'entraident pour mener des activités ensemble forment ___."],
       ga: "un groupement de femmes",
       hint: "On y travaille ensemble pour gagner sa vie.",
@@ -499,6 +500,8 @@ const ASO_QUI: Pool = {
       id: "cq",
       q: ["Quelle organisation réunit des habitants pour améliorer la vie du quartier ?"],
       a: "Comité de quartier",
+      // « Le comité de quartier » et « Association de quartier » disent la même chose : défendables, donc acceptés.
+      also: ["Le comité de quartier", "Un comité de quartier", "Association de quartier", "L'association de quartier", "Une association de quartier"],
       s: ["Des habitants qui veulent améliorer la vie du quartier forment ___."],
       ga: "un comité de quartier",
       hint: "Ses membres parlent propreté, sécurité et entraide.",

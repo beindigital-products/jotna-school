@@ -292,7 +292,8 @@ const INS_ACTION: Pool = {
       id: "lois",
       q: ["Que font les députés à l'Assemblée nationale ?", "Quel est le rôle des députés ?"],
       a: "Voter les lois",
-      also: ["Voter des lois", "Voter la loi"],
+      // Faire, adopter, voter (ou légiférer) : les verbes que l'enfant entend pour dire ce que font les députés.
+      also: ["Voter des lois", "Voter la loi", "Voter une loi", "Faire les lois", "Faire des lois", "Faire la loi", "Adopter les lois", "Adopter des lois", "Adopter la loi", "Adopter une loi", "Légiférer"],
       ga: "voter les lois",
       s: ["Le rôle des députés est de ___.", "À l'Assemblée nationale, on vient pour ___."],
       hint: "Ils décident de ce qui devient obligatoire pour tous.",

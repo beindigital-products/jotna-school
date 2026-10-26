@@ -135,7 +135,7 @@ export const STORY_GAP_ROWS: readonly GapRow[] = [
 
 const COMPOSE_GAP_HINTS = hints(
   "Hier ou ce matin dit que l'action est finie.",
-  "Le verbe a deux mots : avoir puis la forme finie du verbe.",
+  "Le verbe a deux mots : avoir conjugué puis le participe passé.",
   "Choisis l'auxiliaire qui va avec le sujet.",
 );
 const composeGap = (text: string, answer: string, wrong: readonly [string, string]): GapRow => gr(text, answer, wrong, COMPOSE_GAP_HINTS);
@@ -219,7 +219,7 @@ const IMPARFAIT_WRITE_HINTS = hints(
 );
 const COMPOSE_WRITE_HINTS = hints(
   "Pense à la personne de la phrase.",
-  "Il y a deux mots : avoir puis la forme finie du verbe.",
+  "Il y a deux mots : avoir conjugué puis le participe passé.",
   "Écris seulement les deux mots du verbe.",
 );
 const imparfaitWrite = (verb: string, person: string, answer: string): WriteRow => wr(`Écris le verbe ${verb} à l'imparfait avec ${person}.`, [answer], IMPARFAIT_WRITE_HINTS);
