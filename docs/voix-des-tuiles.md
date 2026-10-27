@@ -47,9 +47,10 @@ l'enfant entend, ce que Pio ne dit jamais, et où se trouve chaque pièce.
   **Ces noms n'ont toujours pas été écoutés par une personne** : le R seul reste fragile
   (« ar » 1 sur 5, « are » 2 sur 5, aucune écriture au-dessus de 3 sur 5) et D, E, G, M, N,
   S, T seuls sont mal relus (0 à 1 sur 3), peut-être à cause de la relecture sur des clips
-  très courts. À écouter avant le préchauffage : les 26 lettres sont dans
-  `audition-lettres/elevenlabs/alphabet/`. Le texte est la clé du cache audio : le corriger
-  APRÈS le préchauffage laisse les anciens sons inutilisés et coûte une seconde synthèse.
+  très courts. À écouter avant de publier l'application : les sons sont dans `public/voix/` (le nom de fichier de chaque
+  texte est dans `lib/voice-static/manifest.ts`). Un nom corrigé se refait avec `pnpm voix:build --redo "<texte>"`.
+  Le texte est la clé du cache audio : le corriger APRÈS la fabrication laisse l'ancien son inutilisé
+  (`pnpm voix:build --prune`) et coûte une seconde synthèse.
 - **Un toucher coupe la file.** L'enfant n'attend jamais la fin de la lecture
   pour répondre. Elle se tait dès qu'il a répondu, ou quand une fenêtre s'ouvre.
 - **« Écouter » et Pio redisent tout**, la consigne puis les propositions ; un
@@ -172,6 +173,94 @@ tuile (3 400 caractères, un dollar) et environ 230 avec les consignes. À
 relancer après chaque régénération de paliers du CI : de nouveaux exercices
 apportent de nouveaux mots.
 
+## Les sons embarqués dans l'application (alphabet de l'anglais)
+
+Pour un ensemble FERMÉ et stable, le cache du serveur n'est pas nécessaire : les
+mp3 sont livrés avec l'application (`public/voix/`) et le lecteur les joue
+AVANT le serveur. Aucun appel à ElevenLabs à l'exécution, aucun réseau (ni en
+ligne, ni hors ligne, ni au premier lancement), un son qui part plus vite. C'est
+le cas des six thématiques d'alphabet de l'anglais (`an-ci-abc-1` à `3`,
+`an-cp-abc`, `an-cp-sounds`, `an-cp-name`) : après 200 graines, elles ne disent
+que 312 textes, 302 avec la voix anglaise des tuiles.
+
+- **La table** : `lib/voice-static/manifest.ts` (le texte DIT, c'est-à-dire
+  `speakableTile`, vers le fichier ; la voix et le modèle qui l'ont dit). Elle est
+  écrite par l'outil, jamais à la main. `lib/voice-static/index.ts` la lit ;
+  `components/exercises/prompt-reader.tsx` l'essaie avant `useClipSource`.
+- **Seulement dans une thématique d'anglais** : le même texte se dirait en
+  français ailleurs, avec une autre voix. Un texte absent de la table, ou un
+  fichier qui ne se joue pas (`staticTileFailed`), passe par le serveur comme avant.
+- **La liste est calculée** (`lib/voice-static/set.ts`), jamais écrite à la main :
+  elle relève ce que `voice/warmTexts` ferait dire sur 300 graines. Un test
+  (`lib/__tests__/voice-static.test.ts`) refuse une table qui ne couvre pas la
+  liste, un fichier orphelin, un fichier qui n'est pas un mp3, et une voix
+  différente de celle du serveur ; il vérifie que des tirages jamais vus sont
+  couverts à 97 % au moins (le reste passe par le serveur).
+- **Taille** : 302 fichiers, 6,3 Mo (21 Ko en moyenne). C'est ce que pèse l'alphabet
+  dans l'application. Un ensemble plus grand (les 700 mots du CI) ferait 15 Mo ou
+  plus et change à chaque régénération de paliers : il reste dans le cache du serveur.
+
+Fabriquer ou refaire les sons (ils ne se refont pas tout seuls) :
+
+```
+ELEVENLABS_API_KEY=... pnpm voix:build --dry-run                       compte, ne synthétise rien
+ELEVENLABS_API_KEY=... pnpm voix:build                                 synthétise ce qui manque
+ELEVENLABS_API_KEY=... pnpm voix:build --redo "ei, bee, see"           refait un texte mal dit
+pnpm voix:build --prune --dry-run                                      montre ce que la liste n'utilise plus
+```
+
+L'outil prend la voix et le modèle de `voiceConfig()`, comme le serveur : si la
+production règle `ELEVENLABS_EN_VOICE_ID`, `ELEVENLABS_VOICE_ID` ou
+`ELEVENLABS_EN_MODEL_ID` (`npx convex env list --prod`), donnez les mêmes à l'outil,
+sinon l'application et le serveur parleraient avec deux voix. Un changement de voix
+demande `--replace-all`. Relancer est sans danger : un texte déjà fabriqué ne coûte
+rien. Premier tirage du 27 octobre 2026 : 302 sons, 5 105 caractères, environ 1,53 $.
+
+**Changer le nom d'une lettre** (`LETTER_NAMES`, `convex/voice/tiles.ts`) change le
+texte dit : l'ancien son reste dans `public/voix/` jusqu'à `pnpm voix:build --prune`,
+et le nouveau se fabrique avec `pnpm voix:build`. Les deux, puis `pnpm test`.
+
+L'application les prend au prochain `next build` / `cap sync` : un son embarqué
+est dans l'application, il ne se met pas à jour par le serveur. Un changement de
+voix demande donc une nouvelle version de l'application (ou la mise à jour à
+distance, `docs/capacitor-ios.md`).
+
+## Copier le cache d'un déploiement à l'autre
+
+Le développement et la production ont chacun leur cache de sons
+(`arabicAudioClips`). Préchauffer la production repaie donc ce que le
+développement a déjà. Au lieu de resynthétiser, on recopie les fichiers :
+
+```
+pnpm voix:copier --from dev --to prod --confirm <nom de la production>           à blanc (le défaut)
+pnpm voix:copier --from dev --to prod --confirm <nom de la production> --apply   copie pour de bon
+```
+
+Aucun appel à ElevenLabs, donc aucun crédit. `--from` et `--to` sont ce que
+`npx convex run --deployment` accepte (`dev`, `prod`, un nom de déploiement) ;
+`current` désigne le déploiement de `.env.local`. Le script lit la source
+(`voice/cacheCopy:listClips`) puis envoie par lots de 100 à la cible
+(`voice/cacheCopy:importClips`, garde `confirmDeployment`). Il passe toujours par
+un essai à blanc d'abord.
+
+Ce que la copie fait et ne fait pas (`convex/voice/cacheCopyPlan.ts`, testé sans
+base dans `convex/__tests__/voiceCacheCopy.test.ts`) :
+
+- elle ne copie que les voix et les modèles que la CIBLE lit (sa configuration) :
+  un son d'une autre voix n'y serait jamais demandé ;
+- elle ne remplace jamais un son que la cible a déjà, et se relance sans danger ;
+- elle refuse une ligne dont la clé n'est pas « voix | modèle | texte », un fichier
+  vide ou énorme, et toute adresse qui n'est pas en `https` sur `*.convex.cloud`
+  (l'action fait un `fetch` sur des adresses qu'une autre base lui donne) ;
+- la cible doit avoir `ELEVENLABS_API_KEY`, sans quoi on ne sait pas quelles voix
+  elle lit.
+
+Essai fait le 27 octobre 2026, sur un backend local, avec une vraie synthèse de 27
+sons : lecture par pages, mauvais `confirmDeployment` refusé, 5 sons copiés à
+l'identique (octet pour octet), rejeu sans effet, et les lignes pièges (clé
+trafiquée, adresse refusée, autre voix) non rangées. **Pas encore essayé entre le
+développement et la production réels** : à faire par le propriétaire, à blanc d'abord.
+
 ## Vérifier
 
 - `pnpm test` : `convex/__tests__/tileVoice.test.ts` (la porte, les
@@ -182,7 +271,11 @@ apportent de nouveaux mots.
   la consigne et les propositions), `lib/offline/__tests__/sync-clips.test.ts` (ce
   que l'appareil télécharge), les deux tests de séance (la porte : CI, CP,
   anglais) et `convex/__tests__/warmTexts.test.ts` (les textes préchauffés sont
-  ceux que le serveur accepte de dire, pour les gabarits des sciences du CI).
+  ceux que le serveur accepte de dire, pour les gabarits des sciences du CI),
+  `lib/__tests__/voice-static.test.ts` et
+  `components/exercises/__tests__/TileVoiceEmbedded.test.tsx` (les sons
+  embarqués : table, fichiers, liste, lecteur), `convex/__tests__/voiceCacheCopy.test.ts`
+  (la copie du cache : lignes et adresses permises).
 - Dans le navigateur : `/dev/seance/?exo=qcm-mots-seuls&voix=1`. Le même son
   joue pour chaque proposition, de quoi voir la file et l'anneau. Un volet de
   navigateur caché freine le rendu : ses captures retardent d'environ deux

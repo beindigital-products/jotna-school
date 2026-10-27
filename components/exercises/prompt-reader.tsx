@@ -92,6 +92,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useClipSource } from "@/components/offline/clip-source";
 import { completesAWord, promptForbidsTileVoice, speakableTile } from "@/convex/voice/tiles";
 import { newVoiceOwner, playUrl, stopPlaying } from "@/lib/voice-player";
+import { staticTileFailed, staticTileUrl } from "@/lib/voice-static";
 
 type ReaderStatus = "idle" | "loading" | "playing" | "unavailable";
 
@@ -325,6 +326,12 @@ export function PromptReaderProvider({
   const urlForTile = useCallback(
     (text: string, fresh = false): Promise<string | null> => {
       if (clipUrl) return Promise.resolve(clipUrl);
+      // Un son embarqué dans l'application passe avant le serveur (`lib/voice-static`) : pas de réseau, pas de crédit.
+      // `fresh` dit que le dernier essai a échoué : le serveur reprend.
+      if (!fresh) {
+        const embedded = staticTileUrl(text, englishTopic);
+        if (embedded) return Promise.resolve(embedded);
+      }
       if (fresh) urlByTile.delete(text);
       const cached = urlByTile.get(text);
       if (cached) return cached;
@@ -338,7 +345,7 @@ export function PromptReaderProvider({
       });
       return pending;
     },
-    [exerciseId, findClip, clipUrl],
+    [exerciseId, findClip, clipUrl, englishTopic],
   );
 
   const registerTiles = useCallback((next: ReaderTiles | null) => {
@@ -488,6 +495,7 @@ export function PromptReaderProvider({
       // la file passe à la suivante ; seule une coupure l'arrête.
       if (tileFailed) {
         urlByTile.delete(item.text);
+        staticTileFailed(item.text, englishTopic);
         continue;
       }
       if (!finished) break;
@@ -526,7 +534,10 @@ export function PromptReaderProvider({
           failed = true;
         });
         // Le son de la tuile est mort : on l'oublie, le toucher suivant en redemande un.
-        if (failed) urlByTile.delete(text);
+        if (failed) {
+          urlByTile.delete(text);
+          staticTileFailed(text, englishTopic);
+        }
         if (tokenRef.current === token) rest();
       })();
     },

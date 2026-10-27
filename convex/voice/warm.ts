@@ -32,7 +32,7 @@ import type { Id } from "../_generated/dataModel";
 import { visibleClassValidator, type VisibleClassName } from "../curriculum";
 import { assertTargetedDeployment } from "../testSeedsSchool";
 import { clipCacheKey, synthesize, voiceConfig, voiceFor } from "./elevenlabs";
-import { estimatedCostUsd, spokenClipsOf, type WarmClip } from "./warmTexts";
+import { estimatedCostUsd, spokenClipsOf, withoutEmbedded, type WarmClip } from "./warmTexts";
 
 /** Paliers lus par appel : cent paliers et leurs exercices tiennent largement dans une requête. */
 const PAGE = 100;
@@ -54,6 +54,8 @@ export type WarmSummary = {
   exercises: number;
   /** Les textes différents que la voix dirait, ceux que le cache a déjà, ceux qui lui manquent. */
   texts: number;
+  /** Les textes que l'application embarque (`lib/voice-static`) : écartés, le serveur n'a pas à les synthétiser. */
+  embedded: number;
   alreadyCached: number;
   missing: number;
   missingChars: number;
@@ -177,7 +179,10 @@ export const warmTileVoice = internalAction({
     }
 
     // Ce que le cache a déjà : la clé porte la voix ET le modèle, comme à la demande.
-    const all = [...found.values()].sort((a, b) => a.text.localeCompare(b.text) || a.lang.localeCompare(b.lang));
+    const everything = [...found.values()].sort((a, b) => a.text.localeCompare(b.text) || a.lang.localeCompare(b.lang));
+    // Un son que l'application embarque (`lib/voice-static`) ne passe jamais par le cache du serveur : le payer ici serait
+    // un crédit perdu. Seule une version de l'application qui ne les embarque pas les demanderait, à la demande.
+    const { kept: all, embedded } = withoutEmbedded(everything);
     const keyOf = (clip: WarmClip) => {
       const voice = voiceFor(config, clip.lang);
       return clipCacheKey(voice.voiceId, voice.modelId, clip.text);
@@ -197,6 +202,7 @@ export const warmTileVoice = internalAction({
       paliers,
       exercises,
       texts: all.length,
+      embedded,
       alreadyCached: all.length - missing.length,
       missing: missing.length,
       missingChars,

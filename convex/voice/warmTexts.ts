@@ -12,6 +12,7 @@
  * sont dans `warm.ts`.
  */
 import { isReadingLearnerClass } from "../curriculum";
+import { staticVoiceUrl } from "../../lib/voice-static";
 import { speakableExercise } from "./speakable";
 import { readableTextsOf, tileClipVerdict, type TileLang } from "./tiles";
 
@@ -20,6 +21,16 @@ export type WarmTopic = { programmeKey?: string | null; subjectName?: string | n
 
 /** Un son à préchauffer : le texte et la voix qui le dit (la clé de cache porte la voix). */
 export type WarmClip = { text: string; lang: TileLang };
+
+/**
+ * Écarte les sons que l'application embarque (`lib/voice-static`) : ils ne passent jamais par le cache du serveur, les
+ * payer serait un crédit perdu. Seule la voix anglaise des tuiles est embarquée : le même texte en français est un
+ * autre son et reste.
+ */
+export function withoutEmbedded(clips: readonly WarmClip[]): { kept: WarmClip[]; embedded: number } {
+  const kept = clips.filter((clip) => !(clip.lang === "en" && staticVoiceUrl(clip.text) !== null));
+  return { kept, embedded: clips.length - kept.length };
+}
 
 /**
  * Les sons dits pour cet exercice, sans doublon : chaque tuile (et la phrase à
