@@ -106,13 +106,29 @@ describe("neededClips : les propositions du CI se téléchargent avec les consig
   });
 
   it("demande les mots d'une thématique d'anglais, par sa fiche ou par sa matière, avec la consigne", () => {
-    const exercises = [qcm("e1", ["cat", "dog"])];
+    // Des mots que l'application n'embarque pas (« cat », « dog » sont des sons de l'alphabet : voir le test suivant).
+    const exercises = [qcm("e1", ["elephant", "giraffe"])];
     expect(tiles(syncFor({ programmeKey: "an-ci-animals", exercises }).neededClips()).map((tile) => tile.text)).toEqual([
-      "cat",
-      "dog",
+      "elephant",
+      "giraffe",
     ]);
-    expect(tiles(syncFor({ subject: "Anglais", exercises }).neededClips()).map((tile) => tile.text)).toEqual(["cat", "dog"]);
+    expect(tiles(syncFor({ subject: "Anglais", exercises }).neededClips()).map((tile) => tile.text)).toEqual(["elephant", "giraffe"]);
     expect(prompts(syncFor({ programmeKey: "an-ci-animals", exercises }).neededClips())).toEqual(["e1"]);
+  });
+
+  it("ne demande pas un son que l'application embarque (alphabet de l'anglais) : ni téléchargement ni crédit", () => {
+    // « B », « C », « D » se disent « bee », « see », « dee » : trois sons de `public/voix`. « mot inconnu de la table » n'y est pas.
+    const exercises = [qcm("e1", ["B", "C", "D", "mot inconnu de la table"], "Quelle lettre vient après la lettre A ?")];
+    const needed = syncFor({ programmeKey: "an-ci-abc-1", exercises }).neededClips();
+    expect(tiles(needed).map((tile) => tile.text)).toEqual(["mot inconnu de la table"]);
+    // La consigne, en français, reste téléchargée : seuls les sons de tuile sont embarqués.
+    expect(prompts(needed)).toEqual(["e1"]);
+    // Un mot-image de l'alphabet est embarqué pour TOUTE thématique d'anglais (même voix, même texte dit).
+    const animals = syncFor({ programmeKey: "an-ci-animals", exercises: [qcm("e3", ["cat", "elephant"])] }).neededClips();
+    expect(tiles(animals).map((tile) => tile.text)).toEqual(["elephant"]);
+    // Le même texte dans une thématique qui n'est pas d'anglais est un autre son (autre voix) : il se demande.
+    const french = syncFor({ exercises: [qcm("e2", ["banana", "pomme"])] }).neededClips();
+    expect(tiles(french).map((tile) => tile.text)).toEqual(["banana", "pomme"]);
   });
 
   it("ne demande rien quand l'énoncé demande de lire ou de décoder", () => {

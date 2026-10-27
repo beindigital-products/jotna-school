@@ -9,6 +9,7 @@ import {
   estimatedCostUsd,
   spokenClipsOf,
   spokenTextsOf,
+  withoutEmbedded,
   type WarmExercise,
   type WarmTopic,
 } from "../voice/warmTexts";
@@ -199,5 +200,26 @@ describe("estimatedCostUsd — le coût d'une synthèse, arrondi au centime", ()
 
   it("ne rend jamais un coût négatif", () => {
     expect(estimatedCostUsd(-50)).toBe(0);
+  });
+});
+
+describe("withoutEmbedded — les sons de l'application ne passent pas par le cache du serveur", () => {
+  it("écarte les sons anglais que l'application embarque, et compte ce qu'elle écarte", () => {
+    const { kept, embedded } = withoutEmbedded([
+      { text: "bee", lang: "en" },
+      { text: "ei, bee, blank, dee", lang: "en" },
+      { text: "mot inconnu de la table", lang: "en" },
+    ]);
+    expect(kept).toEqual([{ text: "mot inconnu de la table", lang: "en" }]);
+    expect(embedded).toBe(2);
+  });
+
+  it("garde un même texte dit en français : c'est un autre son, avec une autre voix", () => {
+    const clips = [{ text: "banana", lang: "fr" as const }];
+    expect(withoutEmbedded(clips)).toEqual({ kept: clips, embedded: 0 });
+  });
+
+  it("ne change rien quand rien n'est embarqué, et rend une liste vide pour une liste vide", () => {
+    expect(withoutEmbedded([])).toEqual({ kept: [], embedded: 0 });
   });
 });

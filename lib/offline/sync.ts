@@ -21,6 +21,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { clipRequestKey, type ClipRequest, type ClipResult } from "@/convex/offline/contract";
 import { allSpeechRefs } from "@/convex/arabic/speechText";
 import { isTileVoiceClass, readableTextsOf, tileClipVerdict } from "@/convex/voice/tiles";
+import { staticVoiceUrl } from "@/lib/voice-static";
 import { knownClipKeys, linkClip, saveClip, storedClipIds } from "./clips";
 import type { OfflineEngine } from "./engine";
 import { exercisesKey } from "./model";
@@ -221,6 +222,8 @@ export class OfflineSync {
       for (const text of readableTextsOf(exercise.type, exercise.payload)) {
         const verdict = tileClipVerdict({ learnerClass, topic: info, exercise, text });
         if (!verdict.ok) continue;
+        // Un son que l'application embarque (`lib/voice-static`) ne se télécharge pas et ne se synthétise pas.
+        if (verdict.lang === "en" && staticVoiceUrl(verdict.text) !== null) continue;
         const request: ClipRequest = { kind: "tile", exerciseId: exercise._id, text };
         const key = clipRequestKey(request);
         if (seen.has(key)) continue;
