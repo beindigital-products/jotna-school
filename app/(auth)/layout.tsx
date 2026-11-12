@@ -1,6 +1,7 @@
 import { BackToHome } from "@/components/landing/back-to-home";
 import { Brand } from "@/components/landing/brand";
 import { GuestOnly } from "@/components/guest-only";
+import { SignupGateProvider } from "@/components/launch/signup-gate";
 
 export default function AuthLayout({
   children,
@@ -8,6 +9,11 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
+    // AVANT LE LANCEMENT : « Créer un compte », sur l'écran de connexion,
+    // ouvre la même pop-up « Lancement prochainement » que la vitrine. C'est
+    // aussi le premier écran de l'application iOS/Android, qui n'a pas de
+    // vitrine.
+    <SignupGateProvider>
     <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 via-white to-lime-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {/* En absolu, dans le coin : l'application mobile le retire (voir
           `BackToHome`) sans rien déplacer. Le `pt-16` du bloc central lui
@@ -26,5 +32,6 @@ export default function AuthLayout({
         </div>
       </div>
     </div>
+    </SignupGateProvider>
   );
 }

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { SignupLink } from "@/components/launch/signup-gate";
 import { useBrowserOnline } from "@/components/offline/use-browser-online";
 import { useIsNativeApp } from "@/hooks/use-native-app";
 import { kidMessages } from "@/lib/kidCopy";
@@ -147,9 +148,9 @@ export default function LoginPage() {
 
       <p className="text-center text-sm text-gray-600">
         Pas encore de compte ?{" "}
-        <Link href="/register" className="font-medium text-amber-700 hover:underline">
+        <SignupLink className="font-medium text-amber-700 hover:underline">
           Créer un compte gratuit
-        </Link>
+        </SignupLink>
       </p>
     </form>
   );

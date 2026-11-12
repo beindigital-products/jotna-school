@@ -1,6 +1,15 @@
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
+import { ConvexError } from "convex/values";
+import type { MutationCtx } from "./_generated/server";
 import { ResendOTPPasswordReset } from "./ResendOTPPasswordReset";
+import { redeemInvitation } from "./invitations";
+import {
+  INVITATION_REFUSALS,
+  normalizeInvitationCode,
+  SELF_SIGNUP_INVITATION_FIELD,
+  selfSignupInvitation,
+} from "./invitationRules";
 import { decideProvisionedRole } from "./roleRules";
 import { decideSelfSignupRole } from "./openAccessRules";
 
@@ -8,8 +17,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({
       profile(params) {
-        // INSCRIPTION LIBRE POUR LES ADULTES — écoles, professeurs, parents.
-        // Les règles du modèle vivent dans `convex/openAccessRules.ts`.
+        // INSCRIPTION DES ADULTES — écoles, professeurs, parents — SUR
+        // INVITATION TANT QUE LE LANCEMENT N'EST PAS FAIT. Les règles des
+        // rôles vivent dans `convex/openAccessRules.ts`, celles des codes
+        // d'invitation dans `convex/invitationRules.ts`.
         //
         // `profile()` n'est appelé que par les flux du fournisseur `Password`
         // lui-même — vérifié dans
@@ -31,8 +42,32 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         // lecture du curriculum (déjà ouvert à tout élève) ; tout ce qui touche
         // un élève passe par une garde de LIEN (`callerMayReadStudent`,
         // `classrooms.ts`) : sa classe, son école.
+        //
+        // PAS DE COMPTE SANS CODE D'INVITATION, ET LE REFUS COMMENCE ICI. Une
+        // inscription sans code est celle du visiteur ordinaire avant le
+        // lancement : on la refuse tout de suite, par une `ConvexError` dont
+        // l'écran affiche la phrase. CE CONTRÔLE-CI NE LIT PAS LA BASE —
+        // `profile()` est synchrone, le fournisseur ne l'attend pas. Savoir
+        // si le code EXISTE et s'il lui reste une place se décide dans
+        // `createOrUpdateUser`, plus bas, dans la transaction qui crée le
+        // compte. Le code voyage jusque-là dans le profil, sous
+        // `SELF_SIGNUP_INVITATION_FIELD` : ce champ est posé pour TOUTE
+        // inscription publique et pour elle seule, c'est à lui que
+        // `createOrUpdateUser` la reconnaît.
+        //
+        // Le paramètre s'appelle `invitationCode`, jamais `code` : `code` est
+        // déjà le nom des codes de vérification de Convex Auth (`signInImpl`
+        // sans fournisseur, flux `email-verification` de `Password`), et un
+        // même nom pour deux choses finirait par être lu pour l'autre.
         let role = (params.role as string) ?? "student";
+        let invitation: Record<string, string> = {};
         if (params.flow === "signUp") {
+          const invitationCode = normalizeInvitationCode(params.invitationCode);
+          if (invitationCode === "") {
+            throw new ConvexError(INVITATION_REFUSALS.missing);
+          }
+          invitation = { [SELF_SIGNUP_INVITATION_FIELD]: invitationCode };
+
           const decided = decideSelfSignupRole(params.role);
           if (decided === null) {
             throw new Error(
@@ -51,6 +86,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           // This field is NOT stored on the users table -- we strip it
           // out in createOrUpdateUser and store it on the profiles table.
           role,
+          // Même traitement que `role` : lu par `createOrUpdateUser`, jamais
+          // écrit sur `users`.
+          ...invitation,
         };
       },
       validatePasswordRequirements(password: string) {
@@ -68,41 +106,41 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return existingUserId;
       }
 
-      // --- Compte neuf : on n'arrive ici que par PROVISIONNEMENT ---
-      const rawRole = (profile as Record<string, unknown>).role as
-        | string
-        | undefined;
+      // --- Compte neuf : DEUX ORIGINES, et le profil dit laquelle ---
+      const fields = profile as Record<string, unknown>;
+      const rawRole = fields.role as string | undefined;
 
-      // CE CHEMIN N'EST PLUS CELUI D'UNE INSCRIPTION. `Password.profile()`
-      // refuse `flow: "signUp"` plus haut : aucun formulaire public ne crée
-      // de compte. Les seuls appelants qui atteignent cette branche passent
-      // par `createAccount` côté serveur, et chacun a déjà fait son contrôle
-      // AVANT d'appeler :
+      // 1. UN PROVISIONNEMENT. L'appelant est une fonction du serveur, qui
+      //    passe par `createAccount` et a fait son contrôle AVANT d'appeler :
       //
-      //   - `studentImportRun`              — garde de LIEN : le personnel
-      //                                       n'importe que dans SON école
-      //   - `parentLink.signUpWithCode`     — un code non consommé, non
-      //                                       expiré, émis pour cet enfant
-      //   - `schools.provisionStaffAccount` — `callerIsAdmin`
+      //   - `studentImportRun`                    — garde de LIEN : le
+      //                                             personnel n'importe que
+      //                                             dans SON école
+      //   - `studentAccounts`                     — un parent, un professeur
+      //                                             ou un directeur connecté
+      //                                             crée un élève
+      //   - `parentLink.signUpWithCode`           — un billet d'école non
+      //                                             consommé, non expiré,
+      //                                             émis pour cet enfant
+      //   - `staffAccounts.provisionStaffAccount` — `callerIsAdmin`
       //
-      // L'AUTORISATION EST DONC EN AMONT, ET C'EST CE QUI PERMET D'ÉLARGIR
-      // LA LISTE DES RÔLES. Tant que l'inscription était ouverte, refuser ici
-      // `professeur` et `directeur` était la dernière barrière — n'importe
-      // qui postait le rôle qu'il voulait, et `callerIsStaff` reconnaissait
-      // le résultat comme « membre du personnel » partout dans le dépôt.
-      // Cette barrière-là a disparu avec le formulaire qui la rendait
-      // nécessaire ; la garde vit maintenant à l'appel, pas sur une chaîne de
-      // caractères arrivée du réseau.
+      // 2. UNE INSCRIPTION PUBLIQUE (`flow: "signUp"`). `Password.profile()`
+      //    a filtré le rôle et joint le code d'invitation : c'est la présence
+      //    de ce champ qui la désigne (`selfSignupInvitation`). Un client ne
+      //    peut ni le retirer ni atteindre `createAccount` autrement — le
+      //    profil est bâti par `profile()`, côté serveur, et `auth:store` est
+      //    une mutation interne.
       //
-      // `admin` RESTE REFUSÉ, et c'est le seul. Aucun chemin applicatif ne le
+      // `admin` EST REFUSÉ DANS LES DEUX CAS. Aucun chemin applicatif ne le
       // pose, pas même gardé par un admin.
       //
       // ON REFUSE PLUTÔT QUE DE RETOMBER EN SILENCE. Un repli `: "student"`
       // transformerait un provisionnement mal formé en compte ÉLÈVE, sans un
       // mot : l'école ne le découvrirait qu'à la première connexion ratée.
       //
-      // La décision vit dans `convex/roleRules.ts`, pure et testée : ce
-      // handler-ci n'est atteignable par aucun test du dépôt.
+      // Les décisions vivent dans `convex/roleRules.ts` et
+      // `convex/invitationRules.ts`, pures et testées : ce handler-ci n'est
+      // atteignable par aucun test unitaire du dépôt.
       const role = decideProvisionedRole(rawRole);
 
       const name = (profile.name as string) ?? "";
@@ -118,6 +156,26 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         role,
         name,
       });
+
+      // AVANT LE LANCEMENT, UNE INSCRIPTION PUBLIQUE CONSOMME UN CODE
+      // D'INVITATION, OU N'A PAS LIEU. `redeemInvitation` lève si le code est
+      // inconnu, désactivé ou épuisé, et Convex annule alors toute la
+      // mutation, les deux insertions ci-dessus comprises : le compte et la
+      // place comptée naissent ensemble ou pas du tout.
+      //
+      // POUR ROUVRIR L'INSCRIPTION À TOUS, le jour du lancement : retirer ce
+      // bloc et le contrôle du code dans `profile()`, plus haut. Rien d'autre
+      // ne ferme la porte côté serveur (`docs/comptes-et-acces.md`).
+      const invitationCode = selfSignupInvitation(fields);
+      if (invitationCode !== null) {
+        // Le rappel reçoit un contexte au modèle de données générique ; la
+        // mutation qui l'exécute (`auth:store`) est bien une mutation de ce
+        // déploiement.
+        await redeemInvitation(ctx as unknown as MutationCtx, {
+          code: invitationCode,
+          userId,
+        });
+      }
 
       return userId;
     },

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import Link from "next/link";
 import { MotionConfig, motion } from "framer-motion";
 import { ArrowRight, Volume2 } from "lucide-react";
+
+import { SignupLink } from "@/components/launch/signup-gate";
 
 import { Section } from "./section";
 import { SUBJECT_PRACTICE } from "./exercise-catalog";
@@ -420,13 +421,10 @@ export function ExerciseTypes() {
             difficulté croissante, de la découverte à la maîtrise. Rien n&apos;est enregistré ici : créez un compte
             pour suivre les progrès de votre enfant.
           </p>
-          <Link
-            href="/register"
-            className="group mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98]"
-          >
+          <SignupLink className="group mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98]">
             S&apos;inscrire
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-          </Link>
+          </SignupLink>
         </div>
       </MotionConfig>
     </Section>

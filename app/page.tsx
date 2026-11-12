@@ -12,12 +12,17 @@ import { ScrollToTop } from "@/components/landing/scroll-to-top";
 import { GetStarted } from "@/components/landing/get-started";
 import { FadeIn, ScaleIn } from "@/components/ui/motion-wrapper";
 import { NativeAppGate } from "@/components/native-app-gate";
+import { SignupGateProvider } from "@/components/launch/signup-gate";
 
 export default function StorefrontPage() {
   return (
     // Sur iOS et Android, ce composant renvoie vers /login : l'application
     // n'affiche pas la vitrine marchande. Sur le web il est transparent.
     <NativeAppGate>
+      {/* AVANT LE LANCEMENT : les boutons d'inscription de la vitrine ouvrent
+          la pop-up « Lancement prochainement » posée par ce fournisseur, au
+          lieu du formulaire (`components/launch/signup-gate.tsx`). */}
+      <SignupGateProvider>
       {/* `overflow-x-clip` et non `-hidden` : `hidden` fait de ce conteneur un
           conteneur de défilement, et le `sticky` de la barre de navigation
           s'y accroche au lieu de suivre la fenêtre. */}
@@ -46,8 +51,8 @@ export default function StorefrontPage() {
         <FadeIn direction="up" delay={0.1}>
           <FAQ />
         </FadeIn>
-        {/* Accès libre : la liste d'attente (`components/landing/waitlist.tsx`)
-            est mise de côté, pas supprimée. */}
+        {/* La liste d'attente (`components/landing/waitlist.tsx`) est mise de
+            côté, pas supprimée. */}
         <ScaleIn delay={0.1}>
           <GetStarted />
         </ScaleIn>
@@ -55,6 +60,7 @@ export default function StorefrontPage() {
         <Footer />
         <ScrollToTop />
       </div>
+      </SignupGateProvider>
     </NativeAppGate>
   );
 }

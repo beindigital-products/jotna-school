@@ -4,32 +4,50 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { INVITATION_REFUSALS } from "@/convex/invitationRules";
 import {
   ArrowLeft,
+  CheckCircle2,
   Eye,
   EyeOff,
   GraduationCap,
   Heart,
+  Loader2,
   School,
   Ticket,
 } from "lucide-react";
-import type { RegisterParams } from "@/lib/auth";
+import { InvitationCodeForm } from "@/components/launch/invitation-code-form";
+import { LAUNCH_MESSAGE, LAUNCH_TITLE } from "@/components/launch/launch-copy";
+import { refusalMessage } from "@/lib/refusalMessage";
+import { isSignupRole, type SignupRole } from "@/lib/signup";
 
 /**
- * INSCRIPTION LIBRE — écoles, professeurs, parents.
+ * INSCRIPTION SUR INVITATION — écoles, professeurs, parents.
  *
- * Deux étapes : choisir le type de compte, puis remplir un formulaire court.
- * Le serveur filtre le rôle (`convex/auth.ts`, `openAccessRules`) : jamais
- * d'élève ici. Un enfant reçoit son compte d'un parent ou d'un professeur et
- * se connecte dans l'application avec son code.
+ * AVANT LE LANCEMENT, cette page n'ouvre son formulaire qu'à qui présente un
+ * code d'invitation valide (demande du propriétaire, 12 novembre 2026). Sans
+ * code, elle affiche l'annonce « Lancement prochainement » et la saisie du
+ * code : les mêmes mots que la pop-up des boutons d'inscription
+ * (`components/launch/signup-gate.tsx`), pour qui arrive ici par l'adresse.
  *
- * `?role=directeur|professeur|parent` présélectionne le type, pour les
- * boutons de la page d'accueil.
+ * `?code=JOTNA-…` présente le code : c'est le lien d'invitation que l'équipe
+ * copie depuis `/admin/invitations`, et ce que la pop-up écrit une fois le
+ * code reconnu. `?role=directeur|professeur|parent` présélectionne le type
+ * de compte, pour les boutons de la page d'accueil.
+ *
+ * Ensuite, deux étapes : choisir le type de compte, puis remplir un formulaire
+ * court. Le serveur filtre le rôle (`convex/auth.ts`, `openAccessRules`) :
+ * jamais d'élève ici. Un enfant reçoit son compte d'un parent ou d'un
+ * professeur et se connecte dans l'application avec son code.
+ *
+ * CET ÉCRAN NE FERME RIEN. Le serveur refuse toute inscription sans code
+ * valide et consomme le code en créant le compte (`convex/invitations.ts`) ;
+ * ici, on évite seulement à un visiteur de remplir un formulaire pour rien.
  */
 
-type AccountType = RegisterParams["role"];
+type AccountType = SignupRole;
 
 const ACCOUNT_TYPES: {
   role: AccountType;
@@ -61,10 +79,6 @@ const ACCOUNT_TYPES: {
   },
 ];
 
-function isAccountType(value: string | null): value is AccountType {
-  return value === "parent" || value === "professeur" || value === "directeur";
-}
-
 export default function RegisterPage() {
   return (
     <Suspense fallback={null}>
@@ -73,15 +87,148 @@ export default function RegisterPage() {
   );
 }
 
+/** Les phrases par lesquelles le serveur refuse un code (`ConvexError`). */
+const INVITATION_REFUSAL_SENTENCES: readonly string[] =
+  Object.values(INVITATION_REFUSALS);
+
 function RegisterFlow() {
   const params = useSearchParams();
   const preset = params.get("role");
+  const presentedCode = params.get("code") ?? "";
   const [role, setRole] = useState<AccountType | null>(
-    isAccountType(preset) ? preset : null,
+    isSignupRole(preset) ? preset : null,
   );
 
-  if (role === null) return <ChooseAccountType onChoose={setRole} />;
-  return <RegisterForm role={role} onBack={() => setRole(null)} />;
+  // LE CODE ACCEPTÉ L'EST POUR TOUTE LA VISITE. La lecture `check` est une
+  // requête vivante : dès que la personne crée son compte avec un code à une
+  // place, elle répondrait « déjà utilisé », et l'écran reviendrait à
+  // l'annonce avec un message d'erreur au moment même où l'inscription vient
+  // de réussir. On retient donc le premier « oui » et on cesse d'écouter ;
+  // le serveur reste seul juge à l'envoi du formulaire.
+  const [accepted, setAccepted] = useState<string | null>(null);
+  // Un code que le serveur a refusé À L'ENVOI du formulaire (la dernière
+  // place prise entre-temps, un code désactivé) : on revient à la saisie,
+  // avec sa phrase.
+  const [refused, setRefused] = useState<{
+    code: string;
+    message: string;
+  } | null>(null);
+
+  const check = useQuery(
+    api.invitations.check,
+    accepted === null && refused === null && presentedCode !== ""
+      ? { code: presentedCode }
+      : "skip",
+  );
+  if (accepted === null && refused === null && check?.ok) {
+    setAccepted(presentedCode);
+  }
+  const invitationCode =
+    accepted ?? (refused === null && check?.ok ? presentedCode : null);
+
+  if (invitationCode === null) {
+    const waiting =
+      refused === null && presentedCode !== "" && check === undefined;
+    if (waiting) {
+      return (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+          <span className="sr-only">Vérification du code d&apos;invitation…</span>
+        </div>
+      );
+    }
+    // Le code du lien, refusé à la lecture : on le montre, avec la raison.
+    const shown =
+      refused ??
+      (check !== undefined && !check.ok
+        ? { code: presentedCode, message: check.message }
+        : null);
+    return (
+      <LaunchGate
+        // Un autre refus est un autre écran : le champ repart du code refusé.
+        key={shown ? `${shown.code}|${shown.message}` : "sans-code"}
+        initialCode={shown?.code ?? ""}
+        initialError={shown?.message ?? null}
+        onAccepted={(code) => {
+          setRefused(null);
+          setAccepted(code);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+        Code d&apos;invitation accepté
+      </p>
+      {role === null ? (
+        <ChooseAccountType onChoose={setRole} />
+      ) : (
+        <RegisterForm
+          role={role}
+          invitationCode={invitationCode}
+          onBack={() => setRole(null)}
+          onInvitationRefused={(message) => {
+            setAccepted(null);
+            setRefused({ code: invitationCode, message });
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * L'annonce du lancement et la saisie du code : ce que voit un visiteur qui
+ * arrive sur `/register` sans code valide.
+ */
+function LaunchGate({
+  initialCode,
+  initialError,
+  onAccepted,
+}: {
+  initialCode: string;
+  initialError: string | null;
+  onAccepted: (code: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold">{LAUNCH_TITLE}</h1>
+        <p className="mt-2 text-sm leading-6 text-gray-600">{LAUNCH_MESSAGE}</p>
+      </div>
+
+      <InvitationCodeForm
+        initialCode={initialCode}
+        initialError={initialError}
+        onAccepted={onAccepted}
+      />
+
+      <div className="rounded-lg bg-gray-50 px-4 py-3 text-xs leading-5 text-gray-600">
+        <strong className="font-semibold text-gray-800">
+          Un billet de l&apos;école ?
+        </strong>{" "}
+        Si l&apos;école de votre enfant vous a remis un code (il commence par
+        PIO-),{" "}
+        <Link
+          href="/register/code"
+          className="font-medium text-amber-700 hover:underline"
+        >
+          activez votre espace parent ici
+        </Link>
+        .
+      </div>
+
+      <p className="text-center text-sm text-gray-600">
+        Déjà un compte ?{" "}
+        <Link href="/login" className="font-medium text-amber-700 hover:underline">
+          Se connecter
+        </Link>
+      </p>
+    </div>
+  );
 }
 
 function ChooseAccountType({
@@ -137,10 +284,16 @@ function ChooseAccountType({
 
 function RegisterForm({
   role,
+  invitationCode,
   onBack,
+  onInvitationRefused,
 }: {
   role: AccountType;
+  /** Le code reconnu à l'étape précédente ; le serveur le revérifie. */
+  invitationCode: string;
   onBack: () => void;
+  /** Le serveur a refusé le code à la création du compte : retour à la saisie. */
+  onInvitationRefused: (message: string) => void;
 }) {
   const { signIn } = useAuthActions();
   const createMySchool = useMutation(api.schoolSpace.createMySchool);
@@ -164,8 +317,24 @@ function RegisterForm({
     setLoading(true);
 
     try {
-      await signIn("password", { flow: "signUp", email, password, name, role });
+      await signIn("password", {
+        flow: "signUp",
+        email,
+        password,
+        name,
+        role,
+        invitationCode,
+      });
     } catch (err) {
+      // UN REFUS DU CODE ARRIVE EN `ConvexError`, avec sa phrase (`data`) :
+      // la dernière place a été prise entre-temps, ou le code vient d'être
+      // désactivé. Ce formulaire ne peut rien y changer, on revient à la
+      // saisie du code. Tout autre échec garde le formulaire rempli.
+      const refusal = refusalMessage(err, "");
+      if (INVITATION_REFUSAL_SENTENCES.includes(refusal)) {
+        onInvitationRefused(refusal);
+        return;
+      }
       const message = err instanceof Error ? err.message : "";
       setError(
         /already exists|existe/i.test(message)

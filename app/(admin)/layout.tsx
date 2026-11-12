@@ -11,6 +11,7 @@ import {
   Settings,
   Zap,
   Hourglass,
+  Ticket,
 } from "lucide-react";
 
 import { Brand } from "@/components/landing/brand";
@@ -38,6 +39,8 @@ const sidebarLinks = [
   { href: "/admin/badges", label: "Badges", icon: Award },
   { href: "/admin/ecoles", label: "Écoles", icon: School },
   { href: "/admin/eleves", label: "Élèves", icon: Users },
+  // Avant le lancement : qui peut créer un compte (`convex/invitations.ts`).
+  { href: "/admin/invitations", label: "Codes d'invitation", icon: Ticket },
   { href: "/admin/liste-attente", label: "Liste d'attente", icon: Hourglass },
   { href: "/admin/settings", label: "Paramètres", icon: Settings },
 ];
