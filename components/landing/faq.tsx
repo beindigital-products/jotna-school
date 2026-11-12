@@ -6,9 +6,15 @@ import { Plus } from "lucide-react";
 import { Section } from "./section";
 
 const ITEMS = [
+  // Avant le lancement : la première question que pose un visiteur qui vient
+  // de lire « Lancement prochainement ».
+  {
+    q: "Quand Jotna School sera-t-il disponible ?",
+    a: "Très bientôt : le lancement est en cours. D'ici là, seules les personnes qui ont reçu un code d'invitation peuvent créer un compte.",
+  },
   {
     q: "Combien coûte Jotna ?",
-    a: "Rien pour le moment. Écoles, professeurs et parents créent leur compte librement, et les élèves accèdent à tous les exercices de leur classe.",
+    a: "Rien pour le moment. La création de compte est gratuite pour les écoles, les professeurs et les parents, et les élèves accèdent à tous les exercices de leur classe.",
   },
   {
     q: "Qui crée le compte de l'enfant ?",

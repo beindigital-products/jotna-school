@@ -1,19 +1,24 @@
 import type { ComponentType, SVGProps } from "react";
-import Link from "next/link";
 import { ArrowRight, School } from "lucide-react";
 
 import { ParentHeartIcon, TeacherIcon } from "./landing-icons";
 import { Section } from "./section";
+import { LAUNCH_TITLE } from "@/components/launch/launch-copy";
+import { SignupLink } from "@/components/launch/signup-gate";
 import { Pio } from "@/components/student/pio";
 
 /**
- * COMMENCER — la section qui remplace la liste d'attente pendant l'accès
- * libre. Le composant `waitlist.tsx` et son backend restent dans le dépôt
- * pour revenir plus tard.
+ * COMMENCER — la section qui a remplacé la liste d'attente. Le composant
+ * `waitlist.tsx` et son backend restent dans le dépôt pour revenir plus tard.
  *
- * Un parcours par type de compte, chacun avec son bouton vers `/register`
- * déjà réglé sur le bon rôle. L'élève n'a pas de bouton : son compte est créé
- * par un adulte, et c'est écrit en bas.
+ * Un parcours par type de compte, chacun avec son bouton d'inscription déjà
+ * réglé sur le bon rôle. L'élève n'a pas de bouton : son compte est créé par
+ * un adulte, et c'est écrit en bas.
+ *
+ * AVANT LE LANCEMENT, la section annonce l'ouverture au lieu de promettre une
+ * inscription libre, et ses boutons ouvrent la pop-up « Lancement
+ * prochainement » : seules les personnes qui ont un code d'invitation vont
+ * jusqu'au formulaire (`components/launch/signup-gate.tsx`).
  */
 
 type Path = {
@@ -68,9 +73,9 @@ export function GetStarted() {
   return (
     <Section
       id="commencer"
-      eyebrow="Commencer"
-      title="Créez votre compte, c'est gratuit."
-      description="Écoles, professeurs et parents s'inscrivent librement. Les enfants, eux, n'ont rien à remplir."
+      eyebrow={LAUNCH_TITLE}
+      title="Jotna School ouvre bientôt."
+      description="Les inscriptions ouvriront au lancement, pour les écoles, les professeurs et les parents. Vous avez reçu un code d'invitation ? Créez votre compte dès maintenant."
     >
       <div className="grid gap-4 md:grid-cols-3">
         {PATHS.map((path) => {
@@ -99,8 +104,8 @@ export function GetStarted() {
                   </li>
                 ))}
               </ol>
-              <Link
-                href={`/register?role=${path.role}`}
+              <SignupLink
+                signupRole={path.role}
                 className="group mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-gray-800 active:scale-[0.98]"
               >
                 {path.cta}
@@ -108,7 +113,7 @@ export function GetStarted() {
                   className="size-4 transition-transform group-hover:translate-x-0.5"
                   aria-hidden
                 />
-              </Link>
+              </SignupLink>
             </div>
           );
         })}

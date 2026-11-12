@@ -58,7 +58,7 @@ unitaires et les deux builds. Les tests Playwright ne tournent qu'en local.
 
 | Fichier | Sujet |
 | --- | --- |
-| `docs/comptes-et-acces.md` | Les comptes créés par l'école, les rôles, les accès |
+| `docs/comptes-et-acces.md` | Qui crée quel compte : l'inscription sur invitation avant le lancement, l'école, les rôles, les accès |
 | `docs/encaissement-mise-en-service.md` | Les paiements et la mise en service de l'encaissement |
 | `docs/paliers-et-exercices.md` | Les paliers et la génération des exercices |
 | `docs/progression-niveau-etoiles-trophees.md` | Le niveau, les étoiles, la série, les missions et les trophées |

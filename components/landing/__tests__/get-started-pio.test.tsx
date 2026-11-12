@@ -5,7 +5,7 @@ import { GetStarted } from "../get-started";
 
 afterEach(cleanup);
 
-describe("la section « Créez votre compte »", () => {
+describe("la section « Commencer »", () => {
   it("garde ses trois parcours, vers l'inscription du bon rôle", () => {
     render(<GetStarted />);
     const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));

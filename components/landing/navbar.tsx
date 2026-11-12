@@ -6,6 +6,7 @@ import { ArrowRight, Menu } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { Brand } from "./brand";
+import { SignupLink } from "@/components/launch/signup-gate";
 import {
   Sheet,
   SheetContent,
@@ -114,16 +115,13 @@ export function Navbar() {
           >
             Se connecter
           </Link>
-          <Link
-            href="/register"
-            className="group hidden items-center gap-2 whitespace-nowrap rounded-full bg-gray-900 px-5 py-2.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] lg:inline-flex"
-          >
+          <SignupLink className="group hidden items-center gap-2 whitespace-nowrap rounded-full bg-gray-900 px-5 py-2.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] lg:inline-flex">
             S&apos;inscrire
             <ArrowRight
               className="size-4 transition-transform group-hover:translate-x-0.5"
               aria-hidden
             />
-          </Link>
+          </SignupLink>
 
           {/* Mobile Menu */}
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
@@ -174,8 +172,9 @@ export function Navbar() {
                   >
                     Se connecter
                   </Link>
-                  <Link
-                    href="/register"
+                  {/* Le menu se referme, puis la pop-up s'ouvre : elle est
+                      posée au-dessus de la page, pas dans ce menu. */}
+                  <SignupLink
                     onClick={closeMenu}
                     className="group flex h-12 items-center justify-center gap-2 rounded-xl bg-gray-900 text-base font-semibold text-white shadow-sm transition-transform active:scale-[0.98]"
                   >
@@ -184,7 +183,7 @@ export function Navbar() {
                       className="size-4 transition-transform group-hover:translate-x-0.5"
                       aria-hidden
                     />
-                  </Link>
+                  </SignupLink>
                 </div>
               </div>
             </SheetContent>

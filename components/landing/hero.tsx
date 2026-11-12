@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import Link from "next/link";
 import { ArrowRight, Calculator, CheckCircle2 } from "lucide-react";
+
+import { LAUNCH_TITLE } from "@/components/launch/launch-copy";
+import { SignupLink } from "@/components/launch/signup-gate";
 
 import { ElegantShape } from "./elegant-shape";
 import { CardPio, GreeterPio } from "./hero-pio";
@@ -20,17 +22,20 @@ export function Hero() {
       <div className="relative mx-auto grid w-full max-w-7xl items-center gap-14 lg:grid-cols-[1.1fr_1fr]">
         <div className="text-center lg:text-left">
           <GreeterPio className="mb-5" />
+          {/* L'annonce du lancement, à la place de « Gratuit, ouvert à tous » :
+              tant que le lancement n'est pas fait, l'inscription se fait sur
+              invitation (`components/launch/signup-gate.tsx`). */}
           <motion.span
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800"
+            className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-800"
           >
             <span
               aria-hidden
-              className="size-1.5 rounded-full bg-emerald-500"
+              className="size-2 animate-pulse rounded-full bg-amber-500"
             />
-            Gratuit, ouvert aux écoles, professeurs et parents
+            {LAUNCH_TITLE}
           </motion.span>
 
           <motion.h1
@@ -59,16 +64,13 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start"
           >
-            <Link
-              href="/register"
-              className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] sm:w-auto"
-            >
+            <SignupLink className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] sm:w-auto">
               S&apos;inscrire
               <ArrowRight
                 className="size-4 transition-transform group-hover:translate-x-0.5"
                 aria-hidden
               />
-            </Link>
+            </SignupLink>
             <a
               href="#comment"
               className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 bg-white px-6 py-3.5 text-base font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 sm:w-auto"

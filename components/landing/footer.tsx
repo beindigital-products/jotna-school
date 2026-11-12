@@ -2,10 +2,21 @@ import Link from "next/link";
 import { Mail, ShieldCheck } from "lucide-react";
 
 import { Brand } from "./brand";
+import { SignupLink } from "@/components/launch/signup-gate";
 
 type FooterColumn = {
   title: string;
-  links: Array<{ label: string; href: string; external?: boolean }>;
+  links: Array<{
+    label: string;
+    href: string;
+    external?: boolean;
+    /**
+     * Un bouton d'inscription : avant le lancement, il ouvre la pop-up
+     * « Lancement prochainement » comme tous les autres
+     * (`components/launch/signup-gate.tsx`).
+     */
+    signup?: boolean;
+  }>;
 };
 
 const COLUMNS: FooterColumn[] = [
@@ -24,7 +35,7 @@ const COLUMNS: FooterColumn[] = [
     title: "Compte",
     links: [
       { label: "Se connecter", href: "/login" },
-      { label: "Créer un compte", href: "/register" },
+      { label: "Créer un compte", href: "/register", signup: true },
       { label: "J'ai un code d'école", href: "/register/code" },
       { label: "Espace parent", href: "/parent/dashboard" },
       { label: "Espace professeur", href: "/teacher/dashboard" },
@@ -77,12 +88,18 @@ export function Footer() {
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-600 transition-colors hover:text-gray-900"
-                    >
-                      {link.label}
-                    </Link>
+                    {link.signup ? (
+                      <SignupLink className="text-sm text-gray-600 transition-colors hover:text-gray-900">
+                        {link.label}
+                      </SignupLink>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-sm text-gray-600 transition-colors hover:text-gray-900"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -1364,4 +1364,36 @@ export default defineSchema({
     audience: waitlistAudienceValidator,
     createdAt: v.number(),
   }).index("by_email", ["email"]),
+
+  // ---------------------------------------------------------------------------
+  // invitationCodes — les codes que l'équipe remet avant le lancement.
+  //
+  // Tant que Jotna School n'est pas lancé, un formulaire public ne crée de
+  // compte que sur présentation d'un de ces codes (`convex/invitations.ts`,
+  // règles dans `invitationRules.ts`). `code` est stocké NORMALISÉ
+  // (`normalizeInvitationCode` : lettres et chiffres, minuscules), l'écran
+  // l'affiche par `printableInvitationCode`.
+  //
+  // `useCount` EST UN COMPTEUR, PAS UN DÉCOMPTE RELU : `redeemInvitation`
+  // l'incrémente dans la transaction qui crée le compte, et c'est lui que
+  // `decideInvitation` compare à `maxUses`. Les lignes de `invitationUses`
+  // disent QUI ; elles ne servent pas à compter.
+  //
+  // `createdBy` est absent pour un code émis hors console
+  // (`invitations.issue`, sur un déploiement qui n'a pas encore d'admin).
+  // ---------------------------------------------------------------------------
+  invitationCodes: defineTable({
+    code: v.string(),
+    label: v.string(),
+    maxUses: v.number(),
+    useCount: v.number(),
+    revokedAt: v.optional(v.number()),
+    createdBy: v.optional(v.id("profiles")),
+  }).index("by_code", ["code"]),
+
+  // Un compte créé avec un code. La date est `_creationTime`.
+  invitationUses: defineTable({
+    invitationId: v.id("invitationCodes"),
+    userId: v.id("users"),
+  }).index("by_invitationId", ["invitationId"]),
 });

@@ -39,6 +39,20 @@ Gabarits du code, banques écrites à la main, démo, consigne de génération :
 - L'écran retire lui-même l'image quand elle donnerait la réponse (lire ou décoder,
   nommer une forme, relier un mot à l'émoji de la même chose) : ce n'est pas un trou.
 
+# Avant le lancement : pas de compte sans code d'invitation
+
+Demande du propriétaire (12 novembre 2026), valable jusqu'à ce qu'il annonce le
+lancement : le site dit « Lancement prochainement », garde ses boutons
+d'inscription, et personne ne crée de compte sans un code d'invitation émis dans
+`/admin/invitations`.
+
+- Le verrou est au serveur : `convex/auth.ts` (`Password.profile()` puis
+  `createOrUpdateUser`) et `convex/invitations.ts`. Ne pas le retirer, et ne pas
+  ajouter de chemin public qui crée un compte, sans une demande explicite.
+- Un bouton d'inscription est un `SignupLink` (`components/launch/signup-gate.tsx`) :
+  il ouvre la pop-up « Lancement prochainement », jamais le formulaire.
+- Détails, et quoi défaire le jour du lancement : `docs/comptes-et-acces.md`.
+
 <!-- convex-ai-start -->
 This project uses [Convex](https://convex.dev) as its backend.
 

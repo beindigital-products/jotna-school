@@ -12,10 +12,13 @@ import { refusalMessage } from "@/lib/refusalMessage";
 /**
  * UN PARENT QUI A REÇU UN CODE DE L'ÉCOLE (`PIO-…`).
  *
- * Depuis l'accès libre, un parent crée son compte sur `/register` sans aucun
- * code. Cet écran reste pour les familles d'une école qui a importé ses
- * élèves (`studentImport`) : le billet porte un code qui crée le compte ET
- * rattache l'enfant déjà inscrit (`parentLink.signUpWithCode`).
+ * Un parent crée d'ordinaire son compte sur `/register` (avant le lancement,
+ * avec un code d'invitation `JOTNA-…`). Cet écran reste pour les familles
+ * d'une école qui a importé ses élèves (`studentImport`) : le billet porte un
+ * code qui crée le compte ET rattache l'enfant déjà inscrit
+ * (`parentLink.signUpWithCode`). Ce chemin ne demande pas de code
+ * d'invitation : le billet en tient lieu, et l'école qui l'a imprimé a déjà
+ * été admise.
  *
  * LA CONNEXION SUIT LA CRÉATION, dans la foulée. L'action serveur crée le
  * compte mais n'ouvre pas de session : sans ce second appel, la famille
@@ -203,10 +206,12 @@ export default function ParentActivationPage() {
           Se connecter
         </Link>
       </p>
+      {/* Avant le lancement, `/register` demande un code d'invitation : ne
+          plus promettre ici un compte « sans code ». */}
       <p className="text-center text-xs text-gray-500">
-        Pas de code ?{" "}
+        Pas de billet de l&apos;école ?{" "}
         <Link href="/register" className="font-medium text-amber-700 hover:underline">
-          Créez votre compte sans code
+          Créez votre compte avec un code d&apos;invitation
         </Link>
         , puis ajoutez vos enfants vous-même.
       </p>

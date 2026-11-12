@@ -56,6 +56,8 @@ import type * as explainMistake from "../explainMistake.js";
 import type * as family from "../family.js";
 import type * as http from "../http.js";
 import type * as importCodes from "../importCodes.js";
+import type * as invitationRules from "../invitationRules.js";
+import type * as invitations from "../invitations.js";
 import type * as linkRequests from "../linkRequests.js";
 import type * as linkRequestsEmail from "../linkRequestsEmail.js";
 import type * as linkRules from "../linkRules.js";
@@ -346,6 +348,8 @@ declare const fullApi: ApiFromModules<{
   family: typeof family;
   http: typeof http;
   importCodes: typeof importCodes;
+  invitationRules: typeof invitationRules;
+  invitations: typeof invitations;
   linkRequests: typeof linkRequests;
   linkRequestsEmail: typeof linkRequestsEmail;
   linkRules: typeof linkRules;
