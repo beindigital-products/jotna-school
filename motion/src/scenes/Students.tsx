@@ -80,7 +80,7 @@ const Backgrounds: React.FC = () => {
 
 // Logos des plateformes, tracés de Simple Icons 16.34 (licence CC0) ; les marques
 // appartiennent à Apple Inc. et à Google LLC. Le vert est celui de la charte Android.
-const AppleLogo: React.FC<{ size: number; color?: string }> = ({ size, color = "#ffffff" }) => (
+export const AppleLogo: React.FC<{ size: number; color?: string }> = ({ size, color = "#ffffff" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" aria-label="Apple">
     <path
       fill={color}
@@ -89,7 +89,7 @@ const AppleLogo: React.FC<{ size: number; color?: string }> = ({ size, color = "
   </svg>
 );
 
-const AndroidLogo: React.FC<{ size: number; color?: string }> = ({ size, color = "#3DDC84" }) => (
+export const AndroidLogo: React.FC<{ size: number; color?: string }> = ({ size, color = "#3DDC84" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" aria-label="Android">
     <path
       fill={color}
@@ -99,7 +99,7 @@ const AndroidLogo: React.FC<{ size: number; color?: string }> = ({ size, color =
 );
 
 /** Pastille de plateforme : l'app élève existe sur iOS et sur Android. */
-const PlatformBadge: React.FC<{ os: string; at: number }> = ({ os, at }) => (
+export const PlatformBadge: React.FC<{ os: string; at: number }> = ({ os, at }) => (
   <PopIn at={at} from={0.7}>
     <div
       style={{

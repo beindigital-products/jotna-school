@@ -195,3 +195,112 @@ export const PhoneFrame: React.FC<PhoneProps> = ({ scale = 1, children, style, s
     </div>
   );
 };
+
+/**
+ * Un téléphone Android générique (même écran de 390 × 844 points que l'iPhone,
+ * puisque l'application est la même) : caméra en trou d'épingle à gauche de
+ * la barre d'état, coins moins ronds, barre de geste fine en bas.
+ */
+export const AndroidFrame: React.FC<PhoneProps> = ({ scale = 1, children, style, statusDark = true }) => {
+  const bezel = 11;
+  const w = PHONE_W + bezel * 2;
+  const h = PHONE_H + bezel * 2;
+  const ink = statusDark ? "#0b1020" : "#ffffff";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        width: w,
+        height: h,
+        transform: `scale(${scale})`,
+        transformOrigin: "top left",
+        fontFamily: FONT,
+        ...style,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: 50,
+          background: "linear-gradient(145deg, #3a3f4a, #14171d 55%, #2b2f38)",
+          boxShadow: "0 50px 100px -30px rgba(17,24,39,0.55), 0 18px 40px -18px rgba(17,24,39,0.4), inset 0 0 0 2px rgba(255,255,255,0.1)",
+        }}
+      />
+      {/* Boutons latéraux. */}
+      <div style={{ position: "absolute", right: -3, top: 190, width: 4, height: 70, borderRadius: 2, background: "#1b1e25" }} />
+      <div style={{ position: "absolute", right: -3, top: 290, width: 4, height: 120, borderRadius: 2, background: "#1b1e25" }} />
+      <div
+        style={{
+          position: "absolute",
+          left: bezel,
+          top: bezel,
+          width: PHONE_W,
+          height: PHONE_H,
+          borderRadius: 38,
+          overflow: "hidden",
+          background: "#ffffff",
+        }}
+      >
+        {children}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 44,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "4px 26px 0 30px",
+            color: ink,
+            fontSize: 15,
+            fontWeight: 600,
+            zIndex: 50,
+            pointerEvents: "none",
+          }}
+        >
+          <span>9:41</span>
+          <span style={{ display: "flex", gap: 7, alignItems: "center" }}>
+            <svg width="16" height="13" viewBox="0 0 16 13" fill="none">
+              <path d="M8 12L1 4.2a10 10 0 0 1 14 0L8 12z" fill={ink} />
+            </svg>
+            <svg width="14" height="13" viewBox="0 0 14 13" fill="none">
+              <path d="M14 13V0L0 13h14z" fill={ink} />
+            </svg>
+            <svg width="11" height="18" viewBox="0 0 11 18" fill="none">
+              <rect x="0.5" y="2.5" width="10" height="15" rx="2" fill={ink} />
+              <rect x="3.5" y="0" width="4" height="3" rx="1" fill={ink} />
+            </svg>
+          </span>
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            left: PHONE_W / 2 - 10,
+            width: 20,
+            height: 20,
+            borderRadius: 10,
+            background: "#000",
+            boxShadow: "inset 0 0 0 3px #11141a",
+            zIndex: 60,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: 8,
+            left: PHONE_W / 2 - 55,
+            width: 110,
+            height: 4,
+            borderRadius: 2,
+            background: statusDark ? "rgba(11,16,32,0.8)" : "rgba(255,255,255,0.9)",
+            zIndex: 60,
+          }}
+        />
+      </div>
+    </div>
+  );
+};

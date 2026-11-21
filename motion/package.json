@@ -9,6 +9,10 @@
     "studio": "remotion studio src/index.ts",
     "prerender": "npm run sync-assets",
     "render": "remotion render src/index.ts JotnaPresentation out/jotna-school-presentation.mp4 --codec=h264 --crf=17",
+    "render:ad": "remotion render src/index.ts JotnaAd out/jotna-pub-gratuit.mp4 --codec=h264 --crf=17",
+    "social:build": "node scripts/build-posts.mjs",
+    "social:voices": "node scripts/social-voices.mjs",
+    "social:render": "node scripts/render-social.mjs",
     "still": "remotion still src/index.ts JotnaPresentation out/still.png",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
