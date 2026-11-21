@@ -7,3 +7,6 @@ public/app/
 # `scripts/prepare-audio.sh` la télécharge depuis Mixkit.
 audio-src/music/
 public/audio/music/
+
+# Voix normalisées des publications : refaites par `npm run social:voices` à partir de audio-src/social/raw.
+public/audio/social/
