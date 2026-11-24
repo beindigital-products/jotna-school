@@ -49,7 +49,9 @@ export const mySchool = query({
     if (!profile || profile.role !== "directeur") return null;
 
     const school = await directedSchool(ctx, profile._id);
-    if (!school) return { school: null, teachers: [], classes: [] };
+    if (!school) {
+      return { school: null, teachers: [], formerTeachers: [], classes: [] };
+    }
 
     const staff = await ctx.db
       .query("schoolStaff")
@@ -57,6 +59,37 @@ export const mySchool = query({
       .take(STAFF_LIMIT);
 
     const teachers = [];
+    // Les anciens professeurs : la dernière sortie de chacun, s'il n'est pas
+    // revenu depuis.
+    const activeIds = new Set<string>(
+      staff
+        .filter((row) => row.status === "active")
+        .map((row) => row.profileId as string),
+    );
+    const lastExit = new Map<string, (typeof staff)[number]>();
+    for (const row of staff) {
+      if (row.status !== "removed" || row.staffRole !== "professeur") continue;
+      if (activeIds.has(row.profileId)) continue;
+      const known = lastExit.get(row.profileId);
+      if (!known || (row.removedAt ?? 0) >= (known.removedAt ?? 0)) {
+        lastExit.set(row.profileId, row);
+      }
+    }
+    const formerTeachers = [];
+    for (const row of lastExit.values()) {
+      const teacher = await ctx.db.get(row.profileId);
+      if (!teacher) continue;
+      const user = await ctx.db.get(teacher.userId as Id<"users">);
+      formerTeachers.push({
+        profileId: teacher._id,
+        name: teacher.name,
+        email: user?.email ?? null,
+        removedBy: row.removedBy ?? ("self" as const),
+        removedAt: row.removedAt ?? null,
+      });
+    }
+    formerTeachers.sort((a, b) => (b.removedAt ?? 0) - (a.removedAt ?? 0));
+
     for (const row of staff) {
       if (row.status !== "active" || row.staffRole !== "professeur") continue;
       const teacher = await ctx.db.get(row.profileId);
@@ -101,6 +134,7 @@ export const mySchool = query({
         joinCode: school.joinCode ? school.joinCode.toUpperCase() : null,
       },
       teachers,
+      formerTeachers,
       classes,
     };
   },
@@ -140,6 +174,19 @@ export const createMySchool = mutation({
       status: "active",
     });
     return { schoolId, joinCode };
+  },
+});
+
+/** Corrige le nom ou la ville de l'école du directeur connecté. */
+export const updateMySchool = mutation({
+  args: { name: v.string(), city: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const { school } = await requireDirecteur(ctx);
+    const name = cleanName(args.name);
+    if (name === null) throw new ConvexError("Saisissez le nom de l'école.");
+    const city = args.city ? cleanName(args.city) : null;
+    await ctx.db.patch(school._id, { name, city: city ?? undefined });
+    return null;
   },
 });
 
@@ -226,7 +273,11 @@ export const removeTeacher = mutation({
     const rows = await activeStaffRows(ctx, args.profileId);
     const row = rows.find((r) => r.schoolId === school._id);
     if (!row) return null;
-    await ctx.db.patch(row._id, { status: "removed" });
+    await ctx.db.patch(row._id, {
+      status: "removed",
+      removedBy: "school",
+      removedAt: Date.now(),
+    });
 
     const classes = await ctx.db
       .query("schoolClasses")

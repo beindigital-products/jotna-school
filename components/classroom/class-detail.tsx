@@ -3,19 +3,36 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
 import {
-  ArrowLeft,
-  KeyRound,
-  Loader2,
+  Pencil,
   Printer,
+  RefreshCw,
   Smartphone,
   UserMinus,
   UserPlus,
   Users,
 } from "lucide-react";
-import { refusalMessage } from "@/lib/refusalMessage";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import type { VisibleClassName } from "@/convex/curriculum";
+import { CLASS_OPTIONS } from "@/components/dashboard/class-options";
+import {
+  Button,
+  Card,
+  ChoiceTabs,
+  ConfirmAction,
+  DialogActions,
+  EmptyState,
+  Field,
+  FormDialog,
+  LoadingBlock,
+  Notice,
+  PageHeader,
+  Input,
+  SelectField,
+  plural,
+  useAsyncAction,
+} from "@/components/dashboard/ui";
 import { CodeChip } from "./code-chip";
 
 /**
@@ -32,78 +49,127 @@ import { CodeChip } from "./code-chip";
 export function ClassDetail({
   schoolClassId,
   backHref,
+  studentHref,
 }: {
-  schoolClassId: Id<"schoolClasses">;
+  schoolClassId: string | null;
   backHref: string;
+  /** L'adresse de la fiche d'un élève. Absente : le nom n'est pas un lien. */
+  studentHref?: (studentId: string) => string;
 }) {
-  const detail = useQuery(api.classrooms.classDetail, { schoolClassId });
+  const detail = useQuery(
+    api.classrooms.classDetail,
+    schoolClassId
+      ? { schoolClassId: schoolClassId as Id<"schoolClasses"> }
+      : "skip",
+  );
+  const back = { href: backHref, label: "Retour aux classes" };
 
-  if (detail === undefined) {
+  if (schoolClassId && detail === undefined) return <LoadingBlock />;
+
+  if (!schoolClassId || !detail) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="space-y-6">
+        <PageHeader title="Classe" back={back} />
+        <EmptyState
+          icon={Users}
+          title="Classe introuvable"
+          description="Cette classe n'existe pas, ou vous n'y avez pas accès."
+        />
       </div>
     );
   }
-  if (detail === null) {
-    return (
-      <div className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center">
-        <p className="text-sm text-gray-600">
-          Cette classe n&apos;existe pas, ou vous n&apos;y avez pas accès.
-        </p>
-        <Link href={backHref} className="mt-4 inline-block text-sm font-medium text-amber-700 hover:underline">
-          Retour
-        </Link>
-      </div>
-    );
-  }
+
+  const classId = schoolClassId as Id<"schoolClasses">;
 
   return (
     <div className="space-y-6">
-      <div className="print:hidden">
-        <Link
-          href={backHref}
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour aux classes
-        </Link>
-      </div>
+      <PageHeader
+        back={back}
+        title={`${detail.class} ${detail.label}`}
+        description={[
+          detail.schoolName,
+          detail.teacherName && `Professeur : ${detail.teacherName}`,
+          plural(detail.students.length, "élève"),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        actions={
+          <>
+            {!detail.full && (
+              <FormDialog
+                trigger={
+                  <>
+                    <UserPlus className="h-4 w-4" aria-hidden />
+                    Ajouter un élève
+                  </>
+                }
+                title="Ajouter un élève"
+                description={`Dans la classe ${detail.class} ${detail.label}.`}
+              >
+                {(close) => (
+                  <ChoiceTabs
+                    tabs={[
+                      {
+                        value: "create",
+                        label: "Nouveau compte",
+                        content: (
+                          <CreateStudentForm schoolClassId={classId} close={close} />
+                        ),
+                      },
+                      {
+                        value: "code",
+                        label: "Déjà un compte",
+                        content: (
+                          <AddByCodeForm schoolClassId={classId} close={close} />
+                        ),
+                      },
+                    ]}
+                  />
+                )}
+              </FormDialog>
+            )}
+            {detail.students.length > 0 && (
+              <Button variant="secondary" onClick={() => window.print()}>
+                <Printer className="h-4 w-4" aria-hidden />
+                Imprimer les codes
+              </Button>
+            )}
+            <FormDialog
+              triggerVariant="secondary"
+              trigger={
+                <>
+                  <Pencil className="h-4 w-4" aria-hidden />
+                  Modifier
+                </>
+              }
+              triggerLabel="Modifier le nom ou le niveau de la classe"
+              title="Modifier la classe"
+              description="Changer le niveau change les exercices que voient les élèves de la classe."
+            >
+              {(close) => (
+                <RenameClassForm
+                  schoolClassId={classId}
+                  level={detail.class as VisibleClassName}
+                  label={detail.label}
+                  close={close}
+                />
+              )}
+            </FormDialog>
+          </>
+        }
+      />
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {detail.class} {detail.label}
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {[detail.schoolName, detail.teacherName && `Professeur : ${detail.teacherName}`]
-              .filter(Boolean)
-              .join(" · ") || "Votre classe"}
-            {" · "}
-            {detail.students.length} élève{detail.students.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-        {detail.students.length > 0 && (
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 print:hidden"
-          >
-            <Printer className="h-4 w-4" />
-            Imprimer les codes
-          </button>
-        )}
-      </div>
+      {detail.full && (
+        <Notice tone="warning" className="print:hidden">
+          Cette classe a atteint son nombre maximal d&apos;élèves. Retirez un
+          élève pour en ajouter un autre.
+        </Notice>
+      )}
 
-      <div className="grid gap-4 md:grid-cols-2 print:hidden">
-        <CreateStudentCard schoolClassId={schoolClassId} disabled={detail.full} />
-        <AddByCodeCard schoolClassId={schoolClassId} disabled={detail.full} />
-      </div>
-
-      <section className="rounded-xl border border-gray-200 bg-white">
-        <div className="flex items-start gap-3 border-b border-gray-100 p-4 print:hidden">
-          <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-          <p className="text-sm text-gray-600">
+      <Card as="section" aria-label="Élèves de la classe" className="overflow-hidden">
+        <div className="flex items-start gap-3 border-b border-stone-100 p-4 print:hidden">
+          <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-(--dash-strong)" aria-hidden />
+          <p className="text-sm text-stone-700">
             Chaque élève se connecte dans l&apos;application Jotna School avec
             son <strong>code de connexion</strong>, tapé deux fois : comme
             identifiant et comme mot de passe.
@@ -112,153 +178,119 @@ export function ClassDetail({
 
         {detail.students.length === 0 ? (
           <div className="p-8 text-center">
-            <Users className="mx-auto h-10 w-10 text-gray-300" />
-            <p className="mt-2 text-sm text-gray-500">
-              Aucun élève pour l&apos;instant. Créez un compte ou ajoutez un
-              élève avec son code.
+            <Users className="mx-auto h-10 w-10 text-stone-400" aria-hidden />
+            <p className="mt-2 text-sm text-stone-600">
+              Aucun élève pour l&apos;instant. Ajoutez le premier avec le
+              bouton « Ajouter un élève ».
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-100">
-            {detail.students.map((s) => (
-              <StudentRow key={s.membershipId} student={s} />
+          <ul className="divide-y divide-stone-100">
+            {detail.students.map((student) => (
+              <StudentRow
+                key={student.membershipId}
+                student={student}
+                href={studentHref?.(student.studentId)}
+              />
             ))}
           </ul>
         )}
-      </section>
+      </Card>
     </div>
   );
 }
 
 function StudentRow({
   student,
+  href,
 }: {
   student: {
+    studentId: Id<"profiles">;
     membershipId: Id<"schoolMemberships">;
     name: string;
     loginCode: string | null;
     hasFamily: boolean;
   };
+  href?: string;
 }) {
   const removeStudent = useMutation(api.classrooms.removeStudent);
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const resetCode = useAction(api.studentCredentials.resetStudentLoginCode);
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="font-medium text-gray-900">{student.name}</p>
-        <p className="text-xs text-gray-500 print:hidden">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 print:break-inside-avoid">
+      <div className="min-w-0 flex-1 basis-40">
+        {href ? (
+          <Link
+            href={href}
+            className="break-words font-medium text-stone-900 underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-(--dash-strong)"
+          >
+            {student.name}
+          </Link>
+        ) : (
+          <p className="break-words font-medium text-stone-900">{student.name}</p>
+        )}
+        <p className="text-xs text-stone-600 print:hidden">
           {student.hasFamily ? "Famille connectée" : "Pas encore de parent lié"}
         </p>
       </div>
       {student.loginCode ? (
-        <CodeChip code={student.loginCode} size="sm" label="code de connexion" />
+        <CodeChip code={student.loginCode} size="sm" label={`code de connexion de ${student.name}`} />
       ) : (
-        <span className="text-xs text-gray-400">Connexion par email</span>
+        <span className="text-xs text-stone-600">Connexion par e-mail</span>
       )}
-      <div className="print:hidden">
-        {confirming ? (
-          <span className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await removeStudent({ membershipId: student.membershipId });
-                } finally {
-                  setBusy(false);
-                  setConfirming(false);
-                }
-              }}
-              className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-            >
-              Retirer
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              className="text-xs text-gray-500 hover:text-gray-800"
-            >
-              Annuler
-            </button>
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600"
-            title="Retirer de la classe (le compte de l'élève est conservé)"
-            aria-label={`Retirer ${student.name} de la classe`}
-          >
-            <UserMinus className="h-4 w-4" />
-          </button>
+      <div className="flex flex-wrap items-center print:hidden">
+        {student.loginCode && (
+          <ConfirmAction
+            danger={false}
+            trigger={<RefreshCw className="h-4 w-4" aria-hidden />}
+            triggerLabel={`Donner un nouveau code de connexion à ${student.name}`}
+            message="L'ancien code ne marchera plus, et l'élève sera déconnecté."
+            confirmLabel="Nouveau code"
+            failMessage="Le code n'a pas pu être changé."
+            onConfirm={() => resetCode({ studentId: student.studentId })}
+          />
         )}
+        <ConfirmAction
+          trigger={<UserMinus className="h-4 w-4" aria-hidden />}
+          triggerLabel={`Retirer ${student.name} de la classe`}
+          message="Son compte et ses progrès sont conservés."
+          confirmLabel="Retirer de la classe"
+          failMessage="L'élève n'a pas pu être retiré."
+          onConfirm={() => removeStudent({ membershipId: student.membershipId })}
+        />
       </div>
     </li>
   );
 }
 
-function CreateStudentCard({
+function CreateStudentForm({
   schoolClassId,
-  disabled,
+  close,
 }: {
   schoolClassId: Id<"schoolClasses">;
-  disabled: boolean;
+  close: () => void;
 }) {
   const createStudent = useAction(api.studentAccounts.createStudent);
   const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{ name: string; loginCode: string } | null>(null);
+  const { busy, error, run } = useAsyncAction("Le compte n'a pas pu être créé.");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await createStudent({ name, schoolClassId });
-      setCreated({ name: result.name, loginCode: result.loginCode });
-      setName("");
-    } catch (err) {
-      setError(refusalMessage(err, "Le compte n'a pas pu être créé."));
-    } finally {
-      setBusy(false);
-    }
+    const result = await run(() => createStudent({ name, schoolClassId }));
+    if (!result) return;
+    setCreated({ name: result.name, loginCode: result.loginCode });
+    setName("");
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <div className="flex items-center gap-2">
-        <UserPlus className="h-5 w-5 text-amber-600" />
-        <h2 className="font-semibold text-gray-900">Créer un compte élève</h2>
-      </div>
-      <p className="mt-1 text-sm text-gray-500">
-        Pour un enfant qui n&apos;a pas encore de compte.
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <p className="text-sm text-stone-600">
+        Pour un enfant qui n&apos;a pas encore de compte. Il reçoit un code de
+        connexion.
       </p>
-      <form onSubmit={submit} className="mt-3 flex gap-2">
-        <input
-          type="text"
-          required
-          maxLength={80}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Prénom et nom"
-          disabled={disabled}
-          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-        />
-        <button
-          type="submit"
-          disabled={busy || disabled}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-        >
-          {busy ? "…" : "Créer"}
-        </button>
-      </form>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       {created && (
-        <div className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
+        <Notice tone="success">
           <p>
             Compte de <strong>{created.name}</strong> créé. Son code de
             connexion :
@@ -266,24 +298,43 @@ function CreateStudentCard({
           <div className="mt-2">
             <CodeChip code={created.loginCode} size="lg" label="code de connexion" />
           </div>
-        </div>
+        </Notice>
       )}
-    </div>
+      <Field
+        label={created ? "Élève suivant" : "Prénom et nom"}
+        htmlFor="new-student-name"
+      >
+        <Input
+          id="new-student-name"
+          type="text"
+          maxLength={80}
+          autoComplete="off"
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </Field>
+      {error && <Notice tone="error">{error}</Notice>}
+      <DialogActions onCancel={close} cancelLabel={created ? "Terminé" : "Annuler"}>
+        <Button type="submit" busy={busy}>
+          Créer le compte
+        </Button>
+      </DialogActions>
+    </form>
   );
 }
 
-function AddByCodeCard({
+function AddByCodeForm({
   schoolClassId,
-  disabled,
+  close,
 }: {
   schoolClassId: Id<"schoolClasses">;
-  disabled: boolean;
+  close: () => void;
 }) {
   const addStudentByCode = useMutation(api.classrooms.addStudentByCode);
   const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const { busy, error, run } = useAsyncAction("L'élève n'a pas pu être ajouté.");
   const preview = useQuery(
     api.classrooms.previewStudentCode,
     code.trim().length >= 6 ? { code, schoolClassId } : "skip",
@@ -291,68 +342,120 @@ function AddByCodeCard({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setError(null);
     setDone(null);
-    try {
-      const result = await addStudentByCode({ code, schoolClassId });
-      setDone(
-        result.moved
-          ? `${result.name} a rejoint votre classe (et quitté son ancienne classe).`
-          : `${result.name} a rejoint votre classe.`,
-      );
-      setCode("");
-    } catch (err) {
-      setError(refusalMessage(err, "L'élève n'a pas pu être ajouté."));
-    } finally {
-      setBusy(false);
-    }
+    const result = await run(() => addStudentByCode({ code, schoolClassId }));
+    if (!result) return;
+    setDone(
+      result.moved
+        ? `${result.name} a rejoint votre classe et quitté son ancienne classe.`
+        : `${result.name} a rejoint votre classe.`,
+    );
+    setCode("");
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <div className="flex items-center gap-2">
-        <KeyRound className="h-5 w-5 text-lime-600" />
-        <h2 className="font-semibold text-gray-900">Ajouter avec un code élève</h2>
-      </div>
-      <p className="mt-1 text-sm text-gray-500">
-        L&apos;enfant a déjà un compte ? Demandez son code élève à sa famille
-        (il commence par ELV-).
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <p className="text-sm text-stone-600">
+        Demandez son code élève à sa famille. Il commence par ELV-.
       </p>
-      <form onSubmit={submit} className="mt-3 flex gap-2">
-        <input
+      {done && <Notice tone="success">{done}</Notice>}
+      <Field label="Code élève" htmlFor="student-code">
+        <Input
+          id="student-code"
           type="text"
-          required
           autoCapitalize="characters"
+          autoComplete="off"
           spellCheck={false}
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e) => {
+            setCode(e.target.value);
+            setDone(null);
+          }}
           placeholder="ELV-XXXXXX"
-          disabled={disabled}
-          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-lime-500"
+          className="font-mono uppercase tracking-wide"
         />
-        <button
+      </Field>
+      <div aria-live="polite">
+        {preview?.status === "ready" && (
+          <Notice tone={preview.alreadyHere ? "warning" : "info"}>
+            {preview.alreadyHere
+              ? `${preview.name} est déjà dans cette classe.`
+              : preview.inAnotherClass
+                ? `${preview.name} est dans une autre classe : il passera dans la vôtre.`
+                : `Élève trouvé : ${preview.name}.`}
+          </Notice>
+        )}
+        {preview?.status === "unknown" && (
+          <p className="text-sm text-stone-600">Aucun élève ne porte ce code.</p>
+        )}
+      </div>
+      {error && <Notice tone="error">{error}</Notice>}
+      <DialogActions onCancel={close} cancelLabel={done ? "Terminé" : "Annuler"}>
+        <Button
           type="submit"
-          disabled={busy || disabled || preview?.status !== "ready" || preview.alreadyHere}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+          busy={busy}
+          disabled={preview?.status !== "ready" || preview.alreadyHere}
         >
-          {busy ? "…" : "Ajouter"}
-        </button>
-      </form>
-      {preview?.status === "ready" && !done && (
-        <p className="mt-2 text-sm text-gray-700">
-          {preview.alreadyHere
-            ? `${preview.name} est déjà dans cette classe.`
-            : preview.inAnotherClass
-              ? `${preview.name} est dans une autre classe : il passera dans la vôtre.`
-              : `Élève trouvé : ${preview.name}.`}
-        </p>
-      )}
-      {preview?.status === "unknown" && (
-        <p className="mt-2 text-sm text-gray-500">Aucun élève ne porte ce code.</p>
-      )}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      {done && <p className="mt-2 text-sm text-emerald-700">{done}</p>}
-    </div>
+          Ajouter à la classe
+        </Button>
+      </DialogActions>
+    </form>
+  );
+}
+
+/** Renommer la classe ou changer son niveau. Le niveau des élèves suit. */
+function RenameClassForm({
+  schoolClassId,
+  level: currentLevel,
+  label: currentLabel,
+  close,
+}: {
+  schoolClassId: Id<"schoolClasses">;
+  level: VisibleClassName;
+  label: string;
+  close: () => void;
+}) {
+  const updateClass = useMutation(api.classrooms.updateClass);
+  const [level, setLevel] = useState(currentLevel);
+  const [label, setLabel] = useState(currentLabel);
+  const { busy, error, run } = useAsyncAction("La classe n'a pas pu être modifiée.");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const done = await run(async () => {
+      await updateClass({ schoolClassId, class: level, label });
+      return true;
+    });
+    if (done) close();
+  }
+
+  return (
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
+        <Field label="Niveau" htmlFor="edit-class-level">
+          <SelectField
+            id="edit-class-level"
+            value={level}
+            onValueChange={setLevel}
+            options={CLASS_OPTIONS}
+          />
+        </Field>
+        <Field label="Nom" htmlFor="edit-class-label">
+          <Input
+            id="edit-class-label"
+            type="text"
+            maxLength={30}
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+          />
+        </Field>
+      </div>
+      {error && <Notice tone="error">{error}</Notice>}
+      <DialogActions onCancel={close}>
+        <Button type="submit" busy={busy}>
+          Enregistrer
+        </Button>
+      </DialogActions>
+    </form>
   );
 }

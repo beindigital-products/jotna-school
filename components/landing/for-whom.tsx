@@ -1,141 +1,159 @@
-import type { ComponentType, SVGProps } from "react";
+"use client";
 
-import { KidIcon, ParentHeartIcon, TeacherIcon } from "./landing-icons";
-import { Section } from "./section";
+import { useState } from "react";
 
-type Persona = {
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
-  title: string;
-  tagline: string;
-  gradient: string;
-  iconShadow: string;
-  bulletColor: string;
-  points: string[];
-  featured?: boolean;
-};
+import { SEGMENT, SEGMENT_ITEM, WOOD } from "./landing-style";
 
-const PERSONAS: Persona[] = [
+/**
+ * TROIS ESPACES D'ADULTE, UN ONGLET CHACUN : parent, professeur, école. L'école
+ * a le sien, comme les deux autres : c'est elle qui partage le code école et
+ * active les modules.
+ *
+ * LES APERÇUS SONT DES EXEMPLES, dessinés ici avec des noms et des chiffres
+ * inventés, et étiquetés « Exemple d'écran ». Ils montrent ce que l'adulte
+ * suit ; ce ne sont pas des captures de l'application.
+ */
+type Row = { title: string; chip: string; warn?: boolean; detail: string; percent?: number };
+
+type Space = { id: string; label: string; title: string; points: string[]; screen: string; rows: Row[] };
+
+const SPACES: Space[] = [
   {
-    icon: KidIcon,
-    title: "Pour les enfants",
-    tagline: "Apprendre en s'amusant",
-    gradient: "bg-gradient-to-br from-amber-400 to-orange-500",
-    iconShadow: "shadow-[0_10px_24px_-8px_rgba(245,158,11,0.55)]",
-    bulletColor: "bg-amber-400",
+    id: "parent",
+    label: "Parent",
+    title: "Suivre sans surveiller",
     points: [
-      "Des exercices courts et variés",
-      "Des badges pour chaque étape",
-      "Une jauge de progression visuelle",
+      "Un seul compte pour tous vos enfants",
+      "Des rapports clairs, chapitre par chapitre",
+      "Une notification quand un badge est gagné",
+      "Un temps d'écran maîtrisé",
+    ],
+    screen: "Espace parent",
+    rows: [
+      { title: "Awa · CE2", chip: "Badge : Petit matheux", detail: "Les fractions", percent: 68 },
+      { title: "Modou · CP", chip: "Série : 5 jours", detail: "Lire les syllabes", percent: 39 },
     ],
   },
   {
-    icon: ParentHeartIcon,
-    title: "Pour les parents",
-    tagline: "Suivre sans surveiller",
-    gradient: "bg-gradient-to-br from-lime-500 to-emerald-600",
-    iconShadow: "shadow-[0_10px_24px_-8px_rgba(101,163,13,0.55)]",
-    bulletColor: "bg-lime-500",
-    featured: true,
-    points: [
-      "Créez le compte de chaque enfant en un instant",
-      "Tableau de bord pour plusieurs enfants",
-      "Rapports clairs par chapitre",
-      "Notifications quand un badge est gagné",
-      "Temps d'écran maîtrisé",
-    ],
-  },
-  {
-    icon: TeacherIcon,
-    title: "Pour les professeurs",
-    tagline: "Guider collectivement",
-    gradient: "bg-gradient-to-br from-orange-400 to-amber-600",
-    iconShadow: "shadow-[0_10px_24px_-8px_rgba(249,115,22,0.55)]",
-    bulletColor: "bg-orange-400",
+    id: "professeur",
+    label: "Professeur",
+    title: "Guider toute la classe",
     points: [
       "Vos classes créées en quelques clics",
       "Un élève ajouté avec son code élève",
-      "Suivi individuel des élèves",
-      "Détection des difficultés récurrentes",
-      "Contenus validés avant publication",
+      "Le suivi de chaque élève",
+      "Les difficultés qui reviennent, repérées pour vous",
+      "Des contenus validés avant publication",
+    ],
+    screen: "Classe CE2 A",
+    rows: [
+      { title: "Difficulté qui revient", chip: "4 élèves", warn: true, detail: "Les fractions : additionner un demi et un quart" },
+      { title: "Awa D.", chip: "En avance", detail: "Conjugaison", percent: 82 },
+      { title: "Ibrahima S.", chip: "À accompagner", warn: true, detail: "Les fractions", percent: 22 },
+    ],
+  },
+  {
+    id: "ecole",
+    label: "École",
+    title: "Voir toute l'école",
+    points: [
+      "Votre établissement inscrit par le directeur",
+      "Un code école à partager avec les professeurs",
+      "Toutes les classes sur un seul écran",
+      "Chaque classe confiée à un professeur",
+      "Des modules à activer, comme Arabe & Coran",
+    ],
+    screen: "Mon école",
+    rows: [
+      { title: "CI A", chip: "Mme Ndiaye", detail: "28 élèves" },
+      { title: "CE2 A", chip: "M. Fall", detail: "31 élèves" },
+      { title: "CM2 B", chip: "À confier", warn: true, detail: "Aucun professeur pour le moment" },
     ],
   },
 ];
 
 export function ForWhom() {
+  const [selected, setSelected] = useState(SPACES[0].id);
+  const space = SPACES.find((s) => s.id === selected) ?? SPACES[0];
+
   return (
-    <Section
-      id="pour-qui"
-      eyebrow="Pour qui"
-      title="Un outil pensé pour toute la famille."
-      description="Chaque rôle dispose de son espace. Les enfants apprennent, les adultes accompagnent."
-    >
-      <div className="grid items-stretch gap-4 md:grid-cols-3">
-        {PERSONAS.map((p) => {
-          const Icon = p.icon;
-          const isFeatured = p.featured;
+    <section id="pour-qui" className="bg-[#e3f1d6]">
+      <div className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#a5602c]">Pour les adultes</p>
+          <h2 className="mt-3 text-balance font-display text-3xl font-bold leading-[1.1] text-[#2b1d0e] sm:text-[42px]">
+            L&apos;enfant joue. Vous suivez ses progrès.
+          </h2>
+          <p className="mt-4 text-base leading-7 text-[#6b563f] sm:text-lg">
+            Chaque rôle dispose de son espace.
+          </p>
+        </div>
 
-          return (
-            <div
-              key={p.title}
-              className={
-                isFeatured
-                  ? "group relative overflow-hidden rounded-3xl border-2 border-lime-400 bg-gradient-to-br from-lime-50 via-white to-emerald-50/50 p-7 shadow-[0_20px_60px_-20px_rgba(101,163,13,0.35)] transition-all md:-translate-y-3 hover:-translate-y-4 hover:shadow-[0_25px_70px_-20px_rgba(101,163,13,0.45)]"
-                  : "group relative flex flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white p-7 transition-all hover:-translate-y-1 hover:border-gray-200 hover:shadow-lg"
-              }
-            >
-              {isFeatured && (
-                <span className="absolute right-5 top-5 inline-flex items-center rounded-full bg-lime-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                  Le + utilisé
-                </span>
-              )}
+        <div className="mt-8 flex justify-center">
+          <div role="group" aria-label="Espace" className={`${SEGMENT} bg-savanna-leaf-deep/15`}>
+            {SPACES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                aria-pressed={s.id === selected}
+                onClick={() => setSelected(s.id)}
+                className={`${SEGMENT_ITEM} cursor-pointer text-[#2b1d0e] ${
+                  s.id === selected ? "bg-savanna-sun" : "hover:bg-savanna-leaf-deep/10"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-              <div className="flex items-center">
-                <span
-                  className={`flex size-12 items-center justify-center rounded-2xl text-white ${p.gradient} ${p.iconShadow} ${
-                    isFeatured ? "ring-4 ring-lime-200" : ""
-                  }`}
-                >
-                  <Icon className="size-6" aria-hidden />
+        <div className="mt-8 grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr]" aria-live="polite">
+          <div>
+            <h3 className="font-display text-2xl font-bold text-[#2b1d0e] sm:text-3xl">{space.title}</h3>
+            <ul className="mt-4 space-y-2.5 text-base leading-6 text-[#2b1d0e]">
+              {space.points.map((point) => (
+                <li key={point} className="flex gap-3">
+                  <span
+                    aria-hidden
+                    className="mt-1 size-4 flex-none rounded-full bg-savanna-leaf-deep shadow-[inset_0_0_0_4px_#e3f1d6,0_0_0_2px_#3f8a2f]"
+                  />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className={WOOD}>
+            <div className="grid gap-3 rounded-[14px] bg-[#fffdf7] p-4 text-sm text-[#2b1d0e]">
+              <div className="flex items-center gap-3">
+                <p className="font-display text-base font-semibold">{space.screen}</p>
+                <span className="ml-auto rounded-lg border border-dashed border-[#6b563f] px-2 py-0.5 text-xs font-medium text-[#6b563f]">
+                  Exemple d&apos;écran
                 </span>
               </div>
-
-              <h3
-                className={`mt-6 font-extrabold text-gray-900 ${
-                  isFeatured ? "text-2xl" : "text-xl"
-                }`}
-              >
-                {p.title}
-              </h3>
-              <p
-                className={`mt-1 text-sm font-medium ${
-                  isFeatured ? "text-lime-700" : "text-gray-500"
-                }`}
-              >
-                {p.tagline}
-              </p>
-
-              <ul className="mt-5 space-y-2.5">
-                {p.points.map((point) => (
-                  <li
-                    key={point}
-                    className={`flex items-start gap-2.5 text-sm ${
-                      isFeatured ? "text-gray-700" : "text-gray-600"
+              {space.rows.map((row) => (
+                <div key={row.title} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 rounded-xl bg-[#fff8e7] px-3 py-2.5">
+                  <p className="min-w-0 font-semibold">{row.title}</p>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      row.warn ? "bg-[#fbe6c8] text-[#8a5200]" : "bg-[#e3f1d6] text-savanna-leaf-deep"
                     }`}
                   >
-                    <span
-                      aria-hidden
-                      className={`mt-[7px] size-1.5 flex-none rounded-full ${
-                        isFeatured ? p.bulletColor : "bg-gray-300"
-                      }`}
-                    />
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
+                    {row.chip}
+                  </span>
+                  <p className="min-w-0">{row.detail}</p>
+                  <span className="tabular-nums">{row.percent === undefined ? "" : `${row.percent} %`}</span>
+                  {row.percent === undefined ? null : (
+                    <div className="col-span-2 h-2 overflow-hidden rounded-full bg-[#ecd9ac]">
+                      <div className="h-full rounded-full bg-savanna-sun" style={{ width: `${row.percent}%` }} />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          );
-        })}
+          </div>
+        </div>
       </div>
-    </Section>
+    </section>
   );
 }

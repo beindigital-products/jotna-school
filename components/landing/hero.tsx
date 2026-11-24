@@ -1,298 +1,154 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Calculator, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight } from "lucide-react";
 
 import { LAUNCH_TITLE } from "@/components/launch/launch-copy";
 import { SignupLink } from "@/components/launch/signup-gate";
+import type { SignupRole } from "@/lib/signup";
 
-import { ElegantShape } from "./elegant-shape";
 import { CardPio, GreeterPio } from "./hero-pio";
-import { StreakFlameIcon, TrophyRibbonIcon } from "./landing-icons";
+import { BTN_PAPER, BTN_SUN, SEGMENT, SEGMENT_ITEM } from "./landing-style";
+
+/**
+ * LE HAUT DE LA PAGE SE PASSE AU CAMP DE PIO : le même décor de savane que
+ * l'accueil de l'élève, en plein cadre. Le visiteur voit le jeu avant d'en lire
+ * une ligne.
+ *
+ * TROIS LECTEURS, UN CHOIX. Un parent, un professeur et une école ne cherchent
+ * pas la même chose : le sélecteur change la phrase, et le bouton d'inscription
+ * emporte le rôle choisi (`SignupLink`, qui ouvre la pop-up « Lancement
+ * prochainement » tant que le site n'est pas lancé).
+ *
+ * LE SOLEIL est un bouton : il fait tomber la nuit sur le camp. L'image de nuit
+ * ne se télécharge qu'au premier appui.
+ */
+const DAY = "/images/world/hub-savanna-wide.jpg";
+const NIGHT = "/images/world/hub-savanna-night-wide.jpg";
+
+const ROLES: Array<{ role: SignupRole; label: string; pitch: string }> = [
+  {
+    role: "parent",
+    label: "Parent",
+    pitch:
+      "Votre enfant s'exerce sur le programme de sa classe. Vous voyez ses progrès chapitre par chapitre, pour chacun de vos enfants.",
+  },
+  {
+    role: "professeur",
+    label: "Professeur",
+    pitch:
+      "Créez vos classes, ajoutez vos élèves avec leur code et repérez les difficultés qui reviennent.",
+  },
+  {
+    role: "directeur",
+    label: "École",
+    pitch:
+      "Inscrivez votre établissement, partagez le code école avec vos professeurs et suivez toutes les classes.",
+  },
+];
+
+const PROOFS = ["Du CI au CM2", "Programme officiel sénégalais", "Ordinateur, tablette, téléphone"];
 
 export function Hero() {
+  const [role, setRole] = useState<SignupRole>("parent");
+  const [night, setNight] = useState(false);
+  const [nightSeen, setNightSeen] = useState(false);
+  const current = ROLES.find((r) => r.role === role) ?? ROLES[0];
+
+  // LE HÉROS REMPLIT L'ÉCRAN, moins la barre du menu (4 rem sur un téléphone,
+  // 5 rem au-delà) : la section suivante commence au bord bas de la fenêtre,
+  // pas au milieu. `svh` et non `vh` : la barre d'adresse d'un téléphone ne le
+  // fait pas déborder.
   return (
     <section
       id="accueil"
-      className="relative overflow-hidden px-5 pt-16 pb-24 sm:px-8 sm:pt-24 sm:pb-32"
+      className="relative isolate flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden bg-savanna-sky lg:min-h-[calc(100svh-5rem)]"
     >
-      <BackgroundGradients />
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-cover bg-bottom"
+        style={{ backgroundImage: `url(${DAY})` }}
+      />
+      {nightSeen ? (
+        <div
+          aria-hidden
+          className={`absolute inset-0 -z-10 bg-cover bg-bottom transition-opacity duration-700 motion-reduce:transition-none ${night ? "opacity-100" : "opacity-0"}`}
+          style={{ backgroundImage: `url(${NIGHT})` }}
+        />
+      ) : null}
 
-      <div className="relative mx-auto grid w-full max-w-7xl items-center gap-14 lg:grid-cols-[1.1fr_1fr]">
-        <div className="text-center lg:text-left">
-          <GreeterPio className="mb-5" />
-          {/* L'annonce du lancement, à la place de « Gratuit, ouvert à tous » :
-              tant que le lancement n'est pas fait, l'inscription se fait sur
-              invitation (`components/launch/signup-gate.tsx`). */}
-          <motion.span
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-800"
-          >
-            <span
-              aria-hidden
-              className="size-2 animate-pulse rounded-full bg-amber-500"
-            />
+      <button
+        type="button"
+        aria-pressed={night}
+        aria-label={night ? "Faire revenir le jour sur le camp" : "Faire tomber la nuit sur le camp"}
+        onClick={() => {
+          setNightSeen(true);
+          setNight((n) => !n);
+        }}
+        className={`absolute right-4 top-4 z-10 size-12 cursor-pointer rounded-full outline-none transition-transform hover:scale-110 focus-visible:ring-4 focus-visible:ring-white sm:right-8 sm:top-6 sm:size-14 ${
+          night
+            ? "bg-[radial-gradient(circle_at_35%_35%,#ffffff,#cfd8f5)] shadow-[0_0_0_7px_rgba(207,216,245,0.25)]"
+            : "bg-[radial-gradient(circle_at_35%_35%,#fff3b0,#ffb020)] shadow-[0_0_0_7px_rgba(255,176,32,0.28)]"
+        }`}
+      />
+
+      <div className="mx-auto grid w-full max-w-7xl flex-1 items-end gap-8 px-5 pt-10 sm:px-8 sm:pt-14 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="self-center pb-10 lg:pb-16">
+          <span className="inline-flex items-center rounded-full bg-[#fffdf7] px-4 py-1.5 text-sm font-semibold text-[#2b1d0e] shadow-[0_3px_0_#ecd9ac]">
             {LAUNCH_TITLE}
-          </motion.span>
+          </span>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.05 }}
-            className="mt-5 font-sans text-4xl font-extrabold leading-[1.05] tracking-tight text-gray-900 sm:text-5xl lg:text-[56px]"
-          >
-            Apprendre devient <RotatingWord />.
-          </motion.h1>
+          <h1 className="mt-5 text-balance font-display text-[40px] font-bold leading-[1.05] text-white [-webkit-text-stroke:2px_#5e3112] [paint-order:stroke_fill] [text-shadow:0_4px_0_#5e3112,0_10px_18px_rgba(43,29,14,0.35)] sm:text-6xl lg:text-[72px]">
+            Apprendre devient <span className="text-savanna-sun">une aventure.</span>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mt-5 max-w-xl text-lg leading-8 text-gray-600 lg:mx-0 lg:max-w-lg mx-auto"
-          >
-            Des exercices interactifs, des badges à collectionner et un suivi
-            clair pour les parents. Jotna aide les enfants à progresser en
-            maths, français et bien plus — à leur rythme.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start"
-          >
-            <SignupLink className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] sm:w-auto">
-              S&apos;inscrire
-              <ArrowRight
-                className="size-4 transition-transform group-hover:translate-x-0.5"
-                aria-hidden
-              />
-            </SignupLink>
-            <a
-              href="#comment"
-              className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 bg-white px-6 py-3.5 text-base font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 sm:w-auto"
-            >
-              Voir comment ça marche
-            </a>
-          </motion.div>
-
-          <motion.ul
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-500 lg:justify-start"
-          >
-            {[
-              "Adapté CP → CM2",
-              "Rapports parents",
-              "Sur ordinateur, tablette et mobile",
-            ].map((item) => (
-              <li key={item} className="inline-flex items-center gap-1.5">
-                <CheckCircle2
-                  className="size-4 text-emerald-500"
-                  aria-hidden
-                />
-                {item}
-              </li>
-            ))}
-          </motion.ul>
-        </div>
-
-        <HeroVisual />
-      </div>
-    </section>
-  );
-}
-
-const ROTATING_WORDS = [
-  { text: "un jeu", color: "bg-amber-300/80" },
-  { text: "une aventure", color: "bg-lime-300/80" },
-  { text: "un réflexe", color: "bg-orange-300/80" },
-];
-
-function RotatingWord() {
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex((current) => (current + 1) % ROTATING_WORDS.length);
-    }, 2400);
-    return () => clearInterval(interval);
-  }, []);
-
-  const current = ROTATING_WORDS[index];
-
-  return (
-    <span className="relative inline-block align-baseline">
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={current.text}
-          initial={{ opacity: 0, y: "0.25em", rotateX: -35 }}
-          animate={{ opacity: 1, y: 0, rotateX: 0 }}
-          exit={{ opacity: 0, y: "-0.25em", rotateX: 35 }}
-          transition={{ duration: 0.5, ease: [0.22, 0.61, 0.36, 1] }}
-          className="relative inline-block whitespace-nowrap"
-          style={{ transformStyle: "preserve-3d" }}
-        >
-          <span className="relative z-10">{current.text}</span>
-          <motion.span
-            aria-hidden
-            layout
-            className={`absolute inset-x-0 bottom-1 -z-0 h-3 rounded-full ${current.color}`}
-          />
-        </motion.span>
-      </AnimatePresence>
-    </span>
-  );
-}
-
-function BackgroundGradients() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute -top-24 left-1/2 size-[520px] -translate-x-1/2 rounded-full bg-gradient-to-br from-amber-200/60 via-orange-200/50 to-lime-200/50 blur-3xl" />
-      <div className="absolute -bottom-20 right-1/4 size-[320px] rounded-full bg-yellow-200/50 blur-3xl" />
-
-      <ElegantShape
-        delay={0.3}
-        width={420}
-        height={110}
-        rotate={12}
-        gradient="from-amber-400/40"
-        className="left-[-8%] top-[12%] md:left-[-3%]"
-      />
-      <ElegantShape
-        delay={0.5}
-        width={320}
-        height={90}
-        rotate={-15}
-        gradient="from-lime-400/35"
-        className="right-[-4%] top-[65%] md:right-[2%]"
-      />
-      <ElegantShape
-        delay={0.4}
-        width={220}
-        height={60}
-        rotate={-8}
-        gradient="from-orange-400/40"
-        className="left-[8%] bottom-[6%] md:left-[12%]"
-      />
-      <ElegantShape
-        delay={0.6}
-        width={150}
-        height={45}
-        rotate={20}
-        gradient="from-yellow-400/35"
-        className="right-[18%] top-[8%] md:right-[22%]"
-      />
-    </div>
-  );
-}
-
-function HeroVisual() {
-  return (
-    <div className="relative mx-auto w-full max-w-md lg:mx-0">
-      <motion.div
-        initial={{ opacity: 0, y: 20, rotate: -1 }}
-        animate={{ opacity: 1, y: 0, rotate: -1 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="relative rounded-3xl border border-gray-100 bg-white p-6 shadow-[0_20px_60px_-20px_rgba(245,192,38,0.35)]"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="flex size-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700"
-            >
-              <Calculator className="size-5" />
-            </span>
-            <div>
-              <p className="text-xs font-medium text-gray-500">Mathématiques</p>
-              <p className="text-sm font-bold text-gray-900">Les fractions</p>
+          <div className="mt-6 max-w-xl rounded-3xl bg-[#fffdf7]/92 p-4 shadow-[0_6px_0_rgba(94,49,18,0.22),0_18px_30px_-14px_rgba(43,29,14,0.45)] sm:p-5">
+            <div role="group" aria-label="Je suis" className={`${SEGMENT} bg-[#fdeecb]`}>
+              {ROLES.map((r) => (
+                <button
+                  key={r.role}
+                  type="button"
+                  aria-pressed={r.role === role}
+                  onClick={() => setRole(r.role)}
+                  className={`${SEGMENT_ITEM} cursor-pointer ${
+                    r.role === role ? "bg-[#8a4b1f] text-[#fff8e7]" : "text-[#2b1d0e] hover:bg-[#f6dfae]"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <p aria-live="polite" className="mt-3 min-h-[4.5rem] text-base leading-6 text-[#2b1d0e] sm:min-h-[4.5rem]">
+              {current.pitch}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <SignupLink signupRole={role} className={`group ${BTN_SUN}`}>
+                S&apos;inscrire
+                <ArrowRight className="size-5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </SignupLink>
+              <a href="#jouer" className={BTN_PAPER}>
+                Essayer un exercice
+              </a>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-            <span className="size-1.5 rounded-full bg-emerald-500" />
-            En cours
-          </span>
+
+          <ul className="mt-5 flex flex-wrap gap-2 text-sm font-medium text-[#2b1d0e]">
+            {PROOFS.map((proof) => (
+              <li key={proof} className="rounded-full bg-[#fffdf7]/88 px-3 py-1">
+                {proof}
+              </li>
+            ))}
+          </ul>
+
+          {/* SUR UN TÉLÉPHONE, PIO SALUE EN BAS : le visiteur lit d'abord le titre,
+              le choix du rôle et les boutons ; la mascotte vient après les
+              badges, sur le sable, avec sa bulle. Sur un grand écran, c'est
+              `CardPio`, à droite. */}
+          <GreeterPio className="mt-6" />
         </div>
 
-        <p className="mt-5 text-base font-semibold text-gray-900">
-          Combien fait <span className="text-amber-700">½ + ¼</span> ?
-        </p>
-
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {[
-            { label: "¾", correct: true },
-            { label: "⅔", correct: false },
-            { label: "⅛", correct: false },
-            { label: "1", correct: false },
-          ].map((opt) => (
-            <div
-              key={opt.label}
-              className={
-                opt.correct
-                  ? "flex items-center justify-between rounded-xl border-2 border-emerald-400 bg-emerald-50 px-3 py-2.5 text-sm font-bold text-emerald-700"
-                  : "flex items-center justify-between rounded-xl border-2 border-gray-100 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700"
-              }
-            >
-              <span>{opt.label}</span>
-              {opt.correct && (
-                <CheckCircle2 className="size-4 text-emerald-500" aria-hidden />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-5 flex items-center justify-between text-xs font-semibold">
-          <span className="text-gray-500">Maîtrise du chapitre</span>
-          <span className="text-gray-900">68 %</span>
-        </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: "68%" }}
-            transition={{ duration: 1, delay: 0.6, ease: "easeOut" }}
-            className="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-lime-500"
-          />
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8, rotate: 10 }}
-        animate={{ opacity: 1, scale: 1, rotate: 6 }}
-        transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.8 }}
-        className="absolute -right-2 -top-4 flex items-center gap-2 rounded-2xl border border-amber-200 bg-white px-3 py-2 shadow-lg sm:-right-4 sm:-top-6"
-      >
-        <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-amber-600 text-white shadow-[0_6px_14px_-6px_rgba(249,115,22,0.6)]">
-          <TrophyRibbonIcon className="size-4" />
-        </span>
-        <div className="pr-1">
-          <p className="text-[10px] font-medium text-gray-500">
-            Badge débloqué
-          </p>
-          <p className="text-xs font-bold text-gray-900">Petit matheux</p>
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 1 }}
-        className="absolute -bottom-5 left-2 flex items-center gap-2 rounded-2xl border border-gray-100 bg-white px-3 py-2 shadow-lg sm:-left-6"
-      >
-        <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-[0_6px_14px_-6px_rgba(244,63,94,0.55)]">
-          <StreakFlameIcon className="size-4" />
-        </span>
-        <div className="pr-1">
-          <p className="text-[10px] font-medium text-gray-500">Série</p>
-          <p className="text-xs font-bold text-gray-900">5 jours d&apos;affilée</p>
-        </div>
-      </motion.div>
-
-      <CardPio className="absolute -bottom-28 z-20 lg:-right-2 xl:-right-20" />
-    </div>
+        <CardPio className="self-end pb-6" />
+      </div>
+    </section>
   );
 }

@@ -1,12 +1,5 @@
-import { Loader2 } from "lucide-react";
+import { LoadingBlock } from "@/components/dashboard/ui";
 
-export default function ParentLoading() {
-  return (
-    <div className="flex flex-1 items-center justify-center py-20">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-teal-600" />
-        <p className="text-sm font-medium text-gray-500">Chargement...</p>
-      </div>
-    </div>
-  );
+export default function DashboardLoading() {
+  return <LoadingBlock />;
 }

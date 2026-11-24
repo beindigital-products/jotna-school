@@ -50,7 +50,7 @@ const PARENT: TourStep[] = [
     title: "Paramètres",
     target: "nav-settings",
     position: "right",
-    body: "Votre nom, votre photo et la réception des bulletins par courriel.",
+    body: "Votre nom et la réception des bulletins par courriel.",
   },
   {
     title: "Votre compte",
@@ -88,6 +88,12 @@ const TEACHER: TourStep[] = [
     body: "Tous les élèves de vos classes, au même endroit.",
   },
   {
+    title: "Exercices",
+    target: "nav-exercises",
+    position: "right",
+    body: "Vos fiches PDF, transformées en exercices pour vos élèves.",
+  },
+  {
     title: "Rapports",
     target: "nav-reports",
     position: "right",
@@ -97,7 +103,7 @@ const TEACHER: TourStep[] = [
     title: "Paramètres",
     target: "nav-settings",
     position: "right",
-    body: "Votre nom, votre photo et vos préférences.",
+    body: "Votre nom et votre compte.",
   },
   {
     title: "À vous de jouer",
@@ -114,11 +120,21 @@ const SCHOOL: TourStep[] = [
     title: "Mon école",
     target: "nav-dashboard",
     position: "right",
-    body: "Une seule page, trois blocs.",
+    body: "Votre école en un coup d'œil.",
     points: [
       "Le code école, à donner à vos professeurs",
-      "Les professeurs qui l'ont saisi",
       "Les classes, avec leurs élèves",
+    ],
+  },
+  {
+    title: "Professeurs",
+    target: "nav-teachers",
+    position: "right",
+    body: "Vos professeurs et leurs accès.",
+    points: [
+      "Inviter un professeur par son adresse e-mail",
+      "Lui attribuer une classe",
+      "Retirer ses accès quand il quitte l'école",
     ],
   },
   {

@@ -83,10 +83,28 @@ export const getTeacherStudents = query({
           0,
         );
 
+        // Sa classe, et à qui elle appartient : une école, ou le professeur
+        // lui-même (`schoolName: null`, un cours particulier). L'écran s'en
+        // sert pour ne pas mélanger les deux.
+        const membership = await ctx.db
+          .query("schoolMemberships")
+          .withIndex("by_student_status", (q) =>
+            q.eq("studentId", student._id).eq("status", "active"),
+          )
+          .first();
+        const schoolClass = membership
+          ? await ctx.db.get(membership.schoolClassId)
+          : null;
+        const school = schoolClass ? await ctx.db.get(schoolClass.schoolId) : null;
+
         return {
           ...student,
           completedTopics,
           completedExercises,
+          className: schoolClass
+            ? `${schoolClass.class} ${schoolClass.label}`
+            : null,
+          schoolName: school && school.kind !== "personal" ? school.name : null,
         };
       }),
     );

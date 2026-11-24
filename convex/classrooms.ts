@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { visibleClassValidator } from "./curriculum";
 import { normalizeCode } from "./importCodes";
@@ -14,7 +14,7 @@ import {
   CLASSES_LIMIT,
   ensurePersonalSchool,
   loginCodeOf,
-  personalSchoolOf,
+  STAFF_PER_PROFILE_LIMIT,
   placeStudentInClass,
 } from "./classroomHelpers";
 
@@ -76,6 +76,8 @@ export const myClasses = query({
           _id: c._id,
           class: c.class,
           label: c.label,
+          // `null` : un cours particulier, dans l'espace personnel du professeur.
+          schoolId: school && school.kind !== "personal" ? school._id : null,
           schoolName:
             school && school.kind !== "personal" ? school.name : null,
           studentCount: await activeStudentCount(ctx, c._id),
@@ -127,15 +129,10 @@ export const createMyClass = mutation({
       }
       schoolId = args.schoolId;
     } else {
-      let firstReal: Id<"schools"> | null = null;
-      for (const row of staff) {
-        const school = await ctx.db.get(row.schoolId);
-        if (school && school.kind !== "personal") {
-          firstReal = school._id;
-          break;
-        }
-      }
-      schoolId = firstReal ?? (await ensurePersonalSchool(ctx, profile));
+      // Sans école nommée, la classe est un cours particulier : elle va dans
+      // l'espace personnel du professeur, même s'il fait partie d'une école.
+      // L'écran propose la destination quand il en a plusieurs.
+      schoolId = await ensurePersonalSchool(ctx, profile);
     }
 
     if (await classExists(ctx, schoolId, args.class, label)) {
@@ -424,39 +421,87 @@ export const joinSchoolWithCode = mutation({
       throw new ConvexError(`Vous faites déjà partie de ${school.name}.`);
     }
 
-    await ctx.db.insert("schoolStaff", {
-      schoolId: school._id,
-      profileId: profile._id,
-      staffRole: "professeur",
-      status: "active",
-    });
-
-    let movedClasses = 0;
-    const personal = await personalSchoolOf(ctx, profile._id);
-    if (personal) {
-      const classes = await ctx.db
-        .query("schoolClasses")
-        .withIndex("by_school", (q) => q.eq("schoolId", personal._id))
-        .take(CLASSES_LIMIT);
-      for (const c of classes) {
-        let label = c.label;
-        if (await classExists(ctx, school._id, c.class, label)) {
-          label = `${c.label} (${profile.name})`.slice(0, 60);
-        }
-        await ctx.db.patch(c._id, { schoolId: school._id, label });
-        const memberships = await ctx.db
-          .query("schoolMemberships")
-          .withIndex("by_class_status", (q) =>
-            q.eq("schoolClassId", c._id).eq("status", "active"),
-          )
-          .take(CLASS_STUDENTS_LIMIT);
-        for (const m of memberships) {
-          await ctx.db.patch(m._id, { schoolId: school._id });
-        }
-        movedClasses++;
-      }
+    // RETIRÉ PAR L'ÉCOLE, IL NE REVIENT PAS PAR LE CODE. Sans ce refus, retirer
+    // un professeur ne coupait rien : il connaît le code école et le
+    // ressaisissait. La direction peut le réinviter, ou changer le code.
+    const history = await ctx.db
+      .query("schoolStaff")
+      .withIndex("by_profile", (q) => q.eq("profileId", profile._id))
+      .take(STAFF_PER_PROFILE_LIMIT);
+    const exits = history
+      .filter((row) => row.schoolId === school._id && row.status === "removed")
+      .sort((a, b) => (b.removedAt ?? 0) - (a.removedAt ?? 0));
+    if (exits[0]?.removedBy === "school") {
+      throw new ConvexError(
+        `La direction de ${school.name} vous a retiré de l'école. Pour y ` +
+          "revenir, demandez-lui une invitation.",
+      );
     }
 
+    const movedClasses = await attachTeacherToSchool(ctx, profile, school);
     return { schoolName: school.name, movedClasses };
   },
 });
+
+/**
+ * Quitte une école. Les classes du professeur y restent, sans professeur :
+ * elles appartiennent à l'école, comme quand la direction le retire.
+ */
+export const leaveSchool = mutation({
+  args: { schoolId: v.id("schools") },
+  handler: async (ctx, args) => {
+    const profile = await requireTeacher(ctx);
+    const rows = await activeStaffRows(ctx, profile._id);
+    const row = rows.find(
+      (r) => r.schoolId === args.schoolId && r.staffRole === "professeur",
+    );
+    if (!row) throw new ConvexError("Vous ne faites pas partie de cette école.");
+    await ctx.db.patch(row._id, {
+      status: "removed",
+      removedBy: "self",
+      removedAt: Date.now(),
+    });
+
+    const classes = await ctx.db
+      .query("schoolClasses")
+      .withIndex("by_school", (q) => q.eq("schoolId", args.schoolId))
+      .take(CLASSES_LIMIT);
+    for (const c of classes) {
+      if (c.teacherId === profile._id) {
+        await ctx.db.patch(c._id, { teacherId: undefined });
+      }
+    }
+    return null;
+  },
+});
+
+
+/**
+ * Fait entrer un professeur dans une école. Rend le nombre de classes
+ * déplacées : toujours zéro.
+ *
+ * SES COURS PARTICULIERS NE BOUGENT PAS. Les classes de son espace personnel
+ * et leurs élèves restent à lui ; l'école ne les voit pas. Avant, entrer dans
+ * une école y déplaçait toutes ses classes : un professeur qui suit des élèves
+ * à titre privé les aurait remis à la direction en acceptant une invitation.
+ * Dans l'école, il enseigne les classes que la direction lui attribue ou
+ * qu'il y crée.
+ *
+ * Les deux chemins d'entrée passent ici : le code école saisi par le
+ * professeur (`joinSchoolWithCode`) et l'invitation de la direction qu'il
+ * accepte (`schoolInvitations.respond`). L'appelant a déjà vérifié que le
+ * professeur n'est pas dans l'école.
+ */
+export async function attachTeacherToSchool(
+  ctx: MutationCtx,
+  profile: Doc<"profiles">,
+  school: Doc<"schools">,
+): Promise<number> {
+  await ctx.db.insert("schoolStaff", {
+    schoolId: school._id,
+    profileId: profile._id,
+    staffRole: "professeur",
+    status: "active",
+  });
+  return 0;
+}

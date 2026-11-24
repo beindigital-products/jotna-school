@@ -2,97 +2,25 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import Link from "next/link";
-import { FileBarChart, ChevronRight, UserCircle } from "lucide-react";
+import { LoadingBlock, PageHeader } from "@/components/dashboard/ui";
+import { ReportList } from "@/components/dashboard/report-views";
 
-export default function ParentReportsPage() {
-  const profile = useQuery(api.profiles.getCurrentProfile);
+export default function ReportsPage() {
   const reports = useQuery(api.reports.listByParent);
-
-  if (profile === undefined) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (profile === null) {
-    return (
-      <div className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-        <UserCircle className="mx-auto h-12 w-12 text-gray-400" />
-        <p className="mt-3 text-sm text-gray-500">Non connecté</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Rapports</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Les rapports de progression générés pour vos enfants.
-        </p>
-      </div>
-
+      <PageHeader title="Rapports" description="Un rapport par thématique terminée : la note, les points forts et ce qu'il reste à revoir." />
       {reports === undefined ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
-        </div>
-      ) : reports.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
-          <FileBarChart className="mx-auto h-12 w-12 text-gray-400" />
-          <p className="mt-2 text-sm text-gray-500">
-            Aucun rapport disponible pour le moment.
-          </p>
-          <p className="mt-1 text-xs text-gray-400">
-            Les rapports sont générés automatiquement lorsqu&apos;un enfant
-            termine une thématique.
-          </p>
-        </div>
+        <LoadingBlock />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {reports.map((r) => {
-            const scorePercent = Math.round(r.score * 100);
-            const scoreColor =
-              scorePercent >= 80
-                ? "text-green-600"
-                : scorePercent >= 50
-                  ? "text-amber-600"
-                  : "text-red-600";
-
-            return (
-              <Link
-                key={r._id}
-                href={`/parent/children/reports?id=${r.studentId}&topicId=${r.topicId}`}
-                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {r.studentName}
-                    </p>
-                    <p className="text-xs text-gray-500">{r.subjectName}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </div>
-                <p className="mt-3 text-sm text-gray-700">{r.topicName}</p>
-                <div className="mt-3 flex items-end justify-between">
-                  <span className={`text-2xl font-bold ${scoreColor}`}>
-                    {scorePercent}%
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {new Date(r._creationTime).toLocaleDateString("fr-FR", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <ReportList
+          reports={reports}
+          hrefFor={(report) =>
+            `/parent/children/reports?id=${report.studentId}&topicId=${report.topicId}`
+          }
+          emptyHint="Un rapport est créé chaque fois qu'un de vos enfants termine une thématique."
+        />
       )}
     </div>
   );

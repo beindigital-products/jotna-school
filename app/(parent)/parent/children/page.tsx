@@ -1,26 +1,42 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
-import { VISIBLE_CLASSES, type VisibleClassName } from "@/convex/curriculum";
 import {
   ArrowRight,
   GraduationCap,
   KeyRound,
-  Loader2,
+  RefreshCw,
   Smartphone,
   Ticket,
-  UserCircle,
   UserPlus,
 } from "lucide-react";
-import { refusalMessage } from "@/lib/refusalMessage";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import type { VisibleClassName } from "@/convex/curriculum";
+import { CLASS_OPTIONS } from "@/components/dashboard/class-options";
 import { CodeChip } from "@/components/classroom/code-chip";
+import {
+  Avatar,
+  Button,
+  ButtonLink,
+  Card,
+  ChoiceTabs,
+  ConfirmAction,
+  DialogActions,
+  EmptyState,
+  Field,
+  FormDialog,
+  Input,
+  LoadingBlock,
+  Notice,
+  PageHeader,
+  SelectField,
+  useAsyncAction,
+} from "@/components/dashboard/ui";
 
 /**
- * MES ENFANTS — accès libre.
+ * MES ENFANTS.
  *
  * Le parent crée ici le compte de chaque enfant. Chaque carte montre les deux
  * codes, avec leur usage écrit à côté pour qu'on ne les confonde pas :
@@ -31,53 +47,90 @@ import { CodeChip } from "@/components/classroom/code-chip";
  */
 export default function ParentChildrenPage() {
   const children = useQuery(api.family.myChildren);
+  const kids = children ?? [];
+
+  const addChild = (
+    <FormDialog
+      trigger={
+        <>
+          <UserPlus className="h-4 w-4" aria-hidden />
+          Ajouter un enfant
+        </>
+      }
+      title="Ajouter un enfant"
+      description="Créez son compte, ou retrouvez celui que son école a déjà créé."
+    >
+      {(close) => (
+        <ChoiceTabs
+          tabs={[
+            {
+              value: "create",
+              label: "Nouveau compte",
+              content: <AddChildForm close={close} />,
+            },
+            {
+              value: "ticket",
+              label: "Billet de l'école",
+              content: <SchoolTicket />,
+            },
+          ]}
+        />
+      )}
+    </FormDialog>
+  );
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Mes enfants</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Créez le compte de vos enfants, puis suivez leurs progrès.
-        </p>
-      </div>
-
-      <HowItWorks />
+      <PageHeader
+        title="Mes enfants"
+        description="Les comptes de vos enfants et leurs codes."
+        actions={kids.length > 0 ? addChild : undefined}
+      />
 
       {children === undefined ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        </div>
-      ) : children === null ? null : (
+        <LoadingBlock />
+      ) : kids.length === 0 ? (
         <>
-          {children.length > 0 && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {children.map((child) => (
-                <ChildCard key={child._id} child={child} />
-              ))}
-            </div>
-          )}
-          <AddChildForm first={children.length === 0} />
+          <HowItWorks />
+          <EmptyState
+            icon={UserPlus}
+            title="Ajoutez votre premier enfant"
+            description="Créez son compte en une minute : son nom et sa classe suffisent."
+            action={addChild}
+          />
         </>
+      ) : (
+        <ul className="grid gap-4 lg:grid-cols-2">
+          {kids.map((child) => (
+            <ChildCard key={child._id} child={child} />
+          ))}
+        </ul>
       )}
+    </div>
+  );
+}
 
-      <p className="text-sm text-gray-500">
-        <Ticket className="mr-1 inline h-4 w-4" />
-        L&apos;école de votre enfant vous a remis un billet avec un code PIO- ?{" "}
-        <Link
-          href="/parent/children/code"
-          className="font-medium text-teal-700 hover:underline"
-        >
-          Saisissez-le ici
-        </Link>
-        .
+/** Le billet remis par l'école : il rattache un compte que l'école a créé. */
+function SchoolTicket() {
+  return (
+    <div className="space-y-4">
+      <p className="flex items-start gap-3 text-sm text-stone-700">
+        <Ticket className="mt-0.5 h-5 w-5 shrink-0 text-(--dash-strong)" aria-hidden />
+        L&apos;école vous a remis un billet avec un code qui commence par PIO- ?
+        Il rattache à votre espace le compte que l&apos;école a créé pour votre
+        enfant. Vous n&apos;avez pas de compte à créer.
       </p>
+      <ButtonLink href="/parent/children/code" className="w-full sm:w-auto">
+        Saisir le code du billet
+        <ArrowRight className="h-4 w-4" aria-hidden />
+      </ButtonLink>
     </div>
   );
 }
 
 function HowItWorks() {
   const steps = [
-    { icon: UserPlus, text: "Créez le compte de votre enfant (nom et classe)." },
+    { icon: UserPlus, text: "Créez le compte de votre enfant : son nom et sa classe." },
     {
       icon: Smartphone,
       text: "Il se connecte dans l'application Jotna School avec son code de connexion.",
@@ -89,19 +142,16 @@ function HowItWorks() {
   ];
   return (
     <ol className="grid gap-3 sm:grid-cols-3">
-      {steps.map(({ icon: Icon, text }, i) => (
-        <li
-          key={i}
-          className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-4"
-        >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-lime-100 text-sm font-bold text-lime-800">
-            {i + 1}
+      {steps.map(({ icon: Icon, text }, index) => (
+        <Card as="li" key={index} className="flex items-start gap-3 p-4">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--dash-soft) text-sm font-bold text-(--dash-strong)">
+            {index + 1}
           </span>
-          <span className="text-sm text-gray-700">
-            <Icon className="mb-1 h-4 w-4 text-lime-700" />
+          <span className="text-sm text-stone-700">
+            <Icon className="mb-1 h-4 w-4 text-(--dash-strong)" aria-hidden />
             {text}
           </span>
-        </li>
+        </Card>
       ))}
     </ol>
   );
@@ -123,196 +173,158 @@ type Child = {
 
 function ChildCard({ child }: { child: Child }) {
   const ensureStudentCode = useMutation(api.family.ensureStudentCode);
+  const regenerateStudentCode = useMutation(api.family.regenerateStudentCode);
   const setChildLevel = useMutation(api.family.setChildLevel);
-  const [busy, setBusy] = useState(false);
+  const code = useAsyncAction("Le code élève n'a pas pu être affiché.");
+  const level = useAsyncAction("La classe n'a pas pu être changée.");
+  const levelId = `level-${child._id}`;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-3">
-        {child.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={child.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
-        ) : (
-          <UserCircle className="h-12 w-12 text-gray-300" />
-        )}
+    <Card as="li" className="flex flex-col p-5">
+      <div className="flex items-start gap-3">
+        <Avatar name={child.name} src={child.avatar} />
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-gray-900">{child.name}</h3>
+          <h2 className="break-words font-semibold text-stone-900">{child.name}</h2>
           {child.classroom ? (
-            <p className="text-sm text-gray-500">
-              {child.classroom.name}
-              {child.classroom.teacherName ? ` · ${child.classroom.teacherName}` : ""}
-              {child.classroom.schoolName ? ` · ${child.classroom.schoolName}` : ""}
+            <p className="text-sm text-stone-600">
+              {[child.classroom.name, child.classroom.teacherName, child.classroom.schoolName]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
           ) : (
-            <label className="mt-0.5 flex items-center gap-2 text-sm text-gray-500">
-              Classe :
-              <select
-                value={child.level ?? ""}
-                onChange={(e) =>
-                  setChildLevel({
-                    studentId: child._id,
-                    level: e.target.value as VisibleClassName,
-                  })
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <label htmlFor={levelId} className="text-sm text-stone-600">
+                Classe
+              </label>
+              <SelectField
+                id={levelId}
+                value={(child.level as VisibleClassName | null) ?? ""}
+                disabled={level.busy}
+                placeholder="À choisir"
+                onValueChange={(next) =>
+                  void level.run(() =>
+                    setChildLevel({ studentId: child._id, level: next }),
+                  )
                 }
-                className="rounded-md border border-gray-300 px-1.5 py-0.5 text-sm text-gray-800"
-              >
-                {!child.level && <option value="">À choisir</option>}
-                {VISIBLE_CLASSES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </label>
+                options={CLASS_OPTIONS}
+                className="w-32"
+              />
+            </div>
+          )}
+          {level.error && (
+            <Notice tone="error" className="mt-2">
+              {level.error}
+            </Notice>
           )}
         </div>
       </div>
 
-      <div className="mt-4 space-y-3">
-        <div>
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500">
-            <Smartphone className="h-3.5 w-3.5" />
+      <dl className="mt-4 space-y-4">
+        <div className="rounded-xl bg-stone-50 p-3">
+          <dt className="flex items-center gap-1.5 text-sm font-semibold text-stone-900">
+            <Smartphone className="h-4 w-4 text-(--dash-strong)" aria-hidden />
             Code de connexion, pour votre enfant
-          </p>
-          <div className="mt-1">
+          </dt>
+          <dd className="mt-2">
             {child.loginCode ? (
-              <CodeChip code={child.loginCode} label="code de connexion" />
+              <>
+                <CodeChip code={child.loginCode} label="code de connexion" />
+                <p className="mt-1.5 text-xs text-stone-600">
+                  À taper deux fois dans l&apos;application : comme identifiant
+                  et comme mot de passe.
+                </p>
+              </>
             ) : (
-              <span className="text-sm text-gray-500">
-                Votre enfant se connecte avec son adresse email.
-              </span>
+              <p className="text-sm text-stone-600">
+                Votre enfant se connecte avec son adresse e-mail.
+              </p>
             )}
-          </div>
-          {child.loginCode && (
-            <p className="mt-1 text-xs text-gray-500">
-              À taper deux fois dans l&apos;application : identifiant et mot de passe.
-            </p>
-          )}
+          </dd>
         </div>
 
-        <div>
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500">
-            <KeyRound className="h-3.5 w-3.5" />
+        <div className="rounded-xl bg-stone-50 p-3">
+          <dt className="flex items-center gap-1.5 text-sm font-semibold text-stone-900">
+            <KeyRound className="h-4 w-4 text-(--dash-strong)" aria-hidden />
             Code élève, pour son professeur
-          </p>
-          <div className="mt-1">
+          </dt>
+          <dd className="mt-2">
             {child.studentCode ? (
-              <CodeChip code={child.studentCode} label="code élève" />
-            ) : (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await ensureStudentCode({ studentId: child._id });
-                  } finally {
-                    setBusy(false);
+              <div className="flex flex-wrap items-center gap-2">
+                <CodeChip code={child.studentCode} label="code élève" />
+                <ConfirmAction
+                  danger={false}
+                  trigger={
+                    <>
+                      <RefreshCw className="h-4 w-4" aria-hidden />
+                      Changer
+                    </>
                   }
-                }}
-                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  message="L'ancien code élève ne marchera plus."
+                  confirmLabel="Changer le code"
+                  failMessage="Le code élève n'a pas pu être changé."
+                  onConfirm={() => regenerateStudentCode({ studentId: child._id })}
+                />
+              </div>
+            ) : (
+              <Button
+                variant="secondary"
+                busy={code.busy}
+                onClick={() =>
+                  void code.run(() => ensureStudentCode({ studentId: child._id }))
+                }
               >
                 Afficher le code élève
-              </button>
+              </Button>
             )}
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            {child.classroom
-              ? "Pour changer de classe, donnez ce code au nouveau professeur."
-              : "Le professeur le saisit pour ajouter votre enfant à sa classe."}
-          </p>
+            {code.error && (
+              <Notice tone="error" className="mt-2">
+                {code.error}
+              </Notice>
+            )}
+            <p className="mt-1.5 text-xs text-stone-600">
+              {child.classroom
+                ? "Pour changer de classe, donnez ce code au nouveau professeur."
+                : "Le professeur le saisit pour ajouter votre enfant à sa classe."}
+            </p>
+          </dd>
         </div>
-      </div>
+      </dl>
 
-      <Link
+      <ButtonLink
         href={`/parent/children/progress?id=${child._id}`}
-        className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+        variant="secondary"
+        className="mt-4 w-full"
       >
         Voir la progression
-        <ArrowRight className="h-4 w-4" />
-      </Link>
-    </div>
+        <ArrowRight className="h-4 w-4" aria-hidden />
+      </ButtonLink>
+    </Card>
   );
 }
 
-function AddChildForm({ first }: { first: boolean }) {
+function AddChildForm({ close }: { close: () => void }) {
   const createStudent = useAction(api.studentAccounts.createStudent);
   const [name, setName] = useState("");
   const [level, setLevel] = useState<VisibleClassName | "">("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{ name: string; loginCode: string } | null>(null);
+  const [missingLevel, setMissingLevel] = useState(false);
+  const { busy, error, run } = useAsyncAction("Le compte n'a pas pu être créé.");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!level) {
-      setError("Choisissez la classe de votre enfant.");
+      setMissingLevel(true);
       return;
     }
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await createStudent({ name, level });
-      setCreated({ name: result.name, loginCode: result.loginCode });
-      setName("");
-      setLevel("");
-    } catch (err) {
-      setError(refusalMessage(err, "Le compte n'a pas pu être créé."));
-    } finally {
-      setBusy(false);
-    }
+    setMissingLevel(false);
+    const result = await run(() => createStudent({ name, level }));
+    if (result) setCreated({ name: result.name, loginCode: result.loginCode });
   }
 
-  return (
-    <form
-      onSubmit={submit}
-      className={`rounded-xl border p-5 ${first ? "border-lime-300 bg-lime-50" : "border-gray-200 bg-white"}`}
-    >
-      <div className="flex items-center gap-2">
-        <UserPlus className="h-5 w-5 text-lime-700" />
-        <h2 className="font-semibold text-gray-900">
-          {first ? "Créez le compte de votre premier enfant" : "Ajouter un enfant"}
-        </h2>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <input
-          type="text"
-          required
-          maxLength={80}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Prénom et nom"
-          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500"
-        />
-        <select
-          required
-          value={level}
-          onChange={(e) => setLevel(e.target.value as VisibleClassName)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500"
-          aria-label="Classe"
-        >
-          <option value="">Classe</option>
-          {VISIBLE_CLASSES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-        >
-          {busy ? "Création..." : "Créer le compte"}
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-gray-500">
-        La classe choisit les exercices adaptés. Elle se modifie ensuite si
-        besoin.
-      </p>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      {created && (
-        <div className="mt-3 rounded-lg bg-white p-3 text-sm text-gray-800 ring-1 ring-emerald-200">
+  if (created) {
+    return (
+      <div className="space-y-4">
+        <Notice tone="success">
           <p>
             Le compte de <strong>{created.name}</strong> est prêt. Son code de
             connexion pour l&apos;application :
@@ -320,8 +332,50 @@ function AddChildForm({ first }: { first: boolean }) {
           <div className="mt-2">
             <CodeChip code={created.loginCode} size="lg" label="code de connexion" />
           </div>
-        </div>
+          <p className="mt-2">
+            Votre enfant le tape deux fois : comme identifiant et comme mot de
+            passe. Vous le retrouvez à tout moment sur cette page.
+          </p>
+        </Notice>
+        <DialogActions onCancel={close} cancelLabel="Terminé" />
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <Field label="Prénom et nom" htmlFor="child-name">
+        <Input
+          id="child-name"
+          type="text"
+          maxLength={80}
+          autoComplete="off"
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </Field>
+      <Field
+        label="Classe"
+        htmlFor="child-level"
+        hint="Elle choisit les exercices adaptés. Elle se modifie ensuite si besoin."
+      >
+        <SelectField
+          id="child-level"
+          value={level}
+          onValueChange={setLevel}
+          options={CLASS_OPTIONS}
+        />
+      </Field>
+      {missingLevel && !level && (
+        <Notice tone="error">Choisissez la classe de votre enfant.</Notice>
       )}
+      {error && <Notice tone="error">{error}</Notice>}
+      <DialogActions onCancel={close}>
+        <Button type="submit" busy={busy}>
+          Créer le compte
+        </Button>
+      </DialogActions>
     </form>
   );
 }

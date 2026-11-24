@@ -4,6 +4,7 @@ import { Accordion } from "@base-ui/react/accordion";
 import { Plus } from "lucide-react";
 
 import { Section } from "./section";
+import { PRICE_LABEL, SCHOOL_PRICE_LABEL } from "./pricing";
 
 const ITEMS = [
   // Avant le lancement : la première question que pose un visiteur qui vient
@@ -13,8 +14,8 @@ const ITEMS = [
     a: "Très bientôt : le lancement est en cours. D'ici là, seules les personnes qui ont reçu un code d'invitation peuvent créer un compte.",
   },
   {
-    q: "Combien coûte Jotna ?",
-    a: "Rien pour le moment. La création de compte est gratuite pour les écoles, les professeurs et les parents, et les élèves accèdent à tous les exercices de leur classe.",
+    q: "Combien coûte Jotna School ?",
+    a: `Pour une famille : ${PRICE_LABEL}. L'élève accède à tous les exercices de sa classe. Pour une école : ${SCHOOL_PRICE_LABEL}.`,
   },
   {
     q: "Qui crée le compte de l'enfant ?",
@@ -26,7 +27,7 @@ const ITEMS = [
   },
   {
     q: "À quel âge s'adresse Jotna ?",
-    a: "Les contenus sont calibrés pour les enfants du CP au CM2, mais certains chapitres conviennent aussi aux élèves de 6e en révision.",
+    a: "Les contenus sont calibrés pour les enfants du CI au CM2, mais certains chapitres conviennent aussi aux élèves de 6e en révision.",
   },
   {
     q: "Mon enfant a besoin d'une adresse email ?",

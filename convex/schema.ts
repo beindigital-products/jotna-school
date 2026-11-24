@@ -6,6 +6,7 @@ import { moduleKeyValidator } from "./moduleCatalog";
 import { exerciseTypeValidator } from "./exerciseTypes";
 import { placementLevelValidator } from "./arabic/progressRules";
 import { waitlistAudienceValidator } from "./waitlistRules";
+import { quoteRequestFields } from "./quoteRules";
 
 // ---------------------------------------------------------------------------
 // AI gateway purposes — mirrors aiGateway/registry.ts. Listed here as
@@ -651,9 +652,37 @@ export default defineSchema({
     profileId: v.id("profiles"),
     staffRole: v.union(v.literal("directeur"), v.literal("professeur")),
     status: v.union(v.literal("active"), v.literal("removed")),
+    // Qui a défait le lien, et quand. Un professeur retiré PAR L'ÉCOLE ne
+    // revient pas avec le code école : il lui faut une invitation de la
+    // direction. Celui qui est parti de lui-même peut revenir par le code.
+    // Absents sur les lignes d'avant ce champ, lues comme un départ volontaire.
+    removedBy: v.optional(v.union(v.literal("school"), v.literal("self"))),
+    removedAt: v.optional(v.number()),
   })
     .index("by_school", ["schoolId"])
     .index("by_profile", ["profileId"]),
+
+  // L'invitation d'un professeur par une école (`convex/schoolInvitations.ts`).
+  // La direction saisit l'adresse d'un compte professeur ; le professeur
+  // accepte ou refuse dans son espace. Rien n'entre dans `schoolStaff` sans
+  // son accord. L'autre chemin, le code école, ne passe pas par cette table.
+  schoolInvitations: defineTable({
+    schoolId: v.id("schools"),
+    teacherId: v.id("profiles"),
+    invitedBy: v.id("profiles"),
+    // La classe que la direction attribue au professeur : dans une école, un
+    // professeur est lié à une classe. Posée sur la classe à l'acceptation.
+    schoolClassId: v.optional(v.id("schoolClasses")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("cancelled"),
+    ),
+    createdAt: v.number(),
+  })
+    .index("by_school_and_status", ["schoolId", "status"])
+    .index("by_teacher_and_status", ["teacherId", "status"]),
 
   // Les classes réelles, pas les niveaux : une école a souvent CM1 A et CM1 B.
   schoolClasses: defineTable({
@@ -1364,6 +1393,26 @@ export default defineSchema({
     audience: waitlistAudienceValidator,
     createdAt: v.number(),
   }).index("by_email", ["email"]),
+
+  // ---------------------------------------------------------------------------
+  // quoteRequests — les demandes de devis des écoles, depuis la vitrine.
+  //
+  // Une famille paie un prix affiché ; une école remplit un formulaire
+  // (`quotes.request`), et l'équipe reçoit la demande par courriel
+  // (`quotesEmail.send`). La ligne est écrite AVANT l'envoi : `emailedAt`
+  // reste vide si Resend a refusé le courriel, et la demande n'est pas perdue.
+  //
+  // Les champs sont ceux de `quoteRules.quoteRequestFields`, nettoyés par
+  // `cleanQuoteRequest`. Les deux index servent les freins de la mutation :
+  // trois demandes par adresse et par jour, trente par heure en tout.
+  // ---------------------------------------------------------------------------
+  quoteRequests: defineTable({
+    ...quoteRequestFields,
+    createdAt: v.number(),
+    emailedAt: v.optional(v.number()),
+  })
+    .index("by_email_and_createdAt", ["email", "createdAt"])
+    .index("by_createdAt", ["createdAt"]),
 
   // ---------------------------------------------------------------------------
   // invitationCodes — les codes que l'équipe remet avant le lancement.

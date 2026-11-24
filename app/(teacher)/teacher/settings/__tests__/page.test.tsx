@@ -12,6 +12,7 @@ vi.mock("convex/react", () => ({
   useQuery: () => (state.loaded ? { name: "Moussa Ndiaye" } : undefined),
   useMutation: () => vi.fn(),
 }));
+vi.mock("@/hooks/use-logout", () => ({ useLogout: () => vi.fn() }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>

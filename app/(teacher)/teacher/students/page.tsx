@@ -1,126 +1,122 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useState } from "react";
 import Link from "next/link";
-import {
-  UserCircle,
-  Users,
-  BookOpen,
-  ArrowRight,
-  GraduationCap,
-  Loader2,
-} from "lucide-react";
+import { useQuery } from "convex/react";
+import { ChevronRight, GraduationCap, Search, Users } from "lucide-react";
+import { api } from "@/convex/_generated/api";
 import {
   ArabicPlacementList,
   PLACEMENT_NOTICE,
 } from "@/components/arabic/placement-editor";
+import {
+  Avatar,
+  ButtonLink,
+  Card,
+  CardTitle,
+  EmptyState,
+  Input,
+  LoadingBlock,
+  PageHeader,
+  plural,
+} from "@/components/dashboard/ui";
 
 export default function TeacherStudentsPage() {
-  const profile = useQuery(api.profiles.getCurrentProfile);
   const students = useQuery(api.profiles.getTeacherStudents);
+  const [search, setSearch] = useState("");
 
-  if (profile === undefined) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
-      </div>
+  const needle = search.trim().toLocaleLowerCase("fr");
+  // Les cours particuliers d'abord, puis école par école, puis par nom.
+  const shown = (students ?? [])
+    .filter((s) => s.name.toLocaleLowerCase("fr").includes(needle))
+    .sort(
+      (a, b) =>
+        (a.schoolName ?? "").localeCompare(b.schoolName ?? "", "fr") ||
+        (a.className ?? "").localeCompare(b.className ?? "", "fr") ||
+        a.name.localeCompare(b.name, "fr"),
     );
-  }
-
-  if (profile === null) {
-    return (
-      <div className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-        <UserCircle className="mx-auto h-12 w-12 text-gray-400" />
-        <p className="mt-3 text-sm text-gray-500">Non connecté</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Mes élèves</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Tous les élèves de vos classes.
-        </p>
-      </div>
+      <PageHeader
+        title="Mes élèves"
+        description={
+          students && students.length > 0
+            ? `${plural(students.length, "élève")} dans vos classes.`
+            : "Tous les élèves de vos classes."
+        }
+      />
 
       {students === undefined ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
-        </div>
+        <LoadingBlock />
       ) : students.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
-          <Users className="mx-auto h-12 w-12 text-gray-400" />
-          <p className="mt-2 text-sm text-gray-500">
-            Aucun élève pour le moment. Ajoutez vos élèves depuis une de vos
-            classes.
-          </p>
-          <Link
-            href="/teacher/classes"
-            className="mt-4 inline-block rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            Mes classes
-          </Link>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="Aucun élève pour le moment"
+          description="Ajoutez vos élèves depuis une de vos classes."
+          action={<ButtonLink href="/teacher/classes">Mes classes</ButtonLink>}
+        />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {students.map((student) => (
-            <div
-              key={student._id}
-              className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
-            >
-              <div className="flex items-center gap-3">
-                {student.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={student.avatar}
-                    alt={student.name}
-                    className="h-12 w-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <UserCircle className="h-12 w-12 text-gray-300" />
-                )}
-                <div>
-                  <h3 className="font-semibold text-gray-900">
-                    {student.name}
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    {student.completedTopics} thématique
-                    {student.completedTopics !== 1 ? "s" : ""} terminée
-                    {student.completedTopics !== 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-emerald-50 p-3 text-center">
-                  <BookOpen className="mx-auto h-5 w-5 text-emerald-600" />
-                  <p className="mt-1 text-lg font-bold text-emerald-700">
-                    {student.completedExercises}
-                  </p>
-                  <p className="text-xs text-emerald-600">Exercices</p>
-                </div>
-                <div className="rounded-lg bg-amber-50 p-3 text-center">
-                  <Users className="mx-auto h-5 w-5 text-amber-600" />
-                  <p className="mt-1 text-lg font-bold text-amber-700">
-                    {student.completedTopics}
-                  </p>
-                  <p className="text-xs text-amber-600">Thématiques</p>
-                </div>
-              </div>
-
-              <Link
-                href={`/teacher/students/detail?id=${student._id}`}
-                className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
-              >
-                Voir le détail
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+        <>
+          {students.length > 6 && (
+            <div className="relative max-w-sm">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500"
+                aria-hidden
+              />
+              <Input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Chercher un élève"
+                aria-label="Chercher un élève par son nom"
+                className="pl-9"
+              />
             </div>
-          ))}
-        </div>
+          )}
+          {shown.length === 0 ? (
+            <p role="status" className="text-sm text-stone-600">
+              Aucun élève ne correspond à « {search.trim()} ».
+            </p>
+          ) : (
+            <Card className="overflow-hidden">
+              <ul className="divide-y divide-stone-100">
+                {shown.map((student) => (
+                  <li key={student._id}>
+                    <Link
+                      href={`/teacher/students/detail?id=${student._id}`}
+                      className="flex min-h-16 items-center gap-3 px-4 py-3 outline-none hover:bg-stone-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--dash-strong)"
+                    >
+                      <Avatar name={student.name} src={student.avatar} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words font-medium text-stone-900">
+                          {student.name}
+                        </p>
+                        <p className="text-sm text-stone-700">
+                          {[
+                            student.className,
+                            student.schoolName ?? "Cours particulier",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                        <p className="text-sm text-stone-600">
+                          {plural(student.completedExercises, "exercice")} ·{" "}
+                          {plural(
+                            student.completedTopics,
+                            "thématique terminée",
+                            "thématiques terminées",
+                          )}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-stone-400" aria-hidden />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </>
       )}
 
       <ArabicPlacementSection />
@@ -153,27 +149,19 @@ function ArabicPlacementSection() {
   if (!enabled) return null;
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="mb-1 flex items-center gap-2">
-        <GraduationCap className="h-5 w-5 text-gray-400" />
-        <h2 className="font-semibold text-gray-900">
-          Niveau de mes élèves en arabe
-        </h2>
-      </div>
-      <p className="mb-4 text-sm text-gray-500">
+    <Card as="section" className="p-5">
+      <CardTitle icon={GraduationCap}>Niveau de mes élèves en arabe</CardTitle>
+      <p className="mb-4 mt-2 text-sm text-stone-600">
         {PLACEMENT_NOTICE} Placer un élève <strong>ouvre</strong> des leçons, ne
-        les valide pas — il garde ses étoiles à gagner, et peut revenir en
+        les valide pas : il garde ses étoiles à gagner, et peut revenir en
         arrière tout seul si vous le placez trop haut.
       </p>
 
       {roster === undefined || options === undefined ? (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Chargement...
-        </div>
+        <LoadingBlock />
       ) : (
         <ArabicPlacementList students={roster.students} options={options} />
       )}
-    </section>
+    </Card>
   );
 }

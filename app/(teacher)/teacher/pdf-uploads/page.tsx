@@ -8,42 +8,64 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { refusalMessage } from "@/lib/refusalMessage";
 import {
-  Upload,
-  FileText,
-  Trash2,
-  Eye,
-  Loader2,
   AlertCircle,
   CheckCircle2,
+  ChevronRight,
   Clock,
+  Eye,
+  FileText,
   Send,
-  UserCircle,
+  Trash2,
+  Upload,
+  type LucideIcon,
 } from "lucide-react";
+import {
+  Button,
+  Card,
+  CardTitle,
+  ConfirmAction,
+  EmptyState,
+  Field,
+  LoadingBlock,
+  Notice,
+  PageHeader,
+  SectionTitle,
+  formatDayTime,
+  SelectField,
+} from "@/components/dashboard/ui";
+import { cn } from "@/lib/utils";
 
+// Le statut se lit dans le mot et l'icône ; la teinte ne fait que l'appuyer.
 const STATUS_CONFIG: Record<
   string,
-  { label: string; color: string; icon: React.ReactNode }
+  { label: string; tone: string; icon: LucideIcon }
 > = {
   uploaded: {
-    label: "En cours",
-    color: "bg-yellow-100 text-yellow-800",
-    icon: <Clock className="h-3.5 w-3.5" />,
+    label: "Extraction en cours",
+    tone: "bg-amber-50 text-amber-900",
+    icon: Clock,
   },
   extracted: {
     label: "Extrait",
-    color: "bg-blue-100 text-blue-800",
-    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+    tone: "bg-sky-50 text-sky-900",
+    icon: CheckCircle2,
   },
   reviewed: {
     label: "Relu",
-    color: "bg-indigo-100 text-indigo-800",
-    icon: <Eye className="h-3.5 w-3.5" />,
+    tone: "bg-stone-100 text-stone-800",
+    icon: Eye,
   },
   published: {
     label: "Publié",
-    color: "bg-green-100 text-green-800",
-    icon: <Send className="h-3.5 w-3.5" />,
+    tone: "bg-emerald-50 text-emerald-800",
+    icon: Send,
   },
+};
+
+const ERROR_STATUS = {
+  label: "Erreur",
+  tone: "bg-red-50 text-red-800",
+  icon: AlertCircle,
 };
 
 function formatFileSize(bytes: number): string {
@@ -52,19 +74,20 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
-function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function extractionFailed(raw: unknown): boolean {
+  return typeof raw === "object" && raw !== null && "error" in raw;
+}
+
+/** Certains téléphones ne donnent pas de type au fichier : l'extension tranche. */
+function isPdf(file: File): boolean {
+  return (
+    file.type === "application/pdf" ||
+    (file.type === "" && file.name.toLowerCase().endsWith(".pdf"))
+  );
 }
 
 export default function TeacherPdfUploadsPage() {
   const router = useRouter();
-  const profile = useQuery(api.profiles.getCurrentProfile);
   const uploads = useQuery(api.pdfUploads.listByTeacher);
   const subjects = useQuery(api.subjects.list);
   const generateUploadUrl = useMutation(api.pdfUploads.generateUploadUrl);
@@ -78,30 +101,26 @@ export default function TeacherPdfUploadsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleUpload = async (file: File) => {
-    if (!profile) {
-      setError("Vous devez être connecté pour envoyer un fichier.");
-      return;
-    }
     if (!selectedSubjectId) {
-      setError("Veuillez sélectionner une matière avant d'envoyer un fichier.");
+      setError("Choisissez une matière avant d'envoyer un fichier.");
       return;
     }
-    if (file.type !== "application/pdf") {
+    if (!isPdf(file)) {
       setError("Seuls les fichiers PDF sont acceptés.");
       return;
     }
 
     setError(null);
     setIsUploading(true);
-    setUploadProgress("Génération de l'URL d'envoi...");
+    setUploadProgress("Préparation de l'envoi");
 
     try {
       const uploadUrl = await generateUploadUrl();
-      setUploadProgress("Envoi du fichier...");
+      setUploadProgress("Envoi du fichier");
 
       const result = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type },
+        headers: { "Content-Type": "application/pdf" },
         body: file,
       });
 
@@ -110,25 +129,30 @@ export default function TeacherPdfUploadsPage() {
       }
 
       const { storageId } = await result.json();
-      setUploadProgress("Création de l'enregistrement...");
+      setUploadProgress("Enregistrement de l'import");
 
       const uploadId = await createUpload({
         storageId,
         originalFilename: file.name,
-        mimeType: file.type,
+        mimeType: "application/pdf",
         size: file.size,
         subjectId: selectedSubjectId as Id<"subjects">,
       });
 
-      setUploadProgress(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-
-      // Redirect to the detail page so the teacher can watch the extraction
-      // progress and review/publish the generated exercises.
+      // Vers le détail : le professeur y suit l'extraction, puis relit et
+      // publie les exercices produits.
       router.push(`/teacher/pdf-uploads/detail?id=${uploadId}`);
     } catch (err) {
-      setError(refusalMessage(err, "Erreur lors de l'envoi."));
+      setError(
+        refusalMessage(
+          err,
+          "Le fichier n'a pas pu être envoyé. Vérifiez votre connexion, puis réessayez.",
+        ),
+      );
     } finally {
+      // Vidé dans tous les cas : sans cela, rechoisir le même fichier après
+      // un échec ne déclenche aucun nouvel envoi.
+      if (fileInputRef.current) fileInputRef.current.value = "";
       setIsUploading(false);
       setUploadProgress(null);
     }
@@ -136,247 +160,174 @@ export default function TeacherPdfUploadsPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleUpload(file);
+    if (file) void handleUpload(file);
   };
-
-  const handleDelete = async (id: Id<"pdfUploads">) => {
-    if (!window.confirm("Supprimer ce PDF et tous les exercices associés ?")) {
-      return;
-    }
-    setError(null);
-    try {
-      await removeUpload({ id });
-    } catch (err) {
-      setError(refusalMessage(err, "Erreur lors de la suppression."));
-    }
-  };
-
-  if (profile === undefined) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (profile === null) {
-    return (
-      <div className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-        <UserCircle className="mx-auto h-12 w-12 text-gray-400" />
-        <p className="mt-3 text-sm text-gray-500">Non connecté</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mes imports PDF</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Importez des PDFs pour générer automatiquement des exercices via
-            l&apos;IA.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Mes imports PDF"
+        description="Importez un PDF d'exercices : ils en sont extraits automatiquement, puis vous les relisez avant de les publier."
+      />
 
-      {/* Upload zone */}
-      <div className="rounded-xl border-2 border-dashed border-gray-300 bg-white p-6">
-        <div className="flex flex-col items-center gap-4 sm:flex-row">
-          <div className="w-full sm:w-64">
-            <label
-              htmlFor="subject-select"
-              className="mb-1 block text-sm font-medium text-gray-700"
-            >
-              Matière
-            </label>
-            <select
+      <Card as="section" className="space-y-4 p-4 sm:p-6">
+        <CardTitle
+          icon={Upload}
+          description="Choisissez la matière, puis le fichier. L'extraction démarre dès l'envoi."
+        >
+          Nouvel import
+        </CardTitle>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <Field
+            label="Matière"
+            htmlFor="subject-select"
+            className="w-full sm:w-64"
+          >
+            <SelectField
               id="subject-select"
               value={selectedSubjectId}
-              onChange={(e) => setSelectedSubjectId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            >
-              <option value="">Sélectionner...</option>
-              {subjects?.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-1 items-end gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf"
-              onChange={handleFileChange}
-              disabled={isUploading || !selectedSubjectId}
-              className="sr-only"
-              id="pdf-file-input"
+              onValueChange={(next) => {
+                setSelectedSubjectId(next);
+                setError(null);
+              }}
+              disabled={isUploading || subjects === undefined}
+              placeholder={
+                subjects === undefined ? "Chargement…" : "Choisir une matière"
+              }
+              options={(subjects ?? []).map((s) => ({
+                value: s._id as string,
+                label: s.name,
+              }))}
             />
-            <label
-              htmlFor="pdf-file-input"
-              aria-disabled={isUploading || !selectedSubjectId}
-              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors ${
-                isUploading || !selectedSubjectId
-                  ? "cursor-not-allowed bg-emerald-600 opacity-50"
-                  : "cursor-pointer bg-emerald-600 hover:bg-emerald-700"
-              }`}
-            >
-              {isUploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
-              {isUploading ? "Envoi en cours..." : "Importer un PDF"}
-            </label>
-            {!selectedSubjectId && (
-              <span className="text-xs text-gray-500">
-                Sélectionnez d&apos;abord une matière
-              </span>
-            )}
-          </div>
+          </Field>
+
+          {/*
+            Le champ fichier reste hors du parcours clavier : c'est le bouton,
+            atteignable et annoncé comme tel, qui l'ouvre.
+          */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={handleFileChange}
+            className="hidden"
+            tabIndex={-1}
+            aria-hidden
+          />
+          <Button
+            busy={isUploading}
+            disabled={!selectedSubjectId}
+            aria-describedby={
+              selectedSubjectId ? undefined : "import-pdf-aide"
+            }
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full sm:w-auto"
+          >
+            {!isUploading && <Upload className="h-4 w-4" aria-hidden />}
+            {isUploading ? "Envoi en cours" : "Importer un PDF"}
+          </Button>
         </div>
 
-        {uploadProgress && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-emerald-600">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {uploadProgress}
-          </div>
+        {!selectedSubjectId && (
+          <p id="import-pdf-aide" className="text-sm text-stone-600">
+            Choisissez d&apos;abord une matière pour activer l&apos;import.
+          </p>
         )}
+
+        {uploadProgress && <Notice tone="info">{uploadProgress}…</Notice>}
 
         {error && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            {error}
-            <button
-              type="button"
-              onClick={() => setError(null)}
-              className="ml-auto text-red-500 hover:text-red-700"
-            >
-              Fermer
-            </button>
-          </div>
+          <Notice tone="error">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="min-w-0 break-words">{error}</span>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                className="inline-flex min-h-11 items-center rounded-lg px-2 font-semibold underline outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+              >
+                Fermer
+              </button>
+            </div>
+          </Notice>
         )}
-      </div>
+      </Card>
 
-      {/* Uploads list */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Fichiers importés
-          </h2>
-        </div>
+      <section aria-labelledby="fichiers-importes" className="space-y-3">
+        <SectionTitle id="fichiers-importes">Fichiers importés</SectionTitle>
 
-        {uploads === undefined && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-          </div>
-        )}
+        {uploads === undefined && <LoadingBlock />}
 
         {uploads && uploads.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="h-12 w-12 text-gray-300" />
-            <p className="mt-4 text-sm font-medium text-gray-900">
-              Aucun PDF importé
-            </p>
-            <p className="mt-1 text-sm text-gray-500">
-              Importez votre premier fichier PDF pour commencer.
-            </p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Aucun PDF importé"
+            description="Importez votre premier fichier PDF pour commencer."
+          />
         )}
 
         {uploads && uploads.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 text-xs font-medium uppercase tracking-wider text-gray-500">
-                  <th className="px-6 py-3">Fichier</th>
-                  <th className="px-6 py-3">Matière</th>
-                  <th className="px-6 py-3">Taille</th>
-                  <th className="px-6 py-3">Statut</th>
-                  <th className="px-6 py-3">Date</th>
-                  <th className="px-6 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {uploads.map((upload) => {
-                  const statusConfig = STATUS_CONFIG[upload.status] ?? {
+          <ul className="space-y-3">
+            {uploads.map((upload) => {
+              const status = extractionFailed(upload.extractedRaw)
+                ? ERROR_STATUS
+                : (STATUS_CONFIG[upload.status] ?? {
                     label: upload.status,
-                    color: "bg-gray-100 text-gray-800",
-                    icon: null,
-                  };
-                  const hasError =
-                    upload.extractedRaw &&
-                    typeof upload.extractedRaw === "object" &&
-                    "error" in
-                      (upload.extractedRaw as Record<string, unknown>);
+                    tone: "bg-stone-100 text-stone-800",
+                    icon: FileText,
+                  });
+              const StatusIcon = status.icon;
 
-                  return (
-                    <tr
-                      key={upload._id}
-                      className="transition-colors hover:bg-gray-50"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <FileText className="h-5 w-5 flex-shrink-0 text-red-500" />
-                          <span className="max-w-[200px] truncate font-medium text-gray-900">
-                            {upload.originalFilename}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {upload.subjectName}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500">
-                        {formatFileSize(upload.size)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {hasError ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800">
-                            <AlertCircle className="h-3.5 w-3.5" />
-                            Erreur
-                          </span>
-                        ) : (
-                          <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusConfig.color}`}
-                          >
-                            {statusConfig.icon}
-                            {statusConfig.label}
-                          </span>
+              return (
+                <Card
+                  as="li"
+                  key={upload._id}
+                  className="flex flex-wrap items-center gap-x-2 gap-y-1 p-2 sm:p-3"
+                >
+                  <Link
+                    href={`/teacher/pdf-uploads/detail?id=${upload._id}`}
+                    className="flex min-h-11 min-w-0 flex-1 basis-56 items-center gap-3 rounded-xl p-2 outline-none hover:bg-stone-50 focus-visible:ring-2 focus-visible:ring-(--dash-strong)"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-(--dash-soft) text-(--dash-strong)">
+                      <FileText className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block break-words font-semibold text-stone-900">
+                        {upload.originalFilename}
+                      </span>
+                      <span className="mt-0.5 block text-sm text-stone-600">
+                        {upload.subjectName} · {formatFileSize(upload.size)} ·{" "}
+                        {formatDayTime(upload._creationTime)}
+                      </span>
+                      <span
+                        className={cn(
+                          "mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+                          status.tone,
                         )}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500">
-                        {formatDate(upload._creationTime)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/teacher/pdf-uploads/detail?id=${upload._id}`}
-                            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600"
-                            title="Voir le détail"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(upload._id)}
-                            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      >
+                        <StatusIcon className="h-3.5 w-3.5" aria-hidden />
+                        {status.label}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      className="h-4 w-4 shrink-0 text-stone-400"
+                      aria-hidden
+                    />
+                  </Link>
+                  <ConfirmAction
+                    trigger={<Trash2 className="h-4 w-4" aria-hidden />}
+                    triggerLabel={`Supprimer l'import ${upload.originalFilename}`}
+                    message="Supprimer ce PDF et tous les exercices qu'il a produits ?"
+                    confirmLabel="Supprimer"
+                    failMessage="L'import n'a pas pu être supprimé."
+                    onConfirm={() => removeUpload({ id: upload._id })}
+                  />
+                </Card>
+              );
+            })}
+          </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }

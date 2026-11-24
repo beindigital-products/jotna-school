@@ -1,173 +1,178 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import Link from "next/link";
-import { Users, BookOpen, Trophy, ArrowRight, UserCircle, Plus } from "lucide-react";
+import { useQuery } from "convex/react";
+import {
+  ArrowRight,
+  Award,
+  BookOpen,
+  Clock,
+  ListChecks,
+  Plus,
+  Users,
+} from "lucide-react";
+import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import {
+  Avatar,
+  ButtonLink,
+  Card,
+  EmptyState,
+  LoadingBlock,
+  PageHeader,
+  SectionTitle,
+} from "@/components/dashboard/ui";
+import { ReportList } from "@/components/dashboard/report-views";
+import { formatDuration } from "@/components/dashboard/student-overview";
 
+/**
+ * TABLEAU DE BORD DU PARENT : chaque enfant avec ses chiffres, puis les
+ * derniers rapports. Sans enfant, la page donne la première étape.
+ */
 export default function ParentDashboardPage() {
   const profile = useQuery(api.profiles.getCurrentProfile);
+  const children = useQuery(api.family.myChildren);
+  const reports = useQuery(api.reports.listByParent);
 
-  // Le tuteur est dérivé de la session côté serveur : plus d'argument, donc
-  // plus de "skip" en attente du profil.
-  const children = useQuery(api.profiles.getChildren);
+  if (!profile || children === undefined) return <LoadingBlock />;
 
-  // Still loading the profile query
-  if (profile === undefined) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
-      </div>
-    );
-  }
-
-  // Authenticated query resolved but no profile / not signed in
-  if (profile === null) {
-    return (
-      <div className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-        <UserCircle className="mx-auto h-12 w-12 text-gray-400" />
-        <h2 className="mt-3 text-lg font-semibold text-gray-900">
-          Vous n&apos;êtes pas connecté
-        </h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Connectez-vous pour accéder à votre tableau de bord.
-        </p>
-        <Link
-          href="/login"
-          className="mt-4 inline-block rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
-        >
-          Se connecter
-        </Link>
-      </div>
-    );
-  }
+  const kids = children ?? [];
+  const firstName = profile.name.trim().split(/\s+/)[0] ?? "";
 
   return (
     <div className="space-y-8">
-      {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Bonjour, {profile.name} !
-        </h1>
-        <p className="mt-1 text-gray-500">
-          Suivez la progression de vos enfants depuis votre tableau de bord.
-        </p>
-      </div>
+      <PageHeader
+        title={firstName ? `Bonjour, ${firstName}` : "Bonjour"}
+        description="Où en sont vos enfants cette semaine."
+        actions={
+          kids.length > 0 ? (
+            <ButtonLink href="/parent/children" variant="secondary">
+              <Plus className="h-4 w-4" aria-hidden />
+              Ajouter un enfant
+            </ButtonLink>
+          ) : undefined
+        }
+      />
 
-      {/* Children cards */}
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Mes enfants</h2>
-          <Link
-            href="/parent/children"
-            className="text-sm font-medium text-teal-600 hover:text-teal-700"
-          >
-            Gérer mes enfants
-          </Link>
-        </div>
-
-        {!children || children.length === 0 ? (
-          <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
-            <Users className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 font-medium text-gray-700">
-              Première étape : créez le compte de votre enfant.
-            </p>
-            <p className="mt-1 text-sm text-gray-500">
-              Il recevra un code pour se connecter dans l&apos;application.
-            </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <Link
-                href="/parent/children"
-                className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
-              >
-                <Plus className="h-4 w-4" />
-                Ajouter un enfant
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {children.filter((c): c is NonNullable<typeof c> => c !== null).map((child) => (
-              <ChildCard
-                key={child._id}
-                childId={child._id as Id<"profiles">}
-                name={child.name}
-                avatar={child.avatar}
-              />
+      {kids.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Commencez par créer le compte de votre enfant"
+          description="Il reçoit un code pour se connecter dans l'application Jotna School. Ses progrès s'affichent ensuite ici."
+          action={
+            <ButtonLink href="/parent/children">
+              <Plus className="h-4 w-4" aria-hidden />
+              Ajouter un enfant
+            </ButtonLink>
+          }
+        />
+      ) : (
+        <section className="space-y-3">
+          <SectionTitle>Mes enfants</SectionTitle>
+          <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {kids.map((child) => (
+              <ChildSummary key={child._id} child={child} />
             ))}
-          </div>
-        )}
-      </section>
+          </ul>
+        </section>
+      )}
+
+      {kids.length > 0 && (
+        <section className="space-y-3">
+          <SectionTitle
+            action={
+              reports && reports.length > 3 ? (
+                <Link
+                  href="/parent/reports"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-(--dash-strong) outline-none hover:underline focus-visible:ring-2 focus-visible:ring-(--dash-strong)"
+                >
+                  Tous les rapports
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+              ) : undefined
+            }
+          >
+            Derniers rapports
+          </SectionTitle>
+          {reports === undefined ? (
+            <LoadingBlock />
+          ) : (
+            <ReportList
+              reports={reports.slice(0, 3)}
+              hrefFor={(report) =>
+                `/parent/children/reports?id=${report.studentId}&topicId=${report.topicId}`
+              }
+              emptyHint="Un rapport est créé chaque fois qu'un de vos enfants termine une thématique."
+            />
+          )}
+        </section>
+      )}
     </div>
   );
 }
 
-function ChildCard({
-  childId,
-  name,
-  avatar,
+function ChildSummary({
+  child,
 }: {
-  childId: Id<"profiles">;
-  name: string;
-  avatar?: string;
+  child: {
+    _id: Id<"profiles">;
+    name: string;
+    avatar: string | null;
+    level: string | null;
+    classroom: { name: string; schoolName: string | null } | null;
+  };
 }) {
-  // Fetch progress data for this child
-  const progress = useQuery(api.reports.listByStudent, {
-    studentId: childId,
-  });
+  const stats = useQuery(api.students.getStudentStats, { studentId: child._id });
 
-  const topicsCompleted = progress?.length ?? 0;
-
-  // Fetch earned badges for this child
-  const latestBadge = null; // Badges could be fetched here if needed
+  const figures = [
+    { icon: BookOpen, label: "Exercices", value: stats?.totalExercises },
+    { icon: ListChecks, label: "Thématiques", value: stats?.completedTopics },
+    { icon: Award, label: "Badges", value: stats?.badgeCount },
+    {
+      icon: Clock,
+      label: "Temps",
+      value: stats ? formatDuration(stats.totalTimeMs) : undefined,
+    },
+  ];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+    <Card as="li" className="flex flex-col p-5">
       <div className="flex items-center gap-3">
-        {avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element -- avatar ; `next/image` n'apporte rien sous export statique
-          <img
-            src={avatar}
-            alt={name}
-            className="h-12 w-12 rounded-full object-cover"
-          />
-        ) : (
-          <UserCircle className="h-12 w-12 text-gray-300" />
-        )}
-        <div>
-          <h3 className="font-semibold text-gray-900">{name}</h3>
-          <p className="text-sm text-gray-500">
-            {topicsCompleted} rapport{topicsCompleted !== 1 ? "s" : ""} disponible
-            {topicsCompleted !== 1 ? "s" : ""}
+        <Avatar name={child.name} src={child.avatar} />
+        <div className="min-w-0">
+          <h3 className="break-words font-semibold text-stone-900">{child.name}</h3>
+          <p className="text-sm text-stone-600">
+            {child.classroom
+              ? [child.classroom.name, child.classroom.schoolName]
+                  .filter(Boolean)
+                  .join(" · ")
+              : (child.level ?? "Classe à choisir")}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-teal-50 p-3 text-center">
-          <BookOpen className="mx-auto h-5 w-5 text-teal-600" />
-          <p className="mt-1 text-lg font-bold text-teal-700">
-            {topicsCompleted}
-          </p>
-          <p className="text-xs text-teal-600">Rapports</p>
-        </div>
-        <div className="rounded-lg bg-amber-50 p-3 text-center">
-          <Trophy className="mx-auto h-5 w-5 text-amber-600" />
-          <p className="mt-1 text-lg font-bold text-amber-700">
-            {latestBadge ? "1" : "—"}
-          </p>
-          <p className="text-xs text-amber-600">Badges</p>
-        </div>
-      </div>
+      <dl className="mt-4 grid grid-cols-2 gap-2">
+        {figures.map(({ icon: Icon, label, value }) => (
+          <div key={label} className="rounded-xl bg-stone-50 px-3 py-2">
+            <dt className="flex items-center gap-1.5 text-xs text-stone-600">
+              <Icon className="h-3.5 w-3.5 text-(--dash-strong)" aria-hidden />
+              {label}
+            </dt>
+            <dd className="mt-0.5 text-lg font-bold tabular-nums text-stone-900">
+              {value ?? "—"}
+            </dd>
+          </div>
+        ))}
+      </dl>
 
-      <Link
-        href={`/parent/children/progress?id=${childId}`}
-        className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+      <ButtonLink
+        href={`/parent/children/progress?id=${child._id}`}
+        variant="secondary"
+        className="mt-4 w-full"
       >
         Voir la progression
-        <ArrowRight className="h-4 w-4" />
-      </Link>
-    </div>
+        <ArrowRight className="h-4 w-4" aria-hidden />
+      </ButtonLink>
+    </Card>
   );
 }
