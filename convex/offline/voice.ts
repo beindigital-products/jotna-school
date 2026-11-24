@@ -43,7 +43,7 @@ import { moduleAccessForProfile } from "../modules";
 import { resolveSpeech } from "../arabic/speechText";
 import { speakableExercise } from "../voice/speakable";
 import { tileClipVerdict } from "../voice/tiles";
-import { clipCacheKey, synthesize, voiceConfig, voiceFor, type SpeechLang } from "../voice/elevenlabs";
+import { clipCacheKey, synthesizeWithRetry, voiceConfig, voiceFor, type SpeechLang } from "../voice/elevenlabs";
 import { clipRequestKey, clipRequestValidator, type ClipResult } from "./contract";
 
 /** Une synthèse prend une à deux secondes : douze tiennent largement dans un appel. */
@@ -256,7 +256,7 @@ export const prepareClips = action({
       const voice = voiceFor(config, clip.lang);
       let audio: Blob;
       try {
-        audio = await synthesize(clip.text, config, voice);
+        audio = await synthesizeWithRetry(clip.text, config, voice);
       } catch (error) {
         console.error("[hors-ligne] synthèse vocale en échec", error);
         results.push({ key: clip.key, status: "pending", reason: "provider_error" });

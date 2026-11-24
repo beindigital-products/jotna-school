@@ -254,9 +254,9 @@ export async function synthesize(
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(
-      `elevenlabs tts ${response.status}: ${detail.slice(0, 200)}`,
-    );
+    throw Object.assign(new Error(`elevenlabs tts ${response.status}: ${detail.slice(0, 200)}`), {
+      status: response.status,
+    });
   }
   const audio = await response.blob();
   // Un « 200 » sans son (corps vide, début de réponse coupé) serait rangé dans le
@@ -268,3 +268,42 @@ export async function synthesize(
   return audio;
 }
 
+
+/** Les pauses avant de redemander une synthèse que le fournisseur a refusée pour un moment. */
+export const SYNTHESIS_RETRY_DELAYS_MS: readonly number[] = [600, 1500];
+
+/**
+ * Vrai pour un refus PASSAGER : trop de requêtes en même temps (429), une panne du
+ * fournisseur (5xx), ou le réseau (pas de code). Une clé refusée, un texte refusé
+ * (4xx) et un son vide ne se redemandent pas : la réponse serait la même.
+ */
+export function isTransientSynthesisError(error: unknown): boolean {
+  if (error instanceof Error && /vide ou tronqué/.test(error.message)) return false;
+  const status = (error as { status?: unknown } | null)?.status;
+  if (typeof status !== "number") return true;
+  return status === 429 || status >= 500;
+}
+
+/**
+ * `synthesize`, qui redemande après un refus passager. ElevenLabs limite le nombre
+ * de synthèses simultanées d'un compte : le téléchargement des sons d'une classe,
+ * deux enfants qui ouvrent un exercice neuf au même instant, et une tuile recevait
+ * un 429. Elle restait muette pour cet enfant. On attend un peu et on redemande,
+ * deux fois au plus ; ensuite l'erreur remonte comme avant.
+ */
+export async function synthesizeWithRetry(
+  text: string,
+  config: VoiceConfig,
+  voice: Voice,
+  delaysMs: readonly number[] = SYNTHESIS_RETRY_DELAYS_MS,
+): Promise<Blob> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await synthesize(text, config, voice);
+    } catch (error) {
+      const delay = delaysMs[attempt];
+      if (delay === undefined || !isTransientSynthesisError(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+}

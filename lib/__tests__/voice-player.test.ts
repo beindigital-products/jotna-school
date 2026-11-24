@@ -133,3 +133,61 @@ describe("un son qui ne se joue pas (onFail)", () => {
     }
   });
 });
+
+describe("un refus de lecture automatique (onBlocked)", () => {
+  it("le signale, sans le compter comme un son mort", async () => {
+    playResult = () => Promise.reject(Object.assign(new Error("bloqué"), { name: "NotAllowedError" }));
+    const { playUrl, newVoiceOwner } = await import("../voice-player");
+    const onFail = vi.fn();
+    const onBlocked = vi.fn();
+    expect(await playUrl("https://clip/a.mp3", newVoiceOwner(), 1, onFail, onBlocked)).toBe(false);
+    expect(onBlocked).toHaveBeenCalledTimes(1);
+    expect(onFail).not.toHaveBeenCalled();
+  });
+
+  it("ne le signale ni pour un son qui joue, ni pour une coupure, ni pour un son mort", async () => {
+    const { playUrl, stopPlaying, newVoiceOwner } = await import("../voice-player");
+    const owner = newVoiceOwner();
+    const onBlocked = vi.fn();
+    const cut = playUrl("https://clip/a.mp3", owner, 1, undefined, onBlocked);
+    stopPlaying(owner);
+    await cut;
+    playResult = () => Promise.reject(Object.assign(new Error("décodage"), { name: "NotSupportedError" }));
+    await playUrl("https://clip/b.mp3", owner, 1, undefined, onBlocked);
+    expect(onBlocked).not.toHaveBeenCalled();
+  });
+});
+
+describe("le prochain geste de l'enfant (onNextGesture)", () => {
+  it("appelle une fois, au premier clic ou à la première touche du clavier", async () => {
+    const { onNextGesture } = await import("../voice-player");
+    const callback = vi.fn();
+    onNextGesture(callback);
+    expect(callback).not.toHaveBeenCalled();
+    document.body.dispatchEvent(new Event("click", { bubbles: true }));
+    document.body.dispatchEvent(new Event("click", { bubbles: true }));
+    document.body.dispatchEvent(new Event("keydown", { bubbles: true }));
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  it("passe APRÈS le bouton que l'enfant touche : c'est lui qui décide d'abord", async () => {
+    const { onNextGesture } = await import("../voice-player");
+    const order: string[] = [];
+    const button = document.createElement("button");
+    document.body.appendChild(button);
+    button.addEventListener("click", () => order.push("bouton"));
+    onNextGesture(() => order.push("geste"));
+    button.click();
+    button.remove();
+    expect(order).toEqual(["bouton", "geste"]);
+  });
+
+  it("ne rappelle pas après une annulation", async () => {
+    const { onNextGesture } = await import("../voice-player");
+    const callback = vi.fn();
+    const cancel = onNextGesture(callback);
+    cancel();
+    document.body.dispatchEvent(new Event("click", { bubbles: true }));
+    expect(callback).not.toHaveBeenCalled();
+  });
+});

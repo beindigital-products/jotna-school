@@ -33,7 +33,7 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { checkAccess } from "../access";
 import { isReadingLearnerClass } from "../curriculum";
-import { clipCacheKey, synthesize, voiceConfig, voiceFor } from "./elevenlabs";
+import { clipCacheKey, synthesizeWithRetry, voiceConfig, voiceFor } from "./elevenlabs";
 import { speakableExercise } from "./speakable";
 
 type PromptTarget =
@@ -131,7 +131,7 @@ export const speak = action({
 
     let audio: Blob;
     try {
-      audio = await synthesize(target.text, config, voice);
+      audio = await synthesizeWithRetry(target.text, config, voice);
     } catch (error) {
       console.error("[consigne] synthèse vocale en échec", error);
       return { status: "unavailable", reason: "provider_error" };

@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   findClip: vi.fn(),
   playUrl: vi.fn(),
   stopPlaying: vi.fn(),
+  // Le prochain geste de l'enfant : le test le déclenche lui-même (`gesture.fire`).
+  gesture: { fire: null as null | (() => void), cancelled: 0 },
   // Une autre source de sons à servir à la place de `findClip` (identité changée).
   source: { fn: null as null | ((request: unknown) => Promise<unknown>) },
 }));
@@ -18,6 +20,13 @@ vi.mock("@/lib/voice-player", () => ({
   newVoiceOwner: () => 7,
   playUrl: mocks.playUrl,
   stopPlaying: mocks.stopPlaying,
+  onNextGesture: (callback: () => void) => {
+    mocks.gesture.fire = callback;
+    return () => {
+      mocks.gesture.fire = null;
+      mocks.gesture.cancelled++;
+    };
+  },
 }));
 vi.mock("@/hooks/use-device-tier", () => ({ useDeviceTier: () => "full" }));
 vi.mock("@/lib/sounds", () => ({ getSoundEnabledLocal: () => false, play: vi.fn() }));
@@ -41,6 +50,8 @@ function Session({ exerciseId, silenced = false }: { exerciseId: string; silence
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.source.fn = null;
+  mocks.gesture.fire = null;
+  mocks.gesture.cancelled = 0;
   // Un son qui joue jusqu'à ce qu'on le coupe.
   mocks.playUrl.mockImplementation(() => new Promise<boolean>(() => {}));
 });
@@ -54,7 +65,7 @@ describe("le lecteur de consignes", () => {
     mocks.findClip.mockResolvedValue("https://clip/1.mp3");
     const { container } = render(<Session exerciseId="exercise1" />);
 
-    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/1.mp3", 7, 1, expect.any(Function)));
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/1.mp3", 7, 1, expect.any(Function), expect.any(Function)));
     expect(mocks.findClip).toHaveBeenCalledWith({ kind: "prompt", exerciseId: "exercise1" });
     expect(ecouter().getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText(PROMPT)).toBeTruthy();
@@ -104,7 +115,7 @@ describe("le lecteur de consignes", () => {
 
     mocks.findClip.mockResolvedValue("https://clip/4.mp3");
     fireEvent.click(ecouter());
-    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/4.mp3", 7, 1, expect.any(Function)));
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/4.mp3", 7, 1, expect.any(Function), expect.any(Function)));
     expect(mocks.findClip).toHaveBeenCalledTimes(2);
   });
 
@@ -149,7 +160,7 @@ describe("le lecteur de consignes", () => {
         <ExerciseActions />
       </PromptReaderProvider>,
     );
-    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("/sounds/badge.mp3", 7, 1, expect.any(Function)));
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("/sounds/badge.mp3", 7, 1, expect.any(Function), expect.any(Function)));
     expect(mocks.findClip).not.toHaveBeenCalled();
     expect(ecouter().getAttribute("aria-pressed")).toBe("true");
   });
@@ -179,7 +190,7 @@ describe("le lecteur de consignes", () => {
     // Le réseau revient : la source des sons change, la consigne se dit.
     mocks.source.fn = vi.fn(() => Promise.resolve("https://clip/8.mp3"));
     rerender(<Session exerciseId="exercise8" />);
-    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/8.mp3", 7, 1, expect.any(Function)));
+    await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledWith("https://clip/8.mp3", 7, 1, expect.any(Function), expect.any(Function)));
   });
   describe("un son trouvé mais qui ne se joue pas", () => {
     /** Le premier appel échoue (`onFail`), les suivants jouent sans fin. */
@@ -237,6 +248,77 @@ describe("le lecteur de consignes", () => {
       await waitFor(() => expect(ecouter().getAttribute("data-listen-status")).toBe("idle"));
       expect(mocks.playUrl).toHaveBeenCalledTimes(1);
       expect(mocks.findClip).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("le navigateur refuse la lecture automatique (web, aucun toucher encore)", () => {
+    /** Le premier appel est refusé (`onBlocked`), les suivants jouent sans fin. */
+    const blockFirst = () => {
+      let calls = 0;
+      mocks.playUrl.mockImplementation(
+        (_url: string, _owner: number, _rate: number, _onFail?: () => void, onBlocked?: () => void) => {
+          calls++;
+          if (calls === 1) {
+            onBlocked?.();
+            return Promise.resolve(false);
+          }
+          return new Promise<boolean>(() => {});
+        },
+      );
+    };
+
+    it("attend le premier geste de l'enfant, puis dit la consigne sans rien redemander", async () => {
+      blockFirst();
+      mocks.findClip.mockResolvedValue("https://clip/bloque.mp3");
+      render(<Session exerciseId="exercise-bloque" />);
+      await waitFor(() => expect(mocks.gesture.fire).not.toBeNull());
+      // Refusée n'est pas « muet » : le son existe, le bouton reste au repos.
+      expect(ecouter().getAttribute("aria-pressed")).toBe("false");
+      expect(ecouter().getAttribute("aria-label")).not.toMatch(/le son manque/);
+      expect(mocks.playUrl).toHaveBeenCalledTimes(1);
+
+      act(() => mocks.gesture.fire?.());
+      await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledTimes(2));
+      expect(mocks.playUrl).toHaveBeenLastCalledWith(
+        "https://clip/bloque.mp3",
+        7,
+        1,
+        expect.any(Function),
+        expect.any(Function),
+      );
+      expect(ecouter().getAttribute("aria-pressed")).toBe("true");
+      expect(mocks.findClip).toHaveBeenCalledTimes(1);
+    });
+
+    it("ne relit pas au geste si l'enfant a déjà répondu", async () => {
+      blockFirst();
+      mocks.findClip.mockResolvedValue("https://clip/bloque2.mp3");
+      const { rerender } = render(<Session exerciseId="exercise-bloque2" />);
+      await waitFor(() => expect(mocks.gesture.fire).not.toBeNull());
+      rerender(<Session exerciseId="exercise-bloque2" silenced />);
+      act(() => mocks.gesture.fire?.());
+      await act(async () => {});
+      expect(mocks.playUrl).toHaveBeenCalledTimes(1);
+    });
+
+    it("« Écouter » prend la main : le geste en attente est annulé, la consigne ne part qu'une fois", async () => {
+      blockFirst();
+      mocks.findClip.mockResolvedValue("https://clip/bloque3.mp3");
+      render(<Session exerciseId="exercise-bloque3" />);
+      await waitFor(() => expect(mocks.gesture.fire).not.toBeNull());
+      fireEvent.click(ecouter());
+      await waitFor(() => expect(mocks.playUrl).toHaveBeenCalledTimes(2));
+      expect(mocks.gesture.cancelled).toBe(1);
+      expect(mocks.gesture.fire).toBeNull();
+    });
+
+    it("n'attend plus de geste quand l'exercice s'en va", async () => {
+      blockFirst();
+      mocks.findClip.mockResolvedValue("https://clip/bloque4.mp3");
+      const { unmount } = render(<Session exerciseId="exercise-bloque4" />);
+      await waitFor(() => expect(mocks.gesture.fire).not.toBeNull());
+      unmount();
+      expect(mocks.gesture.fire).toBeNull();
     });
   });
 });
