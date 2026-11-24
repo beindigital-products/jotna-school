@@ -26,6 +26,14 @@ const aiPurposeEnum = v.union(
   v.literal("pdf_extract"),
 );
 
+// L'avantage d'un coupon (`couponRules.CouponBenefit`), dans `coupons` et
+// recopié dans `couponRedemptions`.
+const couponBenefitValidator = v.union(
+  v.object({ kind: v.literal("free_access"), days: v.number() }),
+  v.object({ kind: v.literal("percent"), percent: v.number() }),
+  v.object({ kind: v.literal("amount"), amountFcfa: v.number() }),
+);
+
 export default defineSchema({
   ...authTables,
   // ---------------------------------------------------------------------------
@@ -66,7 +74,11 @@ export default defineSchema({
     studentCode: v.optional(v.string()),
   })
     .index("by_userId", ["userId"])
-    .index("by_studentCode", ["studentCode"]),
+    .index("by_studentCode", ["studentCode"])
+    // La console admin compte et liste les comptes par rôle
+    // (`adminConsole.ts`) ; `_creationTime`, implicite en fin d'index, lui
+    // donne aussi les inscriptions récentes d'un rôle.
+    .index("by_role", ["role"]),
 
   // ---------------------------------------------------------------------------
   // studentGuardians
@@ -1410,6 +1422,20 @@ export default defineSchema({
     ...quoteRequestFields,
     createdAt: v.number(),
     emailedAt: v.optional(v.number()),
+    // LE SUIVI COMMERCIAL, posé par la console (`adminConsole.setQuoteStatus`,
+    // page `/admin/devis`). Absent = « nouvelle » : la demande n'a pas encore
+    // été traitée. `adminNote` est la note de l'équipe, jamais montrée à
+    // l'école. Le formulaire public n'écrit aucun de ces champs.
+    status: v.optional(
+      v.union(
+        v.literal("new"),
+        v.literal("contacted"),
+        v.literal("won"),
+        v.literal("lost"),
+      ),
+    ),
+    adminNote: v.optional(v.string()),
+    statusAt: v.optional(v.number()),
   })
     .index("by_email_and_createdAt", ["email", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
@@ -1517,4 +1543,60 @@ export default defineSchema({
     duplicate: v.boolean(),
     duplicateCauris: v.number(),
   }).index("by_student_day", ["studentId", "dayKey"]),
+
+  // ---------------------------------------------------------------------------
+  // COUPONS (`coupons.ts`, règles dans `couponRules.ts`).
+  //
+  // L'équipe émet un coupon depuis `/admin/coupons` pour un public (parents,
+  // professeurs, écoles, tout le monde) ; un compte adulte le saisit dans ses
+  // paramètres. `code` est stocké NORMALISÉ (`normalizeCouponCode`).
+  //
+  // `useCount` est un compteur tenu par `coupons.redeem`, dans la transaction
+  // qui écrit la ligne `couponRedemptions` : c'est lui que la règle compare à
+  // `maxUses`, comme pour les codes d'invitation.
+  //
+  // L'avantage (`benefit`) n'agit pas encore sur l'accès : tant que
+  // `accessRules.FREE_ACCESS` est allumé, tout est gratuit. Les utilisations
+  // enregistrées ici seront lues par les futurs paiements.
+  // ---------------------------------------------------------------------------
+  coupons: defineTable({
+    code: v.string(),
+    label: v.string(),
+    audience: v.union(
+      v.literal("all"),
+      v.literal("parent"),
+      v.literal("professeur"),
+      v.literal("directeur"),
+    ),
+    benefit: couponBenefitValidator,
+    maxUses: v.number(),
+    useCount: v.number(),
+    startsAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+    createdBy: v.id("profiles"),
+  }).index("by_code", ["code"]),
+
+  // Une utilisation de coupon par un compte. L'avantage est COPIÉ à
+  // l'utilisation : désactiver le coupon ensuite ne retire rien à qui l'a déjà
+  // pris. `schoolId` : l'école du compte `directeur`, s'il en a une.
+  // `accessUntil` : fin d'un accès gratuit. `appliedAt` : posé par le paiement
+  // qui consommera une remise (aucun écrivain aujourd'hui).
+  couponRedemptions: defineTable({
+    couponId: v.id("coupons"),
+    profileId: v.id("profiles"),
+    role: v.union(
+      v.literal("parent"),
+      v.literal("professeur"),
+      v.literal("directeur"),
+    ),
+    schoolId: v.optional(v.id("schools")),
+    benefit: couponBenefitValidator,
+    at: v.number(),
+    accessUntil: v.optional(v.number()),
+    appliedAt: v.optional(v.number()),
+  })
+    .index("by_couponId", ["couponId"])
+    .index("by_profileId", ["profileId"])
+    .index("by_profileId_and_couponId", ["profileId", "couponId"]),
 });

@@ -18,7 +18,25 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Loader2, X, type LucideIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import {
+  QUOTE_DEFAULT_DIAL_CODE,
+  QUOTE_DIAL_CODES,
+  formatQuoteLocalPhone,
+  joinQuotePhone,
+  quotePhoneExample,
+} from "@/convex/quoteRules";
+import { fr } from "react-day-picker/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { refusalMessage } from "@/lib/refusalMessage";
 import { Button as ShadButton, buttonVariants } from "@/components/ui/button";
@@ -461,6 +479,179 @@ export function SelectField<T extends string>({
   );
 }
 
+/** Un jour « AAAA-MM-JJ », lu et écrit à l'heure de l'appareil. */
+const toIsoDay = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const fromIsoDay = (value: string) => {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+/**
+ * Un champ date : le sélecteur de shadcn (`Popover` + `Calendar`), en
+ * français, semaine commençant le lundi, à la place du champ date natif.
+ * `value` est un jour « AAAA-MM-JJ », ou `""` ; une croix efface la date.
+ */
+export function DateField({
+  id,
+  value,
+  onChange,
+  placeholder = "Choisir une date",
+  disablePast = false,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disablePast?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return (
+    <div className="relative">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          id={id}
+          className={cn(
+            "flex h-11 w-full items-center gap-2 border text-left outline-none focus-visible:ring-3",
+            CONTROL_CLASS,
+            value && "pr-12",
+          )}
+        >
+          <CalendarDays className="h-4 w-4 shrink-0 text-stone-500" aria-hidden />
+          <span className={value ? "" : "text-stone-400"}>
+            {value
+              ? fromIsoDay(value).toLocaleDateString("fr-FR", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : placeholder}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto rounded-2xl p-2">
+          <Calendar
+            mode="single"
+            locale={fr}
+            weekStartsOn={1}
+            selected={value ? fromIsoDay(value) : undefined}
+            defaultMonth={value ? fromIsoDay(value) : today}
+            disabled={disablePast ? { before: today } : undefined}
+            onSelect={(date) => {
+              onChange(date ? toIsoDay(date) : "");
+              setOpen(false);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+      {value && (
+        <button
+          type="button"
+          aria-label="Effacer la date"
+          onClick={() => onChange("")}
+          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-stone-500 outline-none hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-(--dash-strong)"
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+      )}
+    </div>
+  );
+}
+
+const DIAL_OPTIONS = QUOTE_DIAL_CODES.map((dial) => ({
+  value: dial.code,
+  label: `${dial.country} (${dial.code})`,
+}));
+
+/** Sépare « +221 77 123 45 67 » en indicatif connu et numéro national. */
+function splitPhone(value: string): { dial: string; local: string } {
+  const typed = value.trim();
+  // Le plus long indicatif d'abord : « +221 » avant « +22 ».
+  const known = [...QUOTE_DIAL_CODES]
+    .sort((a, b) => b.code.length - a.code.length)
+    .find((dial) => typed.startsWith(dial.code));
+  if (!known) return { dial: QUOTE_DEFAULT_DIAL_CODE, local: typed };
+  return {
+    dial: known.code,
+    local: formatQuoteLocalPhone(known.code, typed.slice(known.code.length)),
+  };
+}
+
+/**
+ * Un numéro de téléphone : la liste des indicatifs (Sénégal par défaut), puis
+ * le numéro national, espacé à la frappe comme dans le pays. Les règles sont
+ * celles du formulaire de devis (`convex/quoteRules.ts`).
+ *
+ * `value` et `onChange` portent le numéro COMPLET (« +221 77 123 45 67 »), ou
+ * `""` quand le champ est vide.
+ */
+export function PhoneField({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [dial, setDial] = useState(() => splitPhone(value).dial);
+  const [local, setLocal] = useState(() => splitPhone(value).local);
+
+  function update(nextDial: string, typed: string) {
+    const nextLocal = formatQuoteLocalPhone(nextDial, typed);
+    setDial(nextDial);
+    setLocal(nextLocal);
+    onChange(nextLocal.trim() === "" ? "" : joinQuotePhone(nextDial, nextLocal));
+  }
+
+  return (
+    <div className="flex gap-2">
+      <Select
+        items={DIAL_OPTIONS}
+        value={dial}
+        onValueChange={(next) => {
+          if (next !== null) update(next as string, local);
+        }}
+      >
+        <SelectTrigger
+          aria-label="Indicatif du pays"
+          className={cn("w-[6.5rem] flex-none data-[size=default]:h-11", CONTROL_CLASS)}
+        >
+          {/* La liste dit le pays ; le champ fermé ne montre que l'indicatif. */}
+          <SelectValue>{(shown: string) => shown}</SelectValue>
+        </SelectTrigger>
+        <SelectContent
+          alignItemWithTrigger={false}
+          align="start"
+          className="max-h-72 w-64 rounded-xl"
+        >
+          {DIAL_OPTIONS.map((option) => (
+            <SelectItem
+              key={option.value}
+              value={option.value}
+              className="min-h-10 rounded-lg px-2.5 text-sm"
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <ShadInput
+        id={id}
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel-national"
+        placeholder={quotePhoneExample(dial)}
+        value={local}
+        onChange={(e) => update(dial, e.target.value)}
+        className={cn("h-11 min-w-0 flex-1", CONTROL_CLASS)}
+      />
+    </div>
+  );
+}
+
 /** Un réglage oui/non : l'interrupteur shadcn, son titre et son explication. */
 export function SwitchRow({
   id,
@@ -895,4 +1086,73 @@ export function formatDayTime(timestamp: number): string {
 /** « 1 élève », « 3 élèves ». */
 export function plural(count: number, singular: string, pluralForm?: string) {
   return `${count} ${count > 1 ? (pluralForm ?? `${singular}s`) : singular}`;
+}
+
+// ── Pagination ──────────────────────────────────────────────────────────────
+
+/** Les listes des consoles montrent 40 lignes par page. */
+export const PAGE_SIZE = 40;
+
+/**
+ * Découpe une liste en pages. `resetKey` ramène à la première page quand il
+ * change (une recherche, un onglet) ; une liste qui raccourcit ne laisse
+ * jamais sur une page vide.
+ */
+export function usePagination<T>(
+  items: readonly T[],
+  resetKey: string = "",
+  pageSize: number = PAGE_SIZE,
+) {
+  const [state, setState] = useState({ page: 1, key: resetKey });
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+  const page = Math.min(state.key === resetKey ? state.page : 1, pageCount);
+  const start = (page - 1) * pageSize;
+  return {
+    page,
+    pageCount,
+    pageItems: items.slice(start, start + pageSize),
+    /** Rang de la première et de la dernière ligne affichées, à partir de 1. */
+    from: items.length === 0 ? 0 : start + 1,
+    to: Math.min(start + pageSize, items.length),
+    total: items.length,
+    setPage: (next: number) =>
+      setState({ page: Math.min(Math.max(1, next), pageCount), key: resetKey }),
+  };
+}
+
+/** « 41 à 80 sur 213 », avec Précédent et Suivant. Rien sur une seule page. */
+export function Pagination({
+  pagination,
+  label,
+}: {
+  pagination: ReturnType<typeof usePagination>;
+  /** Ce que la liste contient, pour le lecteur d'écran : « comptes ». */
+  label: string;
+}) {
+  const { page, pageCount, from, to, total, setPage } = pagination;
+  if (pageCount <= 1) return null;
+  return (
+    <nav
+      aria-label={`Pages de la liste : ${label}`}
+      className="flex flex-wrap items-center justify-between gap-3"
+    >
+      <p className="text-sm text-stone-600" aria-live="polite">
+        {from} à {to} sur {total} · page {page} sur {pageCount}
+      </p>
+      <div className="flex gap-2">
+        <Button variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+          Précédent
+        </Button>
+        <Button
+          variant="secondary"
+          disabled={page >= pageCount}
+          onClick={() => setPage(page + 1)}
+        >
+          Suivant
+          <ChevronRight className="h-4 w-4" aria-hidden />
+        </Button>
+      </div>
+    </nav>
+  );
 }

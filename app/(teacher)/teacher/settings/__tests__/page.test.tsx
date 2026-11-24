@@ -6,7 +6,10 @@ import { render, screen } from "@testing-library/react";
 const state = vi.hoisted(() => ({ loaded: false }));
 
 vi.mock("@/convex/_generated/api", () => ({
-  api: { profiles: { getCurrentProfile: "profile", updateProfile: "updateProfile" } },
+  api: {
+    profiles: { getCurrentProfile: "profile", updateProfile: "updateProfile" },
+    coupons: { redeem: "redeem", myRedemptions: "myRedemptions" },
+  },
 }));
 vi.mock("convex/react", () => ({
   useQuery: () => (state.loaded ? { name: "Moussa Ndiaye" } : undefined),

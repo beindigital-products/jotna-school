@@ -2,7 +2,8 @@
 
 /**
  * LES PARAMÈTRES DU COMPTE, communs aux trois espaces : le nom, l'adresse de
- * connexion (lecture seule), puis la déconnexion. Un espace ajoute ses propres
+ * connexion (lecture seule), la carte « Code promo » (`coupon-redeem.tsx`),
+ * puis la déconnexion. Un espace ajoute ses propres
  * réglages par `children` (les e-mails du parent) et les enregistre par
  * `extraPatch`.
  */
@@ -24,6 +25,7 @@ import {
   Input,
   useAsyncAction,
 } from "./ui";
+import { CouponRedeemCard } from "./coupon-redeem";
 
 export function AccountSettings({
   description,
@@ -116,6 +118,9 @@ export function AccountSettings({
       </Card>
 
       {after}
+
+      {/* Un administrateur émet les coupons, il n'en utilise pas. */}
+      {profile.role !== "admin" && <CouponRedeemCard />}
 
       <Card className="flex flex-wrap items-center justify-between gap-3 p-5 sm:p-6">
         <div>

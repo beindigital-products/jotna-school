@@ -178,6 +178,45 @@ export const getChildren = query({
  *
  * Le corps est inchangé : seul le mot d'enregistrement a changé.
  */
+/**
+ * Donne le rôle `admin` au compte d'une adresse — LIGNE DE COMMANDE SEULEMENT.
+ *
+ * Aucun chemin applicatif ne pose `admin` (`openAccessRules.SELF_SIGNUP_ROLES`
+ * le refuse) : sur un déploiement neuf, personne ne peut donc ouvrir la
+ * console du super admin. Cette mutation interne rompt le cercle, comme
+ * `invitations.issue` pour les codes. Elle ne se lance que depuis le tableau
+ * de bord Convex ou la ligne de commande, par qui tient déjà le déploiement :
+ *
+ *     npx convex run profiles:promoteToAdmin '{"email":"prenom@exemple.sn"}'
+ *
+ * Le compte doit exister (créé par l'inscription habituelle). Un compte élève
+ * est refusé : son « adresse » est un code de connexion partagé avec la
+ * famille.
+ */
+export const promoteToAdmin = internalMutation({
+  args: { email: v.string() },
+  handler: async (ctx, args): Promise<{ profileId: Id<"profiles">; previousRole: string }> => {
+    const email = args.email.trim().toLowerCase();
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", email))
+      .first();
+    if (user === null) throw new ConvexError("Aucun compte avec cette adresse.");
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .unique();
+    if (profile === null) throw new ConvexError("Ce compte n'a pas de profil.");
+    if (profile.role === "student") {
+      throw new ConvexError("Un compte élève ne peut pas devenir administrateur.");
+    }
+    if (profile.role !== "admin") {
+      await ctx.db.patch("profiles", profile._id, { role: "admin" });
+    }
+    return { profileId: profile._id, previousRole: profile.role };
+  },
+});
+
 export const createChildProfile = internalMutation({
   args: {
     guardianId: v.id("profiles"),
