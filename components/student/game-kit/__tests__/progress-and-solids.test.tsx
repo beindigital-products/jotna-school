@@ -82,3 +82,30 @@ describe("Solid3D — des faces, pas du WebGL", () => {
     expect(container.innerHTML).not.toContain("gk-roll");
   });
 });
+
+describe("ProgressTrack — la série et le gain d'étoiles", () => {
+  it("la flamme ne s'allume qu'à partir de deux réussites d'affilée, et le dit au lecteur d'écran", () => {
+    const { container, rerender } = render(<ProgressTrack total={10} current={2} attemptsLeft={5} stars={3} combo={1} />);
+    expect(container.querySelector("[data-combo]")).toBeNull();
+    rerender(<ProgressTrack total={10} current={3} attemptsLeft={5} stars={6} combo={3} />);
+    const flame = container.querySelector("[data-combo]");
+    expect(flame?.textContent).toBe("×3");
+    expect(screen.getByRole("group", { name: "Progression de la séance" }).textContent).toContain("3 bonnes réponses d'affilée.");
+  });
+
+  it("un gain fait gonfler le compteur et détache un « +3 » ; sans gain, rien", () => {
+    const { container, rerender } = render(<ProgressTrack total={10} current={2} stars={3} gain={{ amount: 0, key: 0 }} />);
+    expect(container.querySelector("[data-star-gain]")).toBeNull();
+    expect(container.querySelector("[data-stars]")?.className).not.toContain("gk-pop");
+    rerender(<ProgressTrack total={10} current={2} stars={6} gain={{ amount: 3, key: 1 }} />);
+    expect(container.querySelector("[data-star-gain]")?.textContent).toBe("+3");
+    expect(container.querySelector("[data-stars]")?.className).toContain("gk-pop");
+  });
+
+  it("sur le bois, les pierres à venir et les cœurs vidés passent en clair", () => {
+    const { container } = render(<ProgressTrack total={3} current={0} attemptsLeft={4} attemptsMax={5} surface="wood" />);
+    expect(container.querySelector("[data-surface='wood']")).not.toBeNull();
+    expect(container.querySelector("[data-stone='a-venir']")?.className).toContain("#5b3516");
+    expect(container.querySelector("[data-alive='false']")?.getAttribute("class")).toContain("text-white/55");
+  });
+});

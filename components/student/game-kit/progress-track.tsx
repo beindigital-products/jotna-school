@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Heart, Star } from "lucide-react";
+import { Check, Flame, Heart, Star } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
 import { useGameFeel } from "./use-game-feel";
 
@@ -29,7 +29,26 @@ import { useGameFeel } from "./use-game-feel";
  *
  * Ce qui est annoncé : « Question 3 sur 10 », « Encore 4 essais », les
  * étoiles, en texte, pour un lecteur d'écran ; le visuel est `aria-hidden`.
+ *
+ * SUR LE BOIS (`surface="wood"`, 24 novembre 2026) : l'en-tête de la séance
+ * est une planche, comme celle des missions du camp. Les pierres à venir, le
+ * pointillé et les cœurs vidés y passent en clair pour rester lisibles ; les
+ * pierres franchies, le jeton et le chemin doré ne changent pas.
+ *
+ * LA SÉRIE ET LE GAIN (`combo`, `gain`, `components/student/game/session-juice.tsx`) :
+ * à partir de deux bonnes réponses du premier coup d'affilée, une flamme
+ * « ×3 » s'allume à gauche des étoiles et gonfle à chaque réussite (`gk-pop`) ;
+ * quand une réponse rapporte des étoiles, le compteur gonfle et un « +3 »
+ * s'en détache (`gk-plus-rise`). Deux couches de plus, le temps d'une seconde,
+ * en `transform` et en `opacity`.
  */
+export type TrackSurface = "cream" | "wood";
+
+/** Les étoiles que la dernière réponse vient de rapporter ; `key` rejoue l'animation. */
+export type TrackGain = { amount: number; key: number };
+
+/** À partir de combien de réussites d'affilée la flamme s'affiche. */
+const COMBO_SHOWN_FROM = 2;
 export type StoneState = "passee" | "courante" | "a-venir";
 
 export function stoneState(index: number, current: number): StoneState {
@@ -47,8 +66,17 @@ export function ProgressTrack({
   attemptsLeft,
   attemptsMax = 5,
   stars,
+  combo = 0,
+  gain,
+  surface = "cream",
   className = "",
 }: {
+  /** Bonnes réponses du premier coup, d'affilée : la flamme s'allume à partir de deux. */
+  combo?: number;
+  /** Les étoiles que la dernière réponse vient de rapporter : le compteur gonfle. */
+  gain?: TrackGain;
+  /** Sur quoi le sentier est posé : la crème (défaut) ou la planche de bois de la séance. */
+  surface?: TrackSurface;
   /** Nombre d'exercices de la séance. */
   total: number;
   /** Index (base 0) de l'exercice en cours ; `total` quand tout est fini. */
@@ -92,6 +120,9 @@ export function ProgressTrack({
   }, [cur, count]);
 
   const progress = trailProgress(count, cur);
+  const wood = surface === "wood";
+  const streak = Math.max(0, Math.floor(combo));
+  const gained = gain && gain.amount > 0 ? gain : null;
   const hearts =
     attemptsLeft === undefined
       ? null
@@ -102,17 +133,23 @@ export function ProgressTrack({
       role="group"
       aria-label="Progression de la séance"
       className={`gk-progress gk-motion flex flex-col gap-1 ${className}`}
+      data-surface={surface}
     >
       <span className="sr-only">
         {done ? `Séance terminée, ${count} questions.` : `Question ${cur + 1} sur ${count}.`}
         {attemptsLeft !== undefined && ` ${attemptsLeft === 1 ? "Encore 1 essai." : `Encore ${attemptsLeft} essais.`}`}
         {stars !== undefined && ` ${stars === 1 ? "1 étoile gagnée." : `${stars} étoiles gagnées.`}`}
+        {streak >= COMBO_SHOWN_FROM && ` ${streak} bonnes réponses d'affilée.`}
       </span>
 
       {/* Le sentier et ses pierres. */}
       <div ref={rowRef} aria-hidden className="relative w-full" style={{ height: TOKEN + 4 }}>
         {/* Le tracé : des pointillés terre, puis le chemin déjà foulé, ambre. */}
-        <div className="absolute inset-x-3 top-1/2 h-[3px] -translate-y-1/2 rounded-full border-t-[3px] border-dashed border-[#a5602c]/40" />
+        <div
+          className={`absolute inset-x-3 top-1/2 h-[3px] -translate-y-1/2 rounded-full border-t-[3px] border-dashed ${
+            wood ? "border-[#fff1cc]/45" : "border-[#a5602c]/40"
+          }`}
+        />
         <div
           className="absolute inset-x-3 top-1/2 h-[5px] -translate-y-1/2 origin-left rounded-full bg-gradient-to-r from-[#f6c452] to-[#e9a83a] shadow-[0_1px_0_rgb(0_0_0_/_0.12)] transition-transform duration-[600ms] ease-out"
           style={{ transform: `translateY(-50%) scaleX(${progress})` }}
@@ -136,7 +173,9 @@ export function ProgressTrack({
                       : "h-[22px] w-[22px] border-white bg-gradient-to-b from-[#a3e635] to-[#16a34a] text-white shadow-[0_2px_0_#166534]"
                     : state === "courante"
                       ? "h-4 w-4 border-[#e9a83a] bg-[#fff1cc]"
-                      : "h-4 w-4 border-[#d6c39a] bg-[#fff8e6] shadow-[0_2px_0_#d6c39a]"
+                      : wood
+                        ? "h-4 w-4 border-[#f3dca8] bg-[#fff8e6] shadow-[0_2px_0_#5b3516]"
+                        : "h-4 w-4 border-[#d6c39a] bg-[#fff8e6] shadow-[0_2px_0_#d6c39a]"
                 }`}
               >
                 {state === "passee" && !missedHere && <Check className="h-3.5 w-3.5" strokeWidth={4} />}
@@ -180,8 +219,12 @@ export function ProgressTrack({
                   data-alive={alive}
                   className={`h-[20px] w-[20px] transition-[transform,scale,opacity] duration-300 ${
                     alive
-                      ? "fill-[#fb7185] text-[#e11d48] drop-shadow-[0_1px_0_rgb(0_0_0_/_0.15)]"
-                      : "scale-75 fill-transparent text-[#78350f]/35 opacity-70"
+                      ? wood
+                        ? "fill-[#fb7185] text-white drop-shadow-[0_1px_0_rgb(0_0_0_/_0.3)]"
+                        : "fill-[#fb7185] text-[#e11d48] drop-shadow-[0_1px_0_rgb(0_0_0_/_0.15)]"
+                      : wood
+                        ? "scale-75 fill-transparent text-white/55 opacity-80"
+                        : "scale-75 fill-transparent text-[#78350f]/35 opacity-70"
                   }`}
                   strokeWidth={2.5}
                 />
@@ -191,13 +234,45 @@ export function ProgressTrack({
             <span />
           )}
 
-          {/* Les étoiles de la séance. */}
-          {stars !== undefined && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border-2 border-white bg-[#fff8e6] px-[10px] py-[2px] font-display text-sm font-extrabold text-[#78350f] shadow-[0_2px_0_#d6c39a]">
-              <Star className="h-[16px] w-[16px] fill-[#ffd23f] text-[#e9a83a]" />
-              {stars}
-            </span>
-          )}
+          <div className="flex shrink-0 items-center gap-1.5">
+            {/* La série : une flamme, à partir de deux réussites du premier coup d'affilée.
+                La clé est le compte : à chaque réussite, la pastille est remontée et gonfle. */}
+            {streak >= COMBO_SHOWN_FROM && (
+              <span
+                key={streak}
+                data-combo={streak}
+                className="inline-flex items-center gap-0.5 rounded-full border-2 border-white bg-[#c2410c] px-[8px] py-[2px] font-display text-sm font-extrabold text-white shadow-[0_2px_0_#7c2d12] animate-[gk-pop_0.45s_ease-out]"
+              >
+                <Flame className="h-[16px] w-[16px] fill-[#fde047] text-[#fff7c2]" />
+                ×{streak}
+              </span>
+            )}
+
+            {/* Les étoiles de la séance. Un gain : le compteur gonfle, un « +3 » s'en détache. */}
+            {stars !== undefined && (
+              <span className="relative inline-flex">
+                <span
+                  key={gained ? gained.key : "repos"}
+                  data-stars={stars}
+                  className={`inline-flex items-center gap-1 rounded-full border-2 border-white bg-[#fff8e6] px-[10px] py-[2px] font-display text-sm font-extrabold text-[#78350f] ${
+                    wood ? "shadow-[0_2px_0_#5b3516]" : "shadow-[0_2px_0_#d6c39a]"
+                  } ${gained ? "animate-[gk-pop_0.45s_ease-out]" : ""}`}
+                >
+                  <Star className="h-[16px] w-[16px] fill-[#ffd23f] text-[#e9a83a]" />
+                  {stars}
+                </span>
+                {gained && (
+                  <span
+                    key={`gain-${gained.key}`}
+                    data-star-gain={gained.amount}
+                    className="text-outline pointer-events-none absolute -top-[18px] right-[6px] font-display text-base font-extrabold leading-none text-[#ffd23f] animate-[gk-plus-rise_1.2s_ease-out_both]"
+                  >
+                    +{gained.amount}
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>

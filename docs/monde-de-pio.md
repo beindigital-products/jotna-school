@@ -4,7 +4,9 @@ L'espace élève ne ressemble plus à un catalogue de cours. C'est un jeu : un
 camp dans la savane où vit Pio, une carte du monde dont chaque zone est une
 matière, un sentier d'étapes par monde, des missions du jour, une salle des
 trophées et un carnet d'explorateur. La séance d'exercices, elle, reste sobre.
-Le jeu motive entre les exercices, jamais pendant.
+Le jeu motive entre les exercices, jamais pendant. Une exception depuis le
+24 novembre 2026 : la série de bonnes réponses, dans l'en-tête de la séance
+(`docs/direction-jeu-exercices.md`, section 6).
 
 Ce document dit ce qui a été construit, pourquoi, et comment l'étendre sans
 casser ce qui tient.
@@ -281,7 +283,9 @@ parle court.
 
 La séance d'exercices garde son mode focus (G3) ; seules la réaction à une
 réponse (`components/student/game/answer-feedback.tsx`) et la fin du palier
-sont passées au jeu. Pendant l'explication « Je veux comprendre », l'alerte
+sont passées au jeu. Depuis le 24 novembre 2026, la séance se joue aussi dans le
+monde de sa matière, dans un cadre en bois, avec une série et une entrée en
+cascade des pièces (`docs/direction-jeu-exercices.md`, section 6). Pendant l'explication « Je veux comprendre », l'alerte
 de réponse s'efface, et revient quand le panneau se ferme. La boutique et la monnaie, que G7
 écartait, existent depuis le 24 novembre 2026 (`docs/economie-du-jeu.md`). Pio n'est pas en 3D. Les tests Playwright de l'espace
 élève ont été mis à jour pour les nouveaux noms de lieux, mais ne sont pas

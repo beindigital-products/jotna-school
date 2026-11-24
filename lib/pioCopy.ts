@@ -105,6 +105,8 @@ export const pioSays = {
   answerOut: "Tu peux passer à la suite.",
   answerOutSub: "Pas grave, on va comprendre ensemble.",
   attemptsLeft: (n: number) => (n === 1 ? "Encore 1 essai" : `Encore ${n} essais`),
+  /** La série : des bonnes réponses du premier coup, d'affilée (`session-juice.tsx`). */
+  comboLine: (n: number) => `${n} d'affilée !`,
 
   /** Fin de palier. */
   palierWon: ["Palier validé !", "Tu l'as fait !", "Quel explorateur !"] as const,

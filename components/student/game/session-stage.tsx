@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { Lightbulb, Music, WifiOff, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { toggleReader, useActivePromptReader } from "@/components/exercises/prompt-reader";
 import {
   ActionButton3D,
@@ -11,6 +11,7 @@ import {
   ProgressTrack,
   SceneDockProvider,
   StageBackdrop,
+  useGameFeel,
   useMotionWillChange,
 } from "@/components/student/game-kit";
 import { preloadCoffre } from "@/components/student/game-kit/coffre";
@@ -25,7 +26,9 @@ import { useDeviceTier } from "@/hooks/use-device-tier";
 import { kidMessages } from "@/lib/kidCopy";
 import { pickLine, pioSays } from "@/lib/pioCopy";
 import { preloadAll } from "@/lib/sounds";
+import type { WorldSceneId } from "@/lib/world-scenes";
 import type { AnswerOutcome } from "./answer-feedback";
+import { SessionJuiceProvider, useSessionJuiceState, type SessionJuice } from "./session-juice";
 
 /**
  * LA COQUE D'UNE SÉANCE — l'écran de jeu autour de chaque exercice.
@@ -135,6 +138,26 @@ import type { AnswerOutcome } from "./answer-feedback";
  * rendent pas. Quand le clavier monte pour une réponse tapée en lettres, le
  * dock monte au-dessus de lui sur iOS (viewport visuel) et suit la fenêtre
  * sur Android ; le champ se recentre lui-même (`ShortAnswerExercise`).
+ *
+ * LA MISE À NEUF DU 24 NOVEMBRE 2026 (demande du propriétaire : des exercices
+ * « wow », immersifs, sur le web comme dans l'application). Elle passe par la
+ * coque, donc par les douze écrans d'exercice à la fois, sans toucher à leur
+ * mécanique ni au budget du premier écran (aucune hauteur ne change) :
+ *   - LE MONDE DE LA MATIÈRE (`world`) : la séance se joue devant la peinture
+ *     du monde de sa matière, le boulier géant, le livre et la plume, le
+ *     phare (`StageBackdrop`, `lib/world-scenes.ts`). Sans monde, la savane
+ *     du camp, comme avant.
+ *   - UN CADRE DE JEU EN BOIS : l'en-tête et le dock sont des planches, comme
+ *     la planche des missions du camp ; la crème reste à la carte, qui se
+ *     détache dessus. Opaques, comme la crème qu'elles remplacent.
+ *   - LA SÉRIE ET LE GAIN (`session-juice.tsx`) : une flamme « ×3 » pour les
+ *     réussites du premier coup d'affilée, le compteur d'étoiles qui gonfle
+ *     et son « +3 », repris par la scène de réponse.
+ *   - LES PIÈCES ARRIVENT EN CASCADE, ET FÊTENT LA BONNE RÉPONSE (`DealIn`) :
+ *     à l'arrivée d'une question, tuiles, pots, tambours et touches se posent
+ *     l'une après l'autre ; à la bonne réponse, elles sautent en vague. Deux
+ *     animations CSS sur `translate`, `scale` et `opacity`, au niveau
+ *     « riche » seulement, jamais sous `prefers-reduced-motion`.
  */
 export type SessionHint = {
   /** L'enfant peut demander un indice maintenant (progressif : 1, 2 puis 4 essais ratés). */
@@ -165,8 +188,14 @@ export function SessionStage({
   exerciseKey,
   hint,
   overlay,
+  world = null,
+  comboStart = 0,
   children,
 }: {
+  /** Le monde de la matière (`worldSceneIdForTopic`) : son décor remplace la savane du camp. */
+  world?: WorldSceneId | null;
+  /** La série au montage : la séance factice et les tests ; une vraie séance part de zéro. */
+  comboStart?: number;
   topicName: string;
   palierIndex: number;
   /** L'exercice affiché, base 0. */
@@ -232,14 +261,25 @@ export function SessionStage({
   // s'effacent (voir l'en-tête du fichier). `inert` retire aussi le bouton
   // « Écouter l'énoncé » de Pio de l'ordre de tabulation le temps du fondu.
   const reacting = outcome !== null;
+  // La série et le gain d'étoiles : de la mise en scène, rien d'enregistré.
+  const juice = useSessionJuiceState(outcome, failedAttempts, stars, comboStart);
 
   return (
-    // La racine porte le dock (`fixed` en bas, hors de la carte transformée)
-    // et `--dock-h`, sa hauteur mesurée. Elle n'a ni `transform` ni `filter` :
-    // le dock et la barre givrée s'y calent sur l'écran.
+    <SessionJuiceProvider value={juice}>
+    {/* La racine porte le dock (`fixed` en bas, hors de la carte transformée)
+        et `--dock-h`, sa hauteur mesurée. Elle n'a ni `transform` ni `filter` :
+        le dock et la barre givrée s'y calent sur l'écran. */}
     <SceneDockProvider
       data-session-stage
-      className="relative isolate -mx-4 -mt-[env(safe-area-inset-top)] -mb-[calc(env(safe-area-inset-bottom)+1.5rem)] min-h-[100dvh]"
+      // D'UN BORD À L'AUTRE DE L'ÉCRAN, sur un ordinateur aussi : `main` est
+      // centré et plafonné à 64 rem (`(student)/layout.tsx`), et la coque ne
+      // rattrapait que ses 16 px de marge ; au-delà de 1024 px, la planche de
+      // l'en-tête et le décor s'arrêtaient net de chaque côté alors que le dock
+      // (`fixed`) allait jusqu'aux bords. Dès 1024 px, les marges négatives
+      // rattrapent tout l'écart jusqu'à la fenêtre : le monde occupe tout
+      // l'écran. Le layout rogne ce qui dépasserait sous une barre de
+      // défilement (`overflow-x-clip`).
+      className="relative isolate -mx-4 -mt-[env(safe-area-inset-top)] -mb-[calc(env(safe-area-inset-bottom)+1.5rem)] min-h-[100dvh] lg:mx-[calc((100%_-_100vw)_/_2)]"
     >
       {/* La savane, derrière tout : une couche à part, pour que l'en-tête
           collant et les éclats qui dépassent de la carte ne soient pas rognés.
@@ -252,11 +292,12 @@ export function SessionStage({
           horizon={72}
           horizonFrom="screen"
           painted
+          world={world}
           // Le soleil et les nuages du décor CSS, sous l'en-tête collant (140 px sur un téléphone).
           skyTop="calc(env(safe-area-inset-top, 0px) + 9rem)"
         />
       </div>
-      <FrostBar />
+      <FrostBar tone="wood" />
 
       {/* En bas : la place du dock (sa hauteur comprend la barre d'accueil) et
           un souffle, ou, sans dock (un exercice cassé), la marge du mode focus. */}
@@ -276,6 +317,7 @@ export function SessionStage({
           isVariation={isVariation}
           sound={sound}
           onQuit={onQuit}
+          juice={juice}
         />
 
         <div className="mx-auto max-w-2xl px-4 [@media(max-height:480px)]:max-w-4xl">
@@ -366,7 +408,11 @@ export function SessionStage({
             </div>
 
             {/* La carte de l'exercice : elle arrive, elle repart ; au-dessus des pattes de Pio. */}
-            <ExerciseStageCard cardKey={exerciseKey} className="z-10 [@media(max-height:480px)]:min-w-0 [@media(max-height:480px)]:flex-1">
+            <ExerciseStageCard
+              cardKey={exerciseKey}
+              celebrate={outcome?.correct === true}
+              className="z-10 [@media(max-height:480px)]:min-w-0 [@media(max-height:480px)]:flex-1"
+            >
               {children}
               {hint && <HintSlot hint={hint} disabled={reacting} />}
             </ExerciseStageCard>
@@ -389,6 +435,7 @@ export function SessionStage({
         </div>
       </div>
     </SceneDockProvider>
+    </SessionJuiceProvider>
   );
 }
 
@@ -552,7 +599,10 @@ function SessionHud({
   isVariation,
   sound,
   onQuit,
+  juice,
 }: {
+  /** La série et le gain d'étoiles, pour le sentier. */
+  juice: SessionJuice;
   topicName: string;
   palierIndex: number;
   questionIndex: number;
@@ -577,15 +627,25 @@ function SessionHud({
       // un clavier matériel, iOS fait défiler le viewport visuel de la barre
       // d'accessoires (68 px) sans rien redimensionner, et l'en-tête passait
       // sous la barre d'état, Sons et Quitter sous l'heure et la batterie.
-      className="sticky top-[calc(env(safe-area-inset-top,0px)+var(--vv-top,0px))] z-20 border-b-2 border-white/80 bg-[#fff7e0] px-4 pb-[8px] pt-[8px] shadow-[0_8px_16px_-12px_rgba(60,30,0,0.5)] [@media(max-height:960px)_and_(min-height:668px)]:pb-[6px] [@media(max-height:960px)_and_(min-height:668px)]:pt-[6px] [@media(max-height:667px)]:pb-[4px] [@media(max-height:667px)]:pt-[4px] [@media(max-height:300px)]:static [[data-keyboard-up]_&]:static"
+      // UNE PLANCHE DE BOIS, comme celle des missions du camp (`quest-board.tsx`),
+      // un ton plus sombre : le titre blanc y contraste à 5,5:1 en haut et à
+      // 7,4:1 en bas, le sous-titre crème à 4,9:1 au moins. OPAQUE, comme la
+      // crème qu'elle remplace (un en-tête translucide laissait lire l'énoncé
+      // qui défilait dessous). Le grain est une couche statique.
+      className="sticky top-[calc(env(safe-area-inset-top,0px)+var(--vv-top,0px))] z-20 border-b-2 border-[#5b3516] bg-[linear-gradient(180deg,#9a5827_0%,#7f4720_100%)] px-4 pb-[8px] pt-[8px] shadow-[inset_0_2px_0_rgb(255_255_255_/_0.2),0_8px_16px_-12px_rgba(60,30,0,0.5)] [@media(max-height:960px)_and_(min-height:668px)]:pb-[6px] [@media(max-height:960px)_and_(min-height:668px)]:pt-[6px] [@media(max-height:667px)]:pb-[4px] [@media(max-height:667px)]:pt-[4px] [@media(max-height:300px)]:static [[data-keyboard-up]_&]:static"
     >
-      <div className="mx-auto max-w-2xl">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-25"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent 0 9px, rgba(0,0,0,0.18) 9px 10px)" }}
+      />
+      <div className="relative mx-auto max-w-2xl">
         <div className="flex items-center gap-2 [@media(max-height:480px)]:justify-end">
           {/* Un téléphone en paysage n'a pas 480 px de haut : la ligne du
               titre s'efface, le sentier remonte à gauche des commandes. */}
           <div className="min-w-0 flex-1 [@media(max-height:480px)]:hidden">
-            <p className="truncate font-display text-base font-extrabold leading-tight text-amber-950">{topicName}</p>
-            <p className="mt-0.5 font-display text-xs font-bold text-amber-900/80">
+            <p className="text-outline truncate font-display text-base font-extrabold leading-tight text-white">{topicName}</p>
+            <p className="mt-0.5 font-display text-xs font-bold text-amber-100">
               Palier {palierIndex} · Question {questionIndex + 1}/{total}
               {isVariation && (
                 <span className="ml-2 rounded-full border border-sky-200 bg-sky-100 px-2 py-0.5 text-[11px] font-extrabold text-sky-800">
@@ -631,6 +691,9 @@ function SessionHud({
           attemptsLeft={attemptsLeft}
           attemptsMax={MAX_ATTEMPTS_PER_EXERCISE}
           stars={stars}
+          surface="wood"
+          combo={juice.combo}
+          gain={{ amount: juice.gained, key: juice.gainKey }}
         />
       </div>
     </header>
@@ -660,7 +723,7 @@ function HudButton({
       onClick={onClick}
       aria-label={label}
       aria-pressed={pressed}
-      className="gk-face-light relative inline-flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-b from-white to-[#fff1cc] text-amber-900 shadow-[0_3px_0_#d6c39a,0_8px_14px_-10px_rgba(60,30,0,0.5)] transition-transform duration-[90ms] ease-out after:absolute after:-inset-1 after:content-[''] active:translate-y-[2px] gk-focus"
+      className="gk-face-light relative inline-flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-b from-white to-[#fff1cc] text-amber-900 shadow-[0_3px_0_#5b3516,0_8px_14px_-10px_rgba(60,30,0,0.5)] transition-transform duration-[90ms] ease-out after:absolute after:-inset-1 after:content-[''] active:translate-y-[2px] gk-focus"
     >
       {children}
     </button>
@@ -684,10 +747,13 @@ function HudButton({
 export function ExerciseStageCard({
   cardKey,
   children,
+  celebrate = false,
   className = "",
 }: {
   cardKey: string;
   children: ReactNode;
+  /** La réponse est juste : les pièces de la carte sautent en vague. */
+  celebrate?: boolean;
   className?: string;
 }) {
   // Une couche le temps de l'arrivée et du départ, pas une image de plus : la
@@ -709,9 +775,98 @@ export function ExerciseStageCard({
         className={`relative rounded-3xl border-2 border-white bg-[#fff8e6] p-5 shadow-[0_6px_0_#d6c39a,0_10px_16px_-10px_rgba(60,30,0,0.5)] sm:p-6 [@media(max-height:960px)_and_(min-height:668px)_and_(max-width:639px)]:p-4 [@media(max-height:667px)]:px-4 [@media(max-height:667px)]:py-3 ${className}`}
       >
         {children}
+        <DealIn celebrate={celebrate} />
       </motion.div>
     </AnimatePresence>
   );
+}
+
+/* ── Les pièces qui arrivent, et qui fêtent ──────────────────────────────── */
+
+/**
+ * Les pièces d'un exercice : les tuiles du kit et tout bouton de la carte
+ * (pots de couleur, tambours, touches du pavé, perles de la frise, palette).
+ * Pas les cases du dessin (`data-paint` : jusqu'à soixante-quatre, autant de
+ * couches), ni le bouton d'indice.
+ */
+const PIECES = ".gk-tile, button:not([data-paint])";
+/** Au-delà de douze pièces, les suivantes arrivent avec la douzième. */
+const DEAL_MAX_INDEX = 11;
+/** Le temps que la dernière pièce se pose (`gk-deal`, `globals.css`) : 160 + 11 × 55 + 420 ms, et un souffle. */
+const DEAL_CLEAR_MS = 1300;
+/** Le temps de la vague (`gk-wave`) : 11 × 35 + 480 ms, et un souffle. */
+const WAVE_CLEAR_MS = 950;
+
+/** Les pièces de la carte, dans l'ordre du document ; une pièce dans une pièce ne compte qu'une fois. */
+function collectPieces(marker: HTMLElement | null): HTMLElement[] {
+  const card = marker?.closest<HTMLElement>("[data-exercise-card]");
+  if (!card) return [];
+  return Array.from(card.querySelectorAll<HTMLElement>(PIECES)).filter(
+    (el) => !el.closest("[data-hint-slot]") && !el.parentElement?.closest(PIECES),
+  );
+}
+
+function mark(pieces: HTMLElement[], attribute: string) {
+  pieces.forEach((el, i) => {
+    el.style.setProperty("--gk-i", String(Math.min(i, DEAL_MAX_INDEX)));
+    el.setAttribute(attribute, "");
+  });
+}
+
+function unmark(pieces: HTMLElement[], attribute: string) {
+  pieces.forEach((el) => el.removeAttribute(attribute));
+}
+
+/**
+ * L'ARRIVÉE EN CASCADE ET LA VAGUE DE VICTOIRE, pour les douze écrans à la
+ * fois. Une question qui arrive, c'est un niveau qui se charge : la carte se
+ * pose, puis ses pièces une à une (`gk-deal`). Une bonne réponse, et tout le
+ * plateau saute en vague (`gk-wave`), pas seulement la tuile choisie.
+ *
+ * SANS TOUCHER AUX ÉCRANS : ce composant vit dans la carte, repère ses pièces
+ * dans le DOM et leur pose un attribut (`data-gk-deal`, `data-gk-wave`) et
+ * leur rang (`--gk-i`) ; les deux animations sont en CSS (`globals.css`), sur
+ * les propriétés `translate`, `scale` et `opacity`, qui se composent avec le
+ * `transform` que les briques utilisent déjà (l'inclinaison d'une tuile, son
+ * élévation). L'attribut est retiré dès que l'animation est finie : une
+ * pièce qui a la sienne (une tuile qui gonfle, un pot qui se soulève) la
+ * retrouve aussitôt.
+ *
+ * LE BUDGET : au niveau « riche » seulement (`useGameFeel`), jamais sous
+ * `prefers-reduced-motion`, douze pièces au plus décalées. Le niveau est lu
+ * AU MONTAGE de la carte : s'il n'est connu qu'après (le premier rendu après
+ * l'hydratation), cette carte-là ne joue pas la cascade, plutôt que de faire
+ * disparaître puis revenir des tuiles déjà posées.
+ */
+function DealIn({ celebrate }: { celebrate: boolean }) {
+  const feel = useGameFeel();
+  const lively = feel.rich && !feel.reducedMotion;
+  const marker = useRef<HTMLSpanElement>(null);
+  const livelyAtMount = useRef(lively);
+
+  useLayoutEffect(() => {
+    if (!livelyAtMount.current) return;
+    const pieces = collectPieces(marker.current);
+    mark(pieces, "data-gk-deal");
+    const timer = setTimeout(() => unmark(pieces, "data-gk-deal"), DEAL_CLEAR_MS);
+    return () => {
+      clearTimeout(timer);
+      unmark(pieces, "data-gk-deal");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!celebrate || !lively) return;
+    const pieces = collectPieces(marker.current);
+    mark(pieces, "data-gk-wave");
+    const timer = setTimeout(() => unmark(pieces, "data-gk-wave"), WAVE_CLEAR_MS);
+    return () => {
+      clearTimeout(timer);
+      unmark(pieces, "data-gk-wave");
+    };
+  }, [celebrate, lively]);
+
+  return <span ref={marker} hidden data-deal-marker />;
 }
 
 /* ── L'indice ────────────────────────────────────────────────────────────── */
@@ -831,14 +986,15 @@ export function useBareStatusBar() {
  * en-tête iOS qui se replie. Hauteur nulle sur le web. Son opacité est la
  * seule chose qui change ; pas de flou.
  */
-export function FrostBar() {
+export function FrostBar({ tone = "cream" }: { tone?: "cream" | "wood" }) {
   const { scrollY } = useScroll();
   const opacity = useTransform(scrollY, [24, 160], [0, 1]);
   return (
     <motion.div
       aria-hidden
       style={{ opacity }}
-      className="fixed inset-x-0 top-0 z-40 h-[env(safe-area-inset-top)] bg-[#fff7e0]/92"
+      // En séance, la barre est du bois de l'en-tête qui colle sous elle.
+      className={`fixed inset-x-0 top-0 z-40 h-[env(safe-area-inset-top)] ${tone === "wood" ? "bg-[#9a5827]" : "bg-[#fff7e0]/92"}`}
     />
   );
 }

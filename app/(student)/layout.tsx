@@ -98,7 +98,11 @@ export default function StudentLayout({
   return (
     // D12 — `prefers-reduced-motion` honoré pour tout mouvement sous /student.
     <MotionConfig reducedMotion="user">
-      <div className="flex min-h-screen flex-col bg-[linear-gradient(180deg,#bfe6fb_0%,#f9efd2_45%,#f6dfa4_100%)]">
+      {/* `overflow-x-clip` : la coque de la séance s'étend d'un bord à l'autre
+          de la fenêtre (`session-stage.tsx`) ; sous une barre de défilement
+          classique, elle dépasserait de sa largeur. `clip`, pas `hidden` : pas
+          de conteneur de défilement, les en-têtes collants restent collants. */}
+      <div className="flex min-h-screen flex-col overflow-x-clip bg-[linear-gradient(180deg,#bfe6fb_0%,#f9efd2_45%,#f6dfa4_100%)]">
         {!focusMode && (
           <header className="sticky top-0 z-20 border-b border-amber-200/60 bg-[#fff7e0]/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
             {/* Une seule ligne : logo + état du joueur à gauche (l'avatar est

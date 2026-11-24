@@ -863,6 +863,10 @@ n'y bouge au niveau sobre.
 (les cœurs, 5 par défaut), `stars` (le compteur). Annonce « Question 3 sur
 10. Encore 4 essais. 7 étoiles gagnées. » en texte.
 
+Depuis le 24 novembre 2026 : `surface` (`cream` par défaut, `wood` sur la
+planche de la séance), `combo` (la série, affichée à partir de deux) et
+`gain` (les étoiles que la dernière réponse rapporte). Voir la section 6.
+
 ```tsx
 <ProgressTrack total={exercises.length} current={currentIndex} attemptsLeft={5 - failedAttemptsThisExo} stars={starsSoFar} />
 ```
@@ -933,6 +937,176 @@ l'autre ; une tuile étroite avec une pastille ET un gros émoji est serrée
 (sans `badge`, l'icône d'état se met en coin et le contenu garde sa place) ;
 la lumière des solides tourne avec eux ; la boule est un disque peint, pas
 une sphère, ses quartiers le disent quand elle roule.
+
+## 6. La mise à neuf du 24 novembre 2026
+
+Le propriétaire a demandé que tous les types d'exercice soient remis à neuf,
+avec un effet « wow » et de l'immersion, sur le web comme sur iOS et Android.
+Les douze écrans d'exercice se jouent tous dans la même coque
+(`components/student/game/session-stage.tsx`). La mise à neuf est faite là :
+elle vaut pour les douze écrans et ne touche ni à leur mécanique ni à leurs
+props. Aucune hauteur ne change, le budget du premier écran reste celui du
+18 octobre.
+
+Elle remplace deux choses décrites dans « L'écran type » : l'en-tête et le
+dock crème sont devenus des planches de bois. Le reste de cette section
+s'ajoute à ce qui existait.
+
+### Le monde de la matière
+
+Une séance se joue devant la peinture du monde de sa matière. Les huit mondes
+sont ceux de la carte (`lib/world-scenes.ts`) :
+
+| Monde | Ce qu'on y voit |
+| --- | --- |
+| `maths` | un boulier géant, des cubes, des signes plus et égal dans le ciel |
+| `francais` | un livre ouvert, une plume dans son encrier, des feuilles qui volent |
+| `sciences` | une serre, une lunette, une fiole verte, une mare |
+| `histoire` | des ruines de grès, une case, une jarre, un parchemin |
+| `geographie` | un globe, un poteau indicateur, une rivière, une boussole |
+| `civique` | l'arbre à palabres et ses bancs, un puits, un potager, des fanions |
+| `arts` | une palette, un chevalet, un djembé, un balafon, des notes |
+| `anglais` | un phare, un voilier, une cabine téléphonique rouge, des bulles |
+
+Chaque monde a deux fichiers dans `public/images/world/decors/` :
+`<monde>-portrait.webp` (768 × 1360) pour un téléphone debout et
+`<monde>-wide.webp` (1600 × 900) dès 640 px de large. Seize fichiers, de 66 à
+110 Ko, 1,4 Mo en tout. Ils sont embarqués dans l'application, le décor
+s'affiche donc sans réseau.
+
+`worldSceneIdForTopic` trouve le monde d'une thématique. Il lit d'abord les
+deux premières lettres de la clé du programme (`ma-`, `fr-`, `sc-`, `hi-`,
+`ge-`, `ci-`, `ar-`, `an-`), puis le nom de la matière. Une thématique écrite
+par un professeur, sans clé ni matière reconnue, garde la savane du camp. La
+séance en ligne passe la clé, la séance hors ligne passe aussi le nom de la
+matière. `StageBackdrop` reçoit le monde par sa prop `world`.
+
+Les règles du décor peint n'ont pas changé : une image statique sur le premier
+écran, sur un appareil « full » seulement. Un appareil « lite » garde le décor
+CSS.
+
+Le repère du monde est peint dans la bande haute de l'image, à gauche et à
+droite, là où il dépasse derrière Pio et sa bulle. Le centre et le bas sont du
+sable nu : la carte et le dock les couvrent.
+
+Pour refaire ou ajouter un décor :
+
+1. générer l'image avec le serveur `studio` (modèle `bfl/flux-3-image`), avec
+   `hub-savanna-portrait.jpg` et la vignette du monde en références, en 9:16
+   puis en 16:9, et la regarder ;
+2. la ranger sous le nom `<monde>-portrait.png` ou `<monde>-wide.png` ;
+3. lancer `node scripts/build-world-backdrops.mjs --raw <dossier>`.
+
+`lib/__tests__/world-scenes.test.ts` casse si un monde n'a pas ses deux
+fichiers.
+
+### Le cadre en bois
+
+L'en-tête de la séance et le dock sont deux planches, dans le bois de la
+planche des missions du camp, un ton plus sombre : un dégradé de `#9a5827` à
+`#7f4720` et un liseré `#5b3516`. L'en-tête porte le même grain que la
+planche des missions. La carte crème est la seule surface claire de l'écran.
+
+Les deux planches sont opaques, comme la crème qu'elles remplacent. Le titre
+blanc contraste à 5,5:1 en haut de la planche et à 7,4:1 en bas, le sous-titre
+`amber-100` à 4,9:1 au moins.
+
+`ProgressTrack` a une prop `surface`. Avec `surface="wood"`, le pointillé, les
+pierres à venir et les cœurs vidés passent en clair. Sans elle, le sentier
+reste celui de la crème (la montre du kit).
+
+`FrostBar` a une prop `tone`. La séance passe `wood` : la barre qui couvre
+l'encoche au défilement est du bois de l'en-tête. La fin de palier garde la
+crème.
+
+### La série et les étoiles gagnées
+
+`components/student/game/session-juice.tsx` tient deux comptes, que la coque
+calcule à partir de ce que les séances lui passent déjà (la réponse en cours,
+les essais ratés, les étoiles). Rien n'est enregistré : le serveur, ou
+l'appareil hors ligne, reste seul à compter les étoiles et les cauris.
+
+La série compte les bonnes réponses trouvées du premier coup, d'affilée. À
+partir de deux, une flamme « ×2 » s'allume dans l'en-tête, à gauche des
+étoiles, et la scène de réponse écrit « 2 d'affilée ! ». Une erreur éteint la
+flamme sans un mot. Une réponse trouvée après une erreur ne la rallume pas.
+Une séance reprise après une pause repart à zéro.
+
+Le gain est le nombre d'étoiles que la réponse vient de rapporter. Le compteur
+de l'en-tête gonfle et un « +3 » s'en détache. Dans la scène de réponse, les
+étoiles gagnées se posent une à une sous le « Bravo ! », trois au plus.
+
+`docs/monde-de-pio.md` disait que le jeu motive entre les exercices, jamais
+pendant. La série est la première exception, voulue par cette demande. Elle
+ne retire rien à l'enfant : il n'y a ni chronomètre ni série perdue à
+racheter.
+
+### Les pièces arrivent en cascade et fêtent la bonne réponse
+
+Quand une question arrive, la carte se pose, puis ses pièces l'une après
+l'autre : tuiles, pots de couleur, tambours, touches du pavé, perles de la
+frise. Quand la réponse est juste, toutes les pièces sautent en vague, en plus
+de la tuile qui gonfle et de l'éclat.
+
+Les écrans d'exercice ne sont pas modifiés. Le composant `DealIn`, dans la
+carte, repère les pièces dans le DOM (`.gk-tile` et tout bouton, sauf les
+cases du dessin et le bouton d'indice). Il pose sur chacune un attribut,
+`data-gk-deal` ou `data-gk-wave`, et son rang dans `--gk-i`, puis retire
+l'attribut quand l'animation est finie. Les deux animations sont en CSS dans
+`app/globals.css`.
+
+Elles animent `translate`, `scale` et `opacity`, et laissent `transform` aux
+briques, qui s'en servent déjà pour l'élévation et l'inclinaison d'une tuile.
+Une pièce part de l'échelle 0,92, jamais de zéro, à cause des émojis sur iOS.
+
+Le budget : le niveau « riche » seulement, rien sous
+`prefers-reduced-motion`, douze pièces décalées au plus (les suivantes
+arrivent avec la douzième). Le niveau est lu au montage de la carte. S'il
+n'est connu qu'après, au premier rendu qui suit l'hydratation, cette carte ne
+joue pas la cascade.
+
+### Sur un ordinateur
+
+La coque va maintenant d'un bord à l'autre de la fenêtre. Au-delà de 1024 px,
+l'en-tête et le décor s'arrêtaient à la largeur de `main` (64 rem) alors que
+le dock allait jusqu'aux bords. Les marges négatives de la coque rattrapent
+l'écart, et `(student)/layout.tsx` rogne ce qui dépasserait sous une barre de
+défilement (`overflow-x-clip`).
+
+### La séance factice
+
+`/dev/seance/` a deux paramètres de plus. `?monde=francais` choisit le décor
+et `?monde=camp` rend la savane du camp. Sans paramètre, c'est le monde des
+mathématiques. `?serie=3` donne la série au montage, pour voir la flamme sans
+jouer trois questions. La séance factice compte maintenant les étoiles à la
+réponse, comme la vraie.
+
+### Ce qui a été vérifié, ce qui ne l'est pas
+
+Vérifié le 24 novembre 2026 sur `/dev/seance/`, dans Chrome sans fenêtre
+piloté par Playwright :
+
+- onze écrans à 390 × 844, chacun dans un monde : QCM à trois et à quatre
+  options, association, mise en ordre, glisser-déposer, phrase à trous,
+  réponse courte au pavé, frise, couleurs, écoute, dessin ;
+- le QCM à 360 × 640, 820 × 1180, 667 × 375, 1024 × 768 et 1440 × 900, sans
+  défilement horizontal ;
+- une bonne réponse jouée : la vague, le « +3 », les étoiles et la série dans
+  la scène de réponse ;
+- une mauvaise réponse : la flamme s'éteint ;
+- la question suivante : huit pièces en cascade, et plus aucun attribut deux
+  secondes après ;
+- le mouvement réduit : ni cascade ni vague.
+
+Les tests couvrent la série (`session-juice.test.ts`), la coque, le sentier,
+la scène de réponse et les fichiers des décors.
+
+Pas vérifié : le WKWebView d'iOS et le WebView d'Android. Trois points sont à
+mesurer sur les appareils. Les animations sur `translate` et `scale` : un
+WebView Android d'avant Chrome 104 ne connaît pas ces propriétés, la pièce
+arrive alors en fondu, sans déplacement. Le coût des douze couches de la
+cascade sur un Android d'entrée de gamme. Le poids du paquet, qui gagne
+1,4 Mo. La réponse courte tapée en lettres n'a pas été capturée.
 
 ## Rappel des contraintes
 

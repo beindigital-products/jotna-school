@@ -21,6 +21,7 @@ import { SessionStage } from "@/components/student/game/session-stage";
 import { verifyAnswer } from "@/convex/paliers/exerciseRules";
 import { isTileVoiceClass } from "@/convex/voice/tiles";
 import { playCorrect } from "@/lib/sounds";
+import { WORLD_SCENE_IDS, type WorldSceneId } from "@/lib/world-scenes";
 import { picturesEnabled, readImagesFlag } from "../images";
 import { DevBar, DevButton, DevSelect, DevToggle, SessionShell } from "../session-shell";
 import { buildSpecimens, isKind, KIND_LABELS, KINDS, type Kind, type Specimen } from "../exercices/specimens";
@@ -114,20 +115,22 @@ function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "answered": {
       const failed = action.correct ? state.failed : state.failed + 1;
+      // Trois étoiles sans faute, puis une de moins par essai raté, une au
+      // moins si c'est juste. Comptées À LA RÉPONSE, comme la vraie séance
+      // (`online-session.tsx`) : le compteur de l'en-tête gonfle avec le bravo.
+      const earned = action.correct ? Math.max(1, STARS_PER_EXERCISE - state.failed) : 0;
       return {
         ...state,
         failed,
+        stars: state.stars + earned,
         feedback: { correct: action.correct, attemptsRemaining: Math.max(0, MAX_ATTEMPTS - failed) },
       };
     }
     case "dismiss":
       return { ...state, feedback: null };
     case "next": {
-      // Trois étoiles sans faute, puis une de moins par essai raté, une au moins si c'est juste.
-      const earned = state.feedback?.correct ? Math.max(1, STARS_PER_EXERCISE - state.failed) : 0;
-      const stars = state.stars + earned;
-      if (state.index >= action.total - 1) return { ...state, stars, feedback: null, done: true };
-      return { index: state.index + 1, failed: 0, stars, feedback: null, done: false };
+      if (state.index >= action.total - 1) return { ...state, feedback: null, done: true };
+      return { index: state.index + 1, failed: 0, stars: state.stars, feedback: null, done: false };
     }
     case "reset":
       return INITIAL;
@@ -153,6 +156,14 @@ function FakeSessionInner() {
   const exoParam = search.get("exo");
   const exo0: Kind = isKind(exoParam) ? exoParam : "qcm4";
   const voice = search.get("voix") === "1";
+  // `?monde=francais` : le décor d'un autre monde ; `?monde=camp` : la savane
+  // du camp (une thématique hors programme). Par défaut, les mathématiques,
+  // comme la thématique factice. `?serie=3` : la série au montage, pour voir
+  // la flamme sans jouer trois questions.
+  const worldParam = search.get("monde");
+  const world: WorldSceneId | null =
+    worldParam === "camp" ? null : (WORLD_SCENE_IDS.find((id) => id === worldParam) ?? "maths");
+  const comboStart = Math.max(0, Math.floor(Number(search.get("serie")) || 0));
   // `false` : images=0 ; `true` : images=1 ; `null` : la porte de la classe décide.
   const images = readImagesFlag(search);
 
@@ -316,6 +327,8 @@ function FakeSessionInner() {
         sound={{ enabled: true, onToggle: () => {} }}
         onQuit={() => {}}
         exerciseKey={exo.exercise.id}
+        world={world}
+        comboStart={comboStart}
         overlay={
           <AnimatePresence>
             {feedback && (

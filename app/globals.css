@@ -431,6 +431,57 @@
   50% { transform: scale(1.025); opacity: 1; }
 }
 
+/* Le « +3 » qui se détache du compteur d'étoiles de la séance
+   (`progress-track.tsx`) : il sort, tient, monte et s'efface. */
+@keyframes gk-plus-rise {
+  0% { transform: translateY(8px) scale(0.7); opacity: 0; }
+  18% { transform: translateY(0) scale(1.15); opacity: 1; }
+  70% { transform: translateY(-4px) scale(1); opacity: 1; }
+  100% { transform: translateY(-16px) scale(1); opacity: 0; }
+}
+/* Une étoile gagnée qui se pose dans la scène de réponse
+   (`answer-feedback.tsx`). Un SVG, pas un émoji : elle peut partir de petit. */
+@keyframes gk-star-in {
+  0% { transform: scale(0.4) rotate(-30deg); opacity: 0; }
+  60% { transform: scale(1.2) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* LES PIÈCES D'UN EXERCICE QUI ARRIVENT EN CASCADE, PUIS QUI FÊTENT LA BONNE
+   RÉPONSE (`DealIn`, `components/student/game/session-stage.tsx`). La coque
+   pose `data-gk-deal` (l'arrivée) ou `data-gk-wave` (la vague) sur chaque
+   pièce de la carte, avec son rang dans `--gk-i`, et retire l'attribut dès
+   que l'animation est finie.
+   `translate`, `scale` et `opacity`, PAS `transform` : les briques du jeu
+   posent déjà un `transform` (l'élévation d'une tuile, son inclinaison sous
+   le doigt), et les propriétés séparées se composent avec lui au lieu de
+   l'écraser. Pas d'image d'arrivée dans `gk-deal` : la pièce rejoint son
+   état à elle (une tuile verrouillée reste pâle). Elle part de 0,92, jamais
+   de 0 : un émoji dans un élément qui part de `scale(0)` peut rester vide sur
+   iOS. Hors de toute couche : la règle passe devant une classe `animate-*`
+   de la pièce le temps de l'attribut, pas après. */
+@keyframes gk-deal {
+  from { opacity: 0; translate: 0 18px; scale: 0.92; }
+}
+@keyframes gk-wave {
+  0%, 100% { translate: 0 0; }
+  40% { translate: 0 -10px; }
+}
+[data-gk-deal] {
+  animation: gk-deal 420ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  animation-delay: calc(160ms + var(--gk-i, 0) * 55ms);
+}
+[data-gk-wave] {
+  animation: gk-wave 480ms ease-out;
+  animation-delay: calc(var(--gk-i, 0) * 35ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-gk-deal],
+  [data-gk-wave] {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gk-motion,
   .gk-motion * {

@@ -2,6 +2,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MotionGlobalConfig } from "framer-motion";
 import { SubmitButton } from "@/components/exercises/game-parts";
+import { GameFeelProvider } from "@/components/student/game-kit";
 import { coachLine, SessionStage, starsEarned } from "../session-stage";
 
 // Les entrées de la carte et de la bulle sont animées : dans un test, d'un coup.
@@ -372,5 +373,144 @@ describe("SessionStage — la coque d'une séance", () => {
       </SessionStage>,
     );
     expect(screen.getByText(/perdu la connexion/)).toBeTruthy();
+  });
+});
+
+describe("SessionStage — la mise à neuf : le monde, la série, la cascade", () => {
+  it("joue devant le décor du monde de la matière, sur un appareil qui le permet", () => {
+    const { container, rerender } = renderStage({ world: "maths" });
+    const stage = container.querySelector(".gk-stage");
+    expect(stage?.getAttribute("data-world")).toBe("maths");
+    expect(container.querySelector("img[src='/images/world/decors/maths-portrait.webp']")).not.toBeNull();
+    expect(container.querySelector("source[srcset='/images/world/decors/maths-wide.webp']")).not.toBeNull();
+
+    // Sans monde : la savane du camp, comme avant.
+    rerender(
+      <SessionStage topicName="T" palierIndex={1} questionIndex={0} total={3} failedAttempts={0} outcome={null} onQuit={() => {}} exerciseKey="e">
+        <p>x</p>
+      </SessionStage>,
+    );
+    expect(container.querySelector(".gk-stage")?.getAttribute("data-world")).toBeNull();
+    expect(container.querySelector("img[src='/images/world/hub-savanna-portrait.jpg']")).not.toBeNull();
+  });
+
+  it("un appareil « lite » garde le décor peint en CSS, sans image de monde", () => {
+    device.tier = "lite";
+    const { container } = renderStage({ world: "anglais" });
+    expect(container.querySelector(".gk-stage")?.getAttribute("data-world")).toBeNull();
+    expect(container.querySelector("img[src^='/images/world/decors/']")).toBeNull();
+  });
+
+  it("l'en-tête est une planche de bois opaque, et le sentier le sait", () => {
+    const { container } = renderStage();
+    const hud = container.querySelector("[data-session-hud]");
+    expect(hud?.className).toContain("#9a5827");
+    expect(hud?.className).not.toContain("backdrop-blur");
+    expect(container.querySelector("[data-surface='wood']")).not.toBeNull();
+  });
+
+  it("la série monte à la bonne réponse du premier coup, et le compteur d'étoiles gonfle", () => {
+    const base = {
+      topicName: "T",
+      palierIndex: 1,
+      questionIndex: 0,
+      total: 3,
+      onQuit: () => {},
+      exerciseKey: "e",
+      comboStart: 1,
+    };
+    const { container, rerender } = render(
+      <SessionStage {...base} failedAttempts={0} stars={3} outcome={null}>
+        <p>x</p>
+      </SessionStage>,
+    );
+    // Une seule réussite : pas encore de flamme.
+    expect(container.querySelector("[data-combo]")).toBeNull();
+
+    rerender(
+      <SessionStage {...base} failedAttempts={0} stars={6} outcome={{ correct: true, attemptsRemaining: 5 }}>
+        <p>x</p>
+      </SessionStage>,
+    );
+    expect(container.querySelector("[data-combo]")?.textContent).toBe("×2");
+    expect(container.querySelector("[data-star-gain]")?.textContent).toBe("+3");
+
+    // La question suivante : la flamme reste, le « +3 » est parti.
+    rerender(
+      <SessionStage {...base} questionIndex={1} exerciseKey="f" failedAttempts={0} stars={6} outcome={null}>
+        <p>x</p>
+      </SessionStage>,
+    );
+    expect(container.querySelector("[data-combo]")?.textContent).toBe("×2");
+    expect(container.querySelector("[data-star-gain]")).toBeNull();
+
+    // Une erreur l'éteint.
+    rerender(
+      <SessionStage {...base} questionIndex={1} exerciseKey="f" failedAttempts={1} stars={6} outcome={{ correct: false, attemptsRemaining: 4 }}>
+        <p>x</p>
+      </SessionStage>,
+    );
+    expect(container.querySelector("[data-combo]")).toBeNull();
+  });
+
+  it("les pièces de la carte arrivent en cascade, rangées, puis l'attribut s'en va ; pas l'indice, pas les cases du dessin", () => {
+    vi.useFakeTimers();
+    // Le niveau « riche » dès le montage : sans lui, la première carte ne joue pas la cascade (voir `DealIn`).
+    const { container } = render(
+      <GameFeelProvider level="riche">
+        <SessionStage
+          topicName="T"
+          palierIndex={1}
+          questionIndex={0}
+          total={3}
+          failedAttempts={1}
+          outcome={null}
+          onQuit={() => {}}
+          exerciseKey="e"
+          hint={{ canAsk: true, onAsk: () => {}, shown: null }}
+        >
+          <div>
+            <button type="button">Un</button>
+            <button type="button">Deux</button>
+            <button type="button" data-paint="1">
+              case
+            </button>
+          </div>
+        </SessionStage>
+      </GameFeelProvider>,
+    );
+    const dealt = Array.from(container.querySelectorAll<HTMLElement>("[data-gk-deal]"));
+    expect(dealt.map((el) => el.textContent)).toEqual(["Un", "Deux"]);
+    expect(dealt.map((el) => el.style.getPropertyValue("--gk-i"))).toEqual(["0", "1"]);
+    expect(screen.getByRole("button", { name: "Voir un indice" }).hasAttribute("data-gk-deal")).toBe(false);
+    act(() => {
+      vi.advanceTimersByTime(1400);
+    });
+    expect(container.querySelectorAll("[data-gk-deal]").length).toBe(0);
+  });
+
+  it("la bonne réponse fait sauter les pièces en vague, puis l'attribut s'en va", () => {
+    vi.useFakeTimers();
+    const stage = (outcome: { correct: boolean; attemptsRemaining: number } | null) => (
+      <GameFeelProvider level="riche">
+        <SessionStage topicName="T" palierIndex={1} questionIndex={0} total={3} failedAttempts={0} outcome={outcome} onQuit={() => {}} exerciseKey="e">
+          <button type="button">Un</button>
+        </SessionStage>
+      </GameFeelProvider>
+    );
+    const { container, rerender } = render(stage(null));
+    expect(container.querySelectorAll("[data-gk-wave]").length).toBe(0);
+    rerender(stage({ correct: true, attemptsRemaining: 5 }));
+    expect(container.querySelectorAll("[data-gk-wave]").length).toBe(1);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(container.querySelectorAll("[data-gk-wave]").length).toBe(0);
+  });
+
+  it("au niveau « sobre » (un appareil modeste), aucune cascade", () => {
+    device.tier = "lite";
+    const { container } = renderStage({ children: <button type="button">Un</button> });
+    expect(container.querySelectorAll("[data-gk-deal]").length).toBe(0);
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Heart, Lightbulb } from "lucide-react";
+import { Flame, Heart, Lightbulb, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ActionButton3D, useGameFeel, useMotionWillChange } from "@/components/student/game-kit";
@@ -9,6 +9,7 @@ import { Pio, type PioState } from "@/components/student/pio";
 import { MAX_ATTEMPTS_PER_EXERCISE } from "@/convex/paliers/scoring";
 import { kidMessages } from "@/lib/kidCopy";
 import { pickLine, pioSays } from "@/lib/pioCopy";
+import { COMBO_MIN, useSessionJuice } from "./session-juice";
 
 /**
  * CE QUI SE PASSE QUAND ON RÉPOND — une alerte de jeu au milieu de l'écran,
@@ -66,6 +67,14 @@ import { pickLine, pioSays } from "@/lib/pioCopy";
  * UNE RÉPONSE JUSTE MAL ÉCRITE reste un bravo : la scène est la même, avec en
  * plus « Attention, tu as mal écrit » et la bonne graphie. L'enfant apprend à
  * écrire, on ne lui retire pas sa réponse pour une lettre.
+ *
+ * CE QUE LA BONNE RÉPONSE RAPPORTE (24 novembre 2026). Sous le « Bravo ! »,
+ * les étoiles que la réponse vient de donner se posent une à une (trois au
+ * plus, des SVG qui tournent et se posent, `gk-star-in`), et la série
+ * s'affiche à partir de deux réussites du premier coup d'affilée (« 3
+ * d'affilée ! »). Les deux viennent de la coque (`session-juice.tsx`) ; hors
+ * d'une séance, rien ne s'affiche. Ce n'est pas un éclat : trois petites
+ * couches en `transform` et en `opacity`, après l'arrivée de la scène.
  */
 export type AnswerOutcome = {
   correct: boolean;
@@ -144,8 +153,11 @@ export function AnswerFeedback({
   onDismiss: () => void;
 }) {
   const feel = useGameFeel();
+  const juice = useSessionJuice();
   const kind = outcomeKind(outcome);
   const scene = SCENE[kind];
+  const starsWon = kind === "right" ? Math.min(3, juice.gained) : 0;
+  const streak = kind === "right" && juice.combo >= COMBO_MIN ? juice.combo : 0;
 
   const title =
     kind === "right"
@@ -255,6 +267,33 @@ export function AnswerFeedback({
 
         <p className={`relative font-display text-3xl font-extrabold leading-tight ${scene.title}`}>{title}</p>
         <p className={`relative mt-1 font-display text-lg font-bold ${scene.sub}`}>{sub}</p>
+
+        {(starsWon > 0 || streak > 0) && (
+          <div className="relative mt-3 flex flex-wrap items-center justify-center gap-2" data-answer-reward>
+            {starsWon > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border-2 border-white bg-white/85 px-3 py-1 shadow-[0_3px_0_#d6c39a]">
+                <span className="sr-only">{pioSays.starsWon(starsWon)}</span>
+                {Array.from({ length: starsWon }, (_, i) => (
+                  <Star
+                    key={i}
+                    aria-hidden
+                    className="h-7 w-7 fill-[#ffd23f] text-[#e9a83a] animate-[gk-star-in_0.5s_ease-out_backwards] motion-reduce:animate-none"
+                    style={{ animationDelay: `${280 + i * 150}ms` }}
+                  />
+                ))}
+              </span>
+            )}
+            {streak > 0 && (
+              <span
+                data-answer-combo={streak}
+                className="inline-flex items-center gap-1 rounded-full border-2 border-white bg-[#c2410c] px-3 py-1.5 font-display text-base font-extrabold text-white shadow-[0_3px_0_#7c2d12]"
+              >
+                <Flame className="h-5 w-5 fill-[#fde047] text-[#fff7c2]" aria-hidden />
+                {pioSays.comboLine(streak)}
+              </span>
+            )}
+          </div>
+        )}
 
         {kind === "right" && outcome.spelling && (
           <p className="relative mt-3 rounded-2xl border-2 border-white bg-white/85 px-4 py-2 font-display text-base font-extrabold text-green-950 shadow-[0_3px_0_#d6c39a]">
