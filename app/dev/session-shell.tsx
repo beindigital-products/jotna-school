@@ -29,7 +29,7 @@ export function SessionShell({ children, reduced = false }: { children: ReactNod
     <MotionConfig reducedMotion={reduced ? "always" : "user"}>
       <div
         data-reduced-motion={reduced ? "1" : undefined}
-        className="flex min-h-screen flex-col bg-[linear-gradient(180deg,#bfe6fb_0%,#f9efd2_45%,#f6dfa4_100%)]"
+        className="flex min-h-screen flex-col overflow-x-clip bg-[linear-gradient(180deg,#bfe6fb_0%,#f9efd2_45%,#f6dfa4_100%)]"
       >
         {reduced && (
           <style>{`[data-reduced-motion] *, [data-reduced-motion] *::before, [data-reduced-motion] *::after { animation: none !important; transition-duration: 0s !important; }`}</style>

@@ -237,7 +237,10 @@ function SceneDockPanel({
       // serrées sur un téléphone, un téléphone couché (voir l'en-tête). Des
       // paliers qui s'excluent (Tailwind ne garantit pas l'ordre de deux
       // requêtes média arbitraires), écrits en entier (`scene-action-bar.tsx`).
-      className={`gk-motion fixed inset-x-0 bottom-0 z-30 border-t-2 border-white bg-[#fff7e0] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shadow-[0_-2px_0_#d6c39a,0_-10px_18px_-12px_rgba(60,30,0,0.45)] transition-transform duration-200 ease-out before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-5 before:bg-gradient-to-t before:from-[#fff7e0]/60 before:to-transparent [@media(max-height:960px)_and_(min-height:481px)]:pb-[calc(env(safe-area-inset-bottom,0px)+12px)] [@media(max-height:480px)]:pb-[calc(env(safe-area-inset-bottom,0px)+8px)] ${
+      // UNE PLANCHE DE BOIS depuis le 24 novembre 2026, comme l'en-tête de la
+      // séance (`session-stage.tsx`) : les boutons bleu et orange s'en
+      // détachent, la carte crème reste la seule surface claire. OPAQUE.
+      className={`gk-motion fixed inset-x-0 bottom-0 z-30 border-t-2 border-[#c98240] bg-[linear-gradient(180deg,#9a5827_0%,#7f4720_100%)] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shadow-[0_-2px_0_#5b3516,0_-10px_18px_-12px_rgba(60,30,0,0.45)] transition-transform duration-200 ease-out before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-5 before:bg-gradient-to-t before:from-[#5b3516]/35 before:to-transparent [@media(max-height:960px)_and_(min-height:481px)]:pb-[calc(env(safe-area-inset-bottom,0px)+12px)] [@media(max-height:480px)]:pb-[calc(env(safe-area-inset-bottom,0px)+8px)] ${
         empty ? "invisible" : ""
       }`}
       style={panelStyle}

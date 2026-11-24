@@ -4,7 +4,9 @@ L'espace élève ne ressemble plus à un catalogue de cours. C'est un jeu : un
 camp dans la savane où vit Pio, une carte du monde dont chaque zone est une
 matière, un sentier d'étapes par monde, des missions du jour, une salle des
 trophées et un carnet d'explorateur. La séance d'exercices, elle, reste sobre.
-Le jeu motive entre les exercices, jamais pendant.
+Le jeu motive entre les exercices, jamais pendant. Une exception depuis le
+24 novembre 2026 : la série de bonnes réponses, dans l'en-tête de la séance
+(`docs/direction-jeu-exercices.md`, section 6).
 
 Ce document dit ce qui a été construit, pourquoi, et comment l'étendre sans
 casser ce qui tient.
@@ -28,10 +30,12 @@ sur cette branche (le fichier n'est pas sur `main`), ont servi de grammaire : hu
 d'appareil, séance intacte. Elles sont citées ci-dessous par leur numéro
 (G1, G3, G5, G7, G9, G10, D8, D12, D15).
 
-## Les quatre lieux
+## Les cinq lieux
 
-La navigation nomme quatre lieux, pas des écrans : Camp, Carte, Trophées,
-Carnet. Un enfant n'ouvre pas un profil, il ouvre son carnet.
+La navigation nomme cinq lieux, pas des écrans : Camp, Carte, Marché, Trésors,
+Carnet. Un enfant n'ouvre pas un profil, il ouvre son carnet. Le Marché et les
+Trésors datent du 24 novembre 2026, avec les cauris, le coffre du jour et les
+cartes : voir `docs/economie-du-jeu.md`.
 
 **Le Camp** (`/student/home`). La savane peinte, Pio grandeur nature, une
 bulle qui parle, un seul gros bouton qui reprend l'aventure là où elle s'est
@@ -57,7 +61,8 @@ difficulté et le bouton d'action. Une étape fermée secoue la tête et expliqu
 comment l'ouvrir. Un doigt qui dérape ne lance jamais une séance. L'élève ne
 voit que les thématiques de son niveau.
 
-**La Salle des trophées** (`/student/badges`). Les badges rangés par étagères,
+**La Salle des trophées** (l'onglet Trophées de `/student/tresors` ;
+`/student/badges` y renvoie). Les badges rangés par étagères,
 du plus rare au plus commun, avec une jauge de collection et, sous chaque
 trophée fermé, une barre qui dit où l'enfant en est.
 
@@ -168,6 +173,7 @@ En haut de chaque lieu, à droite de l'en-tête : le niveau et la barre qui
 mène au suivant. Le niveau s'affiche toujours : « Niveau 1 » est un départ,
 pas un zéro. Les étoiles ont quitté l'en-tête pour le carnet, et la série vit
 au camp, où elle n'apparaît qu'une fois gagnée (D8, cold start sans zéros).
+Les cauris sont dans l'en-tête, dans une pastille qui mène au marché.
 
 Le HUD lit `students.getMyStats`, que l'accueil et le carnet lisent aussi.
 Convex partage une même souscription entre ses lecteurs : le HUD ne coûte
@@ -277,8 +283,10 @@ parle court.
 
 La séance d'exercices garde son mode focus (G3) ; seules la réaction à une
 réponse (`components/student/game/answer-feedback.tsx`) et la fin du palier
-sont passées au jeu. Pendant l'explication « Je veux comprendre », l'alerte
-de réponse s'efface, et revient quand le panneau se ferme. La boutique et la monnaie n'existent
-pas (G7 les écartait). Pio n'est pas en 3D. Les tests Playwright de l'espace
+sont passées au jeu. Depuis le 24 novembre 2026, la séance se joue aussi dans le
+monde de sa matière, dans un cadre en bois, avec une série et une entrée en
+cascade des pièces (`docs/direction-jeu-exercices.md`, section 6). Pendant l'explication « Je veux comprendre », l'alerte
+de réponse s'efface, et revient quand le panneau se ferme. La boutique et la monnaie, que G7
+écartait, existent depuis le 24 novembre 2026 (`docs/economie-du-jeu.md`). Pio n'est pas en 3D. Les tests Playwright de l'espace
 élève ont été mis à jour pour les nouveaux noms de lieux, mais ne sont pas
 joués par la CI.

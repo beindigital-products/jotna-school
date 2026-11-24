@@ -82,6 +82,7 @@ import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
 import { isReadingLearnerClass, type VisibleClassName } from "@/convex/curriculum";
 import { isEnglishTopic, isTileVoiceClass } from "@/convex/voice/tiles";
 import { isPictureTileClass } from "@/lib/item-pictures";
+import { worldSceneIdForTopic } from "@/lib/world-scenes";
 import { AnimatePresence } from "framer-motion";
 import { refusalMessage } from "@/lib/refusalMessage";
 import { useOffline, useOfflineModel } from "@/components/offline/context";
@@ -668,6 +669,12 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
         sound={soundPref ? { enabled: soundPref.soundEnabled, onToggle: handleToggleSound } : null}
         onQuit={handleQuit}
         exerciseKey={exo._id}
+        // Le décor est celui du monde de la matière, embarqué dans
+        // l'application : il s'affiche aussi sans réseau.
+        world={worldSceneIdForTopic({
+          programmeKey: topic.programmeKey,
+          subjectName: model.subjectsById.get(topic.subjectId as string)?.name,
+        })}
         hint={{ canAsk: canAskHint, onAsk: handleRequestHint, shown: feedback ? null : hintShown }}
         overlay={
           /* La réaction du jeu, en alerte au milieu de l'écran (portée dans

@@ -64,6 +64,25 @@ describe("palierStars — les comptes de l'écran", () => {
   });
 });
 
+describe("PalierResultScreen — les cauris du palier", () => {
+  it("annonce les cauris que le serveur vient de verser", () => {
+    const { container } = renderResult("validated", {
+      result: { status: "validated", starsTotal: 26, exerciseCount: 10, thresholdTenths: 7, canRegen: false, cauris: 31 },
+    });
+    expect(container.querySelector("[data-cauris='31']")).toBeTruthy();
+    expect(screen.getByText("Tu gagnes 31 cauris")).toBeTruthy();
+  });
+
+  it("ne promet rien quand aucun cauri n'a été versé (application sans réseau, plafond du jour)", () => {
+    const { container } = renderResult("validated");
+    expect(container.querySelector("[data-cauris]")).toBeNull();
+    const capped = renderResult("validated", {
+      result: { status: "validated", starsTotal: 26, exerciseCount: 10, thresholdTenths: 7, canRegen: false, cauris: 0 },
+    });
+    expect(capped.container.querySelector("[data-cauris]")).toBeNull();
+  });
+});
+
 describe("PalierResultScreen — la fin d'un palier", () => {
   it("validé : Pio fête, le coffre s'ouvre, les étoiles comptent, le palier suivant s'offre", () => {
     const { container } = renderResult("validated");

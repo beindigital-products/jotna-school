@@ -151,10 +151,16 @@ const STUDENT: TourStep[] = [
     body: "Choisis une matière, puis une thématique, et avance étape par étape.",
   },
   {
-    title: "Trophées",
-    target: "nav-badges",
+    title: "Marché",
+    target: "nav-marche",
     position: "bottom",
-    body: "Les badges que tu gagnes en réussissant des exercices.",
+    body: "Tu gagnes des cauris en jouant. Ici, tu choisis des objets pour ton camp.",
+  },
+  {
+    title: "Trésors",
+    target: "nav-tresors",
+    position: "bottom",
+    body: "Tes cartes à collectionner et les trophées que tu gagnes.",
   },
   {
     title: "Carnet",

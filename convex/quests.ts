@@ -6,6 +6,7 @@ import { checkAccess, requireAccess } from "./access";
 import { isHiddenClass } from "./curriculum";
 import { timestampToYmd, todayYmd } from "./streakRules";
 import { readStudentPreferences, type StudentPreferences } from "./students";
+import { rewardQuests } from "./economy";
 import {
   QUEST_BONUS_CAP,
   allDone,
@@ -236,6 +237,10 @@ export async function recordQuestActivity(
     quests: quests.map(toStored),
     bonusStars: owed,
   });
+
+  // Les cauris des missions de ce jour-là (`economy.rewardQuests`) : le
+  // journal ne verse que ce qui manque, comme `bonusStars` pour les étoiles.
+  await rewardQuests(ctx, studentId, dayKey, completedCount(quests), quests.length, when);
 
   if (gained > 0) {
     const fresh = (await ctx.db.get(studentId)) ?? profile;

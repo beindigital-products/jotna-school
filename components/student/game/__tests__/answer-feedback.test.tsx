@@ -4,6 +4,7 @@ import { MotionGlobalConfig } from "framer-motion";
 import type { ComponentProps } from "react";
 import { pioSays } from "@/lib/pioCopy";
 import { AnswerFeedback, outcomeKind, REVEAL_MS, revealDelayMs } from "../answer-feedback";
+import { SessionJuiceProvider } from "../session-juice";
 
 MotionGlobalConfig.skipAnimations = true;
 
@@ -126,5 +127,57 @@ describe("AnswerFeedback — la scène de réponse", () => {
     expect(screen.getByText("…")).toBeTruthy();
     const next = screen.getByRole("button", { name: "…" }) as HTMLButtonElement;
     expect(next.disabled).toBe(true);
+  });
+});
+
+describe("AnswerFeedback — ce que la bonne réponse rapporte", () => {
+  const props = { seed: 0, isLast: false, busy: false, onNext: noop, onExplain: noop, onDismiss: noop };
+
+  it("dans une séance, montre les étoiles gagnées et la série à partir de deux", () => {
+    vi.useFakeTimers();
+    const { baseElement } = render(
+      <SessionJuiceProvider value={{ combo: 3, gained: 2, gainKey: 1 }}>
+        <AnswerFeedback {...props} outcome={{ correct: true, attemptsRemaining: 5 }} />
+      </SessionJuiceProvider>,
+    );
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+    const reward = baseElement.querySelector("[data-answer-reward]");
+    expect(reward?.querySelectorAll("svg.lucide-star").length).toBe(2);
+    expect(reward?.textContent).toContain(pioSays.starsWon(2));
+    expect(reward?.querySelector("[data-answer-combo]")?.textContent).toContain(pioSays.comboLine(3));
+  });
+
+  it("une série d'une seule réussite ne s'affiche pas ; hors d'une séance, rien du tout", () => {
+    vi.useFakeTimers();
+    const first = render(
+      <SessionJuiceProvider value={{ combo: 1, gained: 3, gainKey: 1 }}>
+        <AnswerFeedback {...props} outcome={{ correct: true, attemptsRemaining: 5 }} />
+      </SessionJuiceProvider>,
+    );
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+    expect(first.baseElement.querySelector("[data-answer-combo]")).toBeNull();
+    expect(first.baseElement.querySelectorAll("[data-answer-reward] svg.lucide-star").length).toBe(3);
+    first.unmount();
+
+    const bare = renderRevealed({ ...props, outcome: { correct: true, attemptsRemaining: 5 } });
+    expect(bare.baseElement.querySelector("[data-answer-reward]")).toBeNull();
+  });
+
+  it("une erreur ne montre ni étoiles ni série, même si la coque en garde", () => {
+    vi.useFakeTimers();
+    const { baseElement } = render(
+      <SessionJuiceProvider value={{ combo: 4, gained: 3, gainKey: 2 }}>
+        <AnswerFeedback {...props} outcome={{ correct: false, attemptsRemaining: 3 }} />
+      </SessionJuiceProvider>,
+    );
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+    expect(baseElement.querySelector("[data-answer-feedback='wrong']")).not.toBeNull();
+    expect(baseElement.querySelector("[data-answer-reward]")).toBeNull();
   });
 });

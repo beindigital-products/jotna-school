@@ -14,6 +14,7 @@ import {
 import { isFinished } from "./progressionRules";
 import { badgeSnapshotInput } from "./badgeSnapshotRules";
 import { assertTargetedDeployment } from "./testSeedsSchool";
+import { rewardBadge } from "./economy";
 import {
   catalogReadable,
   blockedStudent,
@@ -515,6 +516,8 @@ export const checkAndAward = internalMutation({
         earnedAt: Date.now(),
         progressValue: evaluation.value,
       });
+      // Un trophée rapporte des cauris, selon sa rareté (`economy.rewardBadge`).
+      await rewardBadge(ctx, args.studentId, badge._id, badge.rarity, Date.now());
       newlyAwarded.push({
         badgeId: badge._id as string,
         name: badge.name,

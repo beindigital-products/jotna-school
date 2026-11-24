@@ -20,6 +20,17 @@
  * Le stockage de l'appareil se charge à la demande, dans l'application
  * seulement : le web ne le télécharge pas.
  *
+ * LES TUILES SE DEMANDENT PAR PETITS LOTS, L'UN APRÈS L'AUTRE (`prepareTile`).
+ * Quand un exercice apparaît, le lecteur demande la consigne et toutes les
+ * propositions d'un coup. Avant le 24 novembre 2026, chaque tuile partait dans
+ * son propre appel : six synthèses en même temps chez le fournisseur, qui en
+ * refuse au-delà de sa limite de requêtes simultanées. Les tuiles refusées
+ * restaient muettes, et Pio sautait des propositions, surtout la première fois
+ * qu'un exercice était joué (ensuite le cache les sert). Les tuiles passent
+ * maintenant par une seule file : un appel à la fois, quatre tuiles au plus par
+ * appel, dans l'ordre de l'écran. La consigne garde son appel à elle, pour ne
+ * pas attendre les tuiles. Deux synthèses en même temps au plus, par enfant.
+ *
  * `fresh` saute le sac (étape 1) : le lecteur le demande quand le fichier du
  * téléphone n'a pas pu se jouer (abîmé, à moitié écrit). Le son revient du
  * serveur, et l'application le range par-dessus l'ancien : le sac se répare.
@@ -57,11 +68,61 @@ const RETRY_DELAYS_MS = [700, 1800];
 
 type PrepareClips = (args: { requests: ClipRequest[] }) => Promise<ClipResult[]>;
 
+/** Les tuiles d'un appel, et l'attente qui laisse les demandes d'un même écran se regrouper. */
+export const TILE_BATCH = 4;
+const BATCH_WINDOW_MS = 25;
+
+type WaitingTile = {
+  request: ClipRequest;
+  prepare: PrepareClips;
+  resolve: (result: ClipResult | undefined) => void;
+  reject: (error: unknown) => void;
+};
+
+const waitingTiles: WaitingTile[] = [];
+let draining = false;
+let drainTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Vide la file des tuiles : un appel à la fois, dans l'ordre d'arrivée. */
+async function drainTiles() {
+  drainTimer = null;
+  if (draining) return;
+  draining = true;
+  try {
+    while (waitingTiles.length > 0) {
+      const batch = waitingTiles.splice(0, TILE_BATCH);
+      try {
+        const results = await batch[0].prepare({ requests: batch.map((waiting) => waiting.request) });
+        const byKey = new Map(results.map((result) => [result.key, result] as const));
+        for (const waiting of batch) waiting.resolve(byKey.get(clipRequestKey(waiting.request)));
+      } catch (error) {
+        for (const waiting of batch) waiting.reject(error);
+      }
+    }
+  } finally {
+    draining = false;
+  }
+}
+
+/** Une tuile, demandée avec ses voisines (voir l'en-tête). */
+function prepareTile(prepare: PrepareClips, request: ClipRequest): Promise<ClipResult | undefined> {
+  return new Promise((resolve, reject) => {
+    waitingTiles.push({ request, prepare, resolve, reject });
+    if (!draining && drainTimer === null) drainTimer = setTimeout(drainTiles, BATCH_WINDOW_MS);
+  });
+}
+
+async function prepareOne(prepare: PrepareClips, request: ClipRequest): Promise<ClipResult | undefined> {
+  if (request.kind === "tile") return prepareTile(prepare, request);
+  const [result] = await prepare({ requests: [request] });
+  return result;
+}
+
 async function prepareWithRetry(prepare: PrepareClips, request: ClipRequest) {
   for (let attempt = 0; ; attempt++) {
     const delay = RETRY_DELAYS_MS[attempt];
     try {
-      const [result] = await prepare({ requests: [request] });
+      const result = await prepareOne(prepare, request);
       if (result?.status !== "pending" || delay === undefined) return result;
     } catch (error) {
       if (delay === undefined) throw error;

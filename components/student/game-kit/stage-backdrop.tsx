@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { useDeviceTier } from "@/hooks/use-device-tier";
+import { worldBackdropSrc, type WorldSceneId } from "@/lib/world-scenes";
 import { useGameFeel } from "./use-game-feel";
 
 /**
@@ -58,6 +59,14 @@ import { useGameFeel } from "./use-game-feel";
  * descendre d'un coup le sol, les collines et le soleil (44 px mesurés à
  * 390 × 844, décalage de mise en page de 0,034). Calé sur l'écran, il ne
  * bouge pas ; le sable s'étire seul jusqu'au bas de la page.
+ *
+ * LE MONDE DE LA MATIÈRE (`world`, 24 novembre 2026). Avec `painted`, une
+ * séance de mathématiques se joue devant le boulier géant, une séance de
+ * français devant le livre et la plume, l'anglais au pied du phare : la
+ * peinture du monde (`lib/world-scenes.ts`, `worldBackdropSrc`) remplace la
+ * savane du camp. Même lumière, même sable, mêmes règles : une image
+ * statique sur le premier écran, rien n'y bouge. Sans monde (une thématique
+ * hors programme), ou sur un appareil « lite », rien ne change.
  */
 /** Le style de la racine : les variables `--gk-*` de l'horizon, que `CSSProperties` ne connaît pas. */
 type StageVars = CSSProperties & Record<`--gk-${string}`, string | undefined>;
@@ -67,10 +76,13 @@ export function StageBackdrop({
   horizon = 76,
   horizonFrom = "scene",
   painted = false,
+  world = null,
   skyTop,
   className = "",
   contentClassName = "",
 }: {
+  /** Le monde de la matière : sa peinture remplace la savane du camp (avec `painted`). */
+  world?: WorldSceneId | null;
   children?: ReactNode;
   /** Hauteur de l'horizon, en pourcentage (le sable commence là). */
   horizon?: number;
@@ -106,7 +118,7 @@ export function StageBackdrop({
   const sky = (rem: number) => (skyTop ? `calc(${skyTop} + ${rem}rem)` : `calc(${fromTop(4)} + ${rem}rem)`);
 
   return (
-    <div className={`gk-stage gk-motion relative isolate overflow-hidden ${className}`} data-horizon={horizonFrom} data-painted={bitmap ? "1" : undefined} style={horizonVars}>
+    <div className={`gk-stage gk-motion relative isolate overflow-hidden ${className}`} data-horizon={horizonFrom} data-painted={bitmap ? "1" : undefined} data-world={bitmap && world ? world : undefined} style={horizonVars}>
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         {/* Le ciel : du bleu de la savane au crème des cartes, comme sous l'espace élève. */}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,#7ec8f5_0%,#bfe6fb_38%,#f9efd2_72%,#f6dfa4_100%)]" />
@@ -156,7 +168,7 @@ export function StageBackdrop({
         />
 
         {bitmap ? (
-          <PaintedSavanna />
+          <PaintedSavanna world={world} />
         ) : (
           <>
             {/* Deux acacias : des silhouettes SVG minuscules, devant les lueurs. */}
@@ -183,14 +195,21 @@ export function StageBackdrop({
  * `savanna-backdrop.tsx` (une seule source chargée), calée en haut, de la
  * hauteur de l'écran (`svh`, `vh` à défaut), le bas de l'image fondu dans le
  * sable CSS qui continue dessous. Statique : rien n'y bouge.
+ *
+ * Avec un monde, c'est sa peinture : le repère du monde (le boulier, le
+ * phare) est dans la bande haute, là où il dépasse derrière Pio et sa bulle ;
+ * le sable du bas porte la carte. `key` : d'un monde à l'autre, l'image est
+ * remontée, jamais l'ancienne étirée le temps du chargement.
  */
-function PaintedSavanna() {
+function PaintedSavanna({ world }: { world: WorldSceneId | null }) {
+  const wide = world ? worldBackdropSrc(world, "wide") : "/images/world/hub-savanna-wide.jpg";
+  const portrait = world ? worldBackdropSrc(world, "portrait") : "/images/world/hub-savanna-portrait.jpg";
   return (
     <div className="absolute inset-x-0 top-0 h-[100vh] supports-[height:1svh]:h-[100svh]">
-      <picture>
-        <source media="(min-width: 640px)" srcSet="/images/world/hub-savanna-wide.jpg" />
+      <picture key={world ?? "camp"}>
+        <source media="(min-width: 640px)" srcSet={wide} />
         <img
-          src="/images/world/hub-savanna-portrait.jpg"
+          src={portrait}
           alt=""
           aria-hidden
           draggable={false}

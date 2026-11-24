@@ -30,6 +30,13 @@
  * appelé que pour un échec, jamais pour une coupure voulue (`stopPlaying`) ni
  * pour un refus de lecture automatique (`NotAllowedError` : un toucher
  * suivant joue).
+ *
+ * UN REFUS DE LECTURE AUTOMATIQUE SE DIT AUSSI (`onBlocked`). Sur le web, une
+ * page ouverte ou rechargée directement sur un exercice n'a encore reçu aucun
+ * toucher : le navigateur refuse la consigne, et elle restait muette jusqu'à ce
+ * que l'enfant trouve le bouton « Écouter ». Le lecteur de consignes sait
+ * maintenant que le son a été refusé, et le relance au premier geste de
+ * l'enfant (`onNextGesture`).
  */
 
 type Playing = {
@@ -96,6 +103,28 @@ if (typeof document !== "undefined") {
   }
 }
 
+/**
+ * Appelle `callback` au prochain geste de l'enfant sur la page, une fois. Rend
+ * de quoi annuler. Les écouteurs sont en phase de remontée, sur `click` et
+ * `keydown` : le bouton ou la tuile que l'enfant touche a déjà réagi quand
+ * `callback` part, et l'élément audio est déjà débloqué (`unlock`, plus haut,
+ * écoute en phase de capture).
+ */
+export function onNextGesture(callback: () => void): () => void {
+  if (typeof document === "undefined") return () => {};
+  const events = ["click", "keydown"] as const;
+  const cancel = () => {
+    for (const name of events) document.removeEventListener(name, onGesture);
+  };
+  const onGesture = () => {
+    cancel();
+    unlock();
+    callback();
+  };
+  for (const name of events) document.addEventListener(name, onGesture, { passive: true });
+  return cancel;
+}
+
 /** Un jeton de propriétaire, à tirer une fois par composant. */
 export function newVoiceOwner(): number {
   return nextOwner++;
@@ -122,13 +151,16 @@ export const START_TIMEOUT_MS = 15000;
  * Joue une URL après avoir coupé le son en cours. Vrai si le son est allé au
  * bout. `onFail` est appelé (avant que la promesse ne rende) quand le son
  * n'a PAS pu se jouer : erreur du fichier, lecture refusée pour une autre
- * raison que la lecture automatique, démarrage qui n'arrive pas.
+ * raison que la lecture automatique, démarrage qui n'arrive pas. `onBlocked`
+ * est appelé quand le navigateur a refusé la lecture automatique (aucun
+ * toucher encore sur la page) : le même son jouera après un geste.
  */
 export function playUrl(
   url: string,
   owner: number,
   rate: number,
   onFail?: () => void,
+  onBlocked?: () => void,
 ): Promise<boolean> {
   stopPlaying();
   return new Promise((resolve) => {
@@ -171,8 +203,10 @@ export function playUrl(
     audio.play().catch((error: unknown) => {
       // Lecture automatique refusée avant tout toucher : pas un son mort, le
       // toucher sur « Écouter » jouera le même fichier.
-      if ((error as { name?: string } | null)?.name === "NotAllowedError") done(false);
-      else fail();
+      if ((error as { name?: string } | null)?.name === "NotAllowedError") {
+        if (!settled) onBlocked?.();
+        done(false);
+      } else fail();
     });
   });
 }

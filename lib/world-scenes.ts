@@ -70,6 +70,44 @@ export function worldSceneIdFor(subjectName: string | undefined | null): WorldSc
   return null;
 }
 
+/**
+ * Le monde d'une THÉMATIQUE, pour le décor de sa séance. La clé du programme
+ * officiel porte la matière dans ses deux premières lettres (`ma-…`, `fr-…`,
+ * `an-…`, `convex/programme/`) : c'est le signe le plus sûr, et la séance en
+ * ligne l'a déjà sous la main. Sans clé (une thématique écrite par un
+ * professeur), on retombe sur le nom de la matière ; sans rien, pas de monde :
+ * la séance garde la savane du camp.
+ */
+const PROGRAMME_PREFIX: Readonly<Record<string, WorldSceneId>> = {
+  ma: "maths",
+  fr: "francais",
+  sc: "sciences",
+  hi: "histoire",
+  ge: "geographie",
+  ci: "civique",
+  ar: "arts",
+  an: "anglais",
+};
+
+export function worldSceneIdForTopic(topic: {
+  programmeKey?: string | null;
+  subjectName?: string | null;
+}): WorldSceneId | null {
+  const prefix = typeof topic.programmeKey === "string" ? /^([a-z]{2})-/.exec(topic.programmeKey)?.[1] : undefined;
+  if (prefix && PROGRAMME_PREFIX[prefix]) return PROGRAMME_PREFIX[prefix];
+  return worldSceneIdFor(topic.subjectName);
+}
+
+/**
+ * LE DÉCOR DE SÉANCE d'un monde : la grande peinture devant laquelle
+ * l'exercice se joue (`public/images/world/decors/`, fabriquées par
+ * `scripts/build-world-backdrops.mjs`). Deux cadrages : `portrait` pour un
+ * téléphone debout, `wide` dès 640 px de large.
+ */
+export function worldBackdropSrc(id: WorldSceneId, framing: "portrait" | "wide"): string {
+  return `/images/world/decors/${id}-${framing}.webp`;
+}
+
 export function worldSceneSrc(
   subjectName: string | undefined | null,
   tier: "full" | "lite" = "full",

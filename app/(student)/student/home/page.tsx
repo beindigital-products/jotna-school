@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { getModule } from "@/convex/moduleCatalog";
 import {
+  useEconomyActions,
   useNextStep,
   useStudentModules,
   useStudentStats,
+  useWallet,
   useWorldMap,
 } from "@/hooks/use-student-data";
 import Link from "next/link";
@@ -17,6 +19,10 @@ import { BiomeMedallion } from "@/components/student/world/biome-medallion";
 import { GameButton } from "@/components/student/game/game-button";
 import { SpeechBubble } from "@/components/student/game/speech-bubble";
 import { QuestBoard } from "@/components/student/game/quest-board";
+import { CampItems } from "@/components/student/game/camp-items";
+import { ChestMedallion, DailyChestOverlay } from "@/components/student/game/daily-chest";
+import { useDakarNight } from "@/hooks/use-dakar-night";
+import { useDeviceTier } from "@/hooks/use-device-tier";
 import { pioSays, pickLine } from "@/lib/pioCopy";
 import { getSoundEnabledLocal, playCorrect } from "@/lib/sounds";
 
@@ -40,10 +46,28 @@ import { getSoundEnabledLocal, playCorrect } from "@/lib/sounds";
  *
  * COLD START SANS ZÉROS (D8) : ni compteur, ni série, ni progression à zéro.
  * Pio souhaite la bienvenue et le bouton dit « Commencer l'aventure ».
+ *
+ * LE CAMP VIT (24 novembre 2026). Il suit l'heure de Dakar : la nuit, le décor
+ * passe sous la lune et Pio le dit (`useDakarNight`). Les objets achetés au
+ * marché sont posés autour de Pio (`CampItems`). Le coffre du jour attend à
+ * sa gauche (`ChestMedallion`) : fermé à clé tant qu'aucun palier n'est fini
+ * aujourd'hui, prêt ensuite, absent une fois ouvert. La bourse qui porte tout
+ * cela (`useWallet`) se lit en ligne seulement : le camp ne l'attend jamais
+ * pour s'ouvrir, et sans elle il est simplement celui d'avant.
  */
 const TAP_WINDOW_MS = 2000;
 const SECRET_TAPS = 5;
 const TAP_POSES: PioState[] = ["hello", "cheer", "amazed", "encourage"];
+/**
+ * PIO NE RESTE PAS FIGÉ SUR UN SEUL CLIP (demande du propriétaire, 24 novembre
+ * 2026). Au repos, il change de pose au hasard toutes les six secondes, le
+ * temps d'un clip (cinq secondes) : il salue, réfléchit, s'étonne, montre du
+ * doigt. Aucun mouvement n'est codé, ce sont ses clips (`docs/pio-animations.md`).
+ * Seulement sur un appareil « full » : chaque pose est un clip à télécharger,
+ * et un téléphone à donnée chère garde la pose de base.
+ */
+const IDLE_POSES: PioState[] = ["idle", "hello", "think", "amazed", "ask"];
+const IDLE_ROTATION_MS = 6000;
 
 export default function StudentHomePage() {
   // Tout se lit sur l'appareil (`hooks/use-student-data.ts`) : le camp
@@ -51,6 +75,12 @@ export default function StudentHomePage() {
   const stats = useStudentStats();
   const zones = useWorldMap();
   const next = useNextStep();
+  // La bourse (coffre du jour, objets du camp) : en ligne seulement, et le
+  // camp ne l'attend pas. `undefined` ou `null` : ni coffre ni objets.
+  const wallet = useWallet();
+  const { online, openDailyChest } = useEconomyActions();
+  const night = useDakarNight();
+  const [chestOpen, setChestOpen] = useState(false);
 
   const loading = stats === undefined || zones === undefined || next === undefined;
 
@@ -72,6 +102,7 @@ export default function StudentHomePage() {
     if (!stats) return "";
     if (isColdStart) return pioSays.coldStart(firstName);
     if (next && next.kind === "continue") return pioSays.continueTopic(next.topicName);
+    if (night) return pickLine(pioSays.campNight, dayKey);
     if (streakAlive) return pioSays.streakAlive(stats.currentStreak);
     if (next && next.kind === "explore") return pickLine(pioSays.allDone, dayKey);
     return pickLine(pioSays.comeBack, dayKey);
@@ -89,6 +120,21 @@ export default function StudentHomePage() {
     },
     [],
   );
+
+  // La pose de repos tourne au hasard (voir `IDLE_POSES`), jamais deux fois la
+  // même de suite. Une tape garde la priorité : `tapPose` passe devant.
+  const tier = useDeviceTier();
+  const [idlePose, setIdlePose] = useState<PioState | null>(null);
+  useEffect(() => {
+    if (tier !== "full") return;
+    const timer = setInterval(() => {
+      setIdlePose((current) => {
+        const others = IDLE_POSES.filter((candidate) => candidate !== current);
+        return others[Math.floor(Math.random() * others.length)];
+      });
+    }, IDLE_ROTATION_MS);
+    return () => clearInterval(timer);
+  }, [tier]);
 
   function tapPio() {
     const now = Date.now();
@@ -113,8 +159,29 @@ export default function StudentHomePage() {
     }, 2500);
   }
 
+  /** Le coffre est fermé à clé : Pio dit comment l'ouvrir, un peu plus longtemps qu'une tape. */
+  function sayChestLocked() {
+    setTapPose("encourage");
+    setTapLine(pioSays.chestLocked);
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => {
+      setTapLine(null);
+      setTapPose(null);
+    }, 4000);
+  }
+
   const line = tapLine ?? baseLine;
-  const pose = tapPose ?? basePose;
+  const pose = tapPose ?? idlePose ?? basePose;
+
+  // Le coffre du jour : à gauche de Pio tant qu'il n'est pas ouvert.
+  const chestState = wallet?.chest.state;
+  const chest =
+    chestState === "ready" || chestState === "locked" ? (
+      <ChestMedallion
+        ready={chestState === "ready"}
+        onPress={() => (chestState === "ready" ? setChestOpen(true) : sayChestLocked())}
+      />
+    ) : null;
 
   // --- Le bouton principal ----------------------------------------------------
   const cta = (() => {
@@ -135,7 +202,7 @@ export default function StudentHomePage() {
   return (
     <div className="space-y-8 sm:space-y-10">
       {/* ── Le camp ─────────────────────────────────────────────────────── */}
-      <SavannaBackdrop variant="hub" minHeightClass="min-h-[560px] sm:min-h-[600px]">
+      <SavannaBackdrop variant="hub" night={night} minHeightClass="min-h-[560px] sm:min-h-[600px]">
         <div className="flex min-h-[560px] flex-col items-center justify-end px-4 pb-8 pt-6 sm:min-h-[600px] sm:pb-10">
           {/* La bulle, puis Pio, puis le bouton : l'ordre du regard. */}
           {loading ? (
@@ -144,9 +211,13 @@ export default function StudentHomePage() {
             <SpeechBubble bubbleKey={line}>{line}</SpeechBubble>
           )}
 
-          {/* Pio au centre, les modules de l'école de part et d'autre. */}
+          {/* Pio au centre, les modules de l'école et le coffre de part et
+              d'autre, les objets du marché derrière lui. Pio est posé
+              au-dessus (`z-10`) et son cadre ne prend que sa largeur : il ne
+              recouvre pas les médaillons. */}
           <div className="relative mt-6 w-full">
-            <div className="flex justify-center">
+            <CampItems ownedItemIds={wallet?.ownedItemIds ?? []} />
+            <div className="relative z-10 mx-auto flex w-fit justify-center">
               <button
                 type="button"
                 onClick={tapPio}
@@ -161,7 +232,7 @@ export default function StudentHomePage() {
                 />
               </button>
             </div>
-            <SideModules />
+            <SideModules chest={chest} />
           </div>
 
           <div className="mt-6 flex w-full max-w-sm flex-col items-center gap-3">
@@ -267,6 +338,15 @@ export default function StudentHomePage() {
           </div>
         )}
       </section>
+
+      {/* ── L'ouverture du coffre du jour ───────────────────────────────── */}
+      {chestOpen && (
+        <DailyChestOverlay
+          onClose={() => setChestOpen(false)}
+          onOpenChest={openDailyChest}
+          online={online}
+        />
+      )}
     </div>
   );
 }
@@ -292,19 +372,23 @@ export default function StudentHomePage() {
  *
  * IL N'Y A PAS D'ONGLET pour ce module (voir l'en-tête de
  * `app/(student)/layout.tsx`) : ce médaillon est la porte d'entrée.
+ *
+ * LE COFFRE DU JOUR (`chest`) ouvre la colonne de gauche, celle que le premier
+ * module laisse libre ; les modules de gauche s'empilent dessous.
  */
-function SideModules() {
+function SideModules({ chest }: { chest: React.ReactNode }) {
   const modules = useStudentModules();
   const open = (modules ?? []).filter((module_) => module_.enabled);
-  if (open.length === 0) return null;
+  if (open.length === 0 && !chest) return null;
 
   const right = open.filter((_, i) => i % 2 === 0);
   const left = open.filter((_, i) => i % 2 === 1);
 
   return (
     <>
-      {left.length > 0 && (
+      {(left.length > 0 || chest) && (
         <div className="absolute left-0 top-[38%] flex -translate-y-1/2 flex-col gap-4">
+          {chest}
           {left.map((module_, i) => (
             <ModuleMedallion key={module_.key} module_={module_} delay={0.35 + i * 0.12} />
           ))}

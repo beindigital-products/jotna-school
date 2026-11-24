@@ -47,6 +47,7 @@ import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
 import { isReadingLearnerClass } from "@/convex/curriculum";
 import { isEnglishTopic, isTileVoiceClass } from "@/convex/voice/tiles";
 import { isPictureTileClass } from "@/lib/item-pictures";
+import { worldSceneIdForTopic } from "@/lib/world-scenes";
 import { AnimatePresence } from "framer-motion";
 import { refusalMessage } from "@/lib/refusalMessage";
 
@@ -65,6 +66,8 @@ type PalierResult = {
   failedCount: number;
   canRegen: boolean;
   cumulativeRegens: number;
+  /** Les cauris versés par cette notation (`economy.rewardPalier`). */
+  cauris?: number;
 };
 
 type AttemptProgress = {
@@ -515,6 +518,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
             exerciseCount: palierResult.exerciseCount ?? exercises.length,
             thresholdTenths: palierResult.threshold,
             canRegen: palierResult.canRegen,
+            cauris: palierResult.cauris,
           }}
           topicName={topic.name ?? "Thématique"}
           palierIndex={palierIndex}
@@ -622,6 +626,9 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
         onQuit={handleQuit}
         networkLost={!isOnline}
         exerciseKey={exo._id}
+        // Le décor est celui du monde de la matière (le boulier, le phare) ;
+        // une thématique hors programme garde la savane du camp.
+        world={worldSceneIdForTopic({ programmeKey: topic.programmeKey })}
         hint={{ canAsk: canAskHint, onAsk: handleRequestHint, shown: feedback ? null : hintShown }}
         overlay={
           /* La réaction du jeu, en alerte au milieu de l'écran (portée dans

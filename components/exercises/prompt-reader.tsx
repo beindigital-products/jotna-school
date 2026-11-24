@@ -91,7 +91,7 @@ import {
 import type { Id } from "@/convex/_generated/dataModel";
 import { useClipSource } from "@/components/offline/clip-source";
 import { completesAWord, promptForbidsTileVoice, speakableTile } from "@/convex/voice/tiles";
-import { newVoiceOwner, playUrl, stopPlaying } from "@/lib/voice-player";
+import { newVoiceOwner, onNextGesture, playUrl, stopPlaying } from "@/lib/voice-player";
 import { staticTileFailed, staticTileUrl } from "@/lib/voice-static";
 
 type ReaderStatus = "idle" | "loading" | "playing" | "unavailable";
@@ -382,8 +382,15 @@ export function PromptReaderProvider({
     setStatus("unavailable");
   }, []);
 
+  // L'attente du premier geste, quand le navigateur a refusé la lecture automatique.
+  const cancelGestureRef = useRef<(() => void) | null>(null);
+  // La lecture la plus récente, pour le geste qui la relance après ce refus.
+  const readRef = useRef<() => void>(() => {});
+
   const read = useCallback(async () => {
     const token = ++tokenRef.current;
+    cancelGestureRef.current?.();
+    cancelGestureRef.current = null;
     stopPlaying();
     setSpeaking(null);
     setPromptPlaying(false);
@@ -422,10 +429,32 @@ export function PromptReaderProvider({
     setPromptPlaying(true);
     // Rend la main quand le son finit OU qu'on le coupe (`stopPlaying`).
     let failed = false;
-    let spoken = await playUrl(url, owner, 1, () => {
-      failed = true;
-    });
+    let blocked = false;
+    let spoken = await playUrl(
+      url,
+      owner,
+      1,
+      () => {
+        failed = true;
+      },
+      () => {
+        blocked = true;
+      },
+    );
     if (tokenRef.current !== token) return;
+    if (blocked) {
+      // LE NAVIGATEUR A REFUSÉ LA LECTURE AUTOMATIQUE (web, page ouverte sans aucun
+      // toucher). Avant, la consigne et les propositions restaient muettes pour tout
+      // l'exercice, sauf si l'enfant trouvait « Écouter ». On relit tout au premier
+      // geste, si rien d'autre n'a pris la parole entre-temps (un toucher sur une
+      // tuile, sur « Écouter », une réponse).
+      rest();
+      cancelGestureRef.current = onNextGesture(() => {
+        cancelGestureRef.current = null;
+        if (tokenRef.current === token && !silencedRef.current) readRef.current();
+      });
+      return;
+    }
     if (!spoken && failed && !silencedRef.current) {
       // Le son trouvé ne se joue pas : on oublie son adresse, on en demande un
       // neuf, et on rejoue une fois.
@@ -503,6 +532,10 @@ export function PromptReaderProvider({
     rest();
   }, [owner, urlFor, urlForTile, tileVoice, englishTopic, rest, muted]);
 
+  useEffect(() => {
+    readRef.current = () => void read();
+  }, [read]);
+
   // L'enfant touche une tuile : Pio la dit, et coupe ce qui jouait (la consigne,
   // la file). Le rang s'allume tout de suite : le toucher est pris, même si le
   // son met un instant. Un son qui manque laisse la tuile au repos, sans bruit.
@@ -571,8 +604,11 @@ export function PromptReaderProvider({
   // l'exercice, jamais à un changement de `read`.
   useEffect(() => {
     const tokens = tokenRef;
+    const gesture = cancelGestureRef;
     return () => {
       tokens.current++;
+      gesture.current?.();
+      gesture.current = null;
       stopPlaying(owner);
     };
   }, [owner]);

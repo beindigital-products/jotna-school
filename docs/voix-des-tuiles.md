@@ -83,6 +83,44 @@ Les images de tuile ont la même porte (`PICTURE_TILE_CLASSES`). Les trois
 listes, avec celle de la voix des consignes (`READING_LEARNER_CLASSES`), sont
 indépendantes : changer l'une ne change pas les autres.
 
+## Ce qui garantit que Pio dit tout, à chaque fois
+
+Le 24 novembre 2026, le propriétaire a signalé que Pio sautait parfois des
+propositions. Trois causes ont été trouvées et corrigées.
+
+- **Trop de synthèses en même temps.** À l'arrivée d'un exercice, l'écran
+  demandait la consigne et chaque proposition dans un appel séparé, tous
+  lancés au même instant. ElevenLabs limite le nombre de synthèses simultanées
+  d'un compte : il refusait les demandes en trop, et ces propositions restaient
+  muettes. Cela arrivait la première fois qu'un mot était dit, puis le cache le
+  servait, d'où « des fois ça marche, des fois non ». Les propositions passent
+  maintenant par une file (`prepareTile`, `components/offline/clip-source.ts`) :
+  un appel à la fois, quatre propositions au plus par appel, dans l'ordre de
+  l'écran. La consigne garde son appel à elle. Un enfant ne provoque donc jamais
+  plus de deux synthèses en même temps.
+- **Un refus du fournisseur n'était pas redemandé au serveur.** `synthesizeWithRetry`
+  (`convex/voice/elevenlabs.ts`) redemande deux fois, après 0,6 puis 1,5 seconde,
+  quand le refus est passager : un 429, une erreur 5xx, une coupure de réseau.
+  Une clé refusée ou un son vide ne se redemandent pas.
+- **Le navigateur refusait la lecture automatique.** Sur le web, une page
+  ouverte ou rechargée directement sur un exercice n'a reçu aucun toucher : le
+  navigateur refuse de jouer un son. La consigne et les propositions restaient
+  muettes pour tout l'exercice, sauf si l'enfant trouvait « Écouter ». Le
+  lecteur le sait maintenant (`onBlocked`, `lib/voice-player.ts`) et relit tout
+  au premier toucher de l'enfant, où qu'il touche (`onNextGesture`). S'il touche
+  une proposition, c'est elle qu'il entend. L'application n'a pas cette
+  restriction.
+
+Le test `components/exercises/__tests__/TileVoiceEndToEnd.test.tsx` passe la
+chaîne entière pour les cinq écrans, avec le vrai lecteur, la vraie source des
+sons et le vrai lecteur audio. Seuls le serveur et le haut-parleur sont
+simulés. Il vérifie que Pio dit la consigne puis chaque proposition, dans
+l'ordre, quand tout va bien, quand le fournisseur refuse une synthèse, quand un
+appel se perd, et quand le navigateur refuse la lecture automatique.
+
+Ce que Pio ne dit pas, par choix, reste dans le tableau « Ce que Pio ne dit
+jamais » : une autre classe que le CI et le CP, un énoncé qui demande de lire.
+
 ## Comment c'est fait
 
 - **`convex/voice/tiles.ts`** est un module pur, partagé par le serveur et
@@ -276,6 +314,11 @@ développement et la production réels** : à faire par le propriétaire, à bla
   `components/exercises/__tests__/TileVoiceEmbedded.test.tsx` (les sons
   embarqués : table, fichiers, liste, lecteur), `convex/__tests__/voiceCacheCopy.test.ts`
   (la copie du cache : lignes et adresses permises).
+- `components/exercises/__tests__/TileVoiceEndToEnd.test.tsx` (la chaîne entière,
+  voir « Ce qui garantit que Pio dit tout »), `components/offline/__tests__/clip-source.test.tsx`
+  (la file des propositions), `convex/__tests__/elevenlabsSynthesize.test.ts`
+  (la synthèse redemandée), `lib/__tests__/voice-player.test.ts` (le refus de
+  lecture automatique).
 - Dans le navigateur : `/dev/seance/?exo=qcm-mots-seuls&voix=1`. Le même son
   joue pour chaque proposition, de quoi voir la file et l'anneau. Un volet de
   navigateur caché freine le rendu : ses captures retardent d'environ deux
