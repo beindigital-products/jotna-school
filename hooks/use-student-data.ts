@@ -16,6 +16,8 @@
  *   useArabicPath         arabic.lessons.getPath
  *   useHifzState          arabic.memorization.getState
  *   useArabicLessonState  arabic.lessons.getLessonState
+ *   useWallet             economy.getMyWallet (en ligne seulement)
+ *   useCardAlbum          economy.getMyCards (en ligne seulement)
  *
  * Dans l'application (`useOffline().enabled`), elles se calculent sur le
  * moteur hors ligne (`lib/offline/model.ts`) : le paquet du dernier passage
@@ -29,7 +31,8 @@
  * le web, elles appellent la mutation tout de suite.
  */
 import { useCallback, useEffect, useMemo } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQueries, useQuery, type RequestForQueries } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useOffline, useOfflineModel } from "@/components/offline/context";
@@ -185,6 +188,66 @@ export function useArabicLessonState(lessonKey: string) {
   const server = useQuery(api.arabic.lessons.getLessonState, onWeb(enabled, { lessonKey }));
   if (!enabled) return server;
   return arabic === undefined ? undefined : (arabic?.lessonState(lessonKey) ?? null);
+}
+
+/**
+ * LA BOURSE ET L'ALBUM : EN LIGNE SEULEMENT POUR L'INSTANT, sur le web comme
+ * dans l'application (`docs/economie-du-jeu.md`). Le moteur hors ligne ne
+ * connaît pas encore les cauris : ces requêtes lisent toujours le serveur.
+ * Dans l'application sans réseau, elles ne répondraient jamais ; on rend alors
+ * `null` (« rien à montrer ») au lieu de laisser l'écran attendre. Les cauris
+ * d'un palier joué sans réseau arrivent à la synchronisation.
+ *
+ * UNE ERREUR DU SERVEUR NE CASSE PAS L'ÉCRAN. `useQuery` lève quand la requête
+ * échoue, et l'en-tête de chaque écran lit la bourse : une fonction pas encore
+ * déployée (le site mis en ligne avant le serveur) ferait tomber tout l'espace
+ * élève. `useQueries` rend l'erreur comme une valeur ; on la traite comme
+ * « rien à montrer ». Le jeu s'affiche alors sans cauris, comme avant eux.
+ *
+ * LES DEUX REQUÊTES SONT DES CONSTANTES DU MODULE. `api.economy.getMyWallet`
+ * rend un objet neuf à chaque lecture (`api` est un mandataire) : construite
+ * pendant le rendu, la requête changerait à chaque fois et `useQueries`
+ * relancerait le rendu sans fin.
+ */
+const WALLET_REQUEST: RequestForQueries = { value: { query: api.economy.getMyWallet, args: {} } };
+const CARDS_REQUEST: RequestForQueries = { value: { query: api.economy.getMyCards, args: {} } };
+
+function useOnlineOnlyQuery<Result>(request: RequestForQueries): Result | null | undefined {
+  const { enabled, connected } = useOffline();
+  const value: unknown = useQueries(request).value;
+  if (value instanceof Error) return null;
+  if (value === undefined && enabled && !connected) return null;
+  return value as Result | undefined;
+}
+
+/** Les cauris, l'état du coffre du jour, les objets du marché que l'enfant possède. */
+export function useWallet() {
+  return useOnlineOnlyQuery<FunctionReturnType<typeof api.economy.getMyWallet>>(WALLET_REQUEST);
+}
+
+/** Les cartes de l'album de l'enfant. */
+export function useCardAlbum() {
+  return useOnlineOnlyQuery<FunctionReturnType<typeof api.economy.getMyCards>>(CARDS_REQUEST);
+}
+
+/**
+ * Ouvrir le coffre du jour, acheter au marché. `online` dit si le geste peut
+ * partir : dans l'application, il faut le réseau ET que le serveur ait reconnu
+ * l'enfant. Les écrans désactivent leurs boutons sinon.
+ */
+export function useEconomyActions() {
+  const { enabled, connected, confirmed } = useOffline();
+  const openChest = useMutation(api.economy.openDailyChest);
+  const buy = useMutation(api.economy.buyItem);
+  const online = connected && (!enabled || confirmed);
+  return useMemo(
+    () => ({
+      online,
+      openDailyChest: () => openChest({}),
+      buyItem: (itemId: string) => buy({ itemId }),
+    }),
+    [online, openChest, buy],
+  );
 }
 
 type ArabicAttempt = Extract<OutboxEntry["event"], { kind: "arabicAttempt" }>;

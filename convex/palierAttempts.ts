@@ -27,6 +27,7 @@ import { finalExerciseIdsForAttempt, summaryPatch, syncTopicProgress } from "./p
 import { summarizePalier } from "./progressionRules";
 import { recordStreakActivity } from "./streak";
 import { recordQuestActivity } from "./quests";
+import { rewardPalier } from "./economy";
 
 // ===========================================================================
 // Verification — la règle vit dans `paliers/exerciseRules.ts`, partagée avec
@@ -198,6 +199,11 @@ export type PalierFinishResult = {
   failedCount: number;
   canRegen: boolean;
   cumulativeRegens: number;
+  /**
+   * Les cauris versés par CETTE notation (`economy.rewardPalier`). Absent
+   * quand la tentative était déjà notée : rien n'a été versé cette fois.
+   */
+  cauris?: number;
 };
 
 /**
@@ -360,7 +366,19 @@ export async function finishPalierAttempt(
     options.at,
   );
 
-  return response;
+  // LES CAURIS de cette notation (`economy.rewardPalier`) : un par étoile,
+  // plus le bonus d'un palier validé, sous le plafond du jour. Le journal
+  // des cauris ne paie que ce qui ne l'a pas déjà été pour cette tentative :
+  // une nouvelle chance ne rapporte que les étoiles gagnées en plus.
+  const cauris = await rewardPalier(
+    ctx,
+    profile._id,
+    palierAttempt._id,
+    { stars: result.starsTotal, validated: isValidated },
+    options.at,
+  );
+
+  return { ...response, cauris };
 }
 
 // ===========================================================================

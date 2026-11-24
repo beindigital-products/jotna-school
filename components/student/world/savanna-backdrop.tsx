@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useDeviceTier } from "@/hooks/use-device-tier";
+import { CAMP_NIGHT_PORTRAIT, CAMP_NIGHT_WIDE } from "@/lib/game-assets";
 
 /**
  * LE DÉCOR DE LA SAVANE — le fond du camp et de la carte.
@@ -29,8 +30,25 @@ import { useDeviceTier } from "@/hooks/use-device-tier";
  * le visiteur qui s'arrête en haut ne les télécharge pas (`loading="lazy"` n'y
  * suffit pas : le navigateur charge une image paresseuse dès qu'elle est à
  * 1 250 pixels de l'écran).
+ *
+ * `night` : le camp de nuit (`hooks/use-dakar-night.ts`). Sur un appareil
+ * « full », la même scène peinte sous la lune, avec ses lanternes ; sur
+ * « lite », la scène CSS sous un voile bleu nuit, la lune à la place du
+ * soleil. Dans les deux cas, quelques lucioles. Seul le camp (`hub`) a une
+ * nuit : la carte reste de jour.
  */
 type Variant = "hub" | "map";
+
+/** Où clignotent les lucioles du camp de nuit (pourcentages de la scène). */
+const FIREFLIES = [
+  { left: 14, top: 62, delay: 0 },
+  { left: 82, top: 66, delay: 1.1 },
+  { left: 38, top: 52, delay: 2 },
+  { left: 64, top: 56, delay: 0.5 },
+  { left: 9, top: 78, delay: 2.6 },
+  { left: 90, top: 50, delay: 1.7 },
+  { left: 52, top: 72, delay: 0.9 },
+] as const;
 
 export function SavannaBackdrop({
   variant = "hub",
@@ -38,23 +56,40 @@ export function SavannaBackdrop({
   className = "",
   minHeightClass = "min-h-[540px]",
   painted = true,
+  night = false,
 }: {
   variant?: Variant;
   children: ReactNode;
   className?: string;
   minHeightClass?: string;
   painted?: boolean;
+  /** Le camp de nuit. Sans effet sur la carte. */
+  night?: boolean;
 }) {
   const tier = useDeviceTier();
+  const dark = night && variant === "hub";
 
   return (
     <div
       className={`savanna-motion relative isolate overflow-hidden sm:rounded-[2rem] sm:shadow-2xl ${minHeightClass} ${className}`}
+      data-night={dark ? "true" : undefined}
     >
       {tier === "full" && painted ? (
-        <PaintedScene variant={variant} />
+        <PaintedScene variant={variant} night={dark} />
       ) : (
-        <CssScene variant={variant} />
+        <CssScene variant={variant} night={dark} />
+      )}
+
+      {dark && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-0">
+          {FIREFLIES.map((fly, i) => (
+            <span
+              key={i}
+              className="absolute h-1.5 w-1.5 rounded-full bg-[#fff3a3] shadow-[0_0_12px_4px_rgba(255,220,90,0.8)] animate-[twinkle_3.2s_ease-in-out_infinite]"
+              style={{ left: `${fly.left}%`, top: `${fly.top}%`, animationDelay: `-${fly.delay}s` }}
+            />
+          ))}
+        </div>
       )}
 
       {/* Un voile en bas, pour que le texte et les boutons restent lisibles
@@ -69,7 +104,7 @@ export function SavannaBackdrop({
   );
 }
 
-function PaintedScene({ variant }: { variant: Variant }) {
+function PaintedScene({ variant, night }: { variant: Variant; night: boolean }) {
   if (variant === "map") {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- direction artistique par `<picture>` ; `next/image` ne sait pas choisir une image selon l'écran
@@ -86,10 +121,10 @@ function PaintedScene({ variant }: { variant: Variant }) {
     <picture>
       <source
         media="(min-width: 640px)"
-        srcSet="/images/world/hub-savanna-wide.jpg"
+        srcSet={night ? CAMP_NIGHT_WIDE : "/images/world/hub-savanna-wide.jpg"}
       />
       <img
-        src="/images/world/hub-savanna-portrait.jpg"
+        src={night ? CAMP_NIGHT_PORTRAIT : "/images/world/hub-savanna-portrait.jpg"}
         alt=""
         aria-hidden
         draggable={false}
@@ -105,14 +140,26 @@ function PaintedScene({ variant }: { variant: Variant }) {
  * monde pendant le premier rendu. Elle doit être jolie, pas seulement
  * suffisante.
  */
-function CssScene({ variant }: { variant: Variant }) {
+function CssScene({ variant, night }: { variant: Variant; night: boolean }) {
   return (
     <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
       {/* Ciel */}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,#5db9f2_0%,#9ddcfb_55%,#f7e2a6_100%)]" />
+      <div
+        className={`absolute inset-0 ${
+          night
+            ? "bg-[linear-gradient(180deg,#1e2a4a_0%,#3b2a66_55%,#6b5a8a_100%)]"
+            : "bg-[linear-gradient(180deg,#5db9f2_0%,#9ddcfb_55%,#f7e2a6_100%)]"
+        }`}
+      />
 
-      {/* Soleil */}
-      <div className="absolute right-[12%] top-[7%] h-20 w-20 rounded-full bg-[radial-gradient(circle,#fff7c2_0%,#ffd23f_45%,rgba(255,176,32,0)_72%)] animate-[sun-pulse_6s_ease-in-out_infinite] sm:h-28 sm:w-28" />
+      {/* Soleil, ou lune */}
+      <div
+        className={`absolute right-[12%] top-[7%] h-20 w-20 rounded-full animate-[sun-pulse_6s_ease-in-out_infinite] sm:h-28 sm:w-28 ${
+          night
+            ? "bg-[radial-gradient(circle,#ffffff_0%,#e8ecff_42%,rgba(200,210,255,0)_72%)]"
+            : "bg-[radial-gradient(circle,#fff7c2_0%,#ffd23f_45%,rgba(255,176,32,0)_72%)]"
+        }`}
+      />
 
       {/* Nuages */}
       <div className="absolute left-[8%] top-[10%] flex gap-1 opacity-90 animate-[cloud-drift_14s_ease-in-out_infinite_alternate]">
@@ -153,6 +200,9 @@ function CssScene({ variant }: { variant: Variant }) {
       <div className="absolute bottom-[8%] left-[14%] h-6 w-10 rounded-[100%] bg-[#6ab04c]" />
       <div className="absolute bottom-[14%] right-[18%] h-5 w-8 rounded-[100%] bg-[#5da040]" />
       <div className="absolute bottom-[4%] right-[40%] h-4 w-7 rounded-[100%] bg-[#6ab04c]" />
+
+      {/* La nuit : un voile bleu sur les collines, les acacias et le sol. */}
+      {night && <div className="absolute inset-x-0 bottom-0 top-[30%] bg-[#1e2a4a]/55" />}
     </div>
   );
 }

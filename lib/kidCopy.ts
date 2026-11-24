@@ -60,6 +60,9 @@ export const kidMessages = {
       "Sans internet, Pio ne peut pas t'expliquer pas à pas. Voici la bonne réponse et les indices :",
     retryOffline: "Sans internet, on rejoue le même palier.",
     profileOnline: "Ton prénom et ta photo se changent avec internet.",
+    treasuresOnline: "Tes cartes ont besoin d'internet. Elles t'attendent, bien rangées.",
+    marketOnline: "Le marché ouvre avec internet. Tes cauris sont bien gardés.",
+    chestOnline: "Le coffre s'ouvre avec internet.",
     logoutPending:
       "Tes derniers exercices ne sont pas encore partis chez ton maître. Ils partiront quand tu te reconnecteras avec internet.",
   },

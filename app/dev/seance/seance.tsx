@@ -16,6 +16,7 @@ import { ItemPicturesProvider } from "@/components/exercises/item-pictures";
 import { PromptReaderProvider } from "@/components/exercises/prompt-reader";
 import { AnswerFeedback } from "@/components/student/game/answer-feedback";
 import { PalierResultScreen } from "@/components/student/game/palier-result";
+import { caurisForPalier } from "@/convex/economyRules";
 import { SessionStage } from "@/components/student/game/session-stage";
 import { verifyAnswer } from "@/convex/paliers/exerciseRules";
 import { isTileVoiceClass } from "@/convex/voice/tiles";
@@ -265,7 +266,15 @@ function FakeSessionInner() {
       <SessionShell reduced={reduced}>
         {devBar}
         <PalierResultScreen
-          result={{ status: ending, starsTotal, exerciseCount, thresholdTenths: 7, canRegen: ending === "failed" }}
+          result={{
+            status: ending,
+            starsTotal,
+            exerciseCount,
+            thresholdTenths: 7,
+            canRegen: ending === "failed",
+            // Ce que le serveur verserait : un cauri par étoile, plus le bonus du palier validé.
+            cauris: caurisForPalier({ stars: starsTotal, validated: ending === "validated" }),
+          }}
           topicName={TOPIC}
           palierIndex={PALIER}
           palierCount={PALIER_COUNT}

@@ -13,6 +13,7 @@ import { ActionButton3D, useGameFeel } from "@/components/student/game-kit";
 import { Coffre } from "@/components/student/game-kit/coffre";
 import { FrostBar, useBareStatusBar } from "@/components/student/game/session-stage";
 import { SpeechBubble } from "@/components/student/game/speech-bubble";
+import { CauriIcon } from "@/components/student/game/cauri";
 import { LevelUpOverlay } from "@/components/student/level-up-overlay";
 import { Pio } from "@/components/student/pio";
 import { SoundOptInDialog } from "@/components/student/sound-opt-in-dialog";
@@ -63,6 +64,12 @@ export type PalierResultView = {
   /** Moyenne nécessaire pour valider, en dixièmes (7 sur 10). */
   thresholdTenths: number;
   canRegen: boolean;
+  /**
+   * Les cauris que cette notation a versés (`economy.rewardPalier`). Absent
+   * dans l'application, où le palier se note sur l'appareil : les cauris
+   * arrivent à la synchronisation, et l'écran n'en annonce pas d'avance.
+   */
+  cauris?: number;
 };
 
 type UnseenBadge = {
@@ -253,6 +260,29 @@ export function PalierResultScreen({
           </div>
         )}
       </motion.section>
+
+      {/* LES CAURIS de ce palier, pour le marché. Affichés seulement quand le
+          serveur vient de les verser : jamais de promesse, jamais de zéro. */}
+      {result.cauris !== undefined && result.cauris > 0 && (
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65, duration: 0.4 }}
+          className="flex items-center gap-3 rounded-3xl border-2 border-white bg-[#fff8e6] px-5 py-3 shadow-[0_6px_0_#d6c39a,0_18px_30px_-16px_rgba(60,30,0,0.5)]"
+          data-cauris={result.cauris}
+        >
+          <CauriIcon className="h-12 w-12 shrink-0" />
+          <p className="flex items-baseline gap-2 font-display text-amber-950" aria-hidden>
+            <span className="text-4xl font-extrabold leading-none">
+              +<CountUp value={result.cauris} />
+            </span>
+            <span className="text-lg font-extrabold text-amber-900">
+              {result.cauris > 1 ? "cauris" : "cauri"} pour le marché
+            </span>
+          </p>
+          <span className="sr-only">{pioSays.caurisWon(result.cauris)}</span>
+        </motion.section>
+      )}
 
       <TopicTrail topicName={topicName} palierIndex={palierIndex} palierCount={palierCount} validated={validated} />
 

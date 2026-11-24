@@ -65,6 +65,8 @@ type PalierResult = {
   failedCount: number;
   canRegen: boolean;
   cumulativeRegens: number;
+  /** Les cauris versés par cette notation (`economy.rewardPalier`). */
+  cauris?: number;
 };
 
 type AttemptProgress = {
@@ -515,6 +517,7 @@ function PalierSession({ topicId, palierIndex }: { topicId: string; palierIndex:
             exerciseCount: palierResult.exerciseCount ?? exercises.length,
             thresholdTenths: palierResult.threshold,
             canRegen: palierResult.canRegen,
+            cauris: palierResult.cauris,
           }}
           topicName={topic.name ?? "Thématique"}
           palierIndex={palierIndex}

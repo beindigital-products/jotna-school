@@ -1396,4 +1396,76 @@ export default defineSchema({
     invitationId: v.id("invitationCodes"),
     userId: v.id("users"),
   }).index("by_invitationId", ["invitationId"]),
+
+  // ---------------------------------------------------------------------------
+  // L'ÉCONOMIE DU JEU (`economy.ts`, règles dans `economyRules.ts`, catalogue
+  // dans `gameCatalog.ts`). Voir `docs/economie-du-jeu.md`.
+  //
+  // `wallets` : le solde de cauris d'un élève, une ligne par élève. À part du
+  // profil : le solde bouge à chaque palier, et l'écrire dans
+  // `profiles.preferences` réveillerait `students.getMyStats` à chaque fois.
+  // `earnedTotal` ne redescend jamais (les achats n'y touchent pas).
+  // ---------------------------------------------------------------------------
+  wallets: defineTable({
+    studentId: v.id("profiles"),
+    cauris: v.number(),
+    earnedTotal: v.number(),
+    updatedAt: v.number(),
+  }).index("by_student", ["studentId"]),
+
+  // Le journal des cauris : chaque gain et chaque achat, signé. `refKey` dit
+  // d'où il vient (`palier:<tentative>`, `quests:<jour>`, `badge:<trophée>`,
+  // `chest:<jour>`, `buy:<objet>`) : c'est lui qui empêche de payer deux fois
+  // la même chose, et la somme des lignes d'une clé dit ce qui a déjà été
+  // versé. `dayKey` (YYYY-MM-DD, jour de Dakar) sert au plafond quotidien.
+  cauriLedger: defineTable({
+    studentId: v.id("profiles"),
+    dayKey: v.string(),
+    amount: v.number(),
+    reason: v.union(
+      v.literal("palier"),
+      v.literal("quests"),
+      v.literal("badge"),
+      v.literal("chest"),
+      v.literal("duplicate_card"),
+      v.literal("purchase"),
+    ),
+    refKey: v.string(),
+    at: v.number(),
+  })
+    .index("by_student_ref", ["studentId", "refKey"])
+    .index("by_student_day", ["studentId", "dayKey"]),
+
+  // Les cartes de l'album : une ligne par carte possédée. `cardId` est un
+  // identifiant de `gameCatalog.CARDS`.
+  studentCards: defineTable({
+    studentId: v.id("profiles"),
+    cardId: v.string(),
+    obtainedAt: v.number(),
+    source: v.string(),
+  })
+    .index("by_student", ["studentId"])
+    .index("by_student_card", ["studentId", "cardId"]),
+
+  // Les objets achetés au marché : une ligne par objet possédé. `itemId` est
+  // un identifiant de `gameCatalog.SHOP_ITEMS`.
+  studentItems: defineTable({
+    studentId: v.id("profiles"),
+    itemId: v.string(),
+    boughtAt: v.number(),
+  })
+    .index("by_student", ["studentId"])
+    .index("by_student_item", ["studentId", "itemId"]),
+
+  // Le coffre du jour : une ligne par (élève, jour) quand il a été ouvert,
+  // avec ce qu'il contenait. Sa présence interdit de l'ouvrir deux fois.
+  dailyChests: defineTable({
+    studentId: v.id("profiles"),
+    dayKey: v.string(),
+    openedAt: v.number(),
+    cauris: v.number(),
+    cardId: v.string(),
+    duplicate: v.boolean(),
+    duplicateCauris: v.number(),
+  }).index("by_student_day", ["studentId", "dayKey"]),
 });

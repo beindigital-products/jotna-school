@@ -132,8 +132,51 @@ export const pioSays = {
   trophiesTitle: "Salle des trophées",
   trophiesEmpty: "Ta première vitrine est vide. Une aventure et elle se remplit.",
 
+  /** Trésors : l'album de cartes et la salle des trophées, sous le même toit. */
+  treasuresTitle: "Mes trésors",
+  cardsTab: "Cartes",
+  trophiesTab: "Trophées",
+  albumEmpty: "Ton album attend sa première carte. Elle est dans le coffre du jour.",
+  albumDone: "Série complète ! Quel collectionneur !",
+  cardMystery: "Carte mystère",
+  cardMysteryBody: "Elle se cache dans un coffre. Joue un palier, puis ouvre le coffre du jour.",
+  cardFactTitle: "Le savais-tu ?",
+
+  /** Le coffre du jour. */
+  chestTitle: "Coffre du jour",
+  chestReady: "Touche le coffre !",
+  chestLocked: "Finis un palier aujourd'hui, et le coffre est à toi.",
+  chestOpening: "Il s'ouvre...",
+  chestOpened: "Des trésors pour toi !",
+  chestNewCard: "Nouvelle carte",
+  chestDuplicate: (cauris: number) => `Tu l'avais déjà : elle devient ${cauris} cauris.`,
+  chestToTreasures: "Ranger dans mes trésors",
+  chestBack: "Retour au camp",
+  chestFailed: "Le coffre est coincé. Réessaie dans un instant.",
+
+  /** Le marché. */
+  marketTitle: "Le Marché de Pio",
+  marketIntro: "Les cauris se gagnent en jouant. Choisis un objet pour ton camp.",
+  marketBuy: "Acheter",
+  marketOwned: "Posé au camp",
+  marketMissing: (missing: number) => `Encore ${missing} cauri${missing > 1 ? "s" : ""}`,
+  marketBought: (name: string) => `${name} : posé au camp !`,
+  marketSeeCamp: "Voir mon camp",
+  marketFailed: "L'achat n'est pas passé. Réessaie dans un instant.",
+
+  /** Les cauris gagnés à la fin d'un palier. */
+  caurisWon: (cauris: number) => `Tu gagnes ${cauris} cauri${cauris > 1 ? "s" : ""}`,
+
+  /** Le camp, la nuit (de 19 heures à 6 heures, heure de Dakar). */
+  campNight: [
+    "Il fait nuit au camp. Encore une étoile avant de dormir ?",
+    "Les lucioles sont sorties. On joue un dernier palier ?",
+    "La lune éclaire le camp. Une petite aventure avant le lit ?",
+  ],
+
   /** Carnet. */
   notebookTitle: "Carnet d'explorateur",
+
 
   /**
    * Sentier perdu : un monde ou une thématique qui ne s'ouvre pas. Pio ne dit

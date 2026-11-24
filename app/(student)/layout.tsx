@@ -2,25 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Tent, Map as MapIcon, Trophy, NotebookPen } from "lucide-react";
+import { Gem, Map as MapIcon, NotebookPen, Store, Tent } from "lucide-react";
 import { Brand } from "@/components/landing/brand";
 import { StudentGate } from "@/components/offline/student-gate";
 import { OfflineBadge } from "@/components/offline/offline-badge";
-import { useStudentStats } from "@/hooks/use-student-data";
+import { CauriIcon, caurisLabel } from "@/components/student/game/cauri";
+import { useStudentStats, useWallet } from "@/hooks/use-student-data";
 import { MotionConfig } from "framer-motion";
 import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 
 /**
  * LA COQUILLE DU JEU — ce qui entoure chaque écran de l'espace élève.
  *
- * Quatre lieux, comme dans un jeu : le Camp (accueil, Pio, missions), la
- * Carte (les mondes = les matières), la Salle des trophées, le Carnet. La
- * navigation les nomme ainsi, pas « Accueil / Coffre / Profil » : un enfant
- * n'ouvre pas un profil, il ouvre son carnet.
+ * Cinq lieux, comme dans un jeu : le Camp (accueil, Pio, missions, coffre du
+ * jour), la Carte (les mondes = les matières), le Marché (où les cauris se
+ * dépensent), les Trésors (l'album de cartes et la Salle des trophées), le
+ * Carnet. La navigation les nomme ainsi, pas « Accueil / Boutique / Profil » :
+ * un enfant n'ouvre pas un profil, il ouvre son carnet.
  *
  * LE HUD EN HAUT dit le niveau et la barre qui mène au suivant, toujours au
  * même endroit : un jeu montre l'état du joueur sans qu'il ait à le chercher.
- * Les étoiles ont quitté l'en-tête pour le carnet (`LevelPill`, plus bas).
+ * Les étoiles ont quitté l'en-tête pour le carnet (`LevelPill`, plus bas). Les
+ * cauris, eux, y sont (`CauriPill`) : c'est ce que l'enfant dépense, il doit
+ * voir ce qu'il a.
  *
  * COLD START SANS ZÉROS (D8) : le niveau s'affiche toujours — « Niveau 1 »
  * n'est pas un zéro, c'est un départ, et la barre vide dessous dit
@@ -36,17 +40,23 @@ import { DashboardTour } from "@/components/onboarding/dashboard-tour";
  * entrer un enfant déjà connecté une fois, même en mode avion. La pastille du
  * réseau (`OfflineBadge`) dit « Sans internet » sans jamais parler d'erreur.
  *
- * QUATRE LIEUX, PAS CINQ. Le module optionnel « Arabe & Coran » n'ajoute PAS
- * d'onglet : la barre du bas donne 4,5 rem à chaque lieu, un cinquième
- * déborderait sur un écran de 320 px, et la métaphore des quatre lieux y
- * perdrait sa lisibilité. Son entrée est un médaillon du Camp
+ * CINQ LIEUX, PAS SIX (24 novembre 2026). Le Marché est entré dans la barre et
+ * la Salle des trophées a rejoint les Trésors, à la demande du propriétaire.
+ * La barre du bas donne 3,75 rem à chaque lieu : cinq tiennent sur un écran de
+ * 320 px, un sixième déborderait. Le module optionnel « Arabe & Coran »
+ * n'ajoute donc toujours PAS d'onglet : son entrée est un médaillon du Camp
  * (`app/(student)/student/home/page.tsx`), affichée seulement si l'école a
  * allumé le module.
+ *
+ * SUR GRAND ÉCRAN, les lieux sont des pastilles dans l'en-tête. Entre 640 et
+ * 1024 px, elles ne gardent que leur image (le nom reste lu par un lecteur
+ * d'écran) : cinq noms ne tiendraient pas à côté du niveau et des cauris.
  */
 const NAV = [
   { href: "/student/home", label: "Camp", icon: Tent },
   { href: "/student/map", label: "Carte", icon: MapIcon },
-  { href: "/student/badges", label: "Trophées", icon: Trophy },
+  { href: "/student/marche", label: "Marché", icon: Store },
+  { href: "/student/tresors", label: "Trésors", icon: Gem },
   { href: "/student/profil", label: "Carnet", icon: NotebookPen },
 ] as const;
 
@@ -68,6 +78,10 @@ function isActivePath(pathname: string, href: string): boolean {
   if (pathname === href || pathname.startsWith(`${href}/`)) return true;
   // Le sentier d'une matière appartient à la Carte.
   if (href === "/student/map" && pathname.startsWith("/student/subjects")) {
+    return true;
+  }
+  // L'ancienne adresse de la Salle des trophées renvoie aux Trésors.
+  if (href === "/student/tresors" && pathname.startsWith("/student/badges")) {
     return true;
   }
   return false;
@@ -106,20 +120,23 @@ export default function StudentLayout({
                       href={item.href}
                       data-tour={`nav-${item.href.split("/").pop()}`}
                       aria-current={active ? "page" : undefined}
-                      className={`flex min-h-11 items-center gap-2 rounded-full px-4 py-2 font-display text-base font-bold transition-all ${
+                      aria-label={item.label}
+                      className={`flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 py-2 font-display text-base font-bold transition-all lg:px-4 ${
                         active
                           ? "bg-orange-500 text-white shadow-md shadow-orange-300/60"
                           : "text-amber-900/80 hover:bg-amber-100"
                       }`}
                     >
                       <item.icon className="h-5 w-5" aria-hidden />
-                      <span>{item.label}</span>
+                      <span className="hidden lg:inline">{item.label}</span>
                     </Link>
                   );
                 })}
                 </nav>
 
                 <OfflineBadge />
+
+                <CauriPill />
 
                 <LevelPill />
 
@@ -248,7 +265,32 @@ function LevelPill() {
 }
 
 /**
- * La barre du bas, sur téléphone : quatre lieux illustrés.
+ * LES CAURIS DU JOUEUR, à côté du niveau. La pastille mène au marché : c'est
+ * là qu'ils se dépensent.
+ *
+ * Elle lit la bourse (`useWallet`), en ligne seulement pour l'instant : tant
+ * qu'elle n'est pas arrivée, ou sans réseau dans l'application, la pastille
+ * ne s'affiche pas (jamais de zéro trompeur, jamais d'attente dans l'en-tête).
+ * Sous 360 px de large, elle laisse la place au niveau : le camp et le marché
+ * montrent le solde eux aussi.
+ */
+function CauriPill() {
+  const wallet = useWallet();
+  if (!wallet) return null;
+  return (
+    <Link
+      href="/student/marche"
+      aria-label={`${caurisLabel(wallet.cauris)}. Ouvrir le marché`}
+      className="hidden h-10 items-center gap-1 rounded-full border-2 border-white bg-amber-950/85 pl-1 pr-3 font-display text-base font-extrabold text-white shadow-md transition hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 min-[360px]:flex"
+    >
+      <CauriIcon className="h-7 w-7" />
+      {wallet.cauris}
+    </Link>
+  );
+}
+
+/**
+ * La barre du bas, sur téléphone : cinq lieux illustrés.
  *
  * L'onglet actif est un bouton surélevé, comme dans les jeux mobiles : on
  * voit où l'on est sans lire. D15 — chaque cible fait 56 px de haut.
@@ -259,7 +301,7 @@ function BottomNav({ pathname }: { pathname: string }) {
       aria-label="Navigation principale"
       className="fixed bottom-0 left-0 right-0 z-20 border-t-2 border-amber-300/70 bg-[#fff7e0]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden"
     >
-      <div className="mx-auto flex max-w-md items-end justify-around px-2 pb-1.5 pt-2">
+      <div className="mx-auto flex max-w-md items-end justify-around px-1 pb-1.5 pt-2">
         {NAV.map((item) => {
           const active = isActivePath(pathname, item.href);
           return (
@@ -268,7 +310,7 @@ function BottomNav({ pathname }: { pathname: string }) {
               href={item.href}
               data-tour={`nav-${item.href.split("/").pop()}`}
               aria-current={active ? "page" : undefined}
-              className={`flex min-h-14 min-w-[4.5rem] flex-col items-center justify-end gap-0.5 rounded-2xl px-2 pb-1 font-display text-xs font-extrabold transition-all ${
+              className={`flex min-h-14 min-w-[3.75rem] flex-col items-center justify-end gap-0.5 rounded-2xl px-1 pb-1 font-display text-xs font-extrabold transition-all ${
                 active ? "text-orange-700" : "text-amber-900/60 active:text-orange-700"
               }`}
             >
