@@ -4,7 +4,7 @@ import {
   internalMutation,
   type MutationCtx,
 } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { ConvexError, v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { callerIsAdmin, callerIsStaff, callerStaffProfile } from "./access";
@@ -95,10 +95,32 @@ export const getById = query({
   },
 });
 
+/** Imports lus au plus : la même borne que `pdfUploads.listByTeacher`. */
+const TEACHER_UPLOADS_LIMIT = 200;
+
+/** Exercices rendus au plus par `listByTeacher`, tous imports confondus. */
+const TEACHER_EXERCISES_LIMIT = 1000;
+
 /**
- * List exercises created/reviewed by the current teacher.
- * Returns exercises where reviewedBy === current profile id.
- * Returns [] if not a teacher or unauthenticated.
+ * Les exercices du professeur connecté : ceux que SES imports PDF ont produits.
+ *
+ * ELLE RENDAIT TOUJOURS UNE LISTE VIDE. Elle filtrait sur `reviewedBy`, un
+ * champ que rien n'écrit dans le dépôt : l'écran « Mes exercices » était donc
+ * vide pour tout le monde, quoi que le professeur ait importé.
+ *
+ * Le lien qui existe vraiment dans les données est celui de
+ * `staffMayTouchExercise` : `exercises.sourcePdfUploadId` désigne l'import, et
+ * `pdfUploads.adminId` nomme qui l'a déposé. La liste suit ce lien, si bien
+ * qu'elle montre exactement les exercices que le professeur a le droit de
+ * modifier et de publier.
+ *
+ * Les imports se trouvent comme dans `pdfUploads.listByTeacher` (les deux
+ * écrans doivent voir les mêmes), puis les exercices de chacun se lisent par
+ * l'index `by_sourcePdfUploadId`, avec une borne par import et une borne
+ * d'ensemble : la lecture ne parcourt jamais la table `exercises`.
+ *
+ * Rend [] si l'appelant n'est pas connecté, ou n'est ni professeur ni
+ * administrateur. Un administrateur voit les exercices de ses propres imports.
  */
 export const listByTeacher = query({
   args: {},
@@ -113,24 +135,48 @@ export const listByTeacher = query({
     if (!profile) return [];
     if (profile.role !== "professeur" && profile.role !== "admin") return [];
 
-    const all = await ctx.db.query("exercises").take(1000);
-    const mine = all.filter((e) => e.reviewedBy === profile._id);
+    const uploads = await ctx.db
+      .query("pdfUploads")
+      .order("desc")
+      .take(TEACHER_UPLOADS_LIMIT);
+    const myUploads = uploads.filter((u) => u.adminId === profile._id);
 
-    // Enrich with topic + subject names
-    const enriched = await Promise.all(
-      mine.map(async (ex) => {
-        const topic = await ctx.db.get(ex.topicId);
-        const subject = topic ? await ctx.db.get(topic.subjectId) : null;
-        return {
-          ...ex,
-          topicName: topic?.name ?? "Thématique inconnue",
-          subjectId: topic?.subjectId,
-          subjectName: subject?.name ?? "Matière inconnue",
-        };
-      }),
-    );
+    const mine: Doc<"exercises">[] = [];
+    for (const upload of myUploads) {
+      const remaining = TEACHER_EXERCISES_LIMIT - mine.length;
+      if (remaining <= 0) break;
+      const fromUpload = await ctx.db
+        .query("exercises")
+        .withIndex("by_sourcePdfUploadId", (q) =>
+          q.eq("sourcePdfUploadId", upload._id),
+        )
+        .take(Math.min(UPLOAD_EXERCISES_LIMIT, remaining));
+      mine.push(...fromUpload);
+    }
 
-    return enriched;
+    // Une thématique et une matière ne se lisent qu'une fois, même quand
+    // cent exercices les partagent.
+    const topics = new Map<Id<"topics">, Doc<"topics"> | null>();
+    const subjects = new Map<Id<"subjects">, Doc<"subjects"> | null>();
+    for (const ex of mine) {
+      if (topics.has(ex.topicId)) continue;
+      const topic = await ctx.db.get(ex.topicId);
+      topics.set(ex.topicId, topic);
+      if (topic && !subjects.has(topic.subjectId)) {
+        subjects.set(topic.subjectId, await ctx.db.get(topic.subjectId));
+      }
+    }
+
+    return mine.map((ex) => {
+      const topic = topics.get(ex.topicId) ?? null;
+      const subject = topic ? (subjects.get(topic.subjectId) ?? null) : null;
+      return {
+        ...ex,
+        topicName: topic?.name ?? "Thématique inconnue",
+        subjectId: topic?.subjectId,
+        subjectName: subject?.name ?? "Matière inconnue",
+      };
+    });
   },
 });
 

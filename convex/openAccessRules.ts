@@ -91,8 +91,9 @@ export function buildSchoolJoinCode(randomInt: RandomInt): string {
  * Le prénom perd ses accents et tout ce qui n'est pas une lettre, et se coupe
  * à six lettres. Sans lettre exploitable, le préfixe devient `ELEVE`.
  *
- * `digits` vaut 4 par défaut ; l'appelant passe à 6 quand les essais à quatre
- * chiffres sont épuisés, ce qui n'arrive que pour un prénom très porté.
+ * `digits` vaut 4 par défaut, pour les codes déjà donnés et les tests ; les
+ * comptes créés aujourd'hui passent tous 6 : quatre chiffres, c'est 9 000
+ * valeurs par prénom, balayées en quelques minutes par un visiteur anonyme.
  */
 export function buildChildLoginCode(
   name: string,

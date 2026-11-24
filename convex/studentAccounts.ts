@@ -187,11 +187,10 @@ export const createStudent = action({
 
     let loginCode: string | null = null;
     for (let i = 0; i < SHORT_ATTEMPTS + LONG_ATTEMPTS && !loginCode; i++) {
-      const candidate = buildChildLoginCode(
-        name,
-        secureRandomInt,
-        i < SHORT_ATTEMPTS ? 4 : 6,
-      );
+      // Six chiffres, toujours : à quatre, un visiteur anonyme balayait les
+      // 9 000 valeurs d'un prénom en quelques minutes (l'identifiant et le
+      // mot de passe sont le même code).
+      const candidate = buildChildLoginCode(name, secureRandomInt, 6);
       const taken = await ctx.runQuery(internal.studentAccounts.loginCodeTaken, {
         code: normalizeCode(candidate),
       });

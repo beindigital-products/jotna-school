@@ -78,7 +78,7 @@ export function GreeterPio({ className = "" }: { className?: string }) {
       >
         <Pio
           state={moment.pose}
-          size={132}
+          size={210}
           lite
           animated={animated}
           className="drop-shadow-[0_10px_12px_rgba(60,30,0,0.25)]"

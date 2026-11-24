@@ -29,29 +29,31 @@ export function CodeChip({
   }
 
   const text =
-    size === "lg" ? "text-2xl" : size === "sm" ? "text-sm" : "text-base";
+    size === "lg" ? "text-xl sm:text-2xl" : size === "sm" ? "text-sm" : "text-base";
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 py-1 pl-3 pr-1">
+    <span className="inline-flex max-w-full items-center gap-1 rounded-xl border border-stone-200 bg-white pl-3 print:border-0 print:pl-0">
+      {label && <span className="sr-only">{label} : </span>}
       <span
-        className={`font-mono font-semibold tracking-wider text-gray-900 ${text}`}
-        aria-label={label}
+        className={`break-all font-mono font-semibold tracking-wider text-stone-900 ${text}`}
       >
         {code}
       </span>
       <button
         type="button"
         onClick={copy}
-        className="rounded-md p-1.5 text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-stone-600 outline-none hover:bg-stone-100 hover:text-stone-900 focus-visible:ring-2 focus-visible:ring-stone-900 print:hidden"
         aria-label={copied ? "Copié" : `Copier ${label ?? "le code"}`}
-        title={copied ? "Copié" : "Copier"}
       >
         {copied ? (
-          <Check className="h-4 w-4 text-emerald-600" />
+          <Check className="h-4 w-4 text-emerald-700" aria-hidden />
         ) : (
-          <Copy className="h-4 w-4" />
+          <Copy className="h-4 w-4" aria-hidden />
         )}
       </button>
+      <span role="status" className="sr-only">
+        {copied ? "Code copié" : ""}
+      </span>
     </span>
   );
 }

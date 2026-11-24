@@ -5,42 +5,38 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { useState } from "react";
-import { refusalMessage } from "@/lib/refusalMessage";
 import {
-  Pencil,
-  FileText,
-  Plus,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
-  UserCircle,
+  FileText,
+  Pencil,
+  PencilLine,
+  Plus,
   Trash2,
-  Loader2,
 } from "lucide-react";
+import {
+  ButtonLink,
+  Card,
+  ConfirmAction,
+  EmptyState,
+  LoadingBlock,
+  PageHeader,
+  plural,
+} from "@/components/dashboard/ui";
+import { cn } from "@/lib/utils";
 
 const TYPE_LABELS: Record<string, string> = {
   qcm: "QCM",
-  "drag-drop": "Glisser-deposer",
+  "drag-drop": "Glisser-déposer",
   match: "Associer",
   order: "Ordonner",
-  "short-answer": "Reponse courte",
+  "short-answer": "Réponse courte",
   "fill-blank": "Phrase à trous",
   pattern: "Frise",
   "pixel-art": "Dessin",
   listen: "Écoute",
   "color-mix": "Couleurs",
-};
-
-const TYPE_COLORS: Record<string, string> = {
-  qcm: "bg-blue-100 text-blue-700",
-  "drag-drop": "bg-purple-100 text-purple-700",
-  match: "bg-amber-100 text-amber-700",
-  order: "bg-green-100 text-green-700",
-  "short-answer": "bg-rose-100 text-rose-700",
-  "fill-blank": "bg-indigo-100 text-indigo-700",
-  pattern: "bg-orange-100 text-orange-700",
-  "pixel-art": "bg-fuchsia-100 text-fuchsia-700",
-  listen: "bg-sky-100 text-sky-700",
-  "color-mix": "bg-lime-100 text-lime-700",
 };
 
 type TeacherExercise = {
@@ -55,245 +51,226 @@ type TeacherExercise = {
   subjectName: string;
 };
 
+type SubjectGroup = {
+  subjectName: string;
+  topics: Record<string, { topicName: string; items: TeacherExercise[] }>;
+};
+
+/** Le statut, en mots et avec une icône : la couleur seule ne dit rien. */
+function StatusBadge({ status }: { status: "draft" | "published" }) {
+  const published = status === "published";
+  const Icon = published ? CheckCircle2 : PencilLine;
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+        published
+          ? "bg-emerald-50 text-emerald-800"
+          : "bg-amber-50 text-amber-900",
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" aria-hidden />
+      {published ? "Publié" : "Brouillon"}
+    </span>
+  );
+}
+
+function groupBySubjectAndTopic(
+  exercises: TeacherExercise[],
+): Record<string, SubjectGroup> {
+  const grouped: Record<string, SubjectGroup> = {};
+  for (const ex of exercises) {
+    const subjectKey = ex.subjectId ?? "none";
+    grouped[subjectKey] ??= { subjectName: ex.subjectName, topics: {} };
+    grouped[subjectKey].topics[ex.topicId] ??= {
+      topicName: ex.topicName,
+      items: [],
+    };
+    grouped[subjectKey].topics[ex.topicId].items.push(ex);
+  }
+  return grouped;
+}
+
 export default function TeacherExercisesPage() {
+  // La coque garde déjà l'accès. Le profil ne sert ici qu'à savoir si le
+  // compte est administrateur, seul rôle admis à supprimer une thématique.
   const profile = useQuery(api.profiles.getCurrentProfile);
   const exercises = useQuery(api.exercises.listByTeacher);
   const removeTopic = useMutation(api.topics.removeWithExercises);
 
   const [openSubjects, setOpenSubjects] = useState<Record<string, boolean>>({});
   const [openTopics, setOpenTopics] = useState<Record<string, boolean>>({});
-  const [deletingTopic, setDeletingTopic] = useState<string | null>(null);
 
-  const handleDeleteTopic = async (topicId: string, topicName: string, count: number) => {
-    if (
-      !window.confirm(
-        `Supprimer la thématique "${topicName}" et ses ${count} exercice(s) ? Cette action est irréversible.`,
-      )
-    )
-      return;
-    setDeletingTopic(topicId);
-    try {
-      await removeTopic({ id: topicId as Id<"topics"> });
-    } catch (err) {
-      window.alert(
-        refusalMessage(err, "Impossible de supprimer cette thématique."),
-      );
-    } finally {
-      setDeletingTopic(null);
-    }
-  };
-
-  if (profile === undefined) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (profile === null) {
-    return (
-      <div className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-        <UserCircle className="mx-auto h-12 w-12 text-gray-400" />
-        <p className="mt-3 text-sm text-gray-500">Non connecté</p>
-      </div>
-    );
-  }
-
-  // Group by subject then topic
-  const grouped: Record<
-    string,
-    {
-      subjectName: string;
-      topics: Record<string, { topicName: string; items: TeacherExercise[] }>;
-    }
-  > = {};
-
-  for (const ex of (exercises ?? []) as TeacherExercise[]) {
-    const sKey = ex.subjectId ?? "none";
-    if (!grouped[sKey]) {
-      grouped[sKey] = { subjectName: ex.subjectName, topics: {} };
-    }
-    if (!grouped[sKey].topics[ex.topicId]) {
-      grouped[sKey].topics[ex.topicId] = {
-        topicName: ex.topicName,
-        items: [],
-      };
-    }
-    grouped[sKey].topics[ex.topicId].items.push(ex);
-  }
+  const isAdmin = profile?.role === "admin";
+  const grouped = groupBySubjectAndTopic(
+    (exercises ?? []) as TeacherExercise[],
+  );
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mes exercices</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Les exercices que vous avez créés, classés par matière et thématique.
-          </p>
-        </div>
-        <Link
-          href="/teacher/pdf-uploads"
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-        >
-          <Plus className="h-4 w-4" />
-          Ajouter un exercice
-        </Link>
-      </div>
+      <PageHeader
+        title="Mes exercices"
+        description="Les exercices issus de vos imports PDF, classés par matière et par thématique."
+        actions={
+          <ButtonLink href="/teacher/pdf-uploads">
+            <Plus className="h-4 w-4" aria-hidden />
+            Ajouter des exercices
+          </ButtonLink>
+        }
+      />
 
       {exercises === undefined ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
-        </div>
+        <LoadingBlock />
       ) : exercises.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 py-16">
-          <FileText className="mb-3 h-10 w-10 text-gray-300" />
-          <p className="text-sm font-medium text-gray-500">
-            Aucun exercice pour le moment.
-          </p>
-          <p className="mt-1 text-xs text-gray-400">
-            Importez un PDF pour en générer automatiquement.
-          </p>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="Aucun exercice pour le moment"
+          description="Importez un PDF : les exercices qu'il contient sont extraits automatiquement, puis vous les relisez avant de les publier."
+          action={
+            <ButtonLink href="/teacher/pdf-uploads">Importer un PDF</ButtonLink>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {Object.entries(grouped).map(([subjectId, subject]) => {
             const isSubjectOpen = openSubjects[subjectId] ?? true;
+            const subjectPanelId = `matiere-${subjectId}`;
             return (
-              <div
-                key={subjectId}
-                className="rounded-xl border border-gray-200 bg-white shadow-sm"
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenSubjects((s) => ({
-                      ...s,
-                      [subjectId]: !isSubjectOpen,
-                    }))
-                  }
-                  className="flex w-full items-center gap-2 border-b border-gray-100 px-5 py-3 text-left hover:bg-gray-50"
-                >
-                  {isSubjectOpen ? (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                  )}
-                  <span className="font-semibold text-gray-900">
-                    {subject.subjectName}
-                  </span>
-                </button>
+              <Card key={subjectId} as="section" className="overflow-hidden">
+                <h2>
+                  <button
+                    type="button"
+                    aria-expanded={isSubjectOpen}
+                    aria-controls={subjectPanelId}
+                    onClick={() =>
+                      setOpenSubjects((s) => ({
+                        ...s,
+                        [subjectId]: !isSubjectOpen,
+                      }))
+                    }
+                    className="flex min-h-12 w-full items-center gap-2 px-4 py-2 text-left outline-none hover:bg-stone-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--dash-strong) sm:px-5"
+                  >
+                    {isSubjectOpen ? (
+                      <ChevronDown
+                        className="h-4 w-4 shrink-0 text-stone-500"
+                        aria-hidden
+                      />
+                    ) : (
+                      <ChevronRight
+                        className="h-4 w-4 shrink-0 text-stone-500"
+                        aria-hidden
+                      />
+                    )}
+                    <span className="min-w-0 break-words font-semibold text-stone-900">
+                      {subject.subjectName}
+                    </span>
+                  </button>
+                </h2>
 
                 {isSubjectOpen && (
-                  <div className="divide-y divide-gray-100">
+                  <div
+                    id={subjectPanelId}
+                    className="divide-y divide-stone-100 border-t border-stone-100"
+                  >
                     {Object.entries(subject.topics).map(([topicId, topic]) => {
                       const isTopicOpen = openTopics[topicId] ?? true;
+                      const topicPanelId = `thematique-${topicId}`;
                       return (
                         <div key={topicId}>
-                          <div className="flex w-full items-center gap-2 px-8 py-2.5 text-sm hover:bg-gray-50">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setOpenTopics((s) => ({
-                                  ...s,
-                                  [topicId]: !isTopicOpen,
-                                }))
-                              }
-                              className="flex flex-1 items-center gap-2 text-left"
-                            >
-                              {isTopicOpen ? (
-                                <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
-                              ) : (
-                                <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
-                              )}
-                              <span className="font-medium text-gray-700">
-                                {topic.topicName}
-                              </span>
-                              <span className="ml-2 text-xs text-gray-400">
-                                {topic.items.length} exercice
-                                {topic.items.length !== 1 ? "s" : ""}
-                              </span>
-                            </button>
-                            {/*
-                              Réservé à l'administrateur, comme le serveur :
-                              `topics.removeWithExercises` exige `callerIsAdmin`
-                              depuis qu'elle a cessé d'être la seule écriture du
-                              curriculum à se contenter de `callerIsStaff`. Le
-                              bouton suit la règle plutôt que de la faire
-                              découvrir par un refus.
-                            */}
-                            {profile.role === "admin" && (
+                          <div className="flex flex-wrap items-center gap-x-2 px-2 sm:px-3">
+                            <h3 className="min-w-0 flex-1">
                               <button
                                 type="button"
+                                aria-expanded={isTopicOpen}
+                                aria-controls={topicPanelId}
                                 onClick={() =>
-                                  handleDeleteTopic(
-                                    topicId,
-                                    topic.topicName,
-                                    topic.items.length,
-                                  )
+                                  setOpenTopics((s) => ({
+                                    ...s,
+                                    [topicId]: !isTopicOpen,
+                                  }))
                                 }
-                                disabled={deletingTopic === topicId}
-                                title="Supprimer ce thème et ses exercices"
-                                className="rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                                className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm outline-none hover:bg-stone-50 focus-visible:ring-2 focus-visible:ring-(--dash-strong)"
                               >
-                                {deletingTopic === topicId ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                {isTopicOpen ? (
+                                  <ChevronDown
+                                    className="h-4 w-4 shrink-0 text-stone-500"
+                                    aria-hidden
+                                  />
                                 ) : (
-                                  <Trash2 className="h-4 w-4" />
+                                  <ChevronRight
+                                    className="h-4 w-4 shrink-0 text-stone-500"
+                                    aria-hidden
+                                  />
                                 )}
+                                <span className="min-w-0 break-words font-medium text-stone-800">
+                                  {topic.topicName}
+                                </span>
+                                <span className="shrink-0 text-xs text-stone-500">
+                                  {plural(topic.items.length, "exercice")}
+                                </span>
                               </button>
+                            </h3>
+                            {/*
+                              Réservé à l'administrateur, comme le serveur :
+                              `topics.removeWithExercises` exige `callerIsAdmin`.
+                              Un professeur ne voit pas un bouton que le serveur
+                              lui refuserait.
+                            */}
+                            {isAdmin && (
+                              <ConfirmAction
+                                trigger={
+                                  <Trash2 className="h-4 w-4" aria-hidden />
+                                }
+                                triggerLabel={`Supprimer la thématique ${topic.topicName} et ses exercices`}
+                                message={`Supprimer « ${topic.topicName} » et ses ${plural(topic.items.length, "exercice")} ? Cette action est irréversible.`}
+                                confirmLabel="Supprimer"
+                                failMessage="Impossible de supprimer cette thématique."
+                                onConfirm={() =>
+                                  removeTopic({ id: topicId as Id<"topics"> })
+                                }
+                              />
                             )}
                           </div>
 
                           {isTopicOpen && (
-                            <div className="divide-y divide-gray-100 bg-gray-50/50">
+                            <ul
+                              id={topicPanelId}
+                              className="divide-y divide-stone-100 bg-stone-50/60"
+                            >
                               {topic.items.map((ex) => (
-                                <div
+                                <li
                                   key={ex._id}
-                                  className="flex items-center gap-3 px-12 py-3"
+                                  className="flex items-center gap-2 py-2 pl-4 pr-2 sm:pl-10 sm:pr-3"
                                 >
-                                  <span
-                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                      TYPE_COLORS[ex.type] ??
-                                      "bg-gray-100 text-gray-700"
-                                    }`}
-                                  >
-                                    {TYPE_LABELS[ex.type] ?? ex.type}
-                                  </span>
-                                  <span className="flex-1 truncate text-sm text-gray-700">
-                                    {ex.prompt.length > 80
-                                      ? `${ex.prompt.slice(0, 80)}...`
-                                      : ex.prompt}
-                                  </span>
-                                  <span
-                                    className={`rounded px-2 py-0.5 text-xs font-medium ${
-                                      ex.status === "draft"
-                                        ? "bg-yellow-100 text-yellow-800"
-                                        : "bg-green-100 text-green-800"
-                                    }`}
-                                  >
-                                    {ex.status === "draft"
-                                      ? "Brouillon"
-                                      : "Publié"}
-                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="line-clamp-2 break-words text-sm text-stone-800">
+                                      {ex.prompt}
+                                    </p>
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                      <span className="inline-flex rounded-full bg-stone-200/70 px-2.5 py-1 text-xs font-medium text-stone-700">
+                                        {TYPE_LABELS[ex.type] ?? ex.type}
+                                      </span>
+                                      <StatusBadge status={ex.status} />
+                                    </div>
+                                  </div>
                                   <Link
                                     href={`/teacher/exercises/edit?id=${ex._id}`}
-                                    className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600"
+                                    aria-label={`Modifier l'exercice : ${ex.prompt.slice(0, 60)}`}
                                     title="Modifier"
+                                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-stone-600 outline-none hover:bg-(--dash-soft) hover:text-(--dash-strong) focus-visible:ring-2 focus-visible:ring-(--dash-strong)"
                                   >
-                                    <Pencil className="h-4 w-4" />
+                                    <Pencil className="h-4 w-4" aria-hidden />
                                   </Link>
-                                </div>
+                                </li>
                               ))}
-                            </div>
+                            </ul>
                           )}
                         </div>
                       );
                     })}
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>

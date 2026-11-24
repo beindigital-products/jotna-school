@@ -4,14 +4,30 @@ import { Suspense, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Save, ArrowLeft, Loader2, Plus, X } from "lucide-react";
-import { refusalMessage } from "@/lib/refusalMessage";
+import { useSearchParams } from "next/navigation";
+import { FileQuestion, Plus, Save, X } from "lucide-react";
 import { useServerFormSync } from "@/hooks/use-server-form-sync";
 import type { ExerciseType } from "@/convex/exerciseTypes";
+import {
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  Field,
+  LoadingBlock,
+  Notice,
+  PageHeader,
+  Input,
+  SelectField,
+  Textarea,
+  useAsyncAction,
+} from "@/components/dashboard/ui";
 
-// Minimal teacher-facing editor: name/prompt/hints/type only.
-// For richer payload editing, teachers can use the admin editor if granted access.
+// Éditeur volontairement court : type, énoncé et indices. Le contenu détaillé
+// (options, paires, zones) se modifie dans l'éditeur de l'administration.
+
+const BACK = { href: "/teacher/exercises", label: "Mes exercices" };
+const MAX_HINTS = 3;
 
 // Un exercice fabriqué par le code (frise, dessin, écoute, couleurs) garde
 // son type : il apparaît dans la liste pour que le choix affiché soit juste.
@@ -28,20 +44,43 @@ const TYPE_OPTIONS: { value: ExerciseType; label: string }[] = [
   { value: "color-mix", label: "Atelier des couleurs (jeu)" },
 ];
 
+function NotFound({ title }: { title: string }) {
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Modifier l'exercice" back={BACK} />
+      <EmptyState
+        icon={FileQuestion}
+        title={title}
+        description="Il a peut-être été supprimé, ou il ne vient pas de l'un de vos imports."
+        action={
+          <ButtonLink href={BACK.href} variant="secondary">
+            Retour à mes exercices
+          </ButtonLink>
+        }
+      />
+    </div>
+  );
+}
+
 function TeacherExerciseEditPageInner() {
   const searchParams = useSearchParams();
+  // Sans identifiant, la lecture est sautée : une chaîne vide passée comme
+  // identifiant Convex fait lever la requête et tombe la page.
   const id = searchParams.get("id") ?? "";
   const exerciseId = id as Id<"exercises">;
-  const exercise = useQuery(api.exercises.getById, { id: exerciseId });
+  const exercise = useQuery(
+    api.exercises.getById,
+    id ? { id: exerciseId } : "skip",
+  );
   const updateExercise = useMutation(api.exercises.update);
-  const router = useRouter();
 
   const [type, setType] = useState<ExerciseType>("qcm");
   const [prompt, setPrompt] = useState("");
   const [hints, setHints] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const { busy, error, run } = useAsyncAction(
+    "L'exercice n'a pas pu être enregistré.",
+  );
 
   // Rempli quand l'exercice arrive, puis de nouveau seulement si la page passe à un
   // autre document : les modifications en cours ne sont jamais écrasées.
@@ -55,185 +94,143 @@ function TeacherExerciseEditPageInner() {
     },
   );
 
-  async function handleSave() {
-    setSaving(true);
-    setSaved(false);
-    setError(null);
-    try {
-      await updateExercise({
-        id: exerciseId,
-        type,
-        prompt,
-        hints,
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      setError(refusalMessage(err, "Erreur lors de l'enregistrement"));
-    } finally {
-      setSaving(false);
-    }
-  }
+  if (!id) return <NotFound title="Aucun exercice n'est désigné" />;
 
   if (exercise === undefined) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
+      <div className="space-y-6">
+        <PageHeader title="Modifier l'exercice" back={BACK} />
+        <LoadingBlock />
       </div>
     );
   }
 
-  if (exercise === null) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-lg font-medium text-gray-500">
-          Exercice introuvable
-        </p>
-        <button
-          onClick={() => router.back()}
-          className="mt-4 text-sm text-emerald-600 hover:text-emerald-800"
-        >
-          Retour
-        </button>
-      </div>
-    );
+  if (exercise === null) return <NotFound title="Exercice introuvable" />;
+
+  const promptIsEmpty = prompt.trim() === "";
+
+  async function handleSave(event: React.FormEvent) {
+    event.preventDefault();
+    setSaved(false);
+    const done = await run(async () => {
+      await updateExercise({ id: exerciseId, type, prompt, hints });
+      return true;
+    });
+    if (done) setSaved(true);
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      {error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-        >
-          {error}
-        </div>
-      )}
+    <form onSubmit={handleSave} className="mx-auto max-w-2xl space-y-6">
+      <PageHeader
+        title="Modifier l'exercice"
+        description={`Version ${exercise.version} · ${
+          exercise.status === "published" ? "Publié" : "Brouillon"
+        }`}
+        back={BACK}
+      />
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">
-              Modifier l&apos;exercice
-            </h1>
-            <p className="text-sm text-gray-500">
-              v{exercise.version} ·{" "}
-              {exercise.status === "published" ? "Publié" : "Brouillon"}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          Enregistrer
-        </button>
-      </div>
-
-      {saved && (
-        <div className="rounded-lg bg-green-50 px-4 py-2 text-sm text-green-700">
-          Modifications enregistrées !
-        </div>
-      )}
-
-      <div className="space-y-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        {/* Type */}
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
-            Type d&apos;exercice
-          </label>
-          <select
+      <Card className="space-y-5 p-4 sm:p-6">
+        <Field label="Type d'exercice" htmlFor="exercise-type">
+          <SelectField
+            id="exercise-type"
             value={type}
-            onChange={(e) => setType(e.target.value as ExerciseType)}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-          >
-            {TYPE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Prompt */}
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
-            Énoncé
-          </label>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={4}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-            placeholder="Écrivez l'énoncé de l'exercice..."
+            onValueChange={(next) => {
+              setType(next);
+              setSaved(false);
+            }}
+            options={TYPE_OPTIONS}
           />
-        </div>
+        </Field>
 
-        {/* Hints */}
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
-            Indices (max 3)
-          </label>
-          <div className="space-y-2">
-            {hints.map((hint, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={hint}
-                  onChange={(e) => {
-                    const next = [...hints];
-                    next[index] = e.target.value;
-                    setHints(next);
-                  }}
-                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                  placeholder={`Indice ${index + 1}`}
-                />
-                <button
-                  onClick={() =>
-                    setHints(hints.filter((_, i) => i !== index))
-                  }
-                  className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-            {hints.length < 3 && (
+        <Field label="Énoncé" htmlFor="exercise-prompt">
+          <Textarea
+            id="exercise-prompt"
+            value={prompt}
+            onChange={(e) => {
+              setPrompt(e.target.value);
+              setSaved(false);
+            }}
+            rows={4}
+            required
+            placeholder="Écrivez l'énoncé de l'exercice"
+          />
+        </Field>
+
+        <fieldset className="space-y-2">
+          <legend className="mb-1 block text-sm font-medium text-stone-800">
+            Indices ({MAX_HINTS} au plus)
+          </legend>
+          {hints.length === 0 && (
+            <p className="text-sm text-stone-500">Aucun indice.</p>
+          )}
+          {hints.map((hint, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <Input
+                type="text"
+                value={hint}
+                aria-label={`Indice ${index + 1}`}
+                onChange={(e) => {
+                  const next = [...hints];
+                  next[index] = e.target.value;
+                  setHints(next);
+                  setSaved(false);
+                }}
+                placeholder={`Indice ${index + 1}`}
+              />
               <button
-                onClick={() => setHints([...hints, ""])}
-                className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-800"
+                type="button"
+                aria-label={`Retirer l'indice ${index + 1}`}
+                title="Retirer cet indice"
+                onClick={() => {
+                  setHints(hints.filter((_, i) => i !== index));
+                  setSaved(false);
+                }}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-stone-500 outline-none hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-(--dash-strong)"
               >
-                <Plus className="h-4 w-4" />
-                Ajouter un indice
+                <X className="h-4 w-4" aria-hidden />
               </button>
-            )}
-          </div>
-        </div>
+            </div>
+          ))}
+          {hints.length < MAX_HINTS && (
+            <Button
+              variant="ghost"
+              className="-ml-2"
+              onClick={() => {
+                setHints([...hints, ""]);
+                setSaved(false);
+              }}
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              Ajouter un indice
+            </Button>
+          )}
+        </fieldset>
 
-        <p className="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">
-          Pour modifier le contenu détaillé (options, paires, zones...),
+        <p className="rounded-xl bg-stone-100 p-3 text-sm text-stone-600">
+          Pour modifier le contenu détaillé (options, paires, zones),
           demandez à un administrateur l&apos;accès à l&apos;éditeur complet.
         </p>
+      </Card>
+
+      {error && <Notice tone="error">{error}</Notice>}
+      {saved && <Notice tone="success">Modifications enregistrées.</Notice>}
+
+      <div className="flex flex-wrap justify-end gap-2">
+        <ButtonLink href={BACK.href} variant="secondary">
+          Annuler
+        </ButtonLink>
+        <Button type="submit" busy={busy} disabled={promptIsEmpty}>
+          {!busy && <Save className="h-4 w-4" aria-hidden />}
+          Enregistrer
+        </Button>
       </div>
-    </div>
+    </form>
   );
 }
 
 export default function TeacherExerciseEditPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LoadingBlock />}>
       <TeacherExerciseEditPageInner />
     </Suspense>
   );

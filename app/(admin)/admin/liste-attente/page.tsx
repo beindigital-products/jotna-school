@@ -2,9 +2,20 @@
 
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { AlertTriangle, Download, Hourglass, Loader2 } from "lucide-react";
+import { Download, Hourglass } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
+import {
+  Button,
+  Card,
+  EmptyState,
+  LoadingBlock,
+  Notice,
+  PageHeader,
+  Pagination,
+  usePagination,
+} from "@/components/dashboard/ui";
+import { StatusPill } from "@/components/admin/console-ui";
 
 type WaitlistRow = FunctionReturnType<
   typeof api.waitlist.list
@@ -73,101 +84,79 @@ function downloadCsv(entries: WaitlistRow[]) {
 
 export default function AdminWaitlistPage() {
   const data = useQuery(api.waitlist.list);
-
-  if (data === undefined) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-        <span className="ml-3 text-gray-500">Chargement de la liste...</span>
-      </div>
-    );
-  }
-
-  const { entries, truncated } = data;
+  const pagination = usePagination(data?.entries ?? []);
 
   return (
-    <div>
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Liste d&apos;attente
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Les visiteurs à prévenir de l&apos;ouverture des ventes, à la
-            rentrée 2027-2028.
-          </p>
-        </div>
-        {entries.length > 0 && (
-          <button
-            type="button"
-            onClick={() => downloadCsv(entries)}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-          >
-            <Download className="h-4 w-4" />
-            Exporter en CSV
-          </button>
-        )}
-      </div>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHeader
+        title="Liste d'attente"
+        description="Les visiteurs à prévenir de l'ouverture des ventes, à la rentrée 2027-2028."
+        actions={
+          data !== undefined &&
+          data.entries.length > 0 && (
+            <Button variant="secondary" onClick={() => downloadCsv(data.entries)}>
+              <Download className="h-4 w-4" aria-hidden />
+              Exporter en CSV
+            </Button>
+          )
+        }
+      />
 
-      {entries.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
-          <Hourglass className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">
-            Personne pour l&apos;instant
-          </h3>
-          <p className="mt-2 text-sm text-gray-500">
-            Les inscriptions faites depuis la page d&apos;accueil apparaîtront
-            ici.
-          </p>
-        </div>
+      {data === undefined ? (
+        <LoadingBlock label="Chargement de la liste" />
+      ) : data.entries.length === 0 ? (
+        <EmptyState
+          icon={Hourglass}
+          title="Personne pour l'instant"
+          description="Les inscriptions faites depuis la page d'accueil apparaîtront ici."
+        />
       ) : (
         <>
-          <p className="mb-3 text-sm text-gray-600">
-            {entries.length} inscription{entries.length > 1 ? "s" : ""}
+          <p className="text-sm text-stone-600">
+            {data.entries.length} inscription
+            {data.entries.length > 1 ? "s" : ""}
           </p>
 
-          {truncated && (
-            <div className="mb-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                La liste dépasse ce que cet écran affiche : seules les
-                inscriptions les plus récentes sont visibles et exportées.
-              </span>
-            </div>
+          {data.truncated && (
+            <Notice tone="warning">
+              La liste dépasse ce que cet écran affiche : seules les
+              inscriptions les plus récentes sont visibles et exportées.
+            </Notice>
           )}
 
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+          <Card className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+              <thead className="border-b border-stone-200 text-xs text-stone-600">
                 <tr>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col" className="px-4 py-3 font-semibold">
                     Adresse
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col" className="px-4 py-3 font-semibold">
                     Profil
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col" className="px-4 py-3 font-semibold">
                     Inscription
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {entries.map((entry) => (
+              <tbody className="divide-y divide-stone-200">
+                {pagination.pageItems.map((entry) => (
                   <tr key={entry.id}>
-                    <td className="break-all px-4 py-3 font-medium text-gray-900">
+                    <td className="break-all px-4 py-3 font-medium text-stone-900">
                       {entry.email}
                     </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {AUDIENCE_LABEL[entry.audience]}
+                    <td className="px-4 py-3">
+                      <StatusPill>{AUDIENCE_LABEL[entry.audience]}</StatusPill>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-500">
+                    <td className="whitespace-nowrap px-4 py-3 text-stone-600">
                       {formatDay(entry.createdAt)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
+          <Pagination pagination={pagination} label="adresses de la liste d'attente" />
         </>
       )}
     </div>

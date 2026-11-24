@@ -43,10 +43,13 @@ const NAME_MAX = 80;
  * préfixe, lui, vient de la classe — il est déjà connu de l'enfant, et il range
  * les billets tout seuls quand un professeur en distribue trente.
  *
- * QUATRE CHIFFRES, soit 9 000 valeurs par classe (1000-9999, jamais de zéro en
- * tête : `0821` se lit `821` et l'élève tape faux). Une classe de soixante
- * élèves a donc moins d'une chance sur cent de collision par tirage, que
- * l'appelant absorbe en réessayant.
+ * SIX CHIFFRES, soit 900 000 valeurs par classe (100000-999999, jamais de zéro
+ * en tête : `082140` se lit `82140` et l'élève tape faux). Ils étaient quatre,
+ * soit 9 000 valeurs : un visiteur anonyme balayait une classe en deux à trois
+ * minutes, l'identifiant et le mot de passe étant le même code. Les codes déjà
+ * donnés restent valables ; « nouveau code » les remplace par un code à six
+ * chiffres. Une classe de soixante élèves a moins d'une chance sur mille de
+ * collision par tirage, que l'appelant absorbe en réessayant.
  *
  * `randomInt` est injecté : une fonction pure ne tire pas au sort toute seule,
  * et les tests exigent des codes reproductibles.
@@ -57,7 +60,7 @@ export function buildLoginCode(
   randomInt: (minInclusive: number, maxInclusive: number) => number,
 ): string {
   const prefix = `${level}${label}`.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-  return `${prefix}-${randomInt(1000, 9999)}`;
+  return `${prefix}-${randomInt(100000, 999999)}`;
 }
 
 /**

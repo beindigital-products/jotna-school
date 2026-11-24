@@ -169,12 +169,20 @@ export const listByParent = query({
   },
 });
 
-/** Get a single report with full details (topic name, subject name). */
+/**
+ * Un rapport, avec le nom de sa thématique et de sa matière.
+ *
+ * ELLE NE VÉRIFIAIT RIEN : quiconque tenait un identifiant lisait le rapport
+ * d'un enfant, sans même être connecté. Elle suit maintenant la règle des
+ * autres lectures de ce fichier (`callerMayReadStudent`), et rend `null` hors
+ * de portée, comme pour un rapport qui n'existe pas.
+ */
 export const getById = query({
   args: { id: v.id("topicReports") },
   handler: async (ctx, args) => {
     const report = await ctx.db.get(args.id);
     if (!report) return null;
+    if (!(await callerMayReadStudent(ctx, report.studentId))) return null;
 
     const topic = await ctx.db.get(report.topicId);
     const subject = topic ? await ctx.db.get(topic.subjectId) : null;

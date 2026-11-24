@@ -6,7 +6,10 @@ import { render, screen } from "@testing-library/react";
 const state = vi.hoisted(() => ({ loaded: false }));
 
 vi.mock("@/convex/_generated/api", () => ({
-  api: { profiles: { getCurrentProfile: "profile", updateProfile: "updateProfile" } },
+  api: {
+    profiles: { getCurrentProfile: "profile", updateProfile: "updateProfile" },
+    coupons: { redeem: "redeem", myRedemptions: "myRedemptions" },
+  },
 }));
 vi.mock("convex/react", () => ({
   useQuery: () =>
@@ -15,6 +18,7 @@ vi.mock("convex/react", () => ({
       : undefined,
   useMutation: () => vi.fn(),
 }));
+vi.mock("@/hooks/use-logout", () => ({ useLogout: () => vi.fn() }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
@@ -34,7 +38,7 @@ describe("les paramètres du parent", () => {
     rerender(<ParentSettingsPage />);
 
     expect((screen.getByLabelText(/nom/i) as HTMLInputElement).value).toBe("Awa Diallo");
-    expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("false");
   });
 
   it("reprennent aussi un profil déjà en cache", () => {

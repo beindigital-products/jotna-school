@@ -1,27 +1,27 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import type { Id } from "@/convex/_generated/dataModel";
 import { ClassDetail } from "@/components/classroom/class-detail";
+import { LoadingBlock } from "@/components/dashboard/ui";
+import { useIdParam } from "@/components/dashboard/use-id-param";
 
 // `?id=` et non `[id]` : le site s'exporte aussi en statique pour
 // l'application, qui n'a pas de routes dynamiques.
 export default function TeacherClassDetailPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LoadingBlock />}>
       <Detail />
     </Suspense>
   );
 }
 
 function Detail() {
-  const id = useSearchParams().get("id");
-  if (!id) return null;
+  const id = useIdParam("id");
   return (
     <ClassDetail
-      schoolClassId={id as Id<"schoolClasses">}
+      schoolClassId={id}
       backHref="/teacher/classes"
+      studentHref={(studentId) => `/teacher/students/detail?id=${studentId}`}
     />
   );
 }

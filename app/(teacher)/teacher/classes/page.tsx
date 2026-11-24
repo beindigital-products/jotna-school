@@ -3,160 +3,366 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
+import {
+  ArrowRight,
+  Plus,
+  School,
+  UserRound,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { api } from "@/convex/_generated/api";
-import { VISIBLE_CLASSES, type VisibleClassName } from "@/convex/curriculum";
-import { ArrowRight, Loader2, Plus, School, Users } from "lucide-react";
-import { refusalMessage } from "@/lib/refusalMessage";
+import type { Id } from "@/convex/_generated/dataModel";
+import type { VisibleClassName } from "@/convex/curriculum";
+import { CLASS_OPTIONS } from "@/components/dashboard/class-options";
+import {
+  Button,
+  Card,
+  CardTitle,
+  ConfirmAction,
+  DialogActions,
+  EmptyState,
+  Field,
+  FormDialog,
+  Input,
+  LoadingBlock,
+  Notice,
+  PageHeader,
+  SelectField,
+  plural,
+  useAsyncAction,
+} from "@/components/dashboard/ui";
 
 /**
- * MES CLASSES — le cœur de l'espace professeur en accès libre.
+ * MES CLASSES — le cœur de l'espace professeur.
  *
- * Un professeur crée ses classes ici, puis y ajoute ses élèves (page de
- * détail). Avec le code de son école, il la rejoint : ses classes y passent.
+ * La page liste les classes, rangées par propriétaire : les cours particuliers
+ * du professeur, puis chaque école dont il fait partie. Créer une classe et
+ * rejoindre une école s'ouvrent par les boutons du haut.
  */
 export default function TeacherClassesPage() {
   const data = useQuery(api.classrooms.myClasses);
 
-  if (data === undefined) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
-  if (data === null) return null;
+  if (data === undefined) return <LoadingBlock />;
+
+  const classes = data?.classes ?? [];
+  const schools = data?.schools ?? [];
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Mes classes</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Créez une classe, puis ajoutez-y vos élèves.
-        </p>
-      </div>
-
-      {data.classes.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
-          <Users className="mx-auto h-10 w-10 text-gray-300" />
-          <p className="mt-2 font-medium text-gray-700">
-            Vous n&apos;avez pas encore de classe.
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            Commencez par en créer une ci-dessous.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data.classes.map((c) => (
-            <Link
-              key={c._id}
-              href={`/teacher/classes/detail?id=${c._id}`}
-              className="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+      <PageHeader
+        title="Mes classes"
+        description="Vos classes et leurs élèves."
+        actions={
+          <>
+            <FormDialog
+              trigger={
+                <>
+                  <Plus className="h-4 w-4" aria-hidden />
+                  Nouvelle classe
+                </>
+              }
+              title="Nouvelle classe"
+              description="Le niveau décide des exercices que verront les élèves."
             >
-              <p className="text-lg font-semibold text-gray-900">
-                {c.class} {c.label}
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
-                {c.studentCount} élève{c.studentCount !== 1 ? "s" : ""}
-                {c.schoolName ? ` · ${c.schoolName}` : ""}
-              </p>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-amber-700">
-                Gérer les élèves
-                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
+              {(close) => <CreateClassForm schools={schools} close={close} />}
+            </FormDialog>
+            <FormDialog
+              triggerVariant="secondary"
+              trigger={
+                <>
+                  <School className="h-4 w-4" aria-hidden />
+                  Rejoindre une école
+                </>
+              }
+              title="Rejoindre une école"
+              description="Votre école utilise Jotna ? Saisissez le code que vous a donné la direction. Il commence par ECO-."
+            >
+              {(close) => <JoinSchoolForm close={close} />}
+            </FormDialog>
+          </>
+        }
+      />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <CreateClassCard schools={data.schools} />
-        <JoinSchoolCard schools={data.schools} />
-      </div>
+      <SchoolInvitations />
+
+      {classes.length === 0 && schools.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Vous n'avez pas encore de classe"
+          description="Créez la première avec le bouton « Nouvelle classe » : choisissez son niveau et donnez-lui un nom."
+        />
+      ) : (
+        <>
+          {/* Un groupe par propriétaire : les cours particuliers du professeur,
+              puis chaque école. Sans école, un seul groupe, sans titre. */}
+          <ClassGroup
+            title={schools.length > 0 ? "Mes cours particuliers" : null}
+            hint="Ces classes sont à vous. Aucune école ne les voit."
+            icon={UserRound}
+            classes={classes.filter((c) => c.schoolId === null)}
+            emptyText="Aucun cours particulier. Créez une classe et choisissez « Mes cours particuliers »."
+          />
+          {schools.map((school) => (
+            <ClassGroup
+              key={school._id}
+              title={school.name}
+              hint="Classes de l'école. La direction les voit et peut les gérer."
+              icon={School}
+              classes={classes.filter((c) => c.schoolId === school._id)}
+              emptyText="L'école ne vous a pas encore attribué de classe. Demandez-le à la direction."
+              action={
+                school.role === "professeur" ? (
+                  <LeaveSchool schoolId={school._id} name={school.name} />
+                ) : undefined
+              }
+            />
+          ))}
+        </>
+      )}
     </div>
   );
 }
 
-function CreateClassCard({
-  schools,
+function LeaveSchool({ schoolId, name }: { schoolId: Id<"schools">; name: string }) {
+  const leaveSchool = useMutation(api.classrooms.leaveSchool);
+  return (
+    <ConfirmAction
+      trigger="Quitter l'école"
+      triggerLabel={`Quitter ${name}`}
+      title={`Quitter ${name} ?`}
+      message="Les classes de l'école y restent, sans professeur, et vous ne verrez plus leurs élèves. Vos cours particuliers ne changent pas."
+      confirmLabel="Quitter l'école"
+      failMessage="Vous n'avez pas pu quitter cette école."
+      onConfirm={() => leaveSchool({ schoolId })}
+    />
+  );
+}
+
+type TeacherClass = {
+  _id: Id<"schoolClasses">;
+  class: string;
+  label: string;
+  schoolId: Id<"schools"> | null;
+  studentCount: number;
+};
+
+function ClassGroup({
+  title,
+  hint,
+  icon: Icon,
+  classes,
+  emptyText,
+  action,
 }: {
-  schools: { _id: string; name: string }[];
+  title: string | null;
+  hint: string;
+  icon: LucideIcon;
+  classes: TeacherClass[];
+  emptyText: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      {title && (
+        <div className="flex flex-wrap items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-(--dash-soft) text-(--dash-strong)">
+            <Icon className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1 basis-48">
+            <h2 className="break-words text-lg font-semibold text-stone-900">
+              {title}
+            </h2>
+            <p className="text-sm text-stone-600">{hint}</p>
+          </div>
+          {action}
+        </div>
+      )}
+      {classes.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-stone-300 px-4 py-5 text-sm text-stone-600">
+          {emptyText}
+        </p>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {classes.map((c) => (
+            <li key={c._id}>
+              <Link
+                href={`/teacher/classes/detail?id=${c._id}`}
+                className="group block h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-(--dash-strong) focus-visible:ring-offset-2"
+              >
+                <Card className="h-full p-5 transition-shadow group-hover:shadow-md">
+                  <p className="break-words text-lg font-semibold text-stone-900">
+                    {c.class} {c.label}
+                  </p>
+                  <p className="mt-1 text-sm text-stone-600">
+                    {plural(c.studentCount, "élève")}
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-(--dash-strong)">
+                    Gérer les élèves
+                    <ArrowRight
+                      className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                      aria-hidden
+                    />
+                  </span>
+                </Card>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** La valeur de liste « mes cours particuliers » : hors de toute école. */
+const PRIVATE = "private";
+
+function CreateClassForm({
+  schools,
+  close,
+}: {
+  schools: { _id: Id<"schools">; name: string }[];
+  close: () => void;
 }) {
   const createMyClass = useMutation(api.classrooms.createMyClass);
   const [level, setLevel] = useState<VisibleClassName>("CP");
   const [label, setLabel] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [destination, setDestination] = useState<string>(PRIVATE);
+  const { busy, error, run } = useAsyncAction("La classe n'a pas pu être créée.");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      await createMyClass({ class: level, label });
-      setLabel("");
-    } catch (err) {
-      setError(refusalMessage(err, "La classe n'a pas pu être créée."));
-    } finally {
-      setBusy(false);
-    }
+    const done = await run(async () => {
+      await createMyClass({
+        class: level,
+        label,
+        schoolId:
+          destination === PRIVATE ? undefined : (destination as Id<"schools">),
+      });
+      return true;
+    });
+    if (done) close();
   }
 
   return (
-    <form onSubmit={submit} className="rounded-xl border border-gray-200 bg-white p-5">
-      <div className="flex items-center gap-2">
-        <Plus className="h-5 w-5 text-amber-600" />
-        <h2 className="font-semibold text-gray-900">Nouvelle classe</h2>
-      </div>
-      <p className="mt-1 text-sm text-gray-500">
-        {schools.length > 0
-          ? `Elle sera rattachée à ${schools[0].name}.`
-          : "Le niveau décide des exercices que verront les élèves."}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <select
-          value={level}
-          onChange={(e) => setLevel(e.target.value as VisibleClassName)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-          aria-label="Niveau"
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
+        <Field label="Niveau" htmlFor="class-level">
+          <SelectField
+            id="class-level"
+            value={level}
+            onValueChange={setLevel}
+            options={CLASS_OPTIONS}
+          />
+        </Field>
+        <Field
+          label="Nom"
+          htmlFor="class-label"
+          hint="A, B, Les lions… Laissez vide pour « A »."
         >
-          {VISIBLE_CLASSES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          maxLength={30}
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder="Nom (ex. A, B, Les lions)"
-          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-        />
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-        >
-          {busy ? "…" : "Créer"}
-        </button>
+          <Input
+            id="class-label"
+            type="text"
+            maxLength={30}
+            autoFocus
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="A"
+          />
+        </Field>
       </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {schools.length > 0 && (
+        <Field
+          label="Cette classe est pour"
+          htmlFor="class-destination"
+          hint="Un cours particulier est à vous : aucune école ne le voit."
+        >
+          <SelectField
+            id="class-destination"
+            value={destination}
+            onValueChange={setDestination}
+            options={[
+              { value: PRIVATE, label: "Mes cours particuliers" },
+              ...schools.map((s) => ({ value: s._id as string, label: s.name })),
+            ]}
+          />
+        </Field>
+      )}
+      {error && <Notice tone="error">{error}</Notice>}
+      <DialogActions onCancel={close}>
+        <Button type="submit" busy={busy}>
+          Créer la classe
+        </Button>
+      </DialogActions>
     </form>
   );
 }
 
-function JoinSchoolCard({
-  schools,
-}: {
-  schools: { _id: string; name: string; role: string }[];
-}) {
+/** Les invitations d'écoles en attente : le professeur accepte ou refuse. */
+function SchoolInvitations() {
+  const invitations = useQuery(api.schoolInvitations.mine);
+  const respond = useMutation(api.schoolInvitations.respond);
+  const [joined, setJoined] = useState<string | null>(null);
+  const { busy, error, run } = useAsyncAction("La réponse n'a pas pu être enregistrée.");
+
+  if ((!invitations || invitations.length === 0) && !joined && !error) return null;
+
+  return (
+    <section aria-label="Invitations d'écoles" className="space-y-3">
+      {(invitations ?? []).map((invitation) => (
+        <Card key={invitation._id} className="p-5">
+          <CardTitle
+            icon={School}
+            description="En acceptant, vous enseignez dans cette école. Vos cours particuliers restent à vous : l'école ne les voit pas."
+          >
+            {invitation.schoolName}
+            {invitation.schoolCity ? ` (${invitation.schoolCity})` : ""} vous
+            invite à la rejoindre
+            {invitation.className ? `, pour la classe ${invitation.className}` : ""}
+          </CardTitle>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              busy={busy}
+              onClick={async () => {
+                const result = await run(() =>
+                  respond({ invitationId: invitation._id, accept: true }),
+                );
+                if (result?.joined) {
+                  setJoined(
+                    result.classTaken
+                      ? `${result.schoolName} (la classe prévue a été attribuée à un autre professeur entre-temps : demandez-en une à la direction)`
+                      : result.schoolName,
+                  );
+                }
+              }}
+            >
+              Accepter
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() =>
+                void run(() =>
+                  respond({ invitationId: invitation._id, accept: false }),
+                )
+              }
+            >
+              Refuser
+            </Button>
+          </div>
+        </Card>
+      ))}
+      {error && <Notice tone="error">{error}</Notice>}
+      {joined && <Notice tone="success">Vous avez rejoint {joined}.</Notice>}
+    </section>
+  );
+}
+
+function JoinSchoolForm({ close }: { close: () => void }) {
   const joinSchool = useMutation(api.classrooms.joinSchoolWithCode);
   const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const { busy, error, run } = useAsyncAction("Impossible de rejoindre cette école.");
   const preview = useQuery(
     api.classrooms.previewSchoolCode,
     code.trim().length >= 6 ? { code } : "skip",
@@ -164,69 +370,55 @@ function JoinSchoolCard({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await joinSchool({ code });
-      setDone(
-        result.movedClasses > 0
-          ? `Vous avez rejoint ${result.schoolName}. Vos classes y sont maintenant rattachées.`
-          : `Vous avez rejoint ${result.schoolName}.`,
-      );
-      setCode("");
-    } catch (err) {
-      setError(refusalMessage(err, "Impossible de rejoindre cette école."));
-    } finally {
-      setBusy(false);
-    }
+    const result = await run(() => joinSchool({ code }));
+    if (result) setDone(result.schoolName);
+  }
+
+  if (done) {
+    return (
+      <div className="space-y-4">
+        <Notice tone="success">
+          Vous avez rejoint {done}. Vos cours particuliers restent à vous. La
+          direction vous attribue maintenant une classe.
+        </Notice>
+        <DialogActions onCancel={close} cancelLabel="Fermer" />
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={submit} className="rounded-xl border border-gray-200 bg-white p-5">
-      <div className="flex items-center gap-2">
-        <School className="h-5 w-5 text-sky-600" />
-        <h2 className="font-semibold text-gray-900">Mon école</h2>
-      </div>
-      {schools.length > 0 ? (
-        <p className="mt-1 text-sm text-gray-700">
-          Vous faites partie de{" "}
-          <strong>{schools.map((s) => s.name).join(", ")}</strong>.
-        </p>
-      ) : (
-        <p className="mt-1 text-sm text-gray-500">
-          Facultatif. Votre école utilise Jotna ? Saisissez le code que vous a
-          donné la direction (il commence par ECO-).
-        </p>
-      )}
-      <div className="mt-3 flex gap-2">
-        <input
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <Field label="Code école" htmlFor="school-code">
+        <Input
+          id="school-code"
           type="text"
           autoCapitalize="characters"
+          autoComplete="off"
           spellCheck={false}
+          autoFocus
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="ECO-XXXXXX"
-          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-sky-500"
+          className="font-mono uppercase tracking-wide"
         />
-        <button
-          type="submit"
-          disabled={busy || preview?.status !== "ready"}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-        >
-          {busy ? "…" : "Rejoindre"}
-        </button>
+      </Field>
+      <div aria-live="polite">
+        {preview?.status === "ready" && (
+          <Notice tone="info">
+            École trouvée : {preview.name}
+            {preview.city ? ` (${preview.city})` : ""}.
+          </Notice>
+        )}
+        {preview?.status === "unknown" && (
+          <p className="text-sm text-stone-600">Aucune école ne porte ce code.</p>
+        )}
       </div>
-      {preview?.status === "ready" && !done && (
-        <p className="mt-2 text-sm text-gray-700">
-          École trouvée : {preview.name}
-          {preview.city ? ` (${preview.city})` : ""}.
-        </p>
-      )}
-      {preview?.status === "unknown" && (
-        <p className="mt-2 text-sm text-gray-500">Aucune école ne porte ce code.</p>
-      )}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      {done && <p className="mt-2 text-sm text-emerald-700">{done}</p>}
+      {error && <Notice tone="error">{error}</Notice>}
+      <DialogActions onCancel={close}>
+        <Button type="submit" busy={busy} disabled={preview?.status !== "ready"}>
+          Rejoindre
+        </Button>
+      </DialogActions>
     </form>
   );
 }

@@ -6,12 +6,16 @@ import { render, screen } from "@testing-library/react";
 const state = vi.hoisted(() => ({ loaded: false }));
 
 vi.mock("@/convex/_generated/api", () => ({
-  api: { profiles: { getCurrentProfile: "profile", updateProfile: "updateProfile" } },
+  api: {
+    profiles: { getCurrentProfile: "profile", updateProfile: "updateProfile" },
+    coupons: { redeem: "redeem", myRedemptions: "myRedemptions" },
+  },
 }));
 vi.mock("convex/react", () => ({
   useQuery: () => (state.loaded ? { name: "Moussa Ndiaye" } : undefined),
   useMutation: () => vi.fn(),
 }));
+vi.mock("@/hooks/use-logout", () => ({ useLogout: () => vi.fn() }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>

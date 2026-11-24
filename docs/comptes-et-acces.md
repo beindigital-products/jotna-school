@@ -119,6 +119,72 @@ Le formulaire « Rattacher » de la même section sert un autre cas : une
 personne qui a **déjà** un compte, par exemple un professeur qui enseigne dans
 deux établissements. Lui créer un second compte lui donnerait deux identités.
 
+## Lier un professeur à une école
+
+Un professeur peut travailler seul, avec ses propres classes, ou faire partie
+d'une ou de plusieurs écoles. Le lien est une ligne `schoolStaff`, et deux
+chemins y mènent :
+
+| Qui commence | Comment | Fonction |
+| --- | --- | --- |
+| Le professeur | Il saisit le code école (ECO-…) dans « Mes classes » | `classrooms.joinSchoolWithCode` |
+| L'école | La direction saisit l'adresse e-mail d'un compte professeur dans « Mon école ». Le professeur voit l'invitation dans son espace et l'accepte ou la refuse | `schoolInvitations.inviteTeacher`, puis `schoolInvitations.respond` |
+
+Dans une école, un professeur est lié à une classe (`schoolClasses.teacherId`).
+L'invitation nomme donc sa classe dès que l'école en a : elle lui est attribuée
+quand il accepte. Un professeur entré par le code école arrive sans classe ;
+« Mon école » le signale (« Sans classe », « Sans professeur ») et la direction
+attribue la classe depuis la liste des professeurs ou celle des classes.
+
+Les cours particuliers du professeur restent à lui. Ses propres classes vivent
+dans son espace personnel (une école de `kind: "personal"`), et rejoindre une
+école ne les déplace pas : la direction ne voit que les classes de l'école.
+Dans « Mes classes », le professeur a un groupe « Mes cours particuliers » et
+un groupe par école ; à la création d'une classe, il choisit à qui elle est
+(`classrooms.createMyClass`, argument `schoolId`).
+
+Le professeur doit accepter l'invitation : une direction ne lie personne sans
+son accord. Une invitation
+sans réponse tombe au bout de trente jours, et la direction peut l'annuler.
+
+L'invitation vise un compte professeur qui existe déjà. Un professeur sans
+compte reçoit le code école et le saisit après son inscription.
+
+La direction gère ses professeurs sur la page « Professeurs »
+(`/school/teachers`) : liste, classe de chacun, invitations, anciens professeurs.
+
+Retirer un professeur lui coupe l'accès tout de suite : sa ligne `schoolStaff`
+passe à `removed`, et il est détaché des classes de l'école, donc de leurs
+élèves, rapports compris. La ligne garde qui a défait le lien (`removedBy`) :
+un professeur retiré par l'école ne revient pas avec le code école
+(`joinSchoolWithCode` le refuse), seulement sur une nouvelle invitation. Celui
+qui est parti de lui-même peut revenir par le code.
+
+Pour défaire le lien : la direction retire le professeur (« Professeurs »), ou le
+professeur quitte l'école (« Mes classes », `classrooms.leaveSchool`). Dans les
+deux cas, les classes de l'école y restent, sans professeur, et la direction
+leur en attribue un autre. Ses cours particuliers ne changent pas.
+
+## Les codes sont à usage unique ou freinés
+
+Après la campagne de tests du 24 novembre 2026 (`qa-report/2026-11-24-1649`) :
+
+- **Code élève (ELV-)** : il sert une fois. Quand un professeur ajoute l'enfant
+  à sa classe, un nouveau code remplace l'ancien (`classrooms.addStudentByCode`),
+  et la famille le retrouve sur « Mes enfants ». Un professeur retiré ne peut
+  donc plus rejouer un code qu'il connaissait.
+- **Essais de codes élèves** : la vérification est une mutation
+  (`classrooms.checkStudentCode`) qui compte les codes inexistants. Au-delà de
+  dix par dix minutes, un professeur est freiné (`convex/codeAttempts.ts`).
+  L'ancienne requête de lecture, qu'on balayait à 2 000 essais par seconde,
+  n'existe plus.
+- **Code de connexion de l'élève** : six chiffres pour tout compte créé ou
+  réinitialisé (quatre avant, soit 9 000 valeurs par prénom). Les codes à
+  quatre chiffres déjà donnés restent valables jusqu'au « nouveau code ».
+  Restent à faire : une limite globale d'essais de connexion, que la
+  bibliothèque d'authentification ne fournit que par identifiant, et le
+  renouvellement des codes de connexion quand un professeur quitte une école.
+
 ## Ce qui a été retiré, et ce qui l'a remplacé
 
 `profiles.createChildAccount` laissait n'importe quel compte authentifié

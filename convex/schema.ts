@@ -6,6 +6,7 @@ import { moduleKeyValidator } from "./moduleCatalog";
 import { exerciseTypeValidator } from "./exerciseTypes";
 import { placementLevelValidator } from "./arabic/progressRules";
 import { waitlistAudienceValidator } from "./waitlistRules";
+import { quoteRequestFields } from "./quoteRules";
 
 // ---------------------------------------------------------------------------
 // AI gateway purposes — mirrors aiGateway/registry.ts. Listed here as
@@ -23,6 +24,14 @@ const aiPurposeEnum = v.union(
   // compté. Ajout purement additif : élargir une union ne rend invalide
   // aucun document déjà écrit.
   v.literal("pdf_extract"),
+);
+
+// L'avantage d'un coupon (`couponRules.CouponBenefit`), dans `coupons` et
+// recopié dans `couponRedemptions`.
+const couponBenefitValidator = v.union(
+  v.object({ kind: v.literal("free_access"), days: v.number() }),
+  v.object({ kind: v.literal("percent"), percent: v.number() }),
+  v.object({ kind: v.literal("amount"), amountFcfa: v.number() }),
 );
 
 export default defineSchema({
@@ -65,7 +74,11 @@ export default defineSchema({
     studentCode: v.optional(v.string()),
   })
     .index("by_userId", ["userId"])
-    .index("by_studentCode", ["studentCode"]),
+    .index("by_studentCode", ["studentCode"])
+    // La console admin compte et liste les comptes par rôle
+    // (`adminConsole.ts`) ; `_creationTime`, implicite en fin d'index, lui
+    // donne aussi les inscriptions récentes d'un rôle.
+    .index("by_role", ["role"]),
 
   // ---------------------------------------------------------------------------
   // studentGuardians
@@ -651,9 +664,46 @@ export default defineSchema({
     profileId: v.id("profiles"),
     staffRole: v.union(v.literal("directeur"), v.literal("professeur")),
     status: v.union(v.literal("active"), v.literal("removed")),
+    // Qui a défait le lien, et quand. Un professeur retiré PAR L'ÉCOLE ne
+    // revient pas avec le code école : il lui faut une invitation de la
+    // direction. Celui qui est parti de lui-même peut revenir par le code.
+    // Absents sur les lignes d'avant ce champ, lues comme un départ volontaire.
+    removedBy: v.optional(v.union(v.literal("school"), v.literal("self"))),
+    removedAt: v.optional(v.number()),
   })
     .index("by_school", ["schoolId"])
     .index("by_profile", ["profileId"]),
+
+  // Les essais ratés de codes (`convex/codeAttempts.ts`) : un professeur qui
+  // essaie des codes élèves au hasard est freiné. Une ligne par professeur et
+  // par fenêtre de dix minutes.
+  codeAttempts: defineTable({
+    profileId: v.id("profiles"),
+    windowStart: v.number(),
+    failures: v.number(),
+  }).index("by_profile", ["profileId"]),
+
+  // L'invitation d'un professeur par une école (`convex/schoolInvitations.ts`).
+  // La direction saisit l'adresse d'un compte professeur ; le professeur
+  // accepte ou refuse dans son espace. Rien n'entre dans `schoolStaff` sans
+  // son accord. L'autre chemin, le code école, ne passe pas par cette table.
+  schoolInvitations: defineTable({
+    schoolId: v.id("schools"),
+    teacherId: v.id("profiles"),
+    invitedBy: v.id("profiles"),
+    // La classe que la direction attribue au professeur : dans une école, un
+    // professeur est lié à une classe. Posée sur la classe à l'acceptation.
+    schoolClassId: v.optional(v.id("schoolClasses")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("cancelled"),
+    ),
+    createdAt: v.number(),
+  })
+    .index("by_school_and_status", ["schoolId", "status"])
+    .index("by_teacher_and_status", ["teacherId", "status"]),
 
   // Les classes réelles, pas les niveaux : une école a souvent CM1 A et CM1 B.
   schoolClasses: defineTable({
@@ -1366,6 +1416,40 @@ export default defineSchema({
   }).index("by_email", ["email"]),
 
   // ---------------------------------------------------------------------------
+  // quoteRequests — les demandes de devis des écoles, depuis la vitrine.
+  //
+  // Une famille paie un prix affiché ; une école remplit un formulaire
+  // (`quotes.request`), et l'équipe reçoit la demande par courriel
+  // (`quotesEmail.send`). La ligne est écrite AVANT l'envoi : `emailedAt`
+  // reste vide si Resend a refusé le courriel, et la demande n'est pas perdue.
+  //
+  // Les champs sont ceux de `quoteRules.quoteRequestFields`, nettoyés par
+  // `cleanQuoteRequest`. Les deux index servent les freins de la mutation :
+  // trois demandes par adresse et par jour, trente par heure en tout.
+  // ---------------------------------------------------------------------------
+  quoteRequests: defineTable({
+    ...quoteRequestFields,
+    createdAt: v.number(),
+    emailedAt: v.optional(v.number()),
+    // LE SUIVI COMMERCIAL, posé par la console (`adminConsole.setQuoteStatus`,
+    // page `/admin/devis`). Absent = « nouvelle » : la demande n'a pas encore
+    // été traitée. `adminNote` est la note de l'équipe, jamais montrée à
+    // l'école. Le formulaire public n'écrit aucun de ces champs.
+    status: v.optional(
+      v.union(
+        v.literal("new"),
+        v.literal("contacted"),
+        v.literal("won"),
+        v.literal("lost"),
+      ),
+    ),
+    adminNote: v.optional(v.string()),
+    statusAt: v.optional(v.number()),
+  })
+    .index("by_email_and_createdAt", ["email", "createdAt"])
+    .index("by_createdAt", ["createdAt"]),
+
+  // ---------------------------------------------------------------------------
   // invitationCodes — les codes que l'équipe remet avant le lancement.
   //
   // Tant que Jotna School n'est pas lancé, un formulaire public ne crée de
@@ -1468,4 +1552,60 @@ export default defineSchema({
     duplicate: v.boolean(),
     duplicateCauris: v.number(),
   }).index("by_student_day", ["studentId", "dayKey"]),
+
+  // ---------------------------------------------------------------------------
+  // COUPONS (`coupons.ts`, règles dans `couponRules.ts`).
+  //
+  // L'équipe émet un coupon depuis `/admin/coupons` pour un public (parents,
+  // professeurs, écoles, tout le monde) ; un compte adulte le saisit dans ses
+  // paramètres. `code` est stocké NORMALISÉ (`normalizeCouponCode`).
+  //
+  // `useCount` est un compteur tenu par `coupons.redeem`, dans la transaction
+  // qui écrit la ligne `couponRedemptions` : c'est lui que la règle compare à
+  // `maxUses`, comme pour les codes d'invitation.
+  //
+  // L'avantage (`benefit`) n'agit pas encore sur l'accès : tant que
+  // `accessRules.FREE_ACCESS` est allumé, tout est gratuit. Les utilisations
+  // enregistrées ici seront lues par les futurs paiements.
+  // ---------------------------------------------------------------------------
+  coupons: defineTable({
+    code: v.string(),
+    label: v.string(),
+    audience: v.union(
+      v.literal("all"),
+      v.literal("parent"),
+      v.literal("professeur"),
+      v.literal("directeur"),
+    ),
+    benefit: couponBenefitValidator,
+    maxUses: v.number(),
+    useCount: v.number(),
+    startsAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+    createdBy: v.id("profiles"),
+  }).index("by_code", ["code"]),
+
+  // Une utilisation de coupon par un compte. L'avantage est COPIÉ à
+  // l'utilisation : désactiver le coupon ensuite ne retire rien à qui l'a déjà
+  // pris. `schoolId` : l'école du compte `directeur`, s'il en a une.
+  // `accessUntil` : fin d'un accès gratuit. `appliedAt` : posé par le paiement
+  // qui consommera une remise (aucun écrivain aujourd'hui).
+  couponRedemptions: defineTable({
+    couponId: v.id("coupons"),
+    profileId: v.id("profiles"),
+    role: v.union(
+      v.literal("parent"),
+      v.literal("professeur"),
+      v.literal("directeur"),
+    ),
+    schoolId: v.optional(v.id("schools")),
+    benefit: couponBenefitValidator,
+    at: v.number(),
+    accessUntil: v.optional(v.number()),
+    appliedAt: v.optional(v.number()),
+  })
+    .index("by_couponId", ["couponId"])
+    .index("by_profileId", ["profileId"])
+    .index("by_profileId_and_couponId", ["profileId", "couponId"]),
 });

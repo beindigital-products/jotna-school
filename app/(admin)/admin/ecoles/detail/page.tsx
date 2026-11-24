@@ -27,6 +27,7 @@ import {
   PLACEMENT_NOTICE,
 } from "@/components/arabic/placement-editor";
 import Link from "next/link";
+import { DateField } from "@/components/dashboard/ui";
 import {
   ArrowLeft,
   ArrowLeftRight,
@@ -305,9 +306,10 @@ function formatDay(timestamp: number): string {
 }
 
 /**
- * Le jour d'un horodatage, au format que `<input type="date">` attend.
+ * Le jour d'un horodatage, au format « AAAA-MM-JJ » du champ date
+ * (`DateField`, le sélecteur shadcn du kit).
  *
- * UTC des deux côtés : `<input type="date">` rend « AAAA-MM-JJ », que
+ * UTC des deux côtés : le champ rend « AAAA-MM-JJ », que
  * `Date.parse` lit comme minuit UTC. Passer par le fuseau local ferait
  * glisser la date d'un jour pour la moitié du globe, sur un champ où
  * l'utilisateur a tapé une date et rien d'autre.
@@ -680,28 +682,22 @@ function SubscriptionSection({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="contract-starts"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Début
           </label>
-          <input
-            type="date"
-            value={startsAt}
-            onChange={(e) => setStartsAt(e.target.value)}
-            required
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-          />
+          <DateField id="contract-starts" value={startsAt} onChange={setStartsAt} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="contract-ends"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Fin
           </label>
-          <input
-            type="date"
-            value={endsAt}
-            onChange={(e) => setEndsAt(e.target.value)}
-            required
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-          />
+          <DateField id="contract-ends" value={endsAt} onChange={setEndsAt} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">

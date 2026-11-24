@@ -2,279 +2,227 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
-import Link from "next/link";
-import { BookOpen, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
-import { refusalMessage } from "@/lib/refusalMessage";
+import { BookOpen, Pencil, Trash2, Plus } from "lucide-react";
 
-export default function SubjectsPage() {
-  const subjects = useQuery(api.subjects.list);
+import {
+  Button,
+  ButtonLink,
+  Card,
+  ConfirmAction,
+  DialogActions,
+  EmptyState,
+  Field,
+  FormDialog,
+  Input,
+  LoadingBlock,
+  Notice,
+  PageHeader,
+  useAsyncAction,
+} from "@/components/dashboard/ui";
+
+type SubjectRow = FunctionReturnType<typeof api.subjects.list>[number];
+
+/** Des couleurs prêtes à choisir, à la place du sélecteur du navigateur. */
+const COLOR_PRESETS = [
+  "#6366f1",
+  "#2563eb",
+  "#0891b2",
+  "#059669",
+  "#ca8a04",
+  "#ea580c",
+  "#dc2626",
+  "#db2777",
+  "#9333ea",
+];
+
+function CreateSubjectForm({ close }: { close: () => void }) {
   const createSubject = useMutation(api.subjects.create);
-  const removeSubject = useMutation(api.subjects.remove);
-
-  const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("BookOpen");
   const [color, setColor] = useState("#6366f1");
   const [order, setOrder] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<Id<"subjects"> | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [invalid, setInvalid] = useState<string | null>(null);
+  const { busy, error, run } = useAsyncAction("Erreur lors de la création");
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      await createSubject({ name, icon, color, order });
-      setName("");
-      setIcon("BookOpen");
-      setColor("#6366f1");
-      setOrder(0);
-      setShowForm(false);
-    } catch (err) {
-      setError(refusalMessage(err, "Erreur lors de la création"));
-    } finally {
-      setIsSubmitting(false);
+    // Le serveur ne contrôle pas ces champs : l'écran les exige, comme le
+    // faisait la validation du navigateur, mais dit pourquoi dans la page.
+    if (name === "" || icon === "") {
+      setInvalid("Renseignez le nom et l'icône.");
+      return;
     }
+    setInvalid(null);
+    const created = await run(() => createSubject({ name, icon, color, order }));
+    if (created) close();
   };
-
-  const handleDelete = async (id: Id<"subjects">) => {
-    setError(null);
-    try {
-      await removeSubject({ id });
-      setDeleteConfirm(null);
-    } catch (err) {
-      setError(refusalMessage(err, "Erreur lors de la suppression"));
-      setDeleteConfirm(null);
-    }
-  };
-
-  if (subjects === undefined) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-        <span className="ml-3 text-gray-500">Chargement des matières...</span>
-      </div>
-    );
-  }
 
   return (
-    <div>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Matières</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Gérez les matières du programme scolaire
-          </p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Ajouter une matière
-        </button>
+    <form onSubmit={handleCreate} noValidate className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Nom" htmlFor="subject-name">
+          <Input
+            id="subject-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="ex: Mathématiques"
+          />
+        </Field>
+        <Field label="Icône" htmlFor="subject-icon">
+          <Input
+            id="subject-icon"
+            value={icon}
+            onChange={(e) => setIcon(e.target.value)}
+            placeholder="ex: BookOpen"
+          />
+        </Field>
+        <Field label="Couleur" htmlFor="subject-color" className="sm:col-span-2">
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden
+              className="h-11 w-11 shrink-0 rounded-xl border border-stone-300"
+              style={{ backgroundColor: color }}
+            />
+            <Input
+              id="subject-color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+            />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {COLOR_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setColor(preset)}
+                aria-label={`Choisir la couleur ${preset}`}
+                aria-pressed={color.toLowerCase() === preset}
+                className="h-9 w-9 rounded-lg border border-stone-300 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-(--dash-strong) aria-pressed:ring-2 aria-pressed:ring-stone-900"
+                style={{ backgroundColor: preset }}
+              />
+            ))}
+          </div>
+        </Field>
+        <Field label="Ordre" htmlFor="subject-order">
+          <Input
+            id="subject-order"
+            type="number"
+            inputMode="numeric"
+            value={order}
+            onChange={(e) => setOrder(Number(e.target.value))}
+          />
+        </Field>
       </div>
 
-      {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      {(invalid ?? error) && <Notice tone="error">{invalid ?? error}</Notice>}
 
-      {showForm && (
-        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Nouvelle matière
-          </h2>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="ex: Mathématiques"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Icône
-                </label>
-                <input
-                  type="text"
-                  value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
-                  required
-                  placeholder="ex: BookOpen"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Couleur
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="h-10 w-14 cursor-pointer rounded border border-gray-300"
-                  />
-                  <input
-                    type="text"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ordre
-                </label>
-                <input
-                  type="number"
-                  value={order}
-                  onChange={(e) => setOrder(Number(e.target.value))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-              >
-                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Créer
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {subjects.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
-          <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">
-            Aucune matière
-          </h3>
-          <p className="mt-2 text-sm text-gray-500">
-            Commencez par ajouter une matière au programme.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subjects.map((subject) => (
-            <SubjectCard
-              key={subject._id}
-              subject={subject}
-              deleteConfirm={deleteConfirm}
-              setDeleteConfirm={setDeleteConfirm}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+      <DialogActions onCancel={close}>
+        <Button type="submit" busy={busy}>
+          Créer
+        </Button>
+      </DialogActions>
+    </form>
   );
 }
 
-function SubjectCard({
-  subject,
-  deleteConfirm,
-  setDeleteConfirm,
-  onDelete,
-}: {
-  subject: {
-    _id: Id<"subjects">;
-    name: string;
-    icon: string;
-    color: string;
-    order: number;
-  };
-  deleteConfirm: Id<"subjects"> | null;
-  setDeleteConfirm: (id: Id<"subjects"> | null) => void;
-  onDelete: (id: Id<"subjects">) => void;
-}) {
+function SubjectCard({ subject }: { subject: SubjectRow }) {
+  const removeSubject = useMutation(api.subjects.remove);
   const topics = useQuery(api.topics.listBySubject, {
     subjectId: subject._id,
   });
   const topicCount = topics?.length ?? 0;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-white text-sm font-bold"
+    <Card as="li" className="flex flex-col p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
             style={{ backgroundColor: subject.color }}
           >
             {subject.icon.slice(0, 2).toUpperCase()}
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">{subject.name}</h3>
-            <p className="text-sm text-gray-500">
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold text-stone-900">{subject.name}</p>
+            <p className="text-sm text-stone-600">
               {topicCount} thématique{topicCount !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
-        <div
-          className="h-4 w-4 rounded-full border border-gray-200"
+        <span
+          className="h-4 w-4 shrink-0 rounded-full border border-stone-200"
           style={{ backgroundColor: subject.color }}
           title={subject.color}
         />
       </div>
 
-      <div className="mt-4 flex items-center gap-2">
-        <Link
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
+        <ButtonLink
           href={`/admin/subjects/detail?id=${subject._id}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          variant="secondary"
+          aria-label={`Modifier la matière ${subject.name}`}
         >
-          <Pencil className="h-3.5 w-3.5" />
+          <Pencil className="h-4 w-4" aria-hidden />
           Modifier
-        </Link>
-        {deleteConfirm === subject._id ? (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onDelete(subject._id)}
-              className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
-            >
-              Confirmer
-            </button>
-            <button
-              onClick={() => setDeleteConfirm(null)}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Annuler
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setDeleteConfirm(subject._id)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Supprimer
-          </button>
-        )}
+        </ButtonLink>
+        <ConfirmAction
+          trigger={
+            <>
+              <Trash2 className="h-4 w-4" aria-hidden />
+              Supprimer
+            </>
+          }
+          triggerLabel={`Supprimer la matière ${subject.name}`}
+          title={`Supprimer la matière « ${subject.name} » ?`}
+          confirmLabel="Supprimer"
+          onConfirm={() => removeSubject({ id: subject._id })}
+          failMessage="Erreur lors de la suppression"
+        />
       </div>
+    </Card>
+  );
+}
+
+export default function SubjectsPage() {
+  const subjects = useQuery(api.subjects.list);
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
+      <PageHeader
+        title="Matières"
+        description="Gérez les matières du programme scolaire"
+        actions={
+          <FormDialog
+            trigger={
+              <>
+                <Plus className="h-4 w-4" aria-hidden />
+                Ajouter une matière
+              </>
+            }
+            title="Nouvelle matière"
+          >
+            {(close) => <CreateSubjectForm close={close} />}
+          </FormDialog>
+        }
+      />
+
+      {subjects === undefined ? (
+        <LoadingBlock label="Chargement des matières" />
+      ) : subjects.length === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title="Aucune matière"
+          description="Commencez par ajouter une matière au programme."
+        />
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {subjects.map((subject) => (
+            <SubjectCard key={subject._id} subject={subject} />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
