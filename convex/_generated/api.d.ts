@@ -51,6 +51,7 @@ import type * as billingPaydunya from "../billingPaydunya.js";
 import type * as billingRules from "../billingRules.js";
 import type * as classroomHelpers from "../classroomHelpers.js";
 import type * as classrooms from "../classrooms.js";
+import type * as codeAttempts from "../codeAttempts.js";
 import type * as couponRules from "../couponRules.js";
 import type * as coupons from "../coupons.js";
 import type * as crons from "../crons.js";
@@ -356,6 +357,7 @@ declare const fullApi: ApiFromModules<{
   billingRules: typeof billingRules;
   classroomHelpers: typeof classroomHelpers;
   classrooms: typeof classrooms;
+  codeAttempts: typeof codeAttempts;
   couponRules: typeof couponRules;
   coupons: typeof coupons;
   crons: typeof crons;

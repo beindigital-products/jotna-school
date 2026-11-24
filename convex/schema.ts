@@ -674,6 +674,15 @@ export default defineSchema({
     .index("by_school", ["schoolId"])
     .index("by_profile", ["profileId"]),
 
+  // Les essais ratés de codes (`convex/codeAttempts.ts`) : un professeur qui
+  // essaie des codes élèves au hasard est freiné. Une ligne par professeur et
+  // par fenêtre de dix minutes.
+  codeAttempts: defineTable({
+    profileId: v.id("profiles"),
+    windowStart: v.number(),
+    failures: v.number(),
+  }).index("by_profile", ["profileId"]),
+
   // L'invitation d'un professeur par une école (`convex/schoolInvitations.ts`).
   // La direction saisit l'adresse d'un compte professeur ; le professeur
   // accepte ou refuse dans son espace. Rien n'entre dans `schoolStaff` sans

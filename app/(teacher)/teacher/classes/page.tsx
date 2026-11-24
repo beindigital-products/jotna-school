@@ -327,7 +327,13 @@ function SchoolInvitations() {
                 const result = await run(() =>
                   respond({ invitationId: invitation._id, accept: true }),
                 );
-                if (result?.joined) setJoined(result.schoolName);
+                if (result?.joined) {
+                  setJoined(
+                    result.classTaken
+                      ? `${result.schoolName} (la classe prévue a été attribuée à un autre professeur entre-temps : demandez-en une à la direction)`
+                      : result.schoolName,
+                  );
+                }
               }}
             >
               Accepter

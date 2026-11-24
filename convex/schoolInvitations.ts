@@ -70,11 +70,22 @@ export const inviteTeacher = mutation({
     if (args.schoolClassId === undefined && schoolClasses.length > 0) {
       throw new ConvexError("Choisissez la classe de ce professeur.");
     }
-    if (
-      args.schoolClassId !== undefined &&
-      !schoolClasses.some((c) => c._id === args.schoolClassId)
-    ) {
+    const chosen =
+      args.schoolClassId === undefined
+        ? undefined
+        : schoolClasses.find((c) => c._id === args.schoolClassId);
+    if (args.schoolClassId !== undefined && !chosen) {
       throw new ConvexError("Cette classe n'appartient pas à votre école.");
+    }
+    // UNE CLASSE A UN SEUL PROFESSEUR. L'invitation ne retire jamais une
+    // classe à celui qui la tient : la direction la libère d'abord, depuis la
+    // liste des classes. Sans ce refus, l'acceptation reprenait la classe et
+    // ses élèves au premier professeur, sans un mot.
+    if (chosen?.teacherId) {
+      throw new ConvexError(
+        "Cette classe a déjà un professeur. Choisissez une classe sans " +
+          "professeur, ou retirez d'abord le professeur actuel.",
+      );
     }
 
     const email = args.email.trim().toLowerCase();
@@ -241,7 +252,7 @@ export const respond = mutation({
 
     if (!args.accept) {
       await ctx.db.patch(invitation._id, { status: "declined" });
-      return { joined: false, schoolName: null, movedClasses: 0 };
+      return { joined: false, schoolName: null, movedClasses: 0, classTaken: false };
     }
 
     const school = await ctx.db.get(invitation.schoolId);
@@ -256,13 +267,21 @@ export const respond = mutation({
       ? 0
       : await attachTeacherToSchool(ctx, teacher, school);
 
-    // La classe promise par l'invitation, si elle est toujours dans l'école.
+    // La classe promise par l'invitation, à condition qu'elle soit encore
+    // libre : entre l'envoi et l'acceptation, la direction a pu l'attribuer à
+    // un autre. Dans ce cas le professeur entre dans l'école sans classe, et
+    // l'écran le lui dit.
+    let classTaken = false;
     if (invitation.schoolClassId) {
       const schoolClass = await ctx.db.get(invitation.schoolClassId);
       if (schoolClass && schoolClass.schoolId === school._id) {
-        await ctx.db.patch(schoolClass._id, { teacherId: teacher._id });
+        if (!schoolClass.teacherId || schoolClass.teacherId === teacher._id) {
+          await ctx.db.patch(schoolClass._id, { teacherId: teacher._id });
+        } else {
+          classTaken = true;
+        }
       }
     }
-    return { joined: true, schoolName: school.name, movedClasses };
+    return { joined: true, schoolName: school.name, movedClasses, classTaken };
   },
 });

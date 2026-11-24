@@ -65,6 +65,11 @@ export default function SchoolTeachersPage() {
     value: c._id as string,
     label: `${c.class} ${c.label}${c.teacherName ? ` (${c.teacherName})` : " (sans professeur)"}`,
   }));
+  // Une classe a un seul professeur : l'invitation ne propose que les classes
+  // sans professeur.
+  const freeClassOptions: SelectOption[] = classes
+    .filter((c) => !c.teacherId)
+    .map((c) => ({ value: c._id as string, label: `${c.class} ${c.label}` }));
   const withoutClass = teachers.filter(
     (t) => !classes.some((c) => c.teacherId === t.profileId),
   ).length;
@@ -86,7 +91,7 @@ export default function SchoolTeachersPage() {
             description="Il doit déjà avoir un compte professeur. Il reçoit l'invitation dans son espace et choisit de l'accepter."
           >
             {(close) => (
-              <InviteTeacherForm classOptions={classOptions} close={close} />
+              <InviteTeacherForm classOptions={freeClassOptions} close={close} />
             )}
           </FormDialog>
         }
@@ -128,7 +133,7 @@ export default function SchoolTeachersPage() {
       </section>
 
       <PendingInvitations />
-      <FormerTeachers teachers={formerTeachers} classOptions={classOptions} />
+      <FormerTeachers teachers={formerTeachers} classOptions={freeClassOptions} />
     </div>
   );
 }
@@ -254,8 +259,8 @@ function InviteTeacherForm({
         htmlFor="invite-teacher-class"
         hint={
           classOptions.length === 0
-            ? "Vous n'avez pas encore de classe : vous lui en attribuerez une ensuite."
-            : "Elle lui est attribuée dès qu'il accepte."
+            ? "Aucune classe sans professeur : vous lui en attribuerez une ensuite."
+            : "Seules les classes sans professeur sont proposées. Elle lui est attribuée dès qu'il accepte."
         }
       >
         <SelectField
@@ -264,7 +269,7 @@ function InviteTeacherForm({
           onValueChange={setClassId}
           options={classOptions}
           disabled={classOptions.length === 0}
-          placeholder={classOptions.length === 0 ? "Aucune classe" : "Choisir"}
+          placeholder={classOptions.length === 0 ? "Aucune classe libre" : "Choisir"}
         />
       </Field>
       {error && <Notice tone="error">{error}</Notice>}

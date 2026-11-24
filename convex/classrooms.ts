@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { visibleClassValidator } from "./curriculum";
+import { isCodeThrottled, recordCodeFailure } from "./codeAttempts";
 import { normalizeCode } from "./importCodes";
 import { cleanClassLabel } from "./openAccessRules";
 import {
@@ -12,6 +13,7 @@ import {
   classExists,
   CLASS_STUDENTS_LIMIT,
   CLASSES_LIMIT,
+  drawStudentCode,
   ensurePersonalSchool,
   loginCodeOf,
   STAFF_PER_PROFILE_LIMIT,
@@ -254,24 +256,45 @@ export const classDetail = query({
   },
 });
 
+/** Ce que répondent la vérification et l'ajout par code élève. */
+const LIMITED_MESSAGE =
+  "Trop d'essais avec des codes qui n'existent pas. Patientez dix minutes, " +
+  "puis demandez le bon code à la famille.";
+
 /**
  * Regarde un code élève avant de l'utiliser : le professeur voit le prénom
- * de l'enfant et sait s'il quitte une autre classe. Ne lève jamais.
+ * de l'enfant et sait s'il quitte une autre classe.
+ *
+ * C'EST UNE MUTATION, ET C'EST VOULU : elle compte les codes qui n'existent
+ * pas et freine au-delà de dix par dix minutes (`convex/codeAttempts.ts`).
+ * Une requête de lecture ne pouvait pas compter, et servait à balayer les
+ * codes de toute la plateforme à 2 000 essais par seconde. Elle ne lève pas
+ * en cas d'échec : une erreur annulerait le compte de l'essai.
  */
-export const previewStudentCode = query({
+export const checkStudentCode = mutation({
   args: { code: v.string(), schoolClassId: v.id("schoolClasses") },
   handler: async (ctx, args) => {
-    const profile = await callerProfileOrNull(ctx);
-    if (!profile || !TEACHING_ROLES.has(profile.role)) return null;
+    const profile = await requireTeacher(ctx);
+    const schoolClass = await ctx.db.get(args.schoolClassId);
+    if (!schoolClass || !(await canManageClass(ctx, profile, schoolClass))) {
+      return { status: "unknown" as const };
+    }
+
+    const now = Date.now();
+    if (await isCodeThrottled(ctx, profile._id, now)) {
+      return { status: "limited" as const };
+    }
 
     const normalized = normalizeCode(args.code);
-    if (normalized.length < 6) return null;
-
-    const student = await ctx.db
-      .query("profiles")
-      .withIndex("by_studentCode", (q) => q.eq("studentCode", normalized))
-      .first();
+    const student =
+      normalized.length >= 6
+        ? await ctx.db
+            .query("profiles")
+            .withIndex("by_studentCode", (q) => q.eq("studentCode", normalized))
+            .first()
+        : null;
     if (!student || student.role !== "student") {
+      await recordCodeFailure(ctx, profile._id, now);
       return { status: "unknown" as const };
     }
 
@@ -292,7 +315,18 @@ export const previewStudentCode = query({
   },
 });
 
-/** Ajoute un enfant existant à une classe avec son code élève. */
+/**
+ * Ajoute un enfant existant à une classe avec son code élève.
+ *
+ * LE CODE ÉLÈVE EST À USAGE UNIQUE. Une fois l'enfant placé, un nouveau code
+ * remplace l'ancien : le professeur qui le connaissait ne peut plus le
+ * rejouer, même retiré de l'école ensuite. Avant, il reprenait l'élève dans sa
+ * propre classe quand il voulait, et lisait son code de connexion. La famille
+ * retrouve le nouveau code sur « Mes enfants ».
+ *
+ * Les échecs sont comptés comme dans `checkStudentCode`, et ne lèvent pas
+ * d'erreur pour que le compte survive.
+ */
 export const addStudentByCode = mutation({
   args: { code: v.string(), schoolClassId: v.id("schoolClasses") },
   handler: async (ctx, args) => {
@@ -300,6 +334,11 @@ export const addStudentByCode = mutation({
     const schoolClass = await ctx.db.get(args.schoolClassId);
     if (!schoolClass || !(await canManageClass(ctx, profile, schoolClass))) {
       throw new ConvexError("Classe introuvable.");
+    }
+
+    const now = Date.now();
+    if (await isCodeThrottled(ctx, profile._id, now)) {
+      return { status: "limited" as const, message: LIMITED_MESSAGE };
     }
 
     const normalized = normalizeCode(args.code);
@@ -310,10 +349,13 @@ export const addStudentByCode = mutation({
           .unique()
       : null;
     if (!student || student.role !== "student") {
-      throw new ConvexError(
-        "Ce code élève n'existe pas. Vérifiez-le avec la famille : il " +
+      await recordCodeFailure(ctx, profile._id, now);
+      return {
+        status: "unknown" as const,
+        message:
+          "Ce code élève n'existe pas. Vérifiez-le avec la famille : il " +
           "commence par ELV- et ne contient ni O, ni I, ni zéro.",
-      );
+      };
     }
 
     if ((await activeStudentCount(ctx, schoolClass._id)) >= CLASS_STUDENTS_LIMIT) {
@@ -330,7 +372,12 @@ export const addStudentByCode = mutation({
     if (result.status === "already") {
       throw new ConvexError(`${student.name} est déjà dans cette classe.`);
     }
-    return { name: student.name, moved: result.moved };
+
+    // Code à usage unique : l'ancien ne marche plus.
+    await ctx.db.patch(student._id, {
+      studentCode: normalizeCode(await drawStudentCode(ctx)),
+    });
+    return { status: "added" as const, name: student.name, moved: result.moved };
   },
 });
 

@@ -324,6 +324,17 @@ function CreateStudentForm({
   );
 }
 
+type CodeCheck =
+  | { status: "ready"; name: string; alreadyHere: boolean; inAnotherClass: boolean }
+  | { status: "unknown" }
+  | { status: "limited" };
+
+/**
+ * Ajouter un enfant qui a déjà un compte, avec son code élève, en deux temps :
+ * on vérifie le code (le prénom de l'enfant s'affiche), puis on confirme.
+ * Chaque vérification est comptée côté serveur, et les codes qui n'existent
+ * pas sont freinés : plus de recherche à chaque lettre tapée.
+ */
 function AddByCodeForm({
   schoolClassId,
   close,
@@ -331,32 +342,46 @@ function AddByCodeForm({
   schoolClassId: Id<"schoolClasses">;
   close: () => void;
 }) {
+  const checkStudentCode = useMutation(api.classrooms.checkStudentCode);
   const addStudentByCode = useMutation(api.classrooms.addStudentByCode);
   const [code, setCode] = useState("");
+  const [checked, setChecked] = useState<CodeCheck | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  const { busy, error, run } = useAsyncAction("L'élève n'a pas pu être ajouté.");
-  const preview = useQuery(
-    api.classrooms.previewStudentCode,
-    code.trim().length >= 6 ? { code, schoolClassId } : "skip",
-  );
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const check = useAsyncAction("Le code n'a pas pu être vérifié.");
+  const add = useAsyncAction("L'élève n'a pas pu être ajouté.");
 
-  async function submit(e: React.FormEvent) {
+  async function verify(e: React.FormEvent) {
     e.preventDefault();
     setDone(null);
-    const result = await run(() => addStudentByCode({ code, schoolClassId }));
+    setRefusal(null);
+    const result = await check.run(() => checkStudentCode({ code, schoolClassId }));
+    if (result) setChecked(result);
+  }
+
+  async function confirm() {
+    setRefusal(null);
+    const result = await add.run(() => addStudentByCode({ code, schoolClassId }));
     if (!result) return;
+    if (result.status !== "added") {
+      setRefusal(result.message);
+      setChecked(null);
+      return;
+    }
     setDone(
       result.moved
         ? `${result.name} a rejoint votre classe et quitté son ancienne classe.`
         : `${result.name} a rejoint votre classe.`,
     );
+    setChecked(null);
     setCode("");
   }
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-4">
+    <form onSubmit={verify} noValidate className="space-y-4">
       <p className="text-sm text-stone-600">
-        Demandez son code élève à sa famille. Il commence par ELV-.
+        Demandez son code élève à sa famille. Il commence par ELV-. Le code ne
+        sert qu&apos;une fois : la famille en reçoit un nouveau ensuite.
       </p>
       {done && <Notice tone="success">{done}</Notice>}
       <Field label="Code élève" htmlFor="student-code">
@@ -369,35 +394,50 @@ function AddByCodeForm({
           value={code}
           onChange={(e) => {
             setCode(e.target.value);
+            setChecked(null);
             setDone(null);
+            setRefusal(null);
           }}
           placeholder="ELV-XXXXXX"
           className="font-mono uppercase tracking-wide"
         />
       </Field>
-      <div aria-live="polite">
-        {preview?.status === "ready" && (
-          <Notice tone={preview.alreadyHere ? "warning" : "info"}>
-            {preview.alreadyHere
-              ? `${preview.name} est déjà dans cette classe.`
-              : preview.inAnotherClass
-                ? `${preview.name} est dans une autre classe : il passera dans la vôtre.`
-                : `Élève trouvé : ${preview.name}.`}
+      <div aria-live="polite" className="space-y-2">
+        {checked?.status === "ready" && (
+          <Notice tone={checked.alreadyHere ? "warning" : "info"}>
+            {checked.alreadyHere
+              ? `${checked.name} est déjà dans cette classe.`
+              : checked.inAnotherClass
+                ? `${checked.name} est dans une autre classe : il passera dans la vôtre.`
+                : `Élève trouvé : ${checked.name}.`}
           </Notice>
         )}
-        {preview?.status === "unknown" && (
-          <p className="text-sm text-stone-600">Aucun élève ne porte ce code.</p>
+        {checked?.status === "unknown" && (
+          <Notice tone="error">
+            Ce code élève n&apos;existe pas. Vérifiez-le avec la famille : il
+            commence par ELV- et ne contient ni O, ni I, ni zéro.
+          </Notice>
         )}
+        {checked?.status === "limited" && (
+          <Notice tone="warning">
+            Trop d&apos;essais avec des codes qui n&apos;existent pas. Patientez
+            dix minutes, puis demandez le bon code à la famille.
+          </Notice>
+        )}
+        {refusal && <Notice tone="error">{refusal}</Notice>}
       </div>
-      {error && <Notice tone="error">{error}</Notice>}
+      {check.error && <Notice tone="error">{check.error}</Notice>}
+      {add.error && <Notice tone="error">{add.error}</Notice>}
       <DialogActions onCancel={close} cancelLabel={done ? "Terminé" : "Annuler"}>
-        <Button
-          type="submit"
-          busy={busy}
-          disabled={preview?.status !== "ready" || preview.alreadyHere}
-        >
-          Ajouter à la classe
-        </Button>
+        {checked?.status === "ready" && !checked.alreadyHere ? (
+          <Button onClick={confirm} busy={add.busy}>
+            Ajouter {checked.name}
+          </Button>
+        ) : (
+          <Button type="submit" busy={check.busy} disabled={code.trim().length < 6}>
+            Vérifier le code
+          </Button>
+        )}
       </DialogActions>
     </form>
   );

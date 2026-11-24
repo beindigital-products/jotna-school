@@ -12,19 +12,28 @@ import {
 const lowest = (min: number) => min;
 
 describe("buildLoginCode", () => {
-  it("colle le niveau et le libellé, puis quatre chiffres", () => {
-    expect(buildLoginCode("CM1", "A", () => 4821)).toBe("CM1A-4821");
+  it("colle le niveau et le libellé, puis six chiffres", () => {
+    expect(buildLoginCode("CM1", "A", () => 482193)).toBe("CM1A-482193");
+  });
+
+  it("tire dans une plage de 900 000 valeurs", () => {
+    const bounds: number[] = [];
+    buildLoginCode("CM1", "A", (min, max) => {
+      bounds.push(min, max);
+      return min;
+    });
+    expect(bounds).toEqual([100000, 999999]);
   });
 
   it("ne produit jamais de zéro en tête", () => {
-    // `0821` se lit `821` sur un billet, et l'élève tape faux. La borne basse
-    // du tirage est donc 1000, pas 0.
-    expect(buildLoginCode("CI", "B", lowest)).toBe("CIB-1000");
+    // `082140` se lit `82140` sur un billet, et l'élève tape faux. La borne
+    // basse du tirage est donc 100000, pas 0.
+    expect(buildLoginCode("CI", "B", lowest)).toBe("CIB-100000");
   });
 
   it("nettoie un libellé que le directeur a saisi comme il voulait", () => {
-    expect(buildLoginCode("CE2", " bleue ", () => 5000)).toBe("CE2BLEUE-5000");
-    expect(buildLoginCode("CM2", "A-1", () => 5000)).toBe("CM2A1-5000");
+    expect(buildLoginCode("CE2", " bleue ", () => 500000)).toBe("CE2BLEUE-500000");
+    expect(buildLoginCode("CM2", "A-1", () => 500000)).toBe("CM2A1-500000");
   });
 });
 

@@ -283,8 +283,8 @@ function ChildCard({ child }: { child: Child }) {
             )}
             <p className="mt-1.5 text-xs text-stone-600">
               {child.classroom
-                ? "Pour changer de classe, donnez ce code au nouveau professeur."
-                : "Le professeur le saisit pour ajouter votre enfant à sa classe."}
+                ? "Pour changer de classe, donnez ce code au nouveau professeur. Il ne sert qu'une fois : un nouveau code apparaît ensuite."
+                : "Le professeur le saisit pour ajouter votre enfant à sa classe. Il ne sert qu'une fois : un nouveau code apparaît ensuite."}
             </p>
           </dd>
         </div>

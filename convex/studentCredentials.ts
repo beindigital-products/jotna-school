@@ -268,11 +268,7 @@ export const resetStudentLoginCode = action({
       const candidate =
         target.prefix === "class"
           ? buildLoginCode(target.level, target.label, secureRandomInt)
-          : buildChildLoginCode(
-              target.studentName,
-              secureRandomInt,
-              attempt < CODE_ATTEMPTS / 2 ? 4 : 6,
-            );
+          : buildChildLoginCode(target.studentName, secureRandomInt, 6);
       const taken = await ctx.runQuery(internal.studentCredentials.codeTaken, {
         code: normalizeCode(candidate),
       });

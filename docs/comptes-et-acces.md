@@ -165,6 +165,26 @@ professeur quitte l'école (« Mes classes », `classrooms.leaveSchool`). Dans l
 deux cas, les classes de l'école y restent, sans professeur, et la direction
 leur en attribue un autre. Ses cours particuliers ne changent pas.
 
+## Les codes sont à usage unique ou freinés
+
+Après la campagne de tests du 24 novembre 2026 (`qa-report/2026-11-24-1649`) :
+
+- **Code élève (ELV-)** : il sert une fois. Quand un professeur ajoute l'enfant
+  à sa classe, un nouveau code remplace l'ancien (`classrooms.addStudentByCode`),
+  et la famille le retrouve sur « Mes enfants ». Un professeur retiré ne peut
+  donc plus rejouer un code qu'il connaissait.
+- **Essais de codes élèves** : la vérification est une mutation
+  (`classrooms.checkStudentCode`) qui compte les codes inexistants. Au-delà de
+  dix par dix minutes, un professeur est freiné (`convex/codeAttempts.ts`).
+  L'ancienne requête de lecture, qu'on balayait à 2 000 essais par seconde,
+  n'existe plus.
+- **Code de connexion de l'élève** : six chiffres pour tout compte créé ou
+  réinitialisé (quatre avant, soit 9 000 valeurs par prénom). Les codes à
+  quatre chiffres déjà donnés restent valables jusqu'au « nouveau code ».
+  Restent à faire : une limite globale d'essais de connexion, que la
+  bibliothèque d'authentification ne fournit que par identifiant, et le
+  renouvellement des codes de connexion quand un professeur quitte une école.
+
 ## Ce qui a été retiré, et ce qui l'a remplacé
 
 `profiles.createChildAccount` laissait n'importe quel compte authentifié
